@@ -20,18 +20,11 @@ import {
   type Locale,
 } from "./lib/i18n";
 import WorldMap from "./components/WorldMap";
+// Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
+import { requestPayment } from "./lib/payments";
 
 // Precios de las acciones pagas (USDm). Listos para conectar al contrato.
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
-
-// === PUNTO DE INTEGRACIÓN BLOCKCHAIN (para el compañero de IT) ===
-// Reemplazar este stub por el pago real con viem al contrato en Celo
-// (conectar wallet MiniPay, enviar la entry fee, esperar confirmación).
-// Debe devolver true solo si el pago se confirmó.
-async function requestPayment(amountUSDm: number, reason: string): Promise<boolean> {
-  console.log(`[pago pendiente de blockchain] ${reason}: ${amountUSDm} USDm`);
-  return true; // por ahora gratis (sin wallet conectada)
-}
 
 // Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
 function Flag({ code, size = 32 }: { code: string; size?: number }) {
