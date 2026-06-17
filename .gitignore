@@ -1,0 +1,64 @@
+# ============================================================
+#  Frontle — .gitignore raíz
+#  Regla de oro (Bootcamp 1): los bots cazan API keys en GitHub
+#  24/7. Lo que se sube queda en la historia para siempre.
+# ============================================================
+
+# --- Dependencias ---
+node_modules/
+**/node_modules/
+.pnp
+.pnp.*
+
+# --- Builds / output ---
+.next/
+**/.next/
+out/
+**/out/
+build/
+dist/
+
+# --- Secrets — JAMÁS al repo ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Credenciales de wallet — JAMÁS al repo ---
+# private keys, seed phrases, archivos JSON de wallet
+*.wallet
+wallet.json
+keystore/
+mnemonic.txt
+private-key.txt
+
+# --- Smart contracts (Foundry) ---
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# --- Vercel ---
+.vercel
+
+# --- TypeScript ---
+*.tsbuildinfo
+next-env.d.ts
+
+# --- Logs / debug ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Agent skills (vendored por máquina, regenerables) ---
+.agents/
+.claude/
+skills-lock.json
