@@ -157,21 +157,23 @@ export function dailyChallenge(seed = dateSeed()): DailyChallenge {
 export type Quality = "green" | "yellow" | "red";
 export type Status = "start" | "end" | Quality;
 
-// Distancia (en saltos) de un país al destino. Infinity si no hay ruta.
-export function distanceTo(country: string, end: string): number {
-  const p = shortestPath(country, end);
+// Distancia (en saltos) entre dos países. Infinity si no hay ruta.
+export function distance(a: string, b: string): number {
+  const p = shortestPath(a, b);
   return p ? p.length - 1 : Infinity;
 }
 
-// Evalúa el paso prev → country respecto al destino:
-//  - verde:    acerca al destino (distancia baja)
-//  - amarillo: lateral (distancia igual)
-//  - rojo:     aleja del destino (distancia sube)
-export function stepQuality(prev: string, country: string, end: string): Quality {
-  const dPrev = distanceTo(prev, end);
-  const dNew = distanceTo(country, end);
-  if (dNew < dPrev) return "green";
-  if (dNew === dPrev) return "yellow";
+// Evalúa un país según su DESVÍO respecto a la ruta óptima start→end:
+//   desvío = d(start, país) + d(país, end) − d(start, end)
+//  - verde (0):    el país está sobre una ruta óptima
+//  - amarillo (1-2): desvío pequeño
+//  - rojo (≥3):    desvío grande
+// Así el # de verdes nunca excede el óptimo, y los amarillos aparecen
+// cuando el jugador se aparta un poco de la mejor ruta.
+export function countryQuality(country: string, start: string, end: string): Quality {
+  const detour = distance(start, country) + distance(country, end) - distance(start, end);
+  if (detour <= 0) return "green";
+  if (detour <= 2) return "yellow";
   return "red";
 }
 
@@ -187,32 +189,42 @@ export interface PlayState {
   solved: boolean;
 }
 
+export type GuessReason =
+  | "unknown"
+  | "is_start"
+  | "is_end"
+  | "duplicate"
+  | "not_adjacent"
+  | "ok";
+
 export interface GuessResult {
   ok: boolean;
   solved: boolean;
+  reason: GuessReason;
   country?: string;
   quality?: Quality;
-  message: string;
+  last?: string;
+  input: string;
 }
 
 // Intenta agregar un país a la cadena.
 // REGLA DE VICTORIA: el juego termina apenas se ingresa un país que
 // limita con el destino (no hay que escribir el destino mismo).
-export function tryGuess(state: PlayState, input: string): GuessResult {
+// No genera texto — devuelve un `reason` que la UI traduce.
+export function tryGuess(state: PlayState, rawInput: string, country: string | null): GuessResult {
   const { start, end } = state.challenge;
-  const country = resolveCountry(input);
 
   if (!country) {
-    return { ok: false, solved: false, message: `No reconozco "${input}".` };
+    return { ok: false, solved: false, reason: "unknown", input: rawInput };
   }
   if (country === start) {
-    return { ok: false, solved: false, message: "Ese es el país de origen." };
+    return { ok: false, solved: false, reason: "is_start", country, input: rawInput };
   }
   if (country === end) {
-    return { ok: false, solved: false, message: `Llega a un país que limite con ${end}, no a ${end} directo.` };
+    return { ok: false, solved: false, reason: "is_end", country, input: rawInput };
   }
   if (state.chain.some((c) => c.country === country)) {
-    return { ok: false, solved: false, message: `${country} ya está en tu ruta.` };
+    return { ok: false, solved: false, reason: "duplicate", country, input: rawInput };
   }
 
   // El último país de la cadena (o el origen si está vacía)
@@ -220,18 +232,10 @@ export function tryGuess(state: PlayState, input: string): GuessResult {
 
   // Debe limitar con el país anterior para ser una jugada válida
   if (!areNeighbors(last, country)) {
-    return { ok: false, solved: false, message: `${country} no limita con ${last}.` };
+    return { ok: false, solved: false, reason: "not_adjacent", country, last, input: rawInput };
   }
 
-  const quality = stepQuality(last, country, end);
+  const quality = countryQuality(country, start, end);
   const solved = areNeighbors(country, end);
-  const message = solved
-    ? `¡${country} limita con ${end}! 🎉`
-    : quality === "green"
-      ? `${country} ✓`
-      : quality === "yellow"
-        ? `${country} — vas de lado`
-        : `${country} — te alejaste`;
-
-  return { ok: true, solved, country, quality, message };
+  return { ok: true, solved, reason: "ok", country, quality, last, input: rawInput };
 }

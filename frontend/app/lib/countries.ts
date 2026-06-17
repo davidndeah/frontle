@@ -11,10 +11,21 @@ export interface Country {
   name: string;
   flag: string;
   neighbors: string[];
+  code: string; // ISO 3166-1 alpha-2, derivado de la bandera
+}
+
+// Deriva el código ISO alpha-2 desde el emoji de bandera.
+// Las banderas son dos "regional indicator symbols": 🇨🇴 = C + O.
+export function flagToCode(flag: string): string {
+  const cps = [...flag].map((c) => c.codePointAt(0) ?? 0);
+  return cps
+    .filter((cp) => cp >= 0x1f1e6 && cp <= 0x1f1ff)
+    .map((cp) => String.fromCharCode(cp - 0x1f1e6 + 65))
+    .join("");
 }
 
 // Lista base. Las relaciones se completan/normalizan en buildGraph().
-const RAW: Country[] = [
+const RAW: Omit<Country, "code">[] = [
   // ---------------- Sudamérica ----------------
   { name: "Colombia", flag: "🇨🇴", neighbors: ["Venezuela", "Brazil", "Peru", "Ecuador", "Panama"] },
   { name: "Venezuela", flag: "🇻🇪", neighbors: ["Colombia", "Brazil", "Guyana"] },
@@ -200,7 +211,12 @@ const RAW: Country[] = [
 function buildGraph(): Record<string, Country> {
   const graph: Record<string, Country> = {};
   for (const c of RAW) {
-    graph[c.name] = { name: c.name, flag: c.flag, neighbors: [...c.neighbors] };
+    graph[c.name] = {
+      name: c.name,
+      flag: c.flag,
+      neighbors: [...c.neighbors],
+      code: flagToCode(c.flag),
+    };
   }
   // Normalizar simetría
   for (const c of RAW) {

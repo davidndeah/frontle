@@ -1,26 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { geoEqualEarth, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
-import type { Feature, Geometry } from "geojson";
+import type { Feature, Geometry, FeatureCollection } from "geojson";
 import { COUNTRY_NAMES } from "../lib/countries";
 import type { Status } from "../lib/game";
 
 const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-// Colores del semáforo + prisma
+// Colores del semáforo + origen/destino
 const COLORS: Record<Status, string> = {
-  start: "#22d3ee", // cyan
-  end: "#e879f9", // fucsia
+  start: "#22d3ee",
+  end: "#e879f9",
   green: "#22c55e",
   yellow: "#eab308",
   red: "#ef4444",
 };
-const LAND_DEFAULT = "#161b2e";
-const LAND_STROKE = "#0a0e1a";
 
-// Normaliza nombres para emparejar Natural Earth ↔ nuestros nombres.
 function norm(s: string): string {
   return s
     .normalize("NFD")
@@ -38,7 +35,6 @@ function norm(s: string): string {
     .trim();
 }
 
-// Alias explícitos: nombre Natural Earth (normalizado) → nuestro nombre
 const NE_ALIAS: Record<string, string> = {
   "united states of america": "United States",
   "democratic republic of the congo": "Democratic Republic of the Congo",
@@ -73,7 +69,6 @@ const NE_ALIAS: Record<string, string> = {
   "eswatini": "Eswatini",
 };
 
-// Índice: nombre normalizado → nuestro nombre canónico
 const NAME_INDEX: Record<string, string> = (() => {
   const idx: Record<string, string> = {};
   for (const n of COUNTRY_NAMES) idx[norm(n)] = n;
@@ -83,11 +78,13 @@ const NAME_INDEX: Record<string, string> = (() => {
 
 interface Props {
   statusByCountry: Record<string, Status>;
+  loadingLabel: string;
 }
 
-export default function WorldMap({ statusByCountry }: Props) {
-  const [features, setFeatures] = useState<Feature<Geometry, { name: string }>[] | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+type NamedFeature = Feature<Geometry, { name: string }>;
+
+export default function WorldMap({ statusByCountry, loadingLabel }: Props) {
+  const [features, setFeatures] = useState<NamedFeature[] | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +93,7 @@ export default function WorldMap({ statusByCountry }: Props) {
       .then((topo) => {
         if (cancelled) return;
         const geo = feature(topo, topo.objects.countries) as unknown as {
-          features: Feature<Geometry, { name: string }>[];
+          features: NamedFeature[];
         };
         setFeatures(geo.features);
       })
@@ -107,32 +104,43 @@ export default function WorldMap({ statusByCountry }: Props) {
   }, []);
 
   const W = 360;
-  const H = 200;
+  const H = 220;
+  const PAD = 24;
 
-  const paths = useMemo(() => {
+  // Solo los países conocidos (origen, destino y los que el usuario ingresó)
+  const known = useMemo(() => {
     if (!features) return [];
-    const projection = geoEqualEarth().fitSize([W, H], {
-      type: "FeatureCollection",
-      features,
-    } as never);
-    const pathGen = geoPath(projection);
-    return features.map((f) => {
-      const myName = NAME_INDEX[norm(f.properties?.name ?? "")];
-      const status = myName ? statusByCountry[myName] : undefined;
-      return {
-        d: pathGen(f) ?? "",
-        fill: status ? COLORS[status] : LAND_DEFAULT,
-        known: !!status,
-        key: (f.properties?.name ?? "") + Math.random().toString(36).slice(2, 6),
-      };
-    });
+    return features
+      .map((f) => ({ f, name: NAME_INDEX[norm(f.properties?.name ?? "")] }))
+      .filter((x) => x.name && statusByCountry[x.name]);
   }, [features, statusByCountry]);
 
+  const paths = useMemo(() => {
+    if (known.length === 0) return [];
+    const fc: FeatureCollection = {
+      type: "FeatureCollection",
+      features: known.map((k) => k.f),
+    };
+    const projection = geoEqualEarth().fitExtent(
+      [
+        [PAD, PAD],
+        [W - PAD, H - PAD],
+      ],
+      fc as never
+    );
+    const pathGen = geoPath(projection);
+    return known.map((k) => ({
+      d: pathGen(k.f) ?? "",
+      fill: COLORS[statusByCountry[k.name!]],
+      key: k.name!,
+    }));
+  }, [known, statusByCountry]);
+
   return (
-    <div ref={ref} className="w-full rounded-2xl overflow-hidden bg-[#080b16] border border-white/5">
+    <div className="w-full rounded-2xl overflow-hidden bg-black border border-white/10">
       {!features ? (
-        <div className="h-[200px] flex items-center justify-center text-slate-600 text-sm">
-          Cargando mapa…
+        <div className="h-[220px] flex items-center justify-center text-neutral-600 text-sm">
+          {loadingLabel}
         </div>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
@@ -141,9 +149,9 @@ export default function WorldMap({ statusByCountry }: Props) {
               key={p.key}
               d={p.d}
               fill={p.fill}
-              stroke={LAND_STROKE}
-              strokeWidth={0.3}
-              style={p.known ? { filter: "drop-shadow(0 0 3px " + p.fill + ")" } : undefined}
+              stroke="#000"
+              strokeWidth={0.4}
+              style={{ filter: `drop-shadow(0 0 4px ${p.fill})` }}
             />
           ))}
         </svg>
