@@ -153,42 +153,85 @@ export function dailyChallenge(seed = dateSeed()): DailyChallenge {
   return { start: "Colombia", end: "Argentina", optimal: fallback.length - 2, path: fallback };
 }
 
+// --- Semáforo: qué tan buena es una jugada ---
+export type Quality = "green" | "yellow" | "red";
+export type Status = "start" | "end" | Quality;
+
+// Distancia (en saltos) de un país al destino. Infinity si no hay ruta.
+export function distanceTo(country: string, end: string): number {
+  const p = shortestPath(country, end);
+  return p ? p.length - 1 : Infinity;
+}
+
+// Evalúa el paso prev → country respecto al destino:
+//  - verde:    acerca al destino (distancia baja)
+//  - amarillo: lateral (distancia igual)
+//  - rojo:     aleja del destino (distancia sube)
+export function stepQuality(prev: string, country: string, end: string): Quality {
+  const dPrev = distanceTo(prev, end);
+  const dNew = distanceTo(country, end);
+  if (dNew < dPrev) return "green";
+  if (dNew === dPrev) return "yellow";
+  return "red";
+}
+
 // --- Estado de una partida ---
+export interface ChainItem {
+  country: string;
+  quality: Quality;
+}
+
 export interface PlayState {
   challenge: DailyChallenge;
-  chain: string[]; // países jugados (sin incluir start/end)
+  chain: ChainItem[]; // países jugados (sin incluir start/end)
   solved: boolean;
 }
 
-// Intenta agregar un país a la cadena. Devuelve resultado y mensaje.
-export function tryGuess(
-  state: PlayState,
-  input: string
-): { ok: boolean; solved: boolean; country?: string; message: string } {
+export interface GuessResult {
+  ok: boolean;
+  solved: boolean;
+  country?: string;
+  quality?: Quality;
+  message: string;
+}
+
+// Intenta agregar un país a la cadena.
+// REGLA DE VICTORIA: el juego termina apenas se ingresa un país que
+// limita con el destino (no hay que escribir el destino mismo).
+export function tryGuess(state: PlayState, input: string): GuessResult {
+  const { start, end } = state.challenge;
   const country = resolveCountry(input);
+
   if (!country) {
     return { ok: false, solved: false, message: `No reconozco "${input}".` };
   }
-  if (country === state.challenge.start) {
+  if (country === start) {
     return { ok: false, solved: false, message: "Ese es el país de origen." };
   }
-  if (state.chain.includes(country)) {
+  if (country === end) {
+    return { ok: false, solved: false, message: `Llega a un país que limite con ${end}, no a ${end} directo.` };
+  }
+  if (state.chain.some((c) => c.country === country)) {
     return { ok: false, solved: false, message: `${country} ya está en tu ruta.` };
   }
 
   // El último país de la cadena (o el origen si está vacía)
-  const last = state.chain.length > 0 ? state.chain[state.chain.length - 1] : state.challenge.start;
+  const last = state.chain.length > 0 ? state.chain[state.chain.length - 1].country : start;
 
-  if (country === state.challenge.end) {
-    // Para ganar, el destino debe limitar con el último país
-    if (areNeighbors(last, country)) {
-      return { ok: true, solved: true, country, message: "¡Llegaste al destino! 🎉" };
-    }
-    return { ok: false, solved: false, message: `${state.challenge.end} no limita con ${last}.` };
+  // Debe limitar con el país anterior para ser una jugada válida
+  if (!areNeighbors(last, country)) {
+    return { ok: false, solved: false, message: `${country} no limita con ${last}.` };
   }
 
-  if (areNeighbors(last, country)) {
-    return { ok: true, solved: false, country, message: `${country} ✓` };
-  }
-  return { ok: false, solved: false, message: `${country} no limita con ${last}.` };
+  const quality = stepQuality(last, country, end);
+  const solved = areNeighbors(country, end);
+  const message = solved
+    ? `¡${country} limita con ${end}! 🎉`
+    : quality === "green"
+      ? `${country} ✓`
+      : quality === "yellow"
+        ? `${country} — vas de lado`
+        : `${country} — te alejaste`;
+
+  return { ok: true, solved, country, quality, message };
 }

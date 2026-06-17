@@ -7,7 +7,10 @@ import {
   tryGuess,
   suggest,
   type PlayState,
+  type Status,
+  type Quality,
 } from "./lib/game";
+import WorldMap from "./components/WorldMap";
 
 export default function Frontle() {
   const challenge = useMemo(() => dailyChallenge(), []);
@@ -28,14 +31,24 @@ export default function Frontle() {
     setSuggestions(input.length >= 2 ? suggest(input) : []);
   }, [input]);
 
+  // Mapa de estados para el mapa y la lista
+  const statusByCountry = useMemo(() => {
+    const m: Record<string, Status> = {
+      [challenge.start]: "start",
+      [challenge.end]: "end",
+    };
+    for (const item of state.chain) m[item.country] = item.quality;
+    return m;
+  }, [challenge, state.chain]);
+
   function submitCountry(value: string) {
     if (state.solved) return;
     const result = tryGuess(state, value);
     setMessage({ text: result.message, ok: result.ok });
-    if (result.ok && result.country) {
+    if (result.ok && result.country && result.quality) {
       setState((prev) => ({
         ...prev,
-        chain: [...prev.chain, result.country!],
+        chain: [...prev.chain, { country: result.country!, quality: result.quality! }],
         solved: result.solved,
       }));
     }
@@ -53,51 +66,60 @@ export default function Frontle() {
   const guessCount = state.chain.length;
 
   return (
-    <main className="min-h-dvh bg-slate-950 text-slate-100 flex flex-col items-center px-4 py-6">
-      <div className="w-full max-w-md flex flex-col gap-5">
+    <main className="relative min-h-dvh bg-grid flex flex-col items-center px-4 py-6 overflow-hidden">
+      <div className="prism-glow" />
+      <div className="relative w-full max-w-md flex flex-col gap-5">
         {/* Header */}
         <header className="text-center">
-          <h1 className="text-4xl font-black tracking-tight">🌍 FRONTLE</h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Connect countries through borders
-          </p>
+          <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
+          <p className="text-sm text-slate-400 mt-1">Connect countries through borders</p>
         </header>
 
         {/* Reto del día */}
-        <section className="rounded-2xl bg-slate-900 border border-slate-800 p-4">
-          <p className="text-xs uppercase tracking-widest text-slate-500 text-center mb-3">
+        <section className="glass rounded-2xl p-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 text-center mb-3">
             Reto del día
           </p>
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 text-center">
               <div className="text-4xl">{startC.flag}</div>
-              <div className="text-sm font-semibold mt-1">{startC.name}</div>
+              <div className="text-sm font-semibold mt-1 text-cyan-300">{startC.name}</div>
             </div>
             <div className="text-2xl text-slate-600">→</div>
             <div className="flex-1 text-center">
               <div className="text-4xl">{endC.flag}</div>
-              <div className="text-sm font-semibold mt-1">{endC.name}</div>
+              <div className="text-sm font-semibold mt-1 text-fuchsia-300">{endC.name}</div>
             </div>
           </div>
           <p className="text-center text-xs text-slate-500 mt-3">
-            Ruta óptima: {challenge.optimal} países intermedios
+            Ruta óptima: {challenge.optimal} países
           </p>
         </section>
 
+        {/* Mapa */}
+        <WorldMap statusByCountry={statusByCountry} />
+
+        {/* Leyenda semáforo */}
+        <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400 -mt-2">
+          <Legend color="#22d3ee" label="Origen" />
+          <Legend color="#e879f9" label="Destino" />
+          <Legend color="#22c55e" label="Bien" />
+          <Legend color="#eab308" label="Lateral" />
+          <Legend color="#ef4444" label="Lejos" />
+        </div>
+
         {/* Cadena de países */}
-        <section className="flex flex-col gap-2">
-          <ChainPill flag={startC.flag} name={startC.name} kind="start" />
-          {state.chain.map((c) => {
-            const country = getCountry(c)!;
-            return (
-              <ChainPill key={c} flag={country.flag} name={country.name} kind="step" />
-            );
+        <section className="flex flex-wrap justify-center gap-2">
+          <CountryChip flag={startC.flag} name={startC.name} kind="start" />
+          {state.chain.map((item) => {
+            const c = getCountry(item.country)!;
+            return <CountryChip key={item.country} flag={c.flag} name={c.name} kind={item.quality} />;
           })}
-          {state.solved ? (
-            <ChainPill flag={endC.flag} name={endC.name} kind="end-solved" />
-          ) : (
-            <ChainPill flag="🏁" name={`??? (${endC.name})`} kind="end" />
-          )}
+          <CountryChip
+            flag={state.solved ? endC.flag : "🏁"}
+            name={state.solved ? endC.name : "???"}
+            kind={state.solved ? "end" : "hidden"}
+          />
         </section>
 
         {/* Resultado o input */}
@@ -105,7 +127,7 @@ export default function Frontle() {
           <WinCard
             guesses={guessCount}
             optimal={challenge.optimal}
-            chain={[challenge.start, ...state.chain, challenge.end]}
+            chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
           />
         ) : (
           <section className="relative">
@@ -117,19 +139,18 @@ export default function Frontle() {
                 placeholder="Escribe un país…"
                 autoComplete="off"
                 autoCapitalize="off"
-                className="flex-1 rounded-xl bg-slate-900 border border-slate-700 px-4 py-3 text-base outline-none focus:border-emerald-500"
+                className="flex-1 rounded-xl bg-[#0a0e1d] border border-white/10 px-4 py-3 text-base outline-none focus:border-cyan-400 transition"
               />
               <button
                 type="submit"
-                className="rounded-xl bg-emerald-500 px-5 py-3 font-bold text-slate-950 active:scale-95 transition"
+                className="rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 px-5 py-3 font-bold text-slate-950 active:scale-95 transition"
               >
                 OK
               </button>
             </form>
 
-            {/* Autocomplete */}
             {suggestions.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full rounded-xl bg-slate-900 border border-slate-700 overflow-hidden shadow-xl">
+              <ul className="absolute z-10 mt-1 w-full rounded-xl bg-[#0a0e1d] border border-white/10 overflow-hidden shadow-2xl">
                 {suggestions.map((s) => {
                   const c = getCountry(s)!;
                   return (
@@ -137,7 +158,7 @@ export default function Frontle() {
                       <button
                         type="button"
                         onClick={() => submitCountry(s)}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-800 flex items-center gap-2"
+                        className="w-full text-left px-4 py-2.5 hover:bg-white/5 flex items-center gap-2"
                       >
                         <span className="text-xl">{c.flag}</span>
                         <span>{c.name}</span>
@@ -148,19 +169,14 @@ export default function Frontle() {
               </ul>
             )}
 
-            {/* Mensaje de feedback */}
             {message && (
-              <p
-                className={`text-center text-sm mt-3 ${
-                  message.ok ? "text-emerald-400" : "text-rose-400"
-                }`}
-              >
+              <p className={`text-center text-sm mt-3 ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>
                 {message.text}
               </p>
             )}
 
             <p className="text-center text-xs text-slate-600 mt-3">
-              Intentos: {guessCount} · 1ª partida gratis
+              Países usados: {guessCount} · 1ª partida gratis
             </p>
           </section>
         )}
@@ -173,27 +189,32 @@ export default function Frontle() {
   );
 }
 
-type PillKind = "start" | "step" | "end" | "end-solved";
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+      {label}
+    </span>
+  );
+}
 
-function ChainPill({
-  flag,
-  name,
-  kind,
-}: {
-  flag: string;
-  name: string;
-  kind: PillKind;
-}) {
-  const styles: Record<PillKind, string> = {
-    start: "bg-sky-500/15 border-sky-500/40 text-sky-200",
-    step: "bg-emerald-500/15 border-emerald-500/40 text-emerald-100",
-    end: "bg-slate-800/60 border-slate-700 text-slate-400 border-dashed",
-    "end-solved": "bg-amber-500/20 border-amber-500/50 text-amber-100",
+type ChipKind = Status | "hidden";
+
+function CountryChip({ flag, name, kind }: { flag: string; name: string; kind: ChipKind }) {
+  const styles: Record<ChipKind, string> = {
+    start: "border-cyan-400/50 bg-cyan-400/10 text-cyan-200",
+    end: "border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-200",
+    green: "border-emerald-400/50 bg-emerald-400/10 text-emerald-200",
+    yellow: "border-yellow-400/50 bg-yellow-400/10 text-yellow-200",
+    red: "border-rose-400/50 bg-rose-400/10 text-rose-200",
+    hidden: "border-white/10 bg-white/5 text-slate-500 border-dashed",
   };
   return (
-    <div className={`rounded-xl border px-4 py-2.5 flex items-center gap-3 ${styles[kind]}`}>
-      <span className="text-2xl">{flag}</span>
-      <span className="font-medium">{name}</span>
+    <div
+      className={`flex flex-col items-center justify-center rounded-xl border px-3 py-2 min-w-[84px] ${styles[kind]}`}
+    >
+      <span className="text-2xl leading-none">{flag}</span>
+      <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
   );
 }
@@ -214,7 +235,7 @@ function WinCard({
     const flags = chain.map((c) => getCountry(c)?.flag ?? "").join(" ");
     const text = `🌍 Frontle\n${getCountry(chain[0])?.flag} → ${
       getCountry(chain[chain.length - 1])?.flag
-    }\nResuelto en ${guesses} países (óptimo ${optimal})\n${flags}\nfrontle.vercel.app`;
+    }\nResuelto con ${guesses} países (óptimo ${optimal})\n${flags}\nfrontle.vercel.app`;
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
@@ -225,23 +246,21 @@ function WinCard({
   }
 
   return (
-    <section className="rounded-2xl bg-emerald-500/10 border border-emerald-500/40 p-5 text-center">
-      <div className="text-3xl font-black text-emerald-300">
+    <section className="glass rounded-2xl p-5 text-center border-emerald-400/30">
+      <div className="text-3xl font-black prism-text">
         {perfect ? "¡Ruta perfecta! 🏆" : "¡Lo lograste! 🎉"}
       </div>
       <p className="text-slate-300 mt-2">
-        Llegaste usando <span className="font-bold">{guesses}</span> países
+        Conectaste con <span className="font-bold">{guesses}</span> países
         {perfect ? " — la ruta óptima." : ` (la óptima era ${optimal}).`}
       </p>
       <button
         onClick={share}
-        className="mt-4 rounded-xl bg-emerald-500 px-6 py-3 font-bold text-slate-950 active:scale-95 transition"
+        className="mt-4 rounded-xl bg-gradient-to-r from-cyan-400 to-fuchsia-400 px-6 py-3 font-bold text-slate-950 active:scale-95 transition"
       >
         {copied ? "¡Copiado!" : "Compartir resultado"}
       </button>
-      <p className="text-xs text-slate-500 mt-3">
-        Vuelve mañana para el siguiente reto 🗓️
-      </p>
+      <p className="text-xs text-slate-500 mt-3">Vuelve mañana para el siguiente reto 🗓️</p>
     </section>
   );
 }
