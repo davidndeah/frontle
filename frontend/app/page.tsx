@@ -81,16 +81,18 @@ export default function Frontle() {
   const guessCount = state.chain.length;
 
   return (
-    <main className="relative min-h-dvh bg-black bg-grid text-neutral-100 flex flex-col items-center px-4 py-6">
-      <div className="relative w-full max-w-md flex flex-col gap-5">
+    <main className="relative min-h-dvh bg-black bg-grid text-neutral-100 flex flex-col items-center px-4 py-6 overflow-hidden">
+      <div className="prism-glow" />
+      <div className="prism-core" />
+      <div className="relative z-10 w-full max-w-md flex flex-col gap-5">
         {/* Header */}
         <header className="text-center">
-          <h1 className="text-4xl font-black tracking-tight text-white">FRONTLE</h1>
-          <p className="text-sm text-neutral-500 mt-1">{tr.tagline}</p>
+          <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
+          <p className="text-sm text-neutral-400 mt-1">{tr.tagline}</p>
         </header>
 
         {/* Reto del día */}
-        <section className="rounded-2xl bg-neutral-950 border border-white/10 p-4">
+        <section className="rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 p-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 text-center mb-3">
             {tr.daily}
           </p>
@@ -223,7 +225,7 @@ function CountryChip({ flag, name, kind }: { flag: string; name: string; kind: C
   };
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-xl border bg-neutral-950 px-3 py-2 min-w-[84px] ${styles[kind]}`}
+      className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.04] backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}
     >
       <span className="text-2xl leading-none">{flag}</span>
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
@@ -260,8 +262,8 @@ function WinCard({
   }
 
   return (
-    <section className="rounded-2xl bg-neutral-950 border border-white/10 p-5 text-center">
-      <div className="text-3xl font-black text-white">{perfect ? tr.winPerfect : tr.winNormal}</div>
+    <section className="rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 p-5 text-center">
+      <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
       <p className="text-neutral-400 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <button
         onClick={share}
