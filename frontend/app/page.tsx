@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { getCountry } from "./lib/countries";
 import {
   dailyChallenge,
-  randomChallenge,
+  dateSeed,
   tryGuess,
   nextHintCountry,
   msUntilNextDailyUTC,
@@ -20,6 +20,18 @@ import {
   type Locale,
 } from "./lib/i18n";
 import WorldMap from "./components/WorldMap";
+
+// Precios de las acciones pagas (USDm). Listos para conectar al contrato.
+const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
+
+// === PUNTO DE INTEGRACIÓN BLOCKCHAIN (para el compañero de IT) ===
+// Reemplazar este stub por el pago real con viem al contrato en Celo
+// (conectar wallet MiniPay, enviar la entry fee, esperar confirmación).
+// Debe devolver true solo si el pago se confirmó.
+async function requestPayment(amountUSDm: number, reason: string): Promise<boolean> {
+  console.log(`[pago pendiente de blockchain] ${reason}: ${amountUSDm} USDm`);
+  return true; // por ahora gratis (sin wallet conectada)
+}
 
 // Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
 function Flag({ code, size = 32 }: { code: string; size?: number }) {
@@ -40,7 +52,6 @@ export default function Frontle() {
     chain: [],
     solved: false,
   }));
-  const [isDaily, setIsDaily] = useState(true);
   const [input, setInput] = useState("");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -48,27 +59,34 @@ export default function Frontle() {
   const [showAllSil, setShowAllSil] = useState(false);
   const [showInitial, setShowInitial] = useState(false);
   const [countdown, setCountdown] = useState("");
+  const [best, setBest] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const challenge = state.challenge;
   const tr = t(locale);
   const cn = (canonical: string) => countryName(canonical, locale);
+  const bestKey = `frontle-best-${dateSeed()}`;
 
   useEffect(() => setLocale(detectLocale()), []);
+
+  useEffect(() => {
+    const stored = typeof localStorage !== "undefined" ? localStorage.getItem(bestKey) : null;
+    if (stored) setBest(parseInt(stored, 10));
+  }, [bestKey]);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
   }, [input, locale]);
 
-  // Contador hasta el próximo reto diario (medianoche UTC)
   useEffect(() => {
     const tick = () => {
       const ms = msUntilNextDailyUTC();
-      const h = Math.floor(ms / 3_600_000);
-      const m = Math.floor((ms % 3_600_000) / 60_000);
-      const s = Math.floor((ms % 60_000) / 1000);
       const p = (n: number) => String(n).padStart(2, "0");
-      setCountdown(`${p(h)}:${p(m)}:${p(s)}`);
+      setCountdown(
+        `${p(Math.floor(ms / 3_600_000))}:${p(Math.floor((ms % 3_600_000) / 60_000))}:${p(
+          Math.floor((ms % 60_000) / 1000)
+        )}`
+      );
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -76,10 +94,7 @@ export default function Frontle() {
   }, []);
 
   const statusByCountry = useMemo(() => {
-    const m: Record<string, Status> = {
-      [challenge.start]: "start",
-      [challenge.end]: "end",
-    };
+    const m: Record<string, Status> = { [challenge.start]: "start", [challenge.end]: "end" };
     for (const item of state.chain) m[item.country] = item.quality;
     return m;
   }, [challenge, state.chain]);
@@ -100,14 +115,18 @@ export default function Frontle() {
       ok: result.ok,
     });
     if (result.ok && result.country && result.quality) {
-      setState((prev) => ({
-        ...prev,
-        chain: [...prev.chain, { country: result.country!, quality: result.quality! }],
-        solved: result.solved,
-      }));
-      // El "siguiente país" cambió → reiniciar esas pistas
+      const newChain = [...state.chain, { country: result.country, quality: result.quality }];
+      const solved = result.solved;
+      setState((prev) => ({ ...prev, chain: newChain, solved }));
       setShowNextSil(false);
       setShowInitial(false);
+      if (solved) {
+        const score = newChain.length;
+        if (best === null || score < best) {
+          setBest(score);
+          try { localStorage.setItem(bestKey, String(score)); } catch {}
+        }
+      }
     }
     setInput("");
     setSuggestions([]);
@@ -119,9 +138,11 @@ export default function Frontle() {
     if (input.trim()) submitCountry(input);
   }
 
-  function playAgain() {
-    setState({ challenge: randomChallenge(), chain: [], solved: false });
-    setIsDaily(false);
+  // Reintento PAGO sobre el MISMO reto del día, para mejorar la marca.
+  async function retry() {
+    const paid = await requestPayment(PRICES.retry, "reintento del reto diario");
+    if (!paid) return;
+    setState((prev) => ({ challenge: prev.challenge, chain: [], solved: false }));
     setMessage(null);
     setInput("");
     setSuggestions([]);
@@ -130,10 +151,21 @@ export default function Frontle() {
     setShowInitial(false);
   }
 
+  // Pistas pagas (one-way: una vez compradas, quedan reveladas)
+  async function buyHint(kind: "initial" | "next" | "all") {
+    const price = kind === "all" ? PRICES.hintAll : kind === "initial" ? PRICES.hintInitial : PRICES.hintNext;
+    const paid = await requestPayment(price, `pista: ${kind}`);
+    if (!paid) return;
+    if (kind === "initial") setShowInitial(true);
+    if (kind === "next") setShowNextSil(true);
+    if (kind === "all") setShowAllSil(true);
+  }
+
   const startC = getCountry(challenge.start)!;
   const endC = getCountry(challenge.end)!;
   const guessCount = state.chain.length;
   const silhouettes = showNextSil && nextHint ? [nextHint] : [];
+  const panel = "rounded-2xl bg-black/45 backdrop-blur-md border border-white/15";
 
   return (
     <main className="relative min-h-dvh bg-black bg-grid text-white flex flex-col items-center px-4 py-6 overflow-hidden">
@@ -143,14 +175,12 @@ export default function Frontle() {
         {/* Header */}
         <header className="text-center">
           <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
-          <p className="text-sm text-neutral-200 mt-1">{tr.tagline}</p>
+          <p className="text-sm text-white mt-1 drop-shadow">{tr.tagline}</p>
         </header>
 
         {/* Reto del día */}
-        <section className="rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/15 p-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
-            {tr.daily}
-          </p>
+        <section className={`${panel} p-4`}>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">{tr.daily}</p>
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 flex flex-col items-center text-center">
               <Flag code={startC.code} size={46} />
@@ -171,27 +201,25 @@ export default function Frontle() {
           loadingLabel={tr.loadingMap}
           silhouettes={silhouettes}
           showAllOutlines={showAllSil}
+          resetKey={`${challenge.start}->${challenge.end}`}
         />
 
-        {/* Leyenda */}
-        <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-200 -mt-2">
-          <Legend color="#22d3ee" label={tr.legend.origin} />
-          <Legend color="#e879f9" label={tr.legend.destination} />
-          <Legend color="#22c55e" label={tr.legend.good} />
-          <Legend color="#eab308" label={tr.legend.lateral} />
-          <Legend color="#ef4444" label={tr.legend.far} />
+        {/* Leyenda (con fondo oscuro para contraste sobre el glow) */}
+        <div className="flex items-center justify-center -mt-2">
+          <div className="flex items-center gap-3 text-[11px] text-white bg-black/55 backdrop-blur-sm rounded-full px-3 py-1.5">
+            <Legend color="#22d3ee" label={tr.legend.origin} />
+            <Legend color="#e879f9" label={tr.legend.destination} />
+            <Legend color="#22c55e" label={tr.legend.good} />
+            <Legend color="#eab308" label={tr.legend.lateral} />
+            <Legend color="#ef4444" label={tr.legend.far} />
+          </div>
         </div>
 
         {/* Cadena */}
         <section className="flex flex-wrap justify-center gap-2">
           <CountryChip code={startC.code} name={cn(challenge.start)} kind="start" />
           {state.chain.map((item) => (
-            <CountryChip
-              key={item.country}
-              code={getCountry(item.country)!.code}
-              name={cn(item.country)}
-              kind={item.quality}
-            />
+            <CountryChip key={item.country} code={getCountry(item.country)!.code} name={cn(item.country)} kind={item.quality} />
           ))}
           <CountryChip code={endC.code} name={cn(challenge.end)} kind="end" />
         </section>
@@ -203,7 +231,9 @@ export default function Frontle() {
             guesses={guessCount}
             optimal={challenge.optimal}
             chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
-            onPlayAgain={playAgain}
+            onRetry={retry}
+            retryPrice={PRICES.retry}
+            panel={panel}
           />
         ) : (
           <section className="relative flex flex-col gap-3">
@@ -217,10 +247,7 @@ export default function Frontle() {
                 autoCapitalize="off"
                 className="flex-1 rounded-xl bg-neutral-950 border border-white/20 px-4 py-3 text-base text-white outline-none focus:border-white/60 transition"
               />
-              <button
-                type="submit"
-                className="rounded-xl bg-white px-5 py-3 font-bold text-black active:scale-95 transition"
-              >
+              <button type="submit" className="rounded-xl bg-white px-5 py-3 font-bold text-black active:scale-95 transition">
                 OK
               </button>
             </form>
@@ -243,40 +270,37 @@ export default function Frontle() {
             )}
 
             {message && (
-              <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>
-                {message.text}
-              </p>
+              <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
             )}
 
-            {/* Pistas */}
-            <div className="rounded-xl border border-white/15 bg-white/[0.03] p-3">
-              <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">
-                {tr.hintsTitle}
-              </p>
+            {/* Pistas (pagas — listas para blockchain) */}
+            <div className={`${panel} p-3`}>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">{tr.hintsTitle}</p>
               <div className="flex flex-wrap justify-center gap-2">
-                <HintButton active={showInitial} onClick={() => setShowInitial((v) => !v)} label={tr.hintInitial} />
-                <HintButton active={showNextSil} onClick={() => setShowNextSil((v) => !v)} label={tr.hintSilhouetteNext} />
-                <HintButton active={showAllSil} onClick={() => setShowAllSil((v) => !v)} label={tr.hintSilhouetteAll} />
+                <HintButton active={showInitial} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} />
+                <HintButton active={showNextSil} onClick={() => buyHint("next")} label={tr.hintSilhouetteNext} price={PRICES.hintNext} />
+                <HintButton active={showAllSil} onClick={() => buyHint("all")} label={tr.hintSilhouetteAll} price={PRICES.hintAll} />
               </div>
               {showInitial && nextHint && (
-                <p className="text-center text-sm text-amber-300 mt-2">
-                  {tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}
-                </p>
+                <p className="text-center text-sm text-amber-300 mt-2">{tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}</p>
               )}
             </div>
 
-            <p className="text-center text-xs text-neutral-300">
-              {tr.used(guessCount)} · {tr.free}
-            </p>
+            <p className="text-center text-xs text-neutral-300">{tr.used(guessCount)} · {tr.free}</p>
           </section>
         )}
 
-        {/* Contador del reto diario */}
-        {isDaily && (
-          <p className="text-center text-xs text-neutral-300">🕒 {tr.nextChallenge(countdown)}</p>
-        )}
+        {/* Ranking diario */}
+        <section className={`${panel} p-3 text-center`}>
+          <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-1">🏆 {tr.rankingTitle}</p>
+          <p className="text-sm text-white">{best !== null ? tr.bestToday(best) : tr.noScoreYet}</p>
+          <p className="text-[11px] text-neutral-400 mt-1">{tr.rankingNote}</p>
+        </section>
 
-        <footer className="text-center text-xs text-neutral-400 mt-2">{tr.footer}</footer>
+        {/* Contador */}
+        <p className="text-center text-xs text-white bg-black/40 rounded-full px-3 py-1 self-center">🕒 {tr.nextChallenge(countdown)}</p>
+
+        <footer className="text-center text-xs text-neutral-400">{tr.footer}</footer>
       </div>
     </main>
   );
@@ -291,17 +315,16 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function HintButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+function HintButton({ active, onClick, label, price }: { active: boolean; onClick: () => void; label: string; price: number }) {
   return (
     <button
       onClick={onClick}
+      disabled={active}
       className={`rounded-lg border px-3 py-1.5 text-xs transition active:scale-95 ${
-        active
-          ? "border-amber-400/60 bg-amber-400/15 text-amber-200"
-          : "border-white/20 text-neutral-200 hover:bg-white/10"
+        active ? "border-amber-400/60 bg-amber-400/20 text-amber-200" : "border-white/25 text-white hover:bg-white/10"
       }`}
     >
-      {label}
+      {label} {active ? "✓" : <span className="opacity-70">· {price} USDm</span>}
     </button>
   );
 }
@@ -317,9 +340,7 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
     red: "border-rose-400/50 text-rose-100",
   };
   return (
-    <div
-      className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.05] backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}
-    >
+    <div className={`flex flex-col items-center justify-center rounded-xl border bg-black/50 backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}>
       <Flag code={code} size={30} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
@@ -331,13 +352,17 @@ function WinCard({
   guesses,
   optimal,
   chain,
-  onPlayAgain,
+  onRetry,
+  retryPrice,
+  panel,
 }: {
   tr: ReturnType<typeof t>;
   guesses: number;
   optimal: number;
   chain: string[];
-  onPlayAgain: () => void;
+  onRetry: () => void;
+  retryPrice: number;
+  panel: string;
 }) {
   const [copied, setCopied] = useState(false);
   const perfect = guesses <= optimal;
@@ -347,9 +372,8 @@ function WinCard({
     const text = `🌍 Frontle\n${getCountry(chain[0])?.flag} → ${
       getCountry(chain[chain.length - 1])?.flag
     }\n${tr.winText(guesses, optimal, perfect)}\n${flags}\nfrontle.vercel.app`;
-    if (navigator.share) {
-      navigator.share({ text }).catch(() => {});
-    } else {
+    if (navigator.share) navigator.share({ text }).catch(() => {});
+    else {
       navigator.clipboard?.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -357,22 +381,18 @@ function WinCard({
   }
 
   return (
-    <section className="rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/15 p-5 text-center">
+    <section className={`${panel} p-5 text-center`}>
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <div className="flex flex-col gap-2 mt-4">
-        <button
-          onClick={share}
-          className="rounded-xl bg-white px-6 py-3 font-bold text-black active:scale-95 transition"
-        >
+        <button onClick={share} className="rounded-xl bg-white px-6 py-3 font-bold text-black active:scale-95 transition">
           {copied ? tr.copied : tr.share}
         </button>
-        <button
-          onClick={onPlayAgain}
-          className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10"
-        >
-          {tr.playAgain}
-        </button>
+        {!perfect && (
+          <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
+            {tr.retry} <span className="opacity-70 text-sm">· {retryPrice} USDm</span>
+          </button>
+        )}
       </div>
       <p className="text-xs text-neutral-300 mt-3">{tr.comeback}</p>
     </section>

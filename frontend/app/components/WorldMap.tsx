@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { geoEqualEarth, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
@@ -9,7 +9,6 @@ import type { Status } from "../lib/game";
 
 const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-// Colores del semáforo + origen/destino
 const COLORS: Record<Status, string> = {
   start: "#22d3ee",
   end: "#e879f9",
@@ -79,19 +78,28 @@ const NAME_INDEX: Record<string, string> = (() => {
 interface Props {
   statusByCountry: Record<string, Status>;
   loadingLabel: string;
-  silhouettes?: string[]; // países a mostrar como contorno (pista)
-  showAllOutlines?: boolean; // mostrar el contorno de todos los países (pista)
+  silhouettes?: string[];
+  showAllOutlines?: boolean;
+  resetKey?: string; // al cambiar, reinicia el encuadre (nuevo reto)
 }
 
 type NamedFeature = Feature<Geometry, { name: string }>;
+
+const W = 360;
+const H = 220;
+const PAD = 24;
 
 export default function WorldMap({
   statusByCountry,
   loadingLabel,
   silhouettes = [],
   showAllOutlines = false,
+  resetKey = "",
 }: Props) {
   const [features, setFeatures] = useState<NamedFeature[] | null>(null);
+  const [view, setView] = useState({ k: 1, x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement>(null);
+  const drag = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,9 +107,7 @@ export default function WorldMap({
       .then((r) => r.json())
       .then((topo) => {
         if (cancelled) return;
-        const geo = feature(topo, topo.objects.countries) as unknown as {
-          features: NamedFeature[];
-        };
+        const geo = feature(topo, topo.objects.countries) as unknown as { features: NamedFeature[] };
         setFeatures(geo.features);
       })
       .catch(() => {});
@@ -110,9 +116,8 @@ export default function WorldMap({
     };
   }, []);
 
-  const W = 360;
-  const H = 220;
-  const PAD = 24;
+  // Reiniciar encuadre al cambiar de reto
+  useEffect(() => setView({ k: 1, x: 0, y: 0 }), [resetKey]);
 
   const silSet = useMemo(() => new Set(silhouettes), [silhouettes]);
 
@@ -122,11 +127,9 @@ export default function WorldMap({
     const known = tagged.filter((x) => x.name && statusByCountry[x.name]);
     const sil = tagged.filter((x) => x.name && !statusByCountry[x.name] && silSet.has(x.name));
 
-    // Encuadre: a todo el mundo si se muestran todos los contornos;
-    // si no, a los conocidos + siluetas.
-    const fitFeatures = showAllOutlines
-      ? features
-      : [...known, ...sil].map((k) => k.f);
+    // SIEMPRE encuadrar a los conocidos (+ siluetas puntuales). Mostrar todos
+    // los contornos NO cambia el zoom — solo dibuja outlines encima.
+    const fitFeatures = [...known, ...sil].map((k) => k.f);
     if (fitFeatures.length === 0) return { outlines: [], silhouettes: [], known: [] };
 
     const fc: FeatureCollection = { type: "FeatureCollection", features: fitFeatures };
@@ -140,31 +143,88 @@ export default function WorldMap({
     };
   }, [features, statusByCountry, silSet, showAllOutlines]);
 
+  // Convierte coords de cliente a coords del viewBox
+  function toSvg(clientX: number, clientY: number) {
+    const r = svgRef.current!.getBoundingClientRect();
+    return { x: ((clientX - r.left) / r.width) * W, y: ((clientY - r.top) / r.height) * H };
+  }
+
+  function zoomAt(factor: number, cx: number, cy: number) {
+    setView((v) => {
+      const k = Math.min(8, Math.max(1, v.k * factor));
+      const f = k / v.k;
+      return { k, x: cx - (cx - v.x) * f, y: cy - (cy - v.y) * f };
+    });
+  }
+
+  // Wheel con preventDefault (listener no pasivo)
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const p = toSvg(e.clientX, e.clientY);
+      zoomAt(e.deltaY < 0 ? 1.2 : 1 / 1.2, p.x, p.y);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [features]);
+
+  function onPointerDown(e: React.PointerEvent) {
+    drag.current = { x: e.clientX, y: e.clientY };
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+  }
+  function onPointerMove(e: React.PointerEvent) {
+    if (!drag.current) return;
+    const r = svgRef.current!.getBoundingClientRect();
+    const dx = ((e.clientX - drag.current.x) / r.width) * W;
+    const dy = ((e.clientY - drag.current.y) / r.height) * H;
+    drag.current = { x: e.clientX, y: e.clientY };
+    setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
+  }
+  function onPointerUp() {
+    drag.current = null;
+  }
+
+  const btn =
+    "w-7 h-7 rounded-md bg-black/70 border border-white/25 text-white text-base leading-none flex items-center justify-center active:scale-90 transition";
+
   return (
-    <div className="w-full rounded-2xl overflow-hidden bg-black border border-white/15">
+    <div className="relative w-full rounded-2xl overflow-hidden bg-black border border-white/15">
       {!render ? (
-        <div className="h-[220px] flex items-center justify-center text-neutral-400 text-sm">
+        <div className="h-[220px] flex items-center justify-center text-neutral-300 text-sm">
           {loadingLabel}
         </div>
       ) : (
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
-          {render.outlines.map((p) => (
-            <path key={p.key} d={p.d} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={0.3} />
-          ))}
-          {render.silhouettes.map((p) => (
-            <path key={p.key} d={p.d} fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.5)" strokeWidth={0.5} />
-          ))}
-          {render.known.map((p) => (
-            <path
-              key={p.key}
-              d={p.d}
-              fill={p.fill}
-              stroke="#000"
-              strokeWidth={0.4}
-              style={{ filter: `drop-shadow(0 0 4px ${p.fill})` }}
-            />
-          ))}
-        </svg>
+        <>
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${W} ${H}`}
+            className="w-full h-auto block touch-none cursor-grab active:cursor-grabbing"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerLeave={onPointerUp}
+          >
+            <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
+              {render.outlines.map((p) => (
+                <path key={p.key} d={p.d} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={0.3} vectorEffect="non-scaling-stroke" />
+              ))}
+              {render.silhouettes.map((p) => (
+                <path key={p.key} d={p.d} fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.5)" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+              ))}
+              {render.known.map((p) => (
+                <path key={p.key} d={p.d} fill={p.fill} stroke="#000" strokeWidth={0.5} vectorEffect="non-scaling-stroke" style={{ filter: `drop-shadow(0 0 3px ${p.fill})` }} />
+              ))}
+            </g>
+          </svg>
+          {/* Controles de zoom */}
+          <div className="absolute top-2 right-2 flex flex-col gap-1">
+            <button className={btn} onClick={() => zoomAt(1.4, W / 2, H / 2)} title="Acercar" aria-label="Acercar">+</button>
+            <button className={btn} onClick={() => zoomAt(1 / 1.4, W / 2, H / 2)} title="Alejar" aria-label="Alejar">−</button>
+            <button className={btn} onClick={() => setView({ k: 1, x: 0, y: 0 })} title="Reencuadrar al reto" aria-label="Reencuadrar">⌖</button>
+          </div>
+        </>
       )}
     </div>
   );

@@ -92,7 +92,7 @@ type Dict = {
   share: string;
   copied: string;
   comeback: string;
-  playAgain: string;
+  retry: string;
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -100,6 +100,10 @@ type Dict = {
   hintSilhouetteAll: string;
   hintNextInitial: (letter: string) => string;
   nextChallenge: (time: string) => string;
+  rankingTitle: string;
+  bestToday: (n: number) => string;
+  noScoreYet: string;
+  rankingNote: string;
   feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
 };
 
@@ -120,7 +124,7 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Compartir resultado",
     copied: "¡Copiado!",
     comeback: "Vuelve mañana para el siguiente reto 🗓️",
-    playAgain: "Jugar de nuevo",
+    retry: "Reintentar para mejorar tu marca",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
@@ -128,6 +132,10 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "Silueta de todos los países",
     hintNextInitial: (l) => `El siguiente país empieza por «${l}»`,
     nextChallenge: (t) => `Nuevo reto en ${t}`,
+    rankingTitle: "Ranking diario",
+    bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
+    noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
+    rankingNote: "Al final del día, quien tenga la mejor ruta gana el premio base + lo recolectado en el pot. El ranking y el pago se liquidan on-chain.",
     feedback: (r, c) =>
       r === "unknown" ? `No reconozco "${c.input}".`
       : r === "revealed" ? `${c.country} ya está en el mapa.`
@@ -153,7 +161,7 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Share result",
     copied: "Copied!",
     comeback: "Come back tomorrow for the next challenge 🗓️",
-    playAgain: "Play again",
+    retry: "Retry to beat your score",
     footer: "Frontle · Onchain Agents Hackathon · Celo Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -161,6 +169,10 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "All countries' silhouettes",
     hintNextInitial: (l) => `The next country starts with “${l}”`,
     nextChallenge: (t) => `Next challenge in ${t}`,
+    rankingTitle: "Daily ranking",
+    bestToday: (n) => `Your best today: ${n} countries`,
+    noScoreYet: "No score yet today — solve the challenge!",
+    rankingNote: "At the end of the day, whoever has the best route wins the base prize + the collected pot. Ranking and payout settle on-chain.",
     feedback: (r, c) =>
       r === "unknown" ? `I don't recognize "${c.input}".`
       : r === "revealed" ? `${c.country} is already on the map.`
@@ -186,7 +198,7 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Compartilhar resultado",
     copied: "Copiado!",
     comeback: "Volte amanhã para o próximo desafio 🗓️",
-    playAgain: "Jogar de novo",
+    retry: "Tentar de novo para melhorar sua marca",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -194,6 +206,10 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "Silhueta de todos os países",
     hintNextInitial: (l) => `O próximo país começa com “${l}”`,
     nextChallenge: (t) => `Próximo desafio em ${t}`,
+    rankingTitle: "Ranking diário",
+    bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
+    noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
+    rankingNote: "No fim do dia, quem tiver a melhor rota ganha o prêmio base + o pot arrecadado. Ranking e pagamento liquidam on-chain.",
     feedback: (r, c) =>
       r === "unknown" ? `Não reconheço "${c.input}".`
       : r === "revealed" ? `${c.country} já está no mapa.`
@@ -219,7 +235,7 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Partager le résultat",
     copied: "Copié !",
     comeback: "Revenez demain pour le prochain défi 🗓️",
-    playAgain: "Rejouer",
+    retry: "Réessayer pour battre votre score",
     footer: "Frontle · Hackathon des Agents Onchain · Celo Colombia",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
@@ -227,6 +243,10 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "Silhouette de tous les pays",
     hintNextInitial: (l) => `Le pays suivant commence par « ${l} »`,
     nextChallenge: (t) => `Prochain défi dans ${t}`,
+    rankingTitle: "Classement du jour",
+    bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
+    noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
+    rankingNote: "En fin de journée, le meilleur itinéraire remporte le prix de base + la cagnotte collectée. Classement et paiement réglés on-chain.",
     feedback: (r, c) =>
       r === "unknown" ? `Je ne reconnais pas "${c.input}".`
       : r === "revealed" ? `${c.country} est déjà sur la carte.`
