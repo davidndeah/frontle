@@ -66,13 +66,20 @@ Para probar dentro de MiniPay se necesita un dispositivo físico + ngrok (los em
 
 ---
 
+## 🔌 Capa blockchain (para el compañero de IT)
+
+El frontend ya está completo. Las acciones pagas (3 pistas + reintento) están cableadas a un único stub `requestPayment()` en [`frontend/app/page.tsx`](frontend/app/page.tsx).
+
+👉 **Guía completa para los contratos:** [`contracts/README.md`](contracts/README.md) — qué contrato construir (`FrontleGame`), direcciones de tokens en Celo, despliegue con Foundry, y cómo implementar `requestPayment` con viem.
+
 ## 📋 Estado del hackathon
 
 - [x] Idea aterrizada
 - [x] Repo público en GitHub + SSH configurado
-- [ ] Frontend con pantallas navegables en Vercel
-- [ ] Smart contract desplegado en Celo Sepolia
-- [ ] Integración de pagos en MiniPay
+- [x] Frontend navegable en Vercel (juego completo, mapa, i18n, diseño)
+- [x] UI de pistas/reintento/ranking lista para blockchain (`requestPayment`)
+- [ ] Smart contract `FrontleGame` desplegado en Celo
+- [ ] Integración de pagos en MiniPay (implementar `requestPayment`)
 - [ ] Demo Day — 19 de junio 2026
 
 ---
