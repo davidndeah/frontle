@@ -4,7 +4,10 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { getCountry } from "./lib/countries";
 import {
   dailyChallenge,
+  randomChallenge,
   tryGuess,
+  nextHintCountry,
+  msUntilNextDailyUTC,
   type PlayState,
   type Status,
 } from "./lib/game";
@@ -18,23 +21,59 @@ import {
 } from "./lib/i18n";
 import WorldMap from "./components/WorldMap";
 
+// Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
+function Flag({ code, size = 32 }: { code: string; size?: number }) {
+  return (
+    <img
+      src={`https://flagcdn.com/${code.toLowerCase()}.svg`}
+      alt=""
+      style={{ width: size, height: "auto", borderRadius: 3, display: "inline-block" }}
+      loading="lazy"
+    />
+  );
+}
+
 export default function Frontle() {
-  const challenge = useMemo(() => dailyChallenge(), []);
   const [locale, setLocale] = useState<Locale>("es");
-  const [state, setState] = useState<PlayState>(() => ({ challenge, chain: [], solved: false }));
+  const [state, setState] = useState<PlayState>(() => ({
+    challenge: dailyChallenge(),
+    chain: [],
+    solved: false,
+  }));
+  const [isDaily, setIsDaily] = useState(true);
   const [input, setInput] = useState("");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showNextSil, setShowNextSil] = useState(false);
+  const [showAllSil, setShowAllSil] = useState(false);
+  const [showInitial, setShowInitial] = useState(false);
+  const [countdown, setCountdown] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => setLocale(detectLocale()), []);
-
+  const challenge = state.challenge;
   const tr = t(locale);
   const cn = (canonical: string) => countryName(canonical, locale);
+
+  useEffect(() => setLocale(detectLocale()), []);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
   }, [input, locale]);
+
+  // Contador hasta el próximo reto diario (medianoche UTC)
+  useEffect(() => {
+    const tick = () => {
+      const ms = msUntilNextDailyUTC();
+      const h = Math.floor(ms / 3_600_000);
+      const m = Math.floor((ms % 3_600_000) / 60_000);
+      const s = Math.floor((ms % 60_000) / 1000);
+      const p = (n: number) => String(n).padStart(2, "0");
+      setCountdown(`${p(h)}:${p(m)}:${p(s)}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const statusByCountry = useMemo(() => {
     const m: Record<string, Status> = {
@@ -45,6 +84,8 @@ export default function Frontle() {
     return m;
   }, [challenge, state.chain]);
 
+  const nextHint = useMemo(() => nextHintCountry(state), [state]);
+
   function submitCountry(value: string) {
     if (state.solved) return;
     const canonical = resolveLocalized(value);
@@ -52,7 +93,6 @@ export default function Frontle() {
     setMessage({
       text: tr.feedback(result.reason, {
         country: result.country ? cn(result.country) : undefined,
-        last: result.last ? cn(result.last) : undefined,
         end: cn(challenge.end),
         quality: result.quality,
         input: result.input,
@@ -65,6 +105,9 @@ export default function Frontle() {
         chain: [...prev.chain, { country: result.country!, quality: result.quality! }],
         solved: result.solved,
       }));
+      // El "siguiente país" cambió → reiniciar esas pistas
+      setShowNextSil(false);
+      setShowInitial(false);
     }
     setInput("");
     setSuggestions([]);
@@ -76,45 +119,62 @@ export default function Frontle() {
     if (input.trim()) submitCountry(input);
   }
 
+  function playAgain() {
+    setState({ challenge: randomChallenge(), chain: [], solved: false });
+    setIsDaily(false);
+    setMessage(null);
+    setInput("");
+    setSuggestions([]);
+    setShowNextSil(false);
+    setShowAllSil(false);
+    setShowInitial(false);
+  }
+
   const startC = getCountry(challenge.start)!;
   const endC = getCountry(challenge.end)!;
   const guessCount = state.chain.length;
+  const silhouettes = showNextSil && nextHint ? [nextHint] : [];
 
   return (
-    <main className="relative min-h-dvh bg-black bg-grid text-neutral-100 flex flex-col items-center px-4 py-6 overflow-hidden">
+    <main className="relative min-h-dvh bg-black bg-grid text-white flex flex-col items-center px-4 py-6 overflow-hidden">
       <div className="prism-glow" />
       <div className="prism-core" />
       <div className="relative z-10 w-full max-w-md flex flex-col gap-5">
         {/* Header */}
         <header className="text-center">
           <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
-          <p className="text-sm text-neutral-400 mt-1">{tr.tagline}</p>
+          <p className="text-sm text-neutral-200 mt-1">{tr.tagline}</p>
         </header>
 
         {/* Reto del día */}
-        <section className="rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 p-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 text-center mb-3">
+        <section className="rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/15 p-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
             {tr.daily}
           </p>
           <div className="flex items-center justify-between gap-2">
-            <div className="flex-1 text-center">
-              <div className="text-4xl">{startC.flag}</div>
+            <div className="flex-1 flex flex-col items-center text-center">
+              <Flag code={startC.code} size={46} />
               <div className="text-sm font-semibold mt-1 text-cyan-300">{cn(challenge.start)}</div>
             </div>
-            <div className="text-2xl text-neutral-700">→</div>
-            <div className="flex-1 text-center">
-              <div className="text-4xl">{endC.flag}</div>
+            <div className="text-2xl text-neutral-400">→</div>
+            <div className="flex-1 flex flex-col items-center text-center">
+              <Flag code={endC.code} size={46} />
               <div className="text-sm font-semibold mt-1 text-fuchsia-300">{cn(challenge.end)}</div>
             </div>
           </div>
-          <p className="text-center text-xs text-neutral-600 mt-3">{tr.optimal(challenge.optimal)}</p>
+          <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(challenge.optimal)}</p>
         </section>
 
         {/* Mapa */}
-        <WorldMap statusByCountry={statusByCountry} loadingLabel={tr.loadingMap} />
+        <WorldMap
+          statusByCountry={statusByCountry}
+          loadingLabel={tr.loadingMap}
+          silhouettes={silhouettes}
+          showAllOutlines={showAllSil}
+        />
 
         {/* Leyenda */}
-        <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 -mt-2">
+        <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-200 -mt-2">
           <Legend color="#22d3ee" label={tr.legend.origin} />
           <Legend color="#e879f9" label={tr.legend.destination} />
           <Legend color="#22c55e" label={tr.legend.good} />
@@ -124,32 +184,29 @@ export default function Frontle() {
 
         {/* Cadena */}
         <section className="flex flex-wrap justify-center gap-2">
-          <CountryChip flag={startC.flag} name={cn(challenge.start)} kind="start" />
+          <CountryChip code={startC.code} name={cn(challenge.start)} kind="start" />
           {state.chain.map((item) => (
             <CountryChip
               key={item.country}
-              flag={getCountry(item.country)!.flag}
+              code={getCountry(item.country)!.code}
               name={cn(item.country)}
               kind={item.quality}
             />
           ))}
-          <CountryChip
-            flag={state.solved ? endC.flag : "🏁"}
-            name={state.solved ? cn(challenge.end) : "???"}
-            kind={state.solved ? "end" : "hidden"}
-          />
+          <CountryChip code={endC.code} name={cn(challenge.end)} kind="end" />
         </section>
 
-        {/* Resultado o input */}
+        {/* Resultado o input + pistas */}
         {state.solved ? (
           <WinCard
             tr={tr}
             guesses={guessCount}
             optimal={challenge.optimal}
             chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
+            onPlayAgain={playAgain}
           />
         ) : (
-          <section className="relative">
+          <section className="relative flex flex-col gap-3">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <input
                 ref={inputRef}
@@ -158,7 +215,7 @@ export default function Frontle() {
                 placeholder={tr.placeholder}
                 autoComplete="off"
                 autoCapitalize="off"
-                className="flex-1 rounded-xl bg-neutral-950 border border-white/10 px-4 py-3 text-base outline-none focus:border-white/40 transition"
+                className="flex-1 rounded-xl bg-neutral-950 border border-white/20 px-4 py-3 text-base text-white outline-none focus:border-white/60 transition"
               />
               <button
                 type="submit"
@@ -169,15 +226,15 @@ export default function Frontle() {
             </form>
 
             {suggestions.length > 0 && (
-              <ul className="absolute z-10 mt-1 w-full rounded-xl bg-neutral-950 border border-white/10 overflow-hidden shadow-2xl">
+              <ul className="absolute z-20 top-14 w-full rounded-xl bg-neutral-950 border border-white/20 overflow-hidden shadow-2xl">
                 {suggestions.map((s) => (
                   <li key={s}>
                     <button
                       type="button"
                       onClick={() => submitCountry(s)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-white/5 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2"
                     >
-                      <span className="text-xl">{getCountry(s)!.flag}</span>
+                      <Flag code={getCountry(s)!.code} size={22} />
                       <span>{cn(s)}</span>
                     </button>
                   </li>
@@ -186,18 +243,40 @@ export default function Frontle() {
             )}
 
             {message && (
-              <p className={`text-center text-sm mt-3 ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>
+              <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>
                 {message.text}
               </p>
             )}
 
-            <p className="text-center text-xs text-neutral-600 mt-3">
+            {/* Pistas */}
+            <div className="rounded-xl border border-white/15 bg-white/[0.03] p-3">
+              <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">
+                {tr.hintsTitle}
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                <HintButton active={showInitial} onClick={() => setShowInitial((v) => !v)} label={tr.hintInitial} />
+                <HintButton active={showNextSil} onClick={() => setShowNextSil((v) => !v)} label={tr.hintSilhouetteNext} />
+                <HintButton active={showAllSil} onClick={() => setShowAllSil((v) => !v)} label={tr.hintSilhouetteAll} />
+              </div>
+              {showInitial && nextHint && (
+                <p className="text-center text-sm text-amber-300 mt-2">
+                  {tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}
+                </p>
+              )}
+            </div>
+
+            <p className="text-center text-xs text-neutral-300">
               {tr.used(guessCount)} · {tr.free}
             </p>
           </section>
         )}
 
-        <footer className="text-center text-xs text-neutral-700 mt-4">{tr.footer}</footer>
+        {/* Contador del reto diario */}
+        {isDaily && (
+          <p className="text-center text-xs text-neutral-300">🕒 {tr.nextChallenge(countdown)}</p>
+        )}
+
+        <footer className="text-center text-xs text-neutral-400 mt-2">{tr.footer}</footer>
       </div>
     </main>
   );
@@ -212,22 +291,36 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-type ChipKind = Status | "hidden";
+function HintButton({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-lg border px-3 py-1.5 text-xs transition active:scale-95 ${
+        active
+          ? "border-amber-400/60 bg-amber-400/15 text-amber-200"
+          : "border-white/20 text-neutral-200 hover:bg-white/10"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
-function CountryChip({ flag, name, kind }: { flag: string; name: string; kind: ChipKind }) {
+type ChipKind = Status;
+
+function CountryChip({ code, name, kind }: { code: string; name: string; kind: ChipKind }) {
   const styles: Record<ChipKind, string> = {
-    start: "border-cyan-400/40 text-cyan-200",
-    end: "border-fuchsia-400/40 text-fuchsia-200",
-    green: "border-emerald-400/40 text-emerald-200",
-    yellow: "border-yellow-400/40 text-yellow-200",
-    red: "border-rose-400/40 text-rose-200",
-    hidden: "border-white/10 text-neutral-500 border-dashed",
+    start: "border-cyan-400/50 text-cyan-100",
+    end: "border-fuchsia-400/50 text-fuchsia-100",
+    green: "border-emerald-400/50 text-emerald-100",
+    yellow: "border-yellow-400/50 text-yellow-100",
+    red: "border-rose-400/50 text-rose-100",
   };
   return (
     <div
-      className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.04] backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}
+      className={`flex flex-col items-center justify-center rounded-xl border bg-white/[0.05] backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}
     >
-      <span className="text-2xl leading-none">{flag}</span>
+      <Flag code={code} size={30} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
   );
@@ -238,11 +331,13 @@ function WinCard({
   guesses,
   optimal,
   chain,
+  onPlayAgain,
 }: {
   tr: ReturnType<typeof t>;
   guesses: number;
   optimal: number;
   chain: string[];
+  onPlayAgain: () => void;
 }) {
   const [copied, setCopied] = useState(false);
   const perfect = guesses <= optimal;
@@ -262,16 +357,24 @@ function WinCard({
   }
 
   return (
-    <section className="rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 p-5 text-center">
+    <section className="rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/15 p-5 text-center">
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
-      <p className="text-neutral-400 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
-      <button
-        onClick={share}
-        className="mt-4 rounded-xl bg-white px-6 py-3 font-bold text-black active:scale-95 transition"
-      >
-        {copied ? tr.copied : tr.share}
-      </button>
-      <p className="text-xs text-neutral-600 mt-3">{tr.comeback}</p>
+      <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
+      <div className="flex flex-col gap-2 mt-4">
+        <button
+          onClick={share}
+          className="rounded-xl bg-white px-6 py-3 font-bold text-black active:scale-95 transition"
+        >
+          {copied ? tr.copied : tr.share}
+        </button>
+        <button
+          onClick={onPlayAgain}
+          className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10"
+        >
+          {tr.playAgain}
+        </button>
+      </div>
+      <p className="text-xs text-neutral-300 mt-3">{tr.comeback}</p>
     </section>
   );
 }

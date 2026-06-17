@@ -206,6 +206,17 @@ const RAW: Omit<Country, "code">[] = [
   { name: "Eswatini", flag: "🇸🇿", neighbors: ["South Africa", "Mozambique"] },
 ];
 
+// Conexiones marítimas (cruces de océano/estrecho) — permiten jugar
+// entre continentes. United States ↔ Russia (estrecho de Bering) une
+// América con el Viejo Mundo; las demás enriquecen rutas del Mediterráneo.
+const SEA_LINKS: [string, string][] = [
+  ["United States", "Russia"], // Estrecho de Bering (América ↔ Eurasia)
+  ["Spain", "Morocco"], // Estrecho de Gibraltar
+  ["Italy", "Tunisia"], // Canal de Sicilia
+  ["Italy", "Albania"], // Mar Adriático
+  ["Indonesia", "Australia"], // Mar de Timor (no aplica si Australia no existe)
+];
+
 // Construye un grafo simétrico y consistente a partir de RAW.
 // Si A lista a B pero B no lista a A, se agrega la arista inversa.
 function buildGraph(): Record<string, Country> {
@@ -217,6 +228,13 @@ function buildGraph(): Record<string, Country> {
       neighbors: [...c.neighbors],
       code: flagToCode(c.flag),
     };
+  }
+  // Agregar conexiones marítimas (solo si ambos países existen)
+  for (const [a, b] of SEA_LINKS) {
+    if (graph[a] && graph[b]) {
+      if (!graph[a].neighbors.includes(b)) graph[a].neighbors.push(b);
+      if (!graph[b].neighbors.includes(a)) graph[b].neighbors.push(a);
+    }
   }
   // Normalizar simetría
   for (const c of RAW) {

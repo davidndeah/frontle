@@ -92,8 +92,15 @@ type Dict = {
   share: string;
   copied: string;
   comeback: string;
+  playAgain: string;
   footer: string;
-  feedback: (r: GuessReason, ctx: { country?: string; last?: string; end: string; quality?: string; input: string }) => string;
+  hintsTitle: string;
+  hintInitial: string;
+  hintSilhouetteNext: string;
+  hintSilhouetteAll: string;
+  hintNextInitial: (letter: string) => string;
+  nextChallenge: (time: string) => string;
+  feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
 };
 
 const STRINGS: Record<Locale, Dict> = {
@@ -113,13 +120,19 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Compartir resultado",
     copied: "¡Copiado!",
     comeback: "Vuelve mañana para el siguiente reto 🗓️",
+    playAgain: "Jugar de nuevo",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
+    hintsTitle: "Pistas",
+    hintInitial: "Inicial del siguiente país",
+    hintSilhouetteNext: "Silueta del siguiente país",
+    hintSilhouetteAll: "Silueta de todos los países",
+    hintNextInitial: (l) => `El siguiente país empieza por «${l}»`,
+    nextChallenge: (t) => `Nuevo reto en ${t}`,
     feedback: (r, c) =>
       r === "unknown" ? `No reconozco "${c.input}".`
-      : r === "is_start" ? "Ese es el país de origen."
-      : r === "is_end" ? `Llega a un país que limite con ${c.end}, no a ${c.end} directo.`
+      : r === "revealed" ? `${c.country} ya está en el mapa.`
       : r === "duplicate" ? `${c.country} ya está en tu ruta.`
-      : r === "not_adjacent" ? `${c.country} no limita con ${c.last}.`
+      : r === "not_adjacent" ? `${c.country} no limita con ningún país revelado.`
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — vas de lado`
       : `${c.country} — te alejaste`,
@@ -140,13 +153,19 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Share result",
     copied: "Copied!",
     comeback: "Come back tomorrow for the next challenge 🗓️",
+    playAgain: "Play again",
     footer: "Frontle · Onchain Agents Hackathon · Celo Colombia",
+    hintsTitle: "Hints",
+    hintInitial: "Next country's initial",
+    hintSilhouetteNext: "Next country's silhouette",
+    hintSilhouetteAll: "All countries' silhouettes",
+    hintNextInitial: (l) => `The next country starts with “${l}”`,
+    nextChallenge: (t) => `Next challenge in ${t}`,
     feedback: (r, c) =>
       r === "unknown" ? `I don't recognize "${c.input}".`
-      : r === "is_start" ? "That's the starting country."
-      : r === "is_end" ? `Reach a country bordering ${c.end}, not ${c.end} directly.`
+      : r === "revealed" ? `${c.country} is already on the map.`
       : r === "duplicate" ? `${c.country} is already in your route.`
-      : r === "not_adjacent" ? `${c.country} doesn't border ${c.last}.`
+      : r === "not_adjacent" ? `${c.country} doesn't border any revealed country.`
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — sideways`
       : `${c.country} — you drifted away`,
@@ -167,13 +186,19 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Compartilhar resultado",
     copied: "Copiado!",
     comeback: "Volte amanhã para o próximo desafio 🗓️",
+    playAgain: "Jogar de novo",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
+    hintsTitle: "Dicas",
+    hintInitial: "Inicial do próximo país",
+    hintSilhouetteNext: "Silhueta do próximo país",
+    hintSilhouetteAll: "Silhueta de todos os países",
+    hintNextInitial: (l) => `O próximo país começa com “${l}”`,
+    nextChallenge: (t) => `Próximo desafio em ${t}`,
     feedback: (r, c) =>
       r === "unknown" ? `Não reconheço "${c.input}".`
-      : r === "is_start" ? "Esse é o país de origem."
-      : r === "is_end" ? `Chegue a um país que faça fronteira com ${c.end}, não a ${c.end} direto.`
+      : r === "revealed" ? `${c.country} já está no mapa.`
       : r === "duplicate" ? `${c.country} já está na sua rota.`
-      : r === "not_adjacent" ? `${c.country} não faz fronteira com ${c.last}.`
+      : r === "not_adjacent" ? `${c.country} não faz fronteira com nenhum país revelado.`
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — de lado`
       : `${c.country} — você se afastou`,
@@ -194,13 +219,19 @@ const STRINGS: Record<Locale, Dict> = {
     share: "Partager le résultat",
     copied: "Copié !",
     comeback: "Revenez demain pour le prochain défi 🗓️",
+    playAgain: "Rejouer",
     footer: "Frontle · Hackathon des Agents Onchain · Celo Colombia",
+    hintsTitle: "Indices",
+    hintInitial: "Initiale du pays suivant",
+    hintSilhouetteNext: "Silhouette du pays suivant",
+    hintSilhouetteAll: "Silhouette de tous les pays",
+    hintNextInitial: (l) => `Le pays suivant commence par « ${l} »`,
+    nextChallenge: (t) => `Prochain défi dans ${t}`,
     feedback: (r, c) =>
       r === "unknown" ? `Je ne reconnais pas "${c.input}".`
-      : r === "is_start" ? "C'est le pays de départ."
-      : r === "is_end" ? `Atteignez un pays voisin de ${c.end}, pas ${c.end} directement.`
+      : r === "revealed" ? `${c.country} est déjà sur la carte.`
       : r === "duplicate" ? `${c.country} est déjà dans votre route.`
-      : r === "not_adjacent" ? `${c.country} ne touche pas ${c.last}.`
+      : r === "not_adjacent" ? `${c.country} ne touche aucun pays révélé.`
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — de côté`
       : `${c.country} — vous vous êtes éloigné`,

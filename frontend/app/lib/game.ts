@@ -191,8 +191,7 @@ export interface PlayState {
 
 export type GuessReason =
   | "unknown"
-  | "is_start"
-  | "is_end"
+  | "revealed"
   | "duplicate"
   | "not_adjacent"
   | "ok";
@@ -203,13 +202,39 @@ export interface GuessResult {
   reason: GuessReason;
   country?: string;
   quality?: Quality;
-  last?: string;
   input: string;
 }
 
+// Conjunto de países "conocidos": origen, destino y los revelados.
+export function knownSet(state: PlayState): Set<string> {
+  const s = new Set<string>([state.challenge.start, state.challenge.end]);
+  for (const c of state.chain) s.add(c.country);
+  return s;
+}
+
+// ¿Origen y destino quedan conectados pasando SOLO por países conocidos?
+export function connectsThroughKnown(start: string, end: string, known: Set<string>): boolean {
+  if (!known.has(start) || !known.has(end)) return false;
+  const visited = new Set<string>([start]);
+  const queue = [start];
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (cur === end) return true;
+    for (const nb of COUNTRIES[cur]?.neighbors ?? []) {
+      if (known.has(nb) && !visited.has(nb)) {
+        visited.add(nb);
+        queue.push(nb);
+      }
+    }
+  }
+  return false;
+}
+
 // Intenta agregar un país a la cadena.
-// REGLA DE VICTORIA: el juego termina apenas se ingresa un país que
-// limita con el destino (no hay que escribir el destino mismo).
+// REGLA (estilo Travle): la jugada es válida si el país limita con
+// CUALQUIER país conocido (origen, destino o revelados) — no solo con el
+// último. Así un desvío no bloquea ni castiga toda la ruta.
+// VICTORIA: cuando origen y destino quedan conectados por países conocidos.
 // No genera texto — devuelve un `reason` que la UI traduce.
 export function tryGuess(state: PlayState, rawInput: string, country: string | null): GuessResult {
   const { start, end } = state.challenge;
@@ -217,25 +242,46 @@ export function tryGuess(state: PlayState, rawInput: string, country: string | n
   if (!country) {
     return { ok: false, solved: false, reason: "unknown", input: rawInput };
   }
-  if (country === start) {
-    return { ok: false, solved: false, reason: "is_start", country, input: rawInput };
-  }
-  if (country === end) {
-    return { ok: false, solved: false, reason: "is_end", country, input: rawInput };
+  if (country === start || country === end) {
+    return { ok: false, solved: false, reason: "revealed", country, input: rawInput };
   }
   if (state.chain.some((c) => c.country === country)) {
     return { ok: false, solved: false, reason: "duplicate", country, input: rawInput };
   }
 
-  // El último país de la cadena (o el origen si está vacía)
-  const last = state.chain.length > 0 ? state.chain[state.chain.length - 1].country : start;
-
-  // Debe limitar con el país anterior para ser una jugada válida
-  if (!areNeighbors(last, country)) {
-    return { ok: false, solved: false, reason: "not_adjacent", country, last, input: rawInput };
+  // Debe limitar con algún país conocido para ser una jugada válida
+  const known = knownSet(state);
+  const bordersKnown = [...known].some((k) => areNeighbors(k, country));
+  if (!bordersKnown) {
+    return { ok: false, solved: false, reason: "not_adjacent", country, input: rawInput };
   }
 
   const quality = countryQuality(country, start, end);
-  const solved = areNeighbors(country, end);
-  return { ok: true, solved, reason: "ok", country, quality, last, input: rawInput };
+  known.add(country);
+  const solved = connectsThroughKnown(start, end, known);
+  return { ok: true, solved, reason: "ok", country, quality, input: rawInput };
+}
+
+// --- Pistas ---
+// Próximo país sugerido: el primer intermedio sin revelar sobre una ruta óptima.
+export function nextHintCountry(state: PlayState): string | null {
+  const { start, end } = state.challenge;
+  const path = shortestPath(start, end);
+  if (!path) return null;
+  const known = knownSet(state);
+  for (const c of path) {
+    if (c !== start && c !== end && !known.has(c)) return c;
+  }
+  return null;
+}
+
+// --- Reto aleatorio (para "Jugar de nuevo") ---
+export function randomChallenge(): DailyChallenge {
+  return dailyChallenge(Math.floor(Math.random() * 1_000_000_000));
+}
+
+// --- Cuenta regresiva al próximo reto diario (medianoche UTC) ---
+export function msUntilNextDailyUTC(now = new Date()): number {
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0);
+  return next - now.getTime();
 }

@@ -79,11 +79,18 @@ const NAME_INDEX: Record<string, string> = (() => {
 interface Props {
   statusByCountry: Record<string, Status>;
   loadingLabel: string;
+  silhouettes?: string[]; // países a mostrar como contorno (pista)
+  showAllOutlines?: boolean; // mostrar el contorno de todos los países (pista)
 }
 
 type NamedFeature = Feature<Geometry, { name: string }>;
 
-export default function WorldMap({ statusByCountry, loadingLabel }: Props) {
+export default function WorldMap({
+  statusByCountry,
+  loadingLabel,
+  silhouettes = [],
+  showAllOutlines = false,
+}: Props) {
   const [features, setFeatures] = useState<NamedFeature[] | null>(null);
 
   useEffect(() => {
@@ -107,44 +114,47 @@ export default function WorldMap({ statusByCountry, loadingLabel }: Props) {
   const H = 220;
   const PAD = 24;
 
-  // Solo los países conocidos (origen, destino y los que el usuario ingresó)
-  const known = useMemo(() => {
-    if (!features) return [];
-    return features
-      .map((f) => ({ f, name: NAME_INDEX[norm(f.properties?.name ?? "")] }))
-      .filter((x) => x.name && statusByCountry[x.name]);
-  }, [features, statusByCountry]);
+  const silSet = useMemo(() => new Set(silhouettes), [silhouettes]);
 
-  const paths = useMemo(() => {
-    if (known.length === 0) return [];
-    const fc: FeatureCollection = {
-      type: "FeatureCollection",
-      features: known.map((k) => k.f),
-    };
-    const projection = geoEqualEarth().fitExtent(
-      [
-        [PAD, PAD],
-        [W - PAD, H - PAD],
-      ],
-      fc as never
-    );
+  const render = useMemo(() => {
+    if (!features) return null;
+    const tagged = features.map((f) => ({ f, name: NAME_INDEX[norm(f.properties?.name ?? "")] }));
+    const known = tagged.filter((x) => x.name && statusByCountry[x.name]);
+    const sil = tagged.filter((x) => x.name && !statusByCountry[x.name] && silSet.has(x.name));
+
+    // Encuadre: a todo el mundo si se muestran todos los contornos;
+    // si no, a los conocidos + siluetas.
+    const fitFeatures = showAllOutlines
+      ? features
+      : [...known, ...sil].map((k) => k.f);
+    if (fitFeatures.length === 0) return { outlines: [], silhouettes: [], known: [] };
+
+    const fc: FeatureCollection = { type: "FeatureCollection", features: fitFeatures };
+    const projection = geoEqualEarth().fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
     const pathGen = geoPath(projection);
-    return known.map((k) => ({
-      d: pathGen(k.f) ?? "",
-      fill: COLORS[statusByCountry[k.name!]],
-      key: k.name!,
-    }));
-  }, [known, statusByCountry]);
+
+    return {
+      outlines: showAllOutlines ? features.map((f, i) => ({ d: pathGen(f) ?? "", key: "o" + i })) : [],
+      silhouettes: sil.map((k) => ({ d: pathGen(k.f) ?? "", key: "s" + k.name })),
+      known: known.map((k) => ({ d: pathGen(k.f) ?? "", fill: COLORS[statusByCountry[k.name!]], key: k.name! })),
+    };
+  }, [features, statusByCountry, silSet, showAllOutlines]);
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden bg-black border border-white/10">
-      {!features ? (
-        <div className="h-[220px] flex items-center justify-center text-neutral-600 text-sm">
+    <div className="w-full rounded-2xl overflow-hidden bg-black border border-white/15">
+      {!render ? (
+        <div className="h-[220px] flex items-center justify-center text-neutral-400 text-sm">
           {loadingLabel}
         </div>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
-          {paths.map((p) => (
+          {render.outlines.map((p) => (
+            <path key={p.key} d={p.d} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={0.3} />
+          ))}
+          {render.silhouettes.map((p) => (
+            <path key={p.key} d={p.d} fill="rgba(255,255,255,0.14)" stroke="rgba(255,255,255,0.5)" strokeWidth={0.5} />
+          ))}
+          {render.known.map((p) => (
             <path
               key={p.key}
               d={p.d}
