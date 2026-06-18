@@ -100,6 +100,7 @@ type Dict = {
   hintSilhouetteAll: string;
   hintNextInitial: (letter: string) => string;
   nextChallenge: (time: string) => string;
+  prize: (amount: string) => string;
   rankingTitle: string;
   bestToday: (n: number) => string;
   noScoreYet: string;
@@ -132,6 +133,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "Silueta de todos los países",
     hintNextInitial: (l) => `El siguiente país empieza por «${l}»`,
     nextChallenge: (t) => `Nuevo reto en ${t}`,
+    prize: (a) => `🏆 Premio de hoy: ${a} USDT`,
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
@@ -169,6 +171,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "All countries' silhouettes",
     hintNextInitial: (l) => `The next country starts with “${l}”`,
     nextChallenge: (t) => `Next challenge in ${t}`,
+    prize: (a) => `🏆 Today's prize: ${a} USDT`,
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
@@ -206,6 +209,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "Silhueta de todos os países",
     hintNextInitial: (l) => `O próximo país começa com “${l}”`,
     nextChallenge: (t) => `Próximo desafio em ${t}`,
+    prize: (a) => `🏆 Prêmio de hoje: ${a} USDT`,
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
@@ -243,6 +247,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintSilhouetteAll: "Silhouette de tous les pays",
     hintNextInitial: (l) => `Le pays suivant commence par « ${l} »`,
     nextChallenge: (t) => `Prochain défi dans ${t}`,
+    prize: (a) => `🏆 Prix du jour : ${a} USDT`,
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",

@@ -14,6 +14,7 @@ import {
   http,
   defineChain,
   parseUnits,
+  formatUnits,
   maxUint256,
   type Address,
 } from "viem";
@@ -48,6 +49,14 @@ const gameAbi = [
     inputs: [{ name: "hintType", type: "uint8" }],
     outputs: [],
     stateMutability: "nonpayable",
+  },
+  { type: "function", name: "currentDay", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  {
+    type: "function",
+    name: "pot",
+    inputs: [{ name: "day", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
   },
 ] as const;
 
@@ -90,6 +99,25 @@ function resolveAction(reason: string): Action | null {
 function getProvider(): unknown | undefined {
   if (typeof window === "undefined") return undefined;
   return (window as unknown as { ethereum?: unknown }).ethereum;
+}
+
+// --- Lectura: premio (pot) del día actual ------------------------------
+// No requiere wallet: lee directo del RPC. Devuelve el monto en USDT (number) o null.
+export async function getDailyPot(): Promise<number | null> {
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const day = await publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "currentDay" });
+    const amount = await publicClient.readContract({
+      address: GAME_ADDRESS,
+      abi: gameAbi,
+      functionName: "pot",
+      args: [day],
+    });
+    return Number(formatUnits(amount, TOKEN_DECIMALS));
+  } catch (err) {
+    console.error("[pago] no se pudo leer el pot:", err);
+    return null;
+  }
 }
 
 // --- Pago ---------------------------------------------------------------
