@@ -73,6 +73,18 @@ export default function Frontle() {
   const cn = (canonical: string) => countryName(canonical, locale);
   const day = dateSeed();
   const bestKey = `frontle-best-${day}`;
+  const gameKey = `frontle-game-${day}`;
+
+  // Persiste la partida del día para que al refrescar NO se pueda volver a
+  // jugar gratis (el estado se restaura: en curso o resuelta).
+  function saveGame(g: { started: boolean; solved: boolean; chain: PlayState["chain"]; finalMs?: number }) {
+    try {
+      localStorage.setItem(
+        gameKey,
+        JSON.stringify({ started: g.started, startMs: startRef.current, chain: g.chain, solved: g.solved, finalMs: g.finalMs ?? null })
+      );
+    } catch {}
+  }
 
   useEffect(() => setLocale(detectLocale()), []);
   useEffect(() => setMyId(getPlayerId()), []);
@@ -85,6 +97,21 @@ export default function Frontle() {
     const stored = typeof localStorage !== "undefined" ? localStorage.getItem(bestKey) : null;
     if (stored) setBest(parseInt(stored, 10));
   }, [bestKey]);
+
+  // Restaurar la partida del día (si ya empezó/resolvió, no se reinicia)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(gameKey);
+      if (!raw) return;
+      const g = JSON.parse(raw);
+      if (g?.started) {
+        startRef.current = g.startMs || Date.now();
+        setStarted(true);
+        setState((prev) => ({ ...prev, chain: g.chain ?? [], solved: !!g.solved }));
+        setElapsedMs(g.solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now()));
+      }
+    } catch {}
+  }, [gameKey]);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
@@ -146,6 +173,7 @@ export default function Frontle() {
     startRef.current = Date.now();
     setElapsedMs(0);
     setStarted(true);
+    saveGame({ started: true, solved: false, chain: state.chain });
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
@@ -168,15 +196,16 @@ export default function Frontle() {
       setState((prev) => ({ ...prev, chain: newChain, solved }));
       setShowNextSil(false);
       setShowInitial(false);
+      const finalMs = solved ? Date.now() - startRef.current : undefined;
+      saveGame({ started: true, solved, chain: newChain, finalMs });
       if (solved) {
-        const finalMs = Date.now() - startRef.current;
-        setElapsedMs(finalMs);
+        setElapsedMs(finalMs!);
         const score = newChain.length;
         if (best === null || score < best) {
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
-        submitScore({ day, countries: score, timeMs: finalMs, countryCode: ipCountry, playerId: myId }).then(() =>
+        submitScore({ day, countries: score, timeMs: finalMs!, countryCode: ipCountry, playerId: myId }).then(() =>
           getRanking(day).then(setRanking)
         );
       }
@@ -204,6 +233,7 @@ export default function Frontle() {
     setShowInitial(false);
     setStarted(false); // vuelve a la pantalla de Play (cronómetro se reinicia al jugar)
     setElapsedMs(0);
+    saveGame({ started: false, solved: false, chain: [] });
   }
 
   async function buyHint(kind: "initial" | "next" | "all") {

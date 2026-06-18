@@ -79,15 +79,33 @@ export async function submitScore(e: ScoreEntry): Promise<void> {
   }
 }
 
+// Ordena por (menos países, menor tiempo) y deja UNA fila por jugador
+// (su mejor marca). Las filas sin playerId se tratan como únicas.
+function bestPerPlayer(entries: ScoreEntry[], limit: number): ScoreEntry[] {
+  const sorted = entries
+    .slice()
+    .sort((a, b) => a.countries - b.countries || a.timeMs - b.timeMs);
+  const seen = new Set<string>();
+  const out: ScoreEntry[] = [];
+  for (const e of sorted) {
+    const key = e.playerId || `anon-${out.length}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(e);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 export async function getRanking(day: number, limit = 10): Promise<ScoreEntry[]> {
   if (useSupabase) {
     try {
       const r = await fetch(
-        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&order=countries.asc,time_ms.asc&limit=${limit}`,
+        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&order=countries.asc,time_ms.asc&limit=500`,
         { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       const j = await r.json();
-      return (Array.isArray(j) ? j : []).map((x: Record<string, unknown>) => ({
+      const all: ScoreEntry[] = (Array.isArray(j) ? j : []).map((x: Record<string, unknown>) => ({
         day: Number(x.day),
         countries: Number(x.countries),
         timeMs: Number(x.time_ms),
@@ -95,15 +113,14 @@ export async function getRanking(day: number, limit = 10): Promise<ScoreEntry[]>
         playerId: String(x.player_id ?? ""),
         createdAt: x.created_at as string | undefined,
       }));
+      return bestPerPlayer(all, limit);
     } catch {
       return [];
     }
   }
   try {
     const arr: ScoreEntry[] = JSON.parse(localStorage.getItem(`frontle-ranking-${day}`) || "[]");
-    return arr
-      .sort((a, b) => a.countries - b.countries || a.timeMs - b.timeMs)
-      .slice(0, limit);
+    return bestPerPlayer(arr, limit);
   } catch {
     return [];
   }
