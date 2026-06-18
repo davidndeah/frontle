@@ -104,6 +104,12 @@ type Dict = {
   bestToday: (n: number) => string;
   noScoreYet: string;
   rankingNote: string;
+  play: string;
+  timerHint: string;
+  timeLabel: string;
+  colRoute: string;
+  colTime: string;
+  rankingEmpty: string;
   feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
 };
 
@@ -135,7 +141,13 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
-    rankingNote: "Al final del día, quien tenga la mejor ruta gana el premio base + lo recolectado en el pot. El ranking y el pago se liquidan on-chain.",
+    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (liquidado on-chain).",
+    play: "▶ Jugar",
+    timerHint: "El cronómetro arranca al pulsar Jugar",
+    timeLabel: "Tiempo",
+    colRoute: "Ruta",
+    colTime: "Tiempo",
+    rankingEmpty: "Aún nadie ha resuelto el reto de hoy. ¡Sé el primero!",
     feedback: (r, c) =>
       r === "unknown" ? `No reconozco "${c.input}".`
       : r === "revealed" ? `${c.country} ya está en el mapa.`
@@ -172,7 +184,13 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
-    rankingNote: "At the end of the day, whoever has the best route wins the base prize + the collected pot. Ranking and payout settle on-chain.",
+    rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (settled on-chain).",
+    play: "▶ Play",
+    timerHint: "The timer starts when you press Play",
+    timeLabel: "Time",
+    colRoute: "Route",
+    colTime: "Time",
+    rankingEmpty: "Nobody has solved today's challenge yet. Be the first!",
     feedback: (r, c) =>
       r === "unknown" ? `I don't recognize "${c.input}".`
       : r === "revealed" ? `${c.country} is already on the map.`
@@ -209,7 +227,13 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
-    rankingNote: "No fim do dia, quem tiver a melhor rota ganha o prêmio base + o pot arrecadado. Ranking e pagamento liquidam on-chain.",
+    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (liquidado on-chain).",
+    play: "▶ Jogar",
+    timerHint: "O cronômetro começa ao tocar em Jogar",
+    timeLabel: "Tempo",
+    colRoute: "Rota",
+    colTime: "Tempo",
+    rankingEmpty: "Ninguém resolveu o desafio de hoje ainda. Seja o primeiro!",
     feedback: (r, c) =>
       r === "unknown" ? `Não reconheço "${c.input}".`
       : r === "revealed" ? `${c.country} já está no mapa.`
@@ -246,7 +270,13 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
-    rankingNote: "En fin de journée, le meilleur itinéraire remporte le prix de base + la cagnotte collectée. Classement et paiement réglés on-chain.",
+    rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (réglé on-chain).",
+    play: "▶ Jouer",
+    timerHint: "Le chrono démarre quand vous appuyez sur Jouer",
+    timeLabel: "Temps",
+    colRoute: "Itinéraire",
+    colTime: "Temps",
+    rankingEmpty: "Personne n'a encore résolu le défi du jour. Soyez le premier !",
     feedback: (r, c) =>
       r === "unknown" ? `Je ne reconnais pas "${c.input}".`
       : r === "revealed" ? `${c.country} est déjà sur la carte.`
