@@ -167,10 +167,33 @@ El script `script/Deploy.s.sol` despliega todo: si `TOKEN_ADDRESS` está vacío 
 - En MiniPay: Settings → About → tocar Version 7 veces → Developer Mode + Use Testnet → pegar URL de ngrok en "Load Test Page".
 - Hacer un pago real y confirmarlo en Celoscan/Blockscout.
 
-### Paso G — Integrar COPm (bono de 100k)
-- Mostrar saldos en COPm (peso colombiano de Mento).
-- Verificar el contrato en Mainnet.
-- COPm Mainnet: `0x8A567e2aE79CA692Bd748aB832081C45de4041eA` (18 decimales).
+### Paso G — Mainnet ✅ HECHO (18-jun)
+**FrontleGame en Celo Mainnet:** `0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09` ([verificado en Blockscout](https://celo.blockscout.com/address/0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09)). Token = **USDT** (6 dec). CELO conseguido por Binance (retiro a la wallet de deploy). `payments.ts` ya apunta a Mainnet (chain 42220, USDT, feeCurrency adapter). Habilita el bono COPm (contrato verificado en Mainnet).
+- **Decisión:** Mainnet usa **USDT** (`USD₮`, **6 decimales**), el stablecoin que el usuario tiene en MiniPay.
+- `contracts/.env` configurado para Mainnet/USDT (`TOKEN_ADDRESS`, fees en 6 dec, `PROTOCOL_BPS=2000`).
+
+**Cuando llegue el CELO:**
+```bash
+cd contracts && set -a && . ./.env && set +a
+# 1. Desplegar a Mainnet (usa TOKEN_ADDRESS=USDT del .env)
+forge script script/Deploy.s.sol --rpc-url celo --account frontle-deployer --broadcast
+# 2. Verificar (si Celoscan V2 falla con la key, usar Blockscout como en Sepolia)
+forge verify-contract <GAME> src/FrontleGame.sol:FrontleGame \
+  --verifier blockscout --verifier-url https://celo.blockscout.com/api/ \
+  --constructor-args $(cast abi-encode "constructor(address,address,uint256,uint256)" 0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e 0x54E83C8D7B7A77cbf0a2842c1a82d51be8814DD0 100000 2000)
+```
+
+**Después del deploy, actualizar `frontend/app/lib/payments.ts` a Mainnet:**
+- `CHAIN_ID = 42220`
+- `GAME_ADDRESS = <dirección del deploy>`
+- `TOKEN_ADDRESS = 0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e` (USDT)
+- `TOKEN_DECIMALS = 6`
+- `FEE_CURRENCY = 0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72` (**adapter** USDT, para no mostrar "gas")
+
+Luego: `npm run build`, sembrar el pot con `fundPot`, y **Paso F** (probar en MiniPay real: Settings → About → Version ×7 → Developer Mode → "Load Test Page" con la URL de ngrok).
+
+### (Opcional) COPm — bono adicional
+- Mostrar saldos en COPm (peso colombiano de Mento): `0x8A567e2aE79CA692Bd748aB832081C45de4041eA` (18 decimales).
 
 ---
 

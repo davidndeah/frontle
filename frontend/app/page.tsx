@@ -22,7 +22,7 @@ import {
 import { getRanking, submitScore, getIpCountry, getPlayerId, shortId, formatTime, type ScoreEntry } from "./lib/ranking";
 import WorldMap from "./components/WorldMap";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import { requestPayment } from "./lib/payments";
+import { requestPayment, getDailyPot, getCopmBalance } from "./lib/payments";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -54,6 +54,8 @@ export default function Frontle() {
   const [showInitial, setShowInitial] = useState(false);
   const [countdown, setCountdown] = useState("");
   const [best, setBest] = useState<number | null>(null);
+  const [pot, setPot] = useState<number | null>(null);
+  const [copm, setCopm] = useState<number | null>(null);
 
   // Cronómetro / fases
   const [started, setStarted] = useState(false);
@@ -94,6 +96,29 @@ export default function Frontle() {
     const id = setInterval(() => setElapsedMs(Date.now() - startRef.current), 250);
     return () => clearInterval(id);
   }, [started, state.solved]);
+
+  // Premio (pot) del día: cargar al inicio y refrescar cada 30s para reflejar pagos de otros.
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => getDailyPot().then((p) => { if (alive && p !== null) setPot(p); });
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  // Saldo en COPm (peso colombiano) de la wallet conectada — localización MiniPay.
+  // Reintenta unas veces porque la wallet puede inyectarse con un pequeño retraso.
+  useEffect(() => {
+    let alive = true;
+    let tries = 0;
+    const load = () => getCopmBalance().then((b) => {
+      if (!alive) return;
+      if (b !== null) { setCopm(b); return; }
+      if (++tries < 4) setTimeout(load, 2000);
+    });
+    load();
+    return () => { alive = false; };
+  }, []);
 
   // Cuenta regresiva al próximo reto diario
   useEffect(() => {
@@ -169,6 +194,7 @@ export default function Frontle() {
   async function retry() {
     const paid = await requestPayment(PRICES.retry, "reintento del reto diario");
     if (!paid) return;
+    getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
     setState((prev) => ({ challenge: prev.challenge, chain: [], solved: false }));
     setMessage(null);
     setInput("");
@@ -184,6 +210,7 @@ export default function Frontle() {
     const price = kind === "all" ? PRICES.hintAll : kind === "initial" ? PRICES.hintInitial : PRICES.hintNext;
     const paid = await requestPayment(price, `pista: ${kind}`);
     if (!paid) return;
+    getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
     if (kind === "initial") setShowInitial(true);
     if (kind === "next") setShowNextSil(true);
     if (kind === "all") setShowAllSil(true);
@@ -204,7 +231,23 @@ export default function Frontle() {
         <header className="text-center">
           <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
           <p className="text-sm text-white mt-1 drop-shadow">{tr.tagline}</p>
+          {copm !== null && (
+            <div className="mt-2 flex justify-center">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 border border-emerald-300/40 px-3 py-1 text-xs font-semibold text-emerald-300">
+                🇨🇴 {tr.copmBalance(copm.toLocaleString("es-CO", { maximumFractionDigits: 2 }))}
+              </span>
+            </div>
+          )}
         </header>
+
+        {/* Premio del día (pot on-chain) */}
+        {pot !== null && (
+          <div className="text-center -mb-1">
+            <span className="inline-block rounded-full bg-amber-400/15 border border-amber-300/40 px-4 py-1.5 text-sm font-bold text-amber-300">
+              {tr.prize(pot.toFixed(2))}
+            </span>
+          </div>
+        )}
 
         {/* Reto del día (oculto hasta pulsar Play) */}
         <section className={`${panel} p-4`}>

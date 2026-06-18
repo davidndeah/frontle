@@ -14,22 +14,25 @@ import {
   http,
   defineChain,
   parseUnits,
+  formatUnits,
   maxUint256,
   type Address,
 } from "viem";
 import { celo } from "viem/chains";
 
-// --- Configuración de red / contrato -----------------------------------
-// Para pasar a Mainnet: CHAIN_ID = 42220, TOKEN_ADDRESS = USDm
-// (0x765DE816845861e75A25fCA122bb6898B8B1282a) y FEE_CURRENCY = USDm.
-const CHAIN_ID: number = 11142220; // Celo Sepolia
-const GAME_ADDRESS: Address = "0x08D5Ac4faB4946C3B966880BE2C8C107966a0AEc";
-const TOKEN_ADDRESS: Address = "0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09"; // MockERC20 (tUSD) en Sepolia
-const TOKEN_DECIMALS = 18;
+// --- Configuración de red / contrato (Celo Mainnet) --------------------
+const CHAIN_ID: number = 42220; // Celo Mainnet
+const GAME_ADDRESS: Address = "0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09";
+const TOKEN_ADDRESS: Address = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // USDT (USD₮)
+const TOKEN_DECIMALS = 6; // USDT usa 6 decimales
 
-// feeCurrency (CIP-64): en Mainnet poner USDm para que el usuario nunca vea "gas".
-// En testnet se deja undefined → el gas se paga en CELO. El MockERC20 NO sirve como feeCurrency.
-const FEE_CURRENCY: Address | undefined = undefined;
+// feeCurrency (CIP-64): adapter de USDT → el usuario paga el "network fee" en USDT
+// y nunca ve "gas" ni CELO (requisito MiniPay). Para USDT/USDC se usa el ADAPTER, no el token.
+const FEE_CURRENCY: Address | undefined = "0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72";
+
+// COPm (peso colombiano de Mento) — para mostrar el saldo local del usuario.
+const COPM_ADDRESS: Address = "0x8A567e2aE79CA692Bd748aB832081C45de4041eA";
+const COPM_DECIMALS = 18;
 
 // Reutiliza los serializers/formatters de Celo (soportan feeCurrency) apuntando a Sepolia.
 const celoSepolia = defineChain({
@@ -50,6 +53,14 @@ const gameAbi = [
     inputs: [{ name: "hintType", type: "uint8" }],
     outputs: [],
     stateMutability: "nonpayable",
+  },
+  { type: "function", name: "currentDay", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  {
+    type: "function",
+    name: "pot",
+    inputs: [{ name: "day", type: "uint256" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
   },
 ] as const;
 
@@ -74,6 +85,13 @@ const erc20Abi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
 ] as const;
 
 // --- Mapeo reason → función del contrato --------------------------------
@@ -92,6 +110,49 @@ function resolveAction(reason: string): Action | null {
 function getProvider(): unknown | undefined {
   if (typeof window === "undefined") return undefined;
   return (window as unknown as { ethereum?: unknown }).ethereum;
+}
+
+// --- Lectura: premio (pot) del día actual ------------------------------
+// No requiere wallet: lee directo del RPC. Devuelve el monto en USDT (number) o null.
+export async function getDailyPot(): Promise<number | null> {
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const day = await publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "currentDay" });
+    const amount = await publicClient.readContract({
+      address: GAME_ADDRESS,
+      abi: gameAbi,
+      functionName: "pot",
+      args: [day],
+    });
+    return Number(formatUnits(amount, TOKEN_DECIMALS));
+  } catch (err) {
+    console.error("[pago] no se pudo leer el pot:", err);
+    return null;
+  }
+}
+
+// --- Lectura: saldo de COPm (peso colombiano) de la wallet conectada ----
+// Localización para el mercado colombiano de MiniPay. Devuelve el saldo o null.
+export async function getCopmBalance(): Promise<number | null> {
+  const provider = getProvider();
+  if (!provider) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    const [account] = await walletClient.getAddresses();
+    if (!account) return null;
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const bal = await publicClient.readContract({
+      address: COPM_ADDRESS,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [account],
+    });
+    return Number(formatUnits(bal, COPM_DECIMALS));
+  } catch (err) {
+    console.error("[copm] no se pudo leer el saldo:", err);
+    return null;
+  }
 }
 
 // --- Pago ---------------------------------------------------------------
