@@ -103,6 +103,11 @@ Config en `payments.ts` (cambiar aquí si se redespliega): `CHAIN_ID`, `GAME_ADD
 
 > El ranking diario vive en `localStorage` (off-chain). El `operator` lo usará para `rollDay(day, winner)`.
 
+### Lecturas en la UI (sin wallet de escritura)
+- **Premio del día:** `getDailyPot()` lee `pot(currentDay())` del contrato y lo muestra como banner arriba del reto (`🏆 Premio de hoy: X USDT`). Se refresca al cargar, cada 30 s (pagos de otros) y tras cada pago propio.
+- **Saldo en COPm (localización / bono):** `getCopmBalance()` lee `balanceOf` del token **COPm de Mento** (`0x8A567e2aE79CA692Bd748aB832081C45de4041eA`, 18 dec) de la wallet conectada y lo muestra como chip `🇨🇴 Saldo: X COP` en el header. Integra COPm sin tocar el contrato del juego.
+  > El criterio final del bono lo definen los organizadores; si exigieran **transaccionar** COPm (no solo mostrarlo), la vía limpia es `feeCurrency = COPm` o un deploy con `token = COPm`.
+
 ---
 
 ## 5. Cómo desplegar (Foundry)
@@ -164,9 +169,11 @@ cast call $GAME "currentDay()(uint256)" --rpc-url $RPC
 - [x] Desplegado y verificado en **Sepolia** (probado end-to-end con cast)
 - [x] Frontend conectado (`requestPayment` real, validado con Rabby)
 - [x] Desplegado y verificado en **Mainnet** (USDT) → habilita el bono COPm
-- [ ] Probar en **MiniPay real** (dispositivo)
-- [ ] Sembrar el pot con premio base (`fundPot`) para la demo
-- [ ] (Opcional) Mostrar saldos en **COPm** (bono adicional)
+- [x] **Probado en MiniPay real** (pago USDT desde el dispositivo; pot subió 0.04 → 0.08)
+- [x] **Premio del día** en vivo en la UI (banner)
+- [x] **Saldo en COPm** mostrado en la UI (localización / bono) — confirmar criterio con organizadores
+- [ ] Sembrar el pot con premio base (`fundPot`) — requiere USDT en la wallet de deploy
+- [ ] Cerrar un día (`rollDay`) + `claim` en Mainnet para mostrar el winner-takes-all completo
 - [ ] (Opcional) Backend/cron que llame `rollDay` a medianoche UTC con el ganador del leaderboard
 
 ---
