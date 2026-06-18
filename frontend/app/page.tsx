@@ -19,10 +19,10 @@ import {
   t,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, getPlayerId, shortId, formatTime, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, type ScoreEntry } from "./lib/ranking";
 import WorldMap from "./components/WorldMap";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import { requestPayment, getDailyPot, getCopmBalance } from "./lib/payments";
+import { requestPayment, getDailyPot, getCopmBalance, getWalletAddress, connectWallet } from "./lib/payments";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -56,6 +56,7 @@ export default function Frontle() {
   const [best, setBest] = useState<number | null>(null);
   const [pot, setPot] = useState<number | null>(null);
   const [copm, setCopm] = useState<number | null>(null);
+  const [hasWallet, setHasWallet] = useState(true); // optimista hasta confirmar que no hay wallet
 
   // Cronómetro / fases
   const [started, setStarted] = useState(false);
@@ -87,7 +88,6 @@ export default function Frontle() {
   }
 
   useEffect(() => setLocale(detectLocale()), []);
-  useEffect(() => setMyId(getPlayerId()), []);
   useEffect(() => {
     getIpCountry().then(setIpCountry);
     getRanking(day).then(setRanking);
@@ -145,6 +145,26 @@ export default function Frontle() {
     });
     load();
     return () => { alive = false; };
+  }, []);
+
+  // ¿Hay wallet inyectada (MiniPay / extensión)? Reintenta porque puede
+  // inyectarse con un pequeño retraso. Si la hay, captura la dirección SIN
+  // prompt (en MiniPay ya está conectada) → es la IDENTIDAD del jugador en el
+  // ranking y lo que el contrato necesita para pagarle el premio.
+  // Si tras unos intentos no aparece, marcamos que no hay wallet.
+  useEffect(() => {
+    let tries = 0;
+    const check = async () => {
+      if (typeof window !== "undefined" && (window as unknown as { ethereum?: unknown }).ethereum) {
+        setHasWallet(true);
+        const addr = await getWalletAddress();
+        if (addr) setMyId(addr);
+        return;
+      }
+      if (++tries < 4) setTimeout(check, 1000);
+      else setHasWallet(false);
+    };
+    check();
   }, []);
 
   // Cuenta regresiva al próximo reto diario
@@ -205,9 +225,7 @@ export default function Frontle() {
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
-        submitScore({ day, countries: score, timeMs: finalMs!, countryCode: ipCountry, playerId: myId }).then(() =>
-          getRanking(day).then(setRanking)
-        );
+        void enterRanking(score, finalMs!);
       }
     }
     setInput("");
@@ -218,6 +236,30 @@ export default function Frontle() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (input.trim()) submitCountry(input);
+  }
+
+  // Envía la marca al ranking usando la DIRECCIÓN como identidad.
+  function pushScore(addr: string, score: number, timeMs: number) {
+    return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr })
+      .then(() => getRanking(day).then(setRanking));
+  }
+
+  // Al resolver: si hay wallet (MiniPay), entra al ranking sin fricción.
+  // Si no hay dirección aún, NO envía — el navegador verá el botón "Conectar".
+  async function enterRanking(score: number, timeMs: number) {
+    const addr = myId || (await getWalletAddress());
+    if (!addr) return;
+    setMyId(addr);
+    await pushScore(addr, score, timeMs);
+  }
+
+  // Navegador: el jugador conecta su wallet (abre prompt) para entrar al ranking.
+  async function connectForRanking() {
+    const addr = await connectWallet();
+    if (!addr) return;
+    setHasWallet(true);
+    setMyId(addr);
+    if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
   }
 
   async function retry() {
@@ -358,6 +400,9 @@ export default function Frontle() {
                 chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
                 onRetry={retry}
                 retryPrice={PRICES.retry}
+                hasWallet={hasWallet}
+                inRanking={!!myId}
+                onConnect={connectForRanking}
                 panel={panel}
               />
             ) : (
@@ -402,6 +447,9 @@ export default function Frontle() {
                   {showInitial && nextHint && (
                     <p className="text-center text-sm text-amber-300 mt-2">{tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}</p>
                   )}
+                  {!hasWallet && (
+                    <p className="text-center text-xs text-amber-300/90 mt-2">{tr.noWallet}</p>
+                  )}
                 </div>
 
                 <p className="text-center text-xs text-neutral-300">{tr.used(guessCount)} · {tr.free}</p>
@@ -444,7 +492,7 @@ function HintButton({ active, onClick, label, price }: { active: boolean; onClic
         active ? "border-amber-400/60 bg-amber-400/20 text-amber-200" : "border-white/25 text-white hover:bg-white/10"
       }`}
     >
-      {label} {active ? "✓" : <span className="opacity-70">· {price} USDm</span>}
+      {label} {active ? "✓" : <span className="opacity-70">· {price} USDT</span>}
     </button>
   );
 }
@@ -529,6 +577,9 @@ function WinCard({
   chain,
   onRetry,
   retryPrice,
+  hasWallet,
+  inRanking,
+  onConnect,
   panel,
 }: {
   tr: ReturnType<typeof t>;
@@ -538,6 +589,9 @@ function WinCard({
   chain: string[];
   onRetry: () => void;
   retryPrice: number;
+  hasWallet: boolean;
+  inRanking: boolean;
+  onConnect: () => void;
   panel: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -567,10 +621,18 @@ function WinCard({
         </button>
         {!perfect && (
           <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
-            {tr.retry} <span className="opacity-70 text-sm">· {retryPrice} USDm</span>
+            {tr.retry} <span className="opacity-70 text-sm">· {retryPrice} USDT</span>
+          </button>
+        )}
+        {!inRanking && hasWallet && (
+          <button onClick={onConnect} className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20">
+            {tr.connectToRank}
           </button>
         )}
       </div>
+      {!hasWallet && (
+        <p className="text-xs text-amber-300/90 mt-3">{tr.noWallet}</p>
+      )}
       <p className="text-xs text-neutral-300 mt-3">{tr.comeback}</p>
     </section>
   );

@@ -27,9 +27,13 @@ export function getPlayerId(): string {
   return id;
 }
 
-// Versión corta para mostrar en el ranking (ej. "#A1B2C3").
+// Versión corta estilo wallet (ej. "1fc1…508c") para mostrar en el ranking.
+// La identidad es la dirección de la wallet; mostramos prefijo…sufijo sin "0x".
 export function shortId(id: string): string {
-  return id ? "#" + id.slice(0, 6).toUpperCase() : "—";
+  if (!id) return "—";
+  const s = id.startsWith("0x") || id.startsWith("0X") ? id.slice(2) : id;
+  if (s.length <= 8) return s.toLowerCase();
+  return `${s.slice(0, 4)}…${s.slice(-4)}`.toLowerCase();
 }
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;

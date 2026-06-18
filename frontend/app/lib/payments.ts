@@ -112,6 +112,39 @@ function getProvider(): unknown | undefined {
   return (window as unknown as { ethereum?: unknown }).ethereum;
 }
 
+// --- Identidad: dirección de la wallet ---------------------------------
+// La dirección es la IDENTIDAD del jugador en el ranking: es lo que el
+// contrato necesita para pagar el premio (rollDay/claim). En MiniPay la wallet
+// ya está conectada → getAddresses la entrega SIN abrir prompt.
+export async function getWalletAddress(): Promise<string | null> {
+  const provider = getProvider();
+  if (!provider) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    const [account] = await walletClient.getAddresses();
+    return account ? account.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
+// Solicita conexión de wallet (ABRE prompt). Para navegador con extensión:
+// "Conecta tu wallet para entrar al ranking".
+export async function connectWallet(): Promise<string | null> {
+  const provider = getProvider();
+  if (!provider) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    let [account] = await walletClient.getAddresses();
+    if (!account) [account] = await walletClient.requestAddresses();
+    return account ? account.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 // --- Lectura: premio (pot) del día actual ------------------------------
 // No requiere wallet: lee directo del RPC. Devuelve el monto en USDT (number) o null.
 export async function getDailyPot(): Promise<number | null> {
