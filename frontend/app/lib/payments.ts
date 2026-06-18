@@ -30,6 +30,10 @@ const TOKEN_DECIMALS = 6; // USDT usa 6 decimales
 // y nunca ve "gas" ni CELO (requisito MiniPay). Para USDT/USDC se usa el ADAPTER, no el token.
 const FEE_CURRENCY: Address | undefined = "0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72";
 
+// COPm (peso colombiano de Mento) — para mostrar el saldo local del usuario.
+const COPM_ADDRESS: Address = "0x8A567e2aE79CA692Bd748aB832081C45de4041eA";
+const COPM_DECIMALS = 18;
+
 // Reutiliza los serializers/formatters de Celo (soportan feeCurrency) apuntando a Sepolia.
 const celoSepolia = defineChain({
   ...celo,
@@ -81,6 +85,13 @@ const erc20Abi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
 ] as const;
 
 // --- Mapeo reason → función del contrato --------------------------------
@@ -116,6 +127,30 @@ export async function getDailyPot(): Promise<number | null> {
     return Number(formatUnits(amount, TOKEN_DECIMALS));
   } catch (err) {
     console.error("[pago] no se pudo leer el pot:", err);
+    return null;
+  }
+}
+
+// --- Lectura: saldo de COPm (peso colombiano) de la wallet conectada ----
+// Localización para el mercado colombiano de MiniPay. Devuelve el saldo o null.
+export async function getCopmBalance(): Promise<number | null> {
+  const provider = getProvider();
+  if (!provider) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    const [account] = await walletClient.getAddresses();
+    if (!account) return null;
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const bal = await publicClient.readContract({
+      address: COPM_ADDRESS,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [account],
+    });
+    return Number(formatUnits(bal, COPM_DECIMALS));
+  } catch (err) {
+    console.error("[copm] no se pudo leer el saldo:", err);
     return null;
   }
 }

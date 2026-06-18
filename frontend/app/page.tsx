@@ -21,7 +21,7 @@ import {
 } from "./lib/i18n";
 import WorldMap from "./components/WorldMap";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import { requestPayment, getDailyPot } from "./lib/payments";
+import { requestPayment, getDailyPot, getCopmBalance } from "./lib/payments";
 
 // Precios de las acciones pagas (USDm). Listos para conectar al contrato.
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
@@ -54,6 +54,7 @@ export default function Frontle() {
   const [countdown, setCountdown] = useState("");
   const [best, setBest] = useState<number | null>(null);
   const [pot, setPot] = useState<number | null>(null);
+  const [copm, setCopm] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const challenge = state.challenge;
@@ -79,6 +80,20 @@ export default function Frontle() {
     refresh();
     const id = setInterval(refresh, 30_000);
     return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  // Saldo en COPm (peso colombiano) de la wallet conectada — localización MiniPay.
+  // Reintenta unas veces porque la wallet puede inyectarse con un pequeño retraso.
+  useEffect(() => {
+    let alive = true;
+    let tries = 0;
+    const load = () => getCopmBalance().then((b) => {
+      if (!alive) return;
+      if (b !== null) { setCopm(b); return; }
+      if (++tries < 4) setTimeout(load, 2000);
+    });
+    load();
+    return () => { alive = false; };
   }, []);
 
   useEffect(() => {
@@ -181,6 +196,13 @@ export default function Frontle() {
         <header className="text-center">
           <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
           <p className="text-sm text-white mt-1 drop-shadow">{tr.tagline}</p>
+          {copm !== null && (
+            <div className="mt-2 flex justify-center">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 border border-emerald-300/40 px-3 py-1 text-xs font-semibold text-emerald-300">
+                🇨🇴 {tr.copmBalance(copm.toLocaleString("es-CO", { maximumFractionDigits: 2 }))}
+              </span>
+            </div>
+          )}
         </header>
 
         {/* Premio del día (pot on-chain) */}
