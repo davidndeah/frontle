@@ -19,17 +19,15 @@ import {
 } from "viem";
 import { celo } from "viem/chains";
 
-// --- Configuración de red / contrato -----------------------------------
-// Para pasar a Mainnet: CHAIN_ID = 42220, TOKEN_ADDRESS = USDm
-// (0x765DE816845861e75A25fCA122bb6898B8B1282a) y FEE_CURRENCY = USDm.
-const CHAIN_ID: number = 11142220; // Celo Sepolia
-const GAME_ADDRESS: Address = "0x08D5Ac4faB4946C3B966880BE2C8C107966a0AEc";
-const TOKEN_ADDRESS: Address = "0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09"; // MockERC20 (tUSD) en Sepolia
-const TOKEN_DECIMALS = 18;
+// --- Configuración de red / contrato (Celo Mainnet) --------------------
+const CHAIN_ID: number = 42220; // Celo Mainnet
+const GAME_ADDRESS: Address = "0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09";
+const TOKEN_ADDRESS: Address = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // USDT (USD₮)
+const TOKEN_DECIMALS = 6; // USDT usa 6 decimales
 
-// feeCurrency (CIP-64): en Mainnet poner USDm para que el usuario nunca vea "gas".
-// En testnet se deja undefined → el gas se paga en CELO. El MockERC20 NO sirve como feeCurrency.
-const FEE_CURRENCY: Address | undefined = undefined;
+// feeCurrency (CIP-64): adapter de USDT → el usuario paga el "network fee" en USDT
+// y nunca ve "gas" ni CELO (requisito MiniPay). Para USDT/USDC se usa el ADAPTER, no el token.
+const FEE_CURRENCY: Address | undefined = "0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72";
 
 // Reutiliza los serializers/formatters de Celo (soportan feeCurrency) apuntando a Sepolia.
 const celoSepolia = defineChain({
