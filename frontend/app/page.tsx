@@ -359,7 +359,18 @@ export default function Frontle() {
             resetKey={`${challenge.start}->${challenge.end}`}
           />
         ) : (
-          <div className="w-full rounded-2xl bg-black border border-white/15 h-[220px] flex flex-col items-center justify-center gap-3">
+          <div className="w-full rounded-2xl bg-black border border-white/15 min-h-[220px] flex flex-col items-center justify-center gap-3 py-5">
+            {!myId && hasWallet && (
+              <div className="flex flex-col items-center gap-1">
+                <button
+                  onClick={connectForRanking}
+                  className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-8 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+                >
+                  {tr.connectWallet}
+                </button>
+                <p className="text-[11px] text-emerald-300/80">{tr.connectBenefit}</p>
+              </div>
+            )}
             <button
               onClick={startGame}
               className="rounded-2xl bg-white text-black font-black text-xl px-10 py-4 active:scale-95 transition shadow-lg"
@@ -367,6 +378,9 @@ export default function Frontle() {
               {tr.play}
             </button>
             <p className="text-xs text-neutral-300">{tr.timerHint}</p>
+            {!hasWallet && (
+              <p className="text-[11px] text-amber-300/80">{tr.noWallet}</p>
+            )}
           </div>
         )}
 
