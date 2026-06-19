@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "Frontle — Connect countries through borders",
   description:
     "Juego de geografía diario: llega de un país a otro listando los que comparten frontera. Construido para MiniPay sobre Celo.",
+  // Verificación de propiedad del proyecto en Talent App (Proof of Ship)
+  other: {
+    "talentapp:project_verification":
+      "f6cbe89fff8ad187d423f134f841edf187b4f3842e330a413e7f9f65520276c66a797b8c53f2c666877bcf9cf6dcfe7c0c022aa62fc3b52defe66791302d4f36",
+  },
 };
 
 export const viewport: Viewport = {
