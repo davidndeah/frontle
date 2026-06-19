@@ -10,7 +10,6 @@ Construido para **[MiniPay](https://www.opera.com/products/minipay)** (16M+ usua
 |---|---|
 | 🎮 **App en vivo** | **https://frontle.vercel.app** |
 | ⛓️ **Contrato (Celo Mainnet, verificado)** | [`0x7Ea1…Fa09`](https://celo.blockscout.com/address/0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09) |
-| 🎬 **Pitch + guion de demo** | [`DEMO.md`](DEMO.md) |
 
 ---
 

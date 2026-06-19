@@ -18,7 +18,7 @@ pragma solidity 0.8.28;
 //  ⚠️ Nota de cumplimiento: el modelo winner-takes-all reparte el dinero de los
 //  jugadores hacia el ganador. Esto puede considerarse apuesta y MiniPay lo
 //  restringe. Decisión del equipo (17-jun): se usa este modelo según la guía
-//  de producto (contracts/README.md). Ver PLAN_BLOCKCHAIN_FRONTLE.md.
+//  de producto (contracts/README.md).
 // ============================================================
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
