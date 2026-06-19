@@ -52,6 +52,13 @@ Deno.serve(async (req) => {
     const currentDay = await publicClient.readContract({ address: gameAddress, abi: gameAbi, functionName: "currentDay" });
     const day = currentDay - 1n;
 
+    // OJO: el contrato indexa el día como "días desde epoch UTC" (ej. 20622),
+    // pero la tabla `scores` lo guarda como YYYYMMDD (ej. 20260618, dateSeed del
+    // front). Convertimos el índice del contrato a YYYYMMDD para cruzar el ganador.
+    const dUtc = new Date(Number(day) * 86_400_000);
+    const seedDay =
+      dUtc.getUTCFullYear() * 10000 + (dUtc.getUTCMonth() + 1) * 100 + dUtc.getUTCDate();
+
     // Idempotencia: ¿ya lo procesamos (en BD o on-chain)?
     const { data: existing } = await supabase.from("winners").select("day").eq("day", Number(day)).maybeSingle();
     if (existing) {
@@ -66,14 +73,14 @@ Deno.serve(async (req) => {
     const { data: top, error: scoreErr } = await supabase
       .from("scores")
       .select("player_id, countries, time_ms")
-      .eq("day", Number(day))
+      .eq("day", seedDay)
       .order("countries", { ascending: true })
       .order("time_ms", { ascending: true })
       .limit(1)
       .maybeSingle();
     if (scoreErr) throw scoreErr;
     if (!top || !top.player_id) {
-      return json({ ok: true, skipped: "sin jugadores ese día", day: Number(day) });
+      return json({ ok: true, skipped: "sin jugadores ese día", day: Number(day), seedDay });
     }
 
     const winner = String(top.player_id).toLowerCase() as `0x${string}`;
