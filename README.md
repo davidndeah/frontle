@@ -1,47 +1,89 @@
 # 🌍 Frontle
 
-> **Connect countries through borders.**
+> **Conecta el mundo por sus fronteras.** El Wordle de geografía, dentro de MiniPay, con premios reales en stablecoins sobre Celo.
 
-Juego de geografía diario inspirado en [Travle](https://travle.earth). Te damos un país de **origen** y uno de **destino**; tienes que llegar de uno al otro listando los países intermedios que comparten frontera. Menos países = mejor puntaje.
+Frontle es un juego de geografía **diario** inspirado en [Travle](https://travle.earth): cada día, el mismo reto para todo el mundo — un país de **origen** y uno de **destino**. Tienes que unirlos listando los países intermedios que comparten frontera terrestre. **Menos países = mejor puntaje;** a igualdad de países, gana quien lo resuelve en menos tiempo.
 
-Construido para **[MiniPay](https://www.opera.com/products/minipay)** (16M+ usuarios) sobre **[Celo](https://celo.org)** como parte del **Hackathon de Agentes Onchain de Celo Colombia**.
+Construido para **[MiniPay](https://www.opera.com/products/minipay)** (16M+ usuarios) sobre **[Celo](https://celo.org)** para el **Hackathon de Agentes Onchain · Celo Colombia**.
+
+| | |
+|---|---|
+| 🎮 **App en vivo** | **https://frontle.vercel.app** |
+| ⛓️ **Contrato (Celo Mainnet, verificado)** | [`0x7Ea1…Fa09`](https://celo.blockscout.com/address/0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09) |
+| 🎬 **Pitch + guion de demo** | [`DEMO.md`](DEMO.md) |
 
 ---
 
 ## 🎮 Cómo se juega
 
-1. Recibes el reto del día: **Origen → Destino** (ej: 🇨🇴 Colombia → 🇦🇷 Argentina)
-2. Vas escribiendo países que formen una cadena por fronteras compartidas
-3. Llegas al destino usando la menor cantidad de países posible
-4. **1 intento gratis al día.** Intentos extra y pistas se pagan en stablecoins.
+1. Recibes el reto del día: **Origen → Destino** (ej: 🇨🇴 Colombia → 🇦🇷 Argentina).
+2. Escribes países que formen una cadena por fronteras compartidas.
+3. Llegas al destino usando la menor cantidad de países posible.
+4. **El primer intento del día es gratis.** Pistas y reintentos se pagan en **USDT**, y el ganador del día se lleva el **pot**.
+
+Un semáforo (verde / amarillo / rojo) te indica si cada país acerca, va de lado o aleja del destino.
 
 ---
 
-## 💰 Monetización (stablecoins en Celo)
+## 💰 Modelo económico (on-chain, en Celo)
 
 | Acción | Precio |
 |---|---|
 | Primer intento del día | **Gratis** |
-| Intento extra | 0.10 USDm |
-| Pista (región / inicial / silueta) | 0.05 USDm |
+| Reintento (mejorar tu marca) | 0.10 USDT |
+| Pista — inicial del siguiente país | 0.05 USDT |
+| Pista — silueta del siguiente país | 0.05 USDT |
+| Pista — silueta de todos los países | 0.10 USDT |
 
-Pagos en **USDm / USDC** vía MiniPay con fee abstraction (el usuario nunca ve "gas" ni CELO).
-Integración con **COPm** (peso colombiano) para mostrar saldos en moneda local.
+Cada pago se reparte **80% al pot del día / 20% al protocolo**. Al cerrar el día (UTC), el **ganador se lleva todo el pot** (*winner-takes-all*) y lo reclama desde la propia app.
+
+- **Pagos sin fricción:** vía MiniPay con *fee abstraction* (CIP-64) — el usuario paga el fee de red en USDT y **nunca ve "gas" ni CELO**.
+- **Localización Colombia:** saldo en **COPm** (peso colombiano de Mento) y un **selector USDT / COP** que muestra todos los montos convertidos a pesos (solo visualización; el token siempre es USDT).
+- **4 idiomas:** español, inglés, portugués y francés (nombres de países vía `Intl.DisplayNames`).
 
 ---
 
-## 🏗️ Arquitectura (capas separadas)
+## 🏗️ Arquitectura
+
+Monorepo de tres capas. Hoy todas las piezas del ciclo de juego + premio están en producción.
 
 ```
 frontle/
-├── frontend/     # Capa 1 · Next.js — la UI del juego (MiniPay WebView)
-├── backend/      # Capa 2 · Lógica de servidor / API (se irá agregando)
-└── contracts/    # Capa 3 · Smart contracts en Celo (Foundry)
+├── frontend/   # Next.js 16 — UI del juego (MiniPay WebView) + lógica del juego
+├── supabase/   # Ranking, ganadores y cierre diario (Edge Function + cron)
+└── contracts/  # FrontleGame en Celo (Foundry) — pagos y pot diario
 ```
 
-- **frontend** — Next.js + TypeScript + Tailwind + viem. Auto-connect dentro de MiniPay.
-- **backend** — Por definir según necesidades (validación de rutas, leaderboard, anti-trampa). Ver [backend/README.md](backend/README.md).
-- **contracts** — Pagos de intentos/pistas y pot diario en Celo. Modelo inspirado en el contrato del tutor (winner-takes-all + free play diario).
+### Flujo de un día
+
+```
+   Jugador                MiniPay / Celo                 Supabase
+   ───────                ──────────────                 ────────
+   juega y paga  ──▶  payAttempt / buyHint  ──▶  +80% pot   submitScore (ranking)
+   pista/reintento     (USDT, sin gas visible)
+                                                  ┌────────────────────────────┐
+   00:10 UTC (cron) ─────────────────────────────│ Edge Function `close-day`  │
+                                                  │ 1. lee al ganador (ranking)│
+                                                  │ 2. rollDay(día, ganador)   │── on-chain
+                                                  │ 3. registra en `winners`   │
+                                                  └────────────────────────────┘
+   ganador abre app ──▶ "Reclamar premio" ──▶  claim(día)  ──▶  recibe el pot
+```
+
+- **`frontend/`** — Next.js + TypeScript + Tailwind v4 + viem. El grafo de fronteras, BFS de ruta óptima, reto determinista por fecha (todos juegan lo mismo) e i18n son lógica pura en `app/lib/`. Auto-connect dentro de MiniPay (`window.ethereum`, sin librerías de wallet).
+- **`supabase/`** — tabla `scores` (ranking diario, identidad por wallet), tabla `winners` (índice de ganadores para la UI) y la Edge Function **`close-day`**: un oráculo que, una vez al día por `pg_cron`, lee al ganador del ranking y lo graba on-chain con `rollDay` para habilitar su reclamo. La fuente de verdad del premio siempre es el contrato.
+- **`contracts/`** — `FrontleGame` en Celo Mainnet (verificado en Blockscout). Maneja `payAttempt`/`buyHint`, el pot diario, `rollDay` (solo operador) y `claim` (el ganador retira). Ver [`contracts/README.md`](contracts/README.md) para direcciones de tokens y despliegue con Foundry.
+
+---
+
+## 📦 Stack
+
+- **Frontend:** Next.js 16 · TypeScript · Tailwind CSS v4 · `viem` + `@celo/abis`
+- **Mapa:** `d3-geo` + `topojson-client`
+- **Backend:** Supabase (Postgres + RLS, Edge Functions en Deno, `pg_cron` + `pg_net`)
+- **Blockchain:** Celo Mainnet · USDT (6 dec) con adapter de `feeCurrency` · COPm (Mento)
+- **Wallet:** MiniPay (`window.ethereum`, sin librerías de conexión)
+- **Deploy:** Vercel (auto-deploy desde GitHub)
 
 ---
 
@@ -51,35 +93,23 @@ frontle/
 cd frontend
 npm install
 npm run dev      # http://localhost:3000
+npm run build    # build de producción
 ```
 
-Para probar dentro de MiniPay se necesita un dispositivo físico + ngrok (los emuladores no funcionan).
+Para probar **dentro de MiniPay** se necesita un dispositivo físico + ngrok (los emuladores no funcionan). El juego es completamente jugable en navegador; la capa de pagos requiere MiniPay.
+
+**Backend (Supabase):** las migraciones (`supabase/migrations/`) crean `winners` y el cron diario; la Edge Function `close-day` se despliega aparte. Requiere los secrets `OPERATOR_PRIVATE_KEY`, `GAME_ADDRESS` y (opcional) `CELO_RPC_URL`.
 
 ---
 
-## 📦 Stack
+## ✅ Estado
 
-- **Frontend:** Next.js · TypeScript · Tailwind CSS · viem
-- **Blockchain:** Celo (L2 de Ethereum) · stablecoins USDm/USDC/COPm
-- **Wallet:** MiniPay (`window.ethereum`, sin librerías de conexión)
-- **Deploy:** Vercel (auto-deploy desde GitHub)
-
----
-
-## 🔌 Capa blockchain (para el compañero de IT)
-
-El frontend ya está completo. Las acciones pagas (3 pistas + reintento) están cableadas a un único stub `requestPayment()` en [`frontend/app/page.tsx`](frontend/app/page.tsx).
-
-👉 **Guía completa para los contratos:** [`contracts/README.md`](contracts/README.md) — qué contrato construir (`FrontleGame`), direcciones de tokens en Celo, despliegue con Foundry, y cómo implementar `requestPayment` con viem.
-
-## 📋 Estado del hackathon
-
-- [x] Idea aterrizada
-- [x] Repo público en GitHub + SSH configurado
-- [x] Frontend navegable en Vercel (juego completo, mapa, i18n, diseño)
-- [x] UI de pistas/reintento/ranking lista para blockchain (`requestPayment`)
-- [ ] Smart contract `FrontleGame` desplegado en Celo
-- [ ] Integración de pagos en MiniPay (implementar `requestPayment`)
+- [x] Frontend completo: juego, mapa, i18n (4 idiomas), ranking, diseño
+- [x] Contrato `FrontleGame` desplegado y **verificado en Celo Mainnet**
+- [x] Pagos reales en **USDT** desde MiniPay (sin gas visible), probados end-to-end
+- [x] Pot diario en vivo + **reclamo de premio** on-chain por el ganador
+- [x] Backend Supabase: ranking, ganadores y **cierre diario automático** (cron + oráculo)
+- [x] Localización Colombia: saldo COPm + selector de visualización USDT / COP
 - [ ] Demo Day — 19 de junio 2026
 
 ---
