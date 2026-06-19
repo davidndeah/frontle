@@ -20,6 +20,7 @@ import {
   type Locale,
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, type ScoreEntry } from "./lib/ranking";
+import { formatMoney, getUsdToCopRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
@@ -65,6 +66,10 @@ export default function Frontle() {
   const [best, setBest] = useState<number | null>(null);
   const [pot, setPot] = useState<number | null>(null);
   const [copm, setCopm] = useState<number | null>(null);
+  // Moneda de VISUALIZACIÓN (el token real siempre es USDT; esto solo convierte
+  // los montos mostrados, para los usuarios de Colombia).
+  const [currency, setCurrency] = useState<DisplayCurrency>("USDT");
+  const [copRate, setCopRate] = useState(4000);
   const [hasWallet, setHasWallet] = useState(true); // optimista hasta confirmar que no hay wallet
 
   // Cronómetro / fases
@@ -84,6 +89,7 @@ export default function Frontle() {
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
   const tr = t(locale);
+  const fmt = (usdt: number) => formatMoney(usdt, currency, copRate);
   const cn = (canonical: string) => countryName(canonical, locale);
   const day = dateSeed();
   const bestKey = `frontle-best-${day}`;
@@ -101,6 +107,7 @@ export default function Frontle() {
   }
 
   useEffect(() => setLocale(detectLocale()), []);
+  useEffect(() => { getUsdToCopRate().then(setCopRate); }, []);
   useEffect(() => {
     getIpCountry().then(setIpCountry);
     getRanking(day).then(setRanking);
@@ -353,10 +360,15 @@ export default function Frontle() {
         {pot !== null && (
           <div className="text-center -mb-1">
             <span className="inline-block rounded-full bg-amber-400/15 border border-amber-300/40 px-4 py-1.5 text-sm font-bold text-amber-300">
-              {tr.prize(pot.toFixed(2))}
+              {tr.prize(fmt(pot))}
             </span>
           </div>
         )}
+
+        {/* Selector de moneda de visualización (solo display; el token es USDT) */}
+        <div className="flex justify-center -mt-2">
+          <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
+        </div>
 
         {/* Reto del día (oculto hasta pulsar Play) */}
         <section className={`${panel} p-4`}>
@@ -455,6 +467,7 @@ export default function Frontle() {
                 inRanking={!!myId}
                 onConnect={connectForRanking}
                 panel={panel}
+                fmt={fmt}
               />
             ) : (
               <section className="relative flex flex-col gap-3">
@@ -491,9 +504,9 @@ export default function Frontle() {
                 <div className={`${panel} p-3`}>
                   <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">{tr.hintsTitle}</p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    <HintButton active={showInitial} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} />
-                    <HintButton active={showNextSil} onClick={() => buyHint("next")} label={tr.hintSilhouetteNext} price={PRICES.hintNext} />
-                    <HintButton active={showAllSil} onClick={() => buyHint("all")} label={tr.hintSilhouetteAll} price={PRICES.hintAll} />
+                    <HintButton active={showInitial} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} fmt={fmt} />
+                    <HintButton active={showNextSil} onClick={() => buyHint("next")} label={tr.hintSilhouetteNext} price={PRICES.hintNext} fmt={fmt} />
+                    <HintButton active={showAllSil} onClick={() => buyHint("all")} label={tr.hintSilhouetteAll} price={PRICES.hintAll} fmt={fmt} />
                   </div>
                   {showInitial && nextHint && (
                     <p className="text-center text-sm text-amber-300 mt-2">{tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}</p>
@@ -511,7 +524,7 @@ export default function Frontle() {
 
         {/* Premios reclamables (días ganados sin cobrar) */}
         {prizes.length > 0 && (
-          <PrizesCard tr={tr} prizes={prizes} claimingDay={claimingDay} onClaim={handleClaim} panel={panel} />
+          <PrizesCard tr={tr} prizes={prizes} claimingDay={claimingDay} onClaim={handleClaim} panel={panel} fmt={fmt} />
         )}
 
         {/* Ranking diario */}
@@ -539,7 +552,7 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function HintButton({ active, onClick, label, price }: { active: boolean; onClick: () => void; label: string; price: number }) {
+function HintButton({ active, onClick, label, price, fmt }: { active: boolean; onClick: () => void; label: string; price: number; fmt: (usdt: number) => string }) {
   return (
     <button
       onClick={onClick}
@@ -548,8 +561,25 @@ function HintButton({ active, onClick, label, price }: { active: boolean; onClic
         active ? "border-amber-400/60 bg-amber-400/20 text-amber-200" : "border-white/25 text-white hover:bg-white/10"
       }`}
     >
-      {label} {active ? "✓" : <span className="opacity-70">· {price} USDT</span>}
+      {label} {active ? "✓" : <span className="opacity-70">· {fmt(price)}</span>}
     </button>
+  );
+}
+
+// Desplegable para elegir en qué moneda VER los montos (USDT real ↔ COP estimado).
+function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; currency: DisplayCurrency; onChange: (c: DisplayCurrency) => void }) {
+  return (
+    <label className="inline-flex items-center gap-1.5 text-[11px] text-neutral-300">
+      <span>{tr.amountIn}</span>
+      <select
+        value={currency}
+        onChange={(e) => onChange(e.target.value as DisplayCurrency)}
+        className="rounded-md border border-white/20 bg-black/60 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-white/40"
+      >
+        <option value="USDT">USDT</option>
+        <option value="COP">COP 🇨🇴</option>
+      </select>
+    </label>
   );
 }
 
@@ -576,12 +606,14 @@ function PrizesCard({
   claimingDay,
   onClaim,
   panel,
+  fmt,
 }: {
   tr: ReturnType<typeof t>;
   prizes: ClaimablePrize[];
   claimingDay: number | null;
   onClaim: (day: number) => void;
   panel: string;
+  fmt: (usdt: number) => string;
 }) {
   return (
     <section className={`${panel} p-3`}>
@@ -589,7 +621,7 @@ function PrizesCard({
       <ul className="flex flex-col gap-2">
         {prizes.map((p) => (
           <li key={p.day} className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2">
-            <span className="text-sm text-amber-100">{tr.prizeRow(String(p.amount))}</span>
+            <span className="text-sm text-amber-100">{tr.prizeRow(fmt(p.amount))}</span>
             <button
               onClick={() => onClaim(p.day)}
               disabled={claimingDay !== null}
@@ -671,6 +703,7 @@ function WinCard({
   inRanking,
   onConnect,
   panel,
+  fmt,
 }: {
   tr: ReturnType<typeof t>;
   guesses: number;
@@ -683,6 +716,7 @@ function WinCard({
   inRanking: boolean;
   onConnect: () => void;
   panel: string;
+  fmt: (usdt: number) => string;
 }) {
   const [copied, setCopied] = useState(false);
   const perfect = guesses <= optimal;
@@ -711,7 +745,7 @@ function WinCard({
         </button>
         {!perfect && (
           <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
-            {tr.retry} <span className="opacity-70 text-sm">· {retryPrice} USDT</span>
+            {tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span>
           </button>
         )}
         {!inRanking && hasWallet && (
