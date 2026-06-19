@@ -130,6 +130,24 @@ export async function getRanking(day: number, limit = 10): Promise<ScoreEntry[]>
   }
 }
 
+// --- Premios: días que esta wallet ganó (según la tabla `winners`) ------
+// Devuelve los índices de día. La verificación real de si se puede cobrar
+// (y el cobro) la hace el contrato vía payments.getClaimablePrizes/claimPrize.
+// Sin Supabase no hay tabla compartida de ganadores → array vacío.
+export async function getMyWinDays(address: string): Promise<number[]> {
+  if (!useSupabase || !address) return [];
+  try {
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/winners?winner_address=eq.${address.toLowerCase()}&select=day&order=day.desc&limit=60`,
+      { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
+    );
+    const j = await r.json();
+    return (Array.isArray(j) ? j : []).map((x: { day: number }) => Number(x.day));
+  } catch {
+    return [];
+  }
+}
+
 export function formatTime(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;

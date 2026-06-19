@@ -62,6 +62,34 @@ const gameAbi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "winnerOf",
+    inputs: [{ name: "day", type: "uint256" }],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "rolled",
+    inputs: [{ name: "day", type: "uint256" }],
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "claimed",
+    inputs: [{ name: "day", type: "uint256" }],
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "claim",
+    inputs: [{ name: "day", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
 ] as const;
 
 const erc20Abi = [
@@ -161,6 +189,87 @@ export async function getDailyPot(): Promise<number | null> {
   } catch (err) {
     console.error("[pago] no se pudo leer el pot:", err);
     return null;
+  }
+}
+
+// --- Premios: días reclamables y reclamo --------------------------------
+// El contrato es la fuente de verdad. Recibe los días candidatos (de la tabla
+// `winners` de Supabase) y deja SOLO los que la wallet puede cobrar ahora:
+// rolled && winnerOf == yo && !claimed. Devuelve el monto del pot por día.
+export interface ClaimablePrize {
+  day: number;
+  amount: number; // en USDT
+}
+
+export async function getClaimablePrizes(days: number[], address: string): Promise<ClaimablePrize[]> {
+  if (!address || days.length === 0) return [];
+  const me = address.toLowerCase();
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const out: ClaimablePrize[] = [];
+    for (const day of days) {
+      const d = BigInt(day);
+      const [rolled, winner, claimed] = await Promise.all([
+        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "rolled", args: [d] }),
+        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "winnerOf", args: [d] }),
+        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "claimed", args: [d] }),
+      ]);
+      if (!rolled || claimed) continue;
+      if (String(winner).toLowerCase() !== me) continue;
+      const amount = await publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "pot", args: [d] });
+      out.push({ day, amount: Number(formatUnits(amount, TOKEN_DECIMALS)) });
+    }
+    return out;
+  } catch (err) {
+    console.error("[premio] no se pudieron leer los días reclamables:", err);
+    return [];
+  }
+}
+
+// El ganador reclama el pot de un día. Devuelve true solo si se confirmó on-chain.
+export async function claimPrize(day: number): Promise<boolean> {
+  const provider = getProvider();
+  if (!provider) return false;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transport = custom(provider as any);
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+
+    let [account] = await walletClient.getAddresses();
+    if (!account) [account] = await walletClient.requestAddresses();
+    if (!account) return false;
+
+    const walletChainId = await walletClient.getChainId();
+    if (walletChainId !== ACTIVE_CHAIN.id) {
+      try {
+        await walletClient.switchChain({ id: ACTIVE_CHAIN.id });
+      } catch (switchErr) {
+        const code = (switchErr as { code?: number }).code;
+        if (code === 4902 || /Unrecognized chain|not been added/i.test(String((switchErr as Error)?.message))) {
+          await walletClient.addChain({ chain: ACTIVE_CHAIN });
+          await walletClient.switchChain({ id: ACTIVE_CHAIN.id });
+        } else {
+          throw switchErr;
+        }
+      }
+    }
+
+    const feeOpts = FEE_CURRENCY ? { feeCurrency: FEE_CURRENCY } : {};
+    const hash = await walletClient.writeContract({
+      account,
+      chain: ACTIVE_CHAIN,
+      address: GAME_ADDRESS,
+      abi: gameAbi,
+      functionName: "claim",
+      args: [BigInt(day)],
+      ...feeOpts,
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    return receipt.status === "success";
+  } catch (err) {
+    console.error("[premio] reclamo falló o cancelado:", err);
+    return false;
   }
 }
 

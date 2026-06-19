@@ -110,6 +110,12 @@ type Dict = {
   bestToday: (n: number) => string;
   noScoreYet: string;
   rankingNote: string;
+  prizesTitle: string;
+  prizeRow: (amount: string) => string;
+  prizeClaim: string;
+  prizeClaiming: string;
+  prizeClaimedMsg: string;
+  prizeClaimError: string;
   play: string;
   timerHint: string;
   timeLabel: string;
@@ -154,6 +160,12 @@ const STRINGS: Record<Locale, Dict> = {
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
     rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (liquidado on-chain).",
+    prizesTitle: "🏆 Tus premios",
+    prizeRow: (amount) => `Ganaste ${amount} USDT`,
+    prizeClaim: "Reclamar",
+    prizeClaiming: "Reclamando…",
+    prizeClaimedMsg: "¡Premio reclamado! 🎉",
+    prizeClaimError: "No se pudo reclamar. Intenta de nuevo.",
     play: "▶ Jugar",
     timerHint: "El cronómetro arranca al pulsar Jugar",
     timeLabel: "Tiempo",
@@ -203,6 +215,12 @@ const STRINGS: Record<Locale, Dict> = {
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
     rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (settled on-chain).",
+    prizesTitle: "🏆 Your prizes",
+    prizeRow: (amount) => `You won ${amount} USDT`,
+    prizeClaim: "Claim",
+    prizeClaiming: "Claiming…",
+    prizeClaimedMsg: "Prize claimed! 🎉",
+    prizeClaimError: "Couldn't claim. Try again.",
     play: "▶ Play",
     timerHint: "The timer starts when you press Play",
     timeLabel: "Time",
@@ -252,6 +270,12 @@ const STRINGS: Record<Locale, Dict> = {
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
     rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (liquidado on-chain).",
+    prizesTitle: "🏆 Seus prêmios",
+    prizeRow: (amount) => `Você ganhou ${amount} USDT`,
+    prizeClaim: "Resgatar",
+    prizeClaiming: "Resgatando…",
+    prizeClaimedMsg: "Prêmio resgatado! 🎉",
+    prizeClaimError: "Não foi possível resgatar. Tente novamente.",
     play: "▶ Jogar",
     timerHint: "O cronômetro começa ao tocar em Jogar",
     timeLabel: "Tempo",
@@ -301,6 +325,12 @@ const STRINGS: Record<Locale, Dict> = {
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
     rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (réglé on-chain).",
+    prizesTitle: "🏆 Vos prix",
+    prizeRow: (amount) => `Vous avez gagné ${amount} USDT`,
+    prizeClaim: "Réclamer",
+    prizeClaiming: "Réclamation…",
+    prizeClaimedMsg: "Prix réclamé ! 🎉",
+    prizeClaimError: "Échec de la réclamation. Réessayez.",
     play: "▶ Jouer",
     timerHint: "Le chrono démarre quand vous appuyez sur Jouer",
     timeLabel: "Temps",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { getCountry } from "./lib/countries";
 import {
   dailyChallenge,
@@ -19,10 +19,19 @@ import {
   t,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, type ScoreEntry } from "./lib/ranking";
 import WorldMap from "./components/WorldMap";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import { requestPayment, getDailyPot, getCopmBalance, getWalletAddress, connectWallet } from "./lib/payments";
+import {
+  requestPayment,
+  getDailyPot,
+  getCopmBalance,
+  getWalletAddress,
+  connectWallet,
+  getClaimablePrizes,
+  claimPrize,
+  type ClaimablePrize,
+} from "./lib/payments";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -67,6 +76,10 @@ export default function Frontle() {
   const [ipCountry, setIpCountry] = useState("");
   const [ranking, setRanking] = useState<ScoreEntry[]>([]);
   const [myId, setMyId] = useState("");
+
+  // Premios reclamables (días ganados aún no cobrados)
+  const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
+  const [claimingDay, setClaimingDay] = useState<number | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
@@ -180,6 +193,30 @@ export default function Frontle() {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Premios reclamables: días que la wallet ganó (tabla `winners`) y que el
+  // contrato confirma como cobrables (rolled && winner==yo && !claimed).
+  const loadPrizes = useCallback(async (addr: string) => {
+    if (!addr) return setPrizes([]);
+    const days = await getMyWinDays(addr);
+    setPrizes(await getClaimablePrizes(days, addr));
+  }, []);
+
+  useEffect(() => {
+    if (myId) loadPrizes(myId);
+  }, [myId, loadPrizes]);
+
+  async function handleClaim(day: number) {
+    setClaimingDay(day);
+    const ok = await claimPrize(day);
+    setClaimingDay(null);
+    if (ok) {
+      setMessage({ text: tr.prizeClaimedMsg, ok: true });
+      await loadPrizes(myId); // refresca: el día reclamado desaparece
+    } else {
+      setMessage({ text: tr.prizeClaimError, ok: false });
+    }
+  }
 
   const statusByCountry = useMemo(() => {
     const m: Record<string, Status> = { [challenge.start]: "start", [challenge.end]: "end" };
@@ -472,6 +509,11 @@ export default function Frontle() {
           </>
         )}
 
+        {/* Premios reclamables (días ganados sin cobrar) */}
+        {prizes.length > 0 && (
+          <PrizesCard tr={tr} prizes={prizes} claimingDay={claimingDay} onClaim={handleClaim} panel={panel} />
+        )}
+
         {/* Ranking diario */}
         <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} />
 
@@ -525,6 +567,40 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
       <Flag code={code} size={30} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
+  );
+}
+
+function PrizesCard({
+  tr,
+  prizes,
+  claimingDay,
+  onClaim,
+  panel,
+}: {
+  tr: ReturnType<typeof t>;
+  prizes: ClaimablePrize[];
+  claimingDay: number | null;
+  onClaim: (day: number) => void;
+  panel: string;
+}) {
+  return (
+    <section className={`${panel} p-3`}>
+      <p className="text-[10px] uppercase tracking-widest text-amber-300 mb-2 text-center">{tr.prizesTitle}</p>
+      <ul className="flex flex-col gap-2">
+        {prizes.map((p) => (
+          <li key={p.day} className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2">
+            <span className="text-sm text-amber-100">{tr.prizeRow(String(p.amount))}</span>
+            <button
+              onClick={() => onClaim(p.day)}
+              disabled={claimingDay !== null}
+              className="rounded-lg border border-amber-400/60 bg-amber-400/20 px-3 py-1.5 text-xs font-medium text-amber-100 transition active:scale-95 hover:bg-amber-400/30 disabled:opacity-60"
+            >
+              {claimingDay === p.day ? tr.prizeClaiming : tr.prizeClaim}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
