@@ -20,7 +20,7 @@ import {
   type Locale,
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, type ScoreEntry } from "./lib/ranking";
-import { formatMoney, getUsdToCopRate, type DisplayCurrency } from "./lib/currency";
+import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
@@ -69,7 +69,7 @@ export default function Frontle() {
   // Moneda de VISUALIZACIÓN (el token real siempre es USDT; esto solo convierte
   // los montos mostrados, para los usuarios de Colombia).
   const [currency, setCurrency] = useState<DisplayCurrency>("USDT");
-  const [copRate, setCopRate] = useState(4000);
+  const [copmRate, setCopmRate] = useState(4000);
   const [hasWallet, setHasWallet] = useState(true); // optimista hasta confirmar que no hay wallet
 
   // Cronómetro / fases
@@ -89,7 +89,7 @@ export default function Frontle() {
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
   const tr = t(locale);
-  const fmt = (usdt: number) => formatMoney(usdt, currency, copRate);
+  const fmt = (usdt: number) => formatMoney(usdt, currency, copmRate);
   const cn = (canonical: string) => countryName(canonical, locale);
   const day = dateSeed();
   const bestKey = `frontle-best-${day}`;
@@ -107,7 +107,7 @@ export default function Frontle() {
   }
 
   useEffect(() => setLocale(detectLocale()), []);
-  useEffect(() => { getUsdToCopRate().then(setCopRate); }, []);
+  useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
   useEffect(() => {
     getIpCountry().then(setIpCountry);
     getRanking(day).then(setRanking);
@@ -577,7 +577,7 @@ function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; 
         className="rounded-md border border-white/20 bg-black/60 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-white/40"
       >
         <option value="USDT">USDT</option>
-        <option value="COP">COP 🇨🇴</option>
+        <option value="COPM">COPm</option>
       </select>
     </label>
   );
