@@ -723,11 +723,10 @@ function WinCard({
         <button onClick={share} className="rounded-xl bg-white px-6 py-3 font-bold text-black active:scale-95 transition">
           {copied ? tr.copied : tr.share}
         </button>
-        {!perfect && (
-          <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
-            {tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span>
-          </button>
-        )}
+        {/* Siempre disponible: aun con marca perfecta se puede reintentar para mejorar el TIEMPO (desempate del ranking). */}
+        <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
+          {tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span>
+        </button>
         {!inRanking && hasWallet && (
           <button onClick={onConnect} className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20">
             {tr.connectToRank}
