@@ -26,7 +26,6 @@ import WorldMap from "./components/WorldMap";
 import {
   requestPayment,
   getDailyPot,
-  getCopmBalance,
   getWalletAddress,
   connectWallet,
   getClaimablePrizes,
@@ -65,7 +64,6 @@ export default function Frontle() {
   const [countdown, setCountdown] = useState("");
   const [best, setBest] = useState<number | null>(null);
   const [pot, setPot] = useState<number | null>(null);
-  const [copm, setCopm] = useState<number | null>(null);
   // Moneda de VISUALIZACIÓN (el token real siempre es USDT; esto solo convierte
   // los montos mostrados, para los usuarios de Colombia).
   const [currency, setCurrency] = useState<DisplayCurrency>("USDT");
@@ -153,19 +151,7 @@ export default function Frontle() {
     return () => { alive = false; clearInterval(id); };
   }, []);
 
-  // Saldo en COPm (peso colombiano) de la wallet conectada — localización MiniPay.
-  // Reintenta unas veces porque la wallet puede inyectarse con un pequeño retraso.
-  useEffect(() => {
-    let alive = true;
-    let tries = 0;
-    const load = () => getCopmBalance().then((b) => {
-      if (!alive) return;
-      if (b !== null) { setCopm(b); return; }
-      if (++tries < 4) setTimeout(load, 2000);
-    });
-    load();
-    return () => { alive = false; };
-  }, []);
+  // Saldo COPm oculto temporalmente (a pedido): no se carga ni se muestra.
 
   // ¿Hay wallet inyectada (MiniPay / extensión)? Reintenta porque puede
   // inyectarse con un pequeño retraso. Si la hay, captura la dirección SIN
@@ -347,13 +333,7 @@ export default function Frontle() {
         <header className="text-center">
           <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
           <p className="text-sm text-white mt-1 drop-shadow">{tr.tagline}</p>
-          {copm !== null && (
-            <div className="mt-2 flex justify-center">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/15 border border-emerald-300/40 px-3 py-1 text-xs font-semibold text-emerald-300">
-                🇨🇴 {tr.copmBalance(copm.toLocaleString("es-CO", { maximumFractionDigits: 2 }))}
-              </span>
-            </div>
-          )}
+          {/* Chip de saldo COPm oculto temporalmente (a pedido). El selector USDT/COPm sigue activo. */}
         </header>
 
         {/* Premio del día (pot on-chain) */}
