@@ -107,6 +107,7 @@ type Dict = {
   connectToRank: string;
   connectWallet: string;
   connectBenefit: string;
+  emailLogin: string;
   rankingTitle: string;
   bestToday: (n: number) => string;
   noScoreYet: string;
@@ -158,6 +159,7 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Conecta tu wallet para entrar al ranking",
     connectWallet: "🔗 Conectar wallet",
     connectBenefit: "Para el ranking y las pistas",
+    emailLogin: "✉️ Entrar con correo",
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
@@ -214,6 +216,7 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Connect your wallet to join the ranking",
     connectWallet: "🔗 Connect wallet",
     connectBenefit: "For the ranking and hints",
+    emailLogin: "✉️ Sign in with email",
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
@@ -270,6 +273,7 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Conecte sua wallet para entrar no ranking",
     connectWallet: "🔗 Conectar wallet",
     connectBenefit: "Para o ranking e as dicas",
+    emailLogin: "✉️ Entrar com e-mail",
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
@@ -326,6 +330,7 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Connectez votre wallet pour rejoindre le classement",
     connectWallet: "🔗 Connecter wallet",
     connectBenefit: "Pour le classement et les indices",
+    emailLogin: "✉️ Se connecter par e-mail",
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",

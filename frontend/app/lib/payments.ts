@@ -135,9 +135,46 @@ function resolveAction(reason: string): Action | null {
   return null;
 }
 
+// --- Provider de wallet embebida (Privy / login por correo) -------------
+// Cuando el jugador entra por CORREO, Privy le crea una wallet embebida en
+// Celo. `page.tsx` captura su provider EIP-1193 y lo registra aquí. Así
+// `getProvider()` puede caer a esta wallet cuando NO hay window.ethereum
+// (ni MiniPay ni extensión), sin tocar el resto de payments.ts.
+let embeddedProvider: unknown | undefined;
+
+// Envuelve el provider de Privy para que hable el método legacy que entiende:
+// viem/algunas rutas piden `wallet_sendTransaction` (EIP-5792) pero la wallet
+// embebida solo implementa `eth_sendTransaction`. El Proxy traduce el nombre;
+// misma firma, mismo flujo. Idempotente ante provider nulo.
+export function setEmbeddedProvider(raw: unknown | undefined): void {
+  if (!raw) {
+    embeddedProvider = undefined;
+    return;
+  }
+  const target = raw as {
+    request: (args: { method: string; params?: unknown }) => Promise<unknown>;
+  };
+  embeddedProvider = new Proxy(target, {
+    get(t, prop, receiver) {
+      if (prop === "request") {
+        return (args: { method: string; params?: unknown }) => {
+          if (args?.method === "wallet_sendTransaction") {
+            return t.request({ method: "eth_sendTransaction", params: args.params });
+          }
+          return t.request(args);
+        };
+      }
+      return Reflect.get(t, prop, receiver);
+    },
+  });
+}
+
 function getProvider(): unknown | undefined {
-  if (typeof window === "undefined") return undefined;
-  return (window as unknown as { ethereum?: unknown }).ethereum;
+  if (typeof window !== "undefined") {
+    const injected = (window as unknown as { ethereum?: unknown }).ethereum;
+    if (injected) return injected; // MiniPay / extensión tienen prioridad
+  }
+  return embeddedProvider; // fallback: wallet embebida por correo (Privy)
 }
 
 // --- Identidad: dirección de la wallet ---------------------------------

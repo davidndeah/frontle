@@ -32,6 +32,8 @@ import {
   claimPrize,
   type ClaimablePrize,
 } from "./lib/payments";
+import { PRIVY_ENABLED } from "./providers";
+import { PrivyIdentityBridge, EmailLoginButton } from "./components/PrivyLogin";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -292,6 +294,15 @@ export default function Frontle() {
     if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
   }
 
+  // Correo (Privy): PrivyIdentityBridge nos entrega la dirección de la wallet
+  // embebida cuando Privy la crea. La tratamos igual que una wallet conectada.
+  async function handlePrivyIdentity(addr: string) {
+    if (!addr) return;
+    setHasWallet(true);
+    setMyId(addr);
+    if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
+  }
+
   async function retry() {
     const paid = await requestPayment(PRICES.retry, "reintento del reto diario");
     if (!paid) return;
@@ -326,6 +337,8 @@ export default function Frontle() {
 
   return (
     <main className="relative min-h-dvh bg-black bg-grid text-white flex flex-col items-center px-4 py-6 overflow-hidden">
+      {/* Puente de la wallet embebida (login por correo). Sin UI. */}
+      {PRIVY_ENABLED && <PrivyIdentityBridge onIdentity={handlePrivyIdentity} />}
       <div className="prism-glow" />
       <div className="prism-core" />
       <div className="relative z-10 w-full max-w-md flex flex-col gap-5">
@@ -389,14 +402,22 @@ export default function Frontle() {
           />
         ) : (
           <div className="w-full rounded-2xl bg-black border border-white/15 min-h-[220px] flex flex-col items-center justify-center gap-3 py-5">
-            {!myId && hasWallet && (
-              <div className="flex flex-col items-center gap-1">
-                <button
-                  onClick={connectForRanking}
-                  className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-8 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
-                >
-                  {tr.connectWallet}
-                </button>
+            {!myId && (hasWallet || PRIVY_ENABLED) && (
+              <div className="flex flex-col items-center gap-2">
+                {hasWallet && (
+                  <button
+                    onClick={connectForRanking}
+                    className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-8 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+                  >
+                    {tr.connectWallet}
+                  </button>
+                )}
+                {PRIVY_ENABLED && (
+                  <EmailLoginButton
+                    label={tr.emailLogin}
+                    className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-8 py-3 font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
+                  />
+                )}
                 <p className="text-[11px] text-emerald-300/80">{tr.connectBenefit}</p>
               </div>
             )}
@@ -407,7 +428,7 @@ export default function Frontle() {
               {tr.play}
             </button>
             <p className="text-xs text-neutral-300">{tr.timerHint}</p>
-            {!hasWallet && (
+            {!hasWallet && !PRIVY_ENABLED && (
               <p className="text-[11px] text-amber-300/80">{tr.noWallet}</p>
             )}
           </div>
