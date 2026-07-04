@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { geoEqualEarth, geoPath } from "d3-geo";
+import { geoEqualEarth, geoPath, geoCentroid } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 import { COUNTRY_NAMES } from "../lib/countries";
@@ -127,13 +127,22 @@ export default function WorldMap({
     const known = tagged.filter((x) => x.name && statusByCountry[x.name]);
     const sil = tagged.filter((x) => x.name && !statusByCountry[x.name] && silSet.has(x.name));
 
-    // SIEMPRE encuadrar a los conocidos (+ siluetas puntuales). Mostrar todos
-    // los contornos NO cambia el zoom — solo dibuja outlines encima.
-    const fitFeatures = [...known, ...sil].map((k) => k.f);
+    // Extent FIJO a los países del reto (origen + destino). Revelar países o
+    // mostrar contornos NO cambia el zoom — solo el usuario (pan/zoom) lo altera.
+    const anchor = known.filter(
+      (x) => statusByCountry[x.name!] === "start" || statusByCountry[x.name!] === "end"
+    );
+    const fitFeatures = (anchor.length ? anchor : [...known, ...sil]).map((k) => k.f);
     if (fitFeatures.length === 0) return { outlines: [], silhouettes: [], known: [] };
 
     const fc: FeatureCollection = { type: "FeatureCollection", features: fitFeatures };
-    const projection = geoEqualEarth().fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
+    // Rotar la proyección al centroide de la región: evita que países que
+    // cruzan el antimeridiano (p.ej. Rusia/Chukotka) aparezcan partidos con
+    // un fragmento fantasma al otro lado del mapa.
+    const [lon] = geoCentroid(fc as never);
+    const projection = geoEqualEarth()
+      .rotate([Number.isFinite(lon) ? -lon : 0, 0])
+      .fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
     const pathGen = geoPath(projection);
 
     return {
