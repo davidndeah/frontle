@@ -38,6 +38,11 @@ import { PrivyIdentityBridge, EmailLoginButton } from "./components/PrivyLogin";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
+// Reparto base del pot por nivel (los 3 con ganador), igual que _computeShares
+// del contrato. Si algún nivel queda vacío, su parte sube al inmediato superior
+// (hasta 100% para un único ganador), así que este % es el mínimo del nivel.
+const BASE_SHARE: Record<Difficulty, number> = { easy: 15, medium: 35, hard: 50 };
+
 // Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
 function Flag({ code, size = 32 }: { code: string; size?: number }) {
   if (!code) return <span style={{ fontSize: size * 0.8 }}>🏳️</span>;
@@ -373,11 +378,14 @@ export default function Frontle() {
           {/* Chip de saldo COPm oculto temporalmente (a pedido). El selector USDT/COPm sigue activo. */}
         </header>
 
-        {/* Premio del día (pot on-chain) */}
+        {/* Premio del día (pot on-chain) + parte que gana el ganador del nivel activo */}
         {pot !== null && (
-          <div className="text-center -mb-1">
+          <div className="text-center -mb-1 flex flex-col items-center gap-1">
             <span className="inline-block rounded-full bg-amber-400/15 border border-amber-300/40 px-4 py-1.5 text-sm font-bold text-amber-300">
               {tr.prize(fmt(pot))}
+            </span>
+            <span className="text-[11px] text-amber-300/70">
+              {tr.levelShare(BASE_SHARE[level], fmt((pot * BASE_SHARE[level]) / 100))}
             </span>
           </div>
         )}

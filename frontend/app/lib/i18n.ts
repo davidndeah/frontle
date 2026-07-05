@@ -101,6 +101,7 @@ type Dict = {
   hintNextInitial: (letter: string) => string;
   nextChallenge: (time: string) => string;
   prize: (amount: string) => string;
+  levelShare: (pct: number, amount: string) => string;
   copmBalance: (amount: string) => string;
   amountIn: string;
   noWallet: string;
@@ -155,6 +156,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintNextInitial: (l) => `El siguiente país empieza por «${l}»`,
     nextChallenge: (t) => `Nuevo reto en ${t}`,
     prize: (a) => `🏆 Premio de hoy: ${a}`,
+    levelShare: (pct, a) => `Este nivel: ${pct}% ≈ ${a}`,
     copmBalance: (a) => `Saldo: ${a} COP`,
     amountIn: "Ver montos en",
     noWallet: "Abre Frontle en MiniPay para pistas y reintentos.",
@@ -214,6 +216,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintNextInitial: (l) => `The next country starts with “${l}”`,
     nextChallenge: (t) => `Next challenge in ${t}`,
     prize: (a) => `🏆 Today's prize: ${a}`,
+    levelShare: (pct, a) => `This level: ${pct}% ≈ ${a}`,
     copmBalance: (a) => `Balance: ${a} COP`,
     amountIn: "Show amounts in",
     noWallet: "Open Frontle in MiniPay for hints and retries.",
@@ -273,6 +276,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintNextInitial: (l) => `O próximo país começa com “${l}”`,
     nextChallenge: (t) => `Próximo desafio em ${t}`,
     prize: (a) => `🏆 Prêmio de hoje: ${a}`,
+    levelShare: (pct, a) => `Este nível: ${pct}% ≈ ${a}`,
     copmBalance: (a) => `Saldo: ${a} COP`,
     amountIn: "Ver valores em",
     noWallet: "Abra o Frontle no MiniPay para dicas e novas tentativas.",
@@ -332,6 +336,7 @@ const STRINGS: Record<Locale, Dict> = {
     hintNextInitial: (l) => `Le pays suivant commence par « ${l} »`,
     nextChallenge: (t) => `Prochain défi dans ${t}`,
     prize: (a) => `🏆 Prix du jour : ${a}`,
+    levelShare: (pct, a) => `Ce niveau : ${pct}% ≈ ${a}`,
     copmBalance: (a) => `Solde : ${a} COP`,
     amountIn: "Afficher les montants en",
     noWallet: "Ouvrez Frontle dans MiniPay pour les indices et les essais.",
