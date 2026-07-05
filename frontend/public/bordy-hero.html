@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+* { margin:0; box-sizing:border-box; }
+body { background:transparent; }
+.stage { width:640px; height:760px; }
+canvas { display:block; }
+</style></head><body>
+<div class="stage" id="m1"></div>
+<div class="stage" id="m2"></div>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const PAL = {
+  M1: { body:'#6C2BD9', face:'#1c0f38', acc1:'#22d3ee', acc2:'#e879f9', antenna:'#FCFF52', chest:'#FCFF52',
+        visor:['#22d3ee','#22c55e','#fbbf24','#e879f9'], rimL:'#22d3ee', rimR:'#FCFF52', metal:0.15 },
+  M2: { body:'#1b2a4a', face:'#0b1120', acc1:'#B79CED', acc2:'#8b5cf6', antenna:'#FCFF52', chest:'#FCFF52',
+        visor:['#22d3ee','#22c55e','#fbbf24','#e879f9'], rimL:'#B79CED', rimR:'#FCFF52', metal:0.15 },
+};
+function gradTexture(colors){
+  const c=document.createElement('canvas'); c.width=256; c.height=64; const g=c.getContext('2d');
+  const gr=g.createLinearGradient(0,0,256,0); colors.forEach((col,i)=>gr.addColorStop(i/(colors.length-1),col));
+  g.fillStyle=gr; g.fillRect(0,0,256,64); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t;
+}
+function buildBordy(scene,P){
+  const g=new THREE.Group(); g.rotation.y=-0.16; g.position.y=-0.1; scene.add(g);
+  const soft=(color,extra={})=>new THREE.MeshPhysicalMaterial({color,roughness:0.26,metalness:P.metal,clearcoat:1,clearcoatRoughness:0.16,...extra});
+  const bodyMat=soft(P.body), faceMat=soft(P.face);
+  const head=new THREE.Mesh(new RoundedBoxGeometry(1.85,1.45,1.5,10,0.62),bodyMat); head.position.y=1.18; g.add(head);
+  for(const s of [-1,1]){ const pod=new THREE.Mesh(new THREE.SphereGeometry(0.24,24,24),soft(s<0?P.acc1:P.acc2)); pod.position.set(1.0*s,1.2,0); pod.scale.set(0.55,1,1); g.add(pod); }
+  const stem=new THREE.Mesh(new THREE.CapsuleGeometry(0.04,0.22,6,12),faceMat); stem.position.y=2.05; g.add(stem);
+  const bulb=new THREE.Mesh(new THREE.SphereGeometry(0.13,24,24),soft(P.antenna,{emissive:P.antenna,emissiveIntensity:0.9})); bulb.position.y=2.26; g.add(bulb);
+  // visor prismático
+  const vt=gradTexture(P.visor);
+  const visor=new THREE.Mesh(new RoundedBoxGeometry(1.5,0.52,0.24,8,0.24),
+    new THREE.MeshPhysicalMaterial({map:vt,emissiveMap:vt,emissive:'#ffffff',emissiveIntensity:1.15,roughness:0.14,clearcoat:1}));
+  visor.position.set(0,1.24,0.72); g.add(visor);
+  for(const s of [-1,1]){ const pupil=new THREE.Mesh(new THREE.SphereGeometry(0.085,16,16),new THREE.MeshBasicMaterial({color:'#0b0f1c'})); pupil.position.set(0.3*s,1.25,0.87); g.add(pupil); }
+  const smile=new THREE.Mesh(new THREE.TorusGeometry(0.14,0.035,12,24,Math.PI*0.75),soft(P.acc2,{emissive:P.acc2,emissiveIntensity:0.5})); smile.position.set(0,0.92,0.78); smile.rotation.z=Math.PI+0.38; g.add(smile);
+  // cuerpo
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(0.52,0.42,10,24),bodyMat); body.position.y=0.02; body.scale.set(1.15,1,0.95); g.add(body);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(0.2,0.045,14,32),faceMat); ring.position.set(0,0.12,0.53); g.add(ring);
+  const core=new THREE.Mesh(new THREE.SphereGeometry(0.12,20,20),soft(P.chest,{emissive:P.chest,emissiveIntensity:1.1})); core.position.set(0,0.12,0.55); g.add(core);
+  for(const s of [-1,1]){ const arm=new THREE.Mesh(new THREE.CapsuleGeometry(0.13,0.2,8,16),soft(s<0?P.acc1:P.acc2)); arm.position.set(0.85*s,0.15,0.05); arm.rotation.z=0.35*s; g.add(arm); }
+  for(const s of [-1,1]){ const foot=new THREE.Mesh(new THREE.SphereGeometry(0.17,20,20),faceMat); foot.position.set(0.3*s,-0.52,0.08); foot.scale.set(1.1,0.62,1.25); g.add(foot); }
+}
+function render(elId,P){
+  const W=680,H=820;
+  const r=new THREE.WebGLRenderer({antialias:true,alpha:true}); r.setSize(W,H); r.setPixelRatio(2);
+  r.toneMapping=THREE.ACESFilmicToneMapping; r.toneMappingExposure=1.15;
+  document.getElementById(elId).appendChild(r.domElement);
+  const scene=new THREE.Scene();
+  // Encuadre completo (cabeza a pies con margen): cámara más lejos y target centrado
+  const cam=new THREE.PerspectiveCamera(30,W/H,0.1,50); cam.position.set(0.55,1.05,6.6); cam.lookAt(0,0.55,0);
+  buildBordy(scene,P);
+  scene.add(new THREE.AmbientLight('#9aa3c4',0.62));
+  const key=new THREE.DirectionalLight('#fff4e0',2.2); key.position.set(2.5,4,3); scene.add(key);
+  const rL=new THREE.DirectionalLight(P.rimL,2.5); rL.position.set(-4,1.6,-2); scene.add(rL);
+  const rR=new THREE.DirectionalLight(P.rimR,2.5); rR.position.set(4,1.2,-2.4); scene.add(rR);
+  r.render(scene,cam);
+}
+render('m1',PAL.M1);
+render('m2',PAL.M2);
+window.__done=true;
+</script></body></html>

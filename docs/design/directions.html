@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
+body { background:#0b0b12; width:1600px; }
+#grid { display:grid; grid-template-columns:1fr 1fr; }
+.tile { height:600px; padding:28px 32px; position:relative; overflow:hidden; }
+.tag { font-size:11px; letter-spacing:3px; color:#ffffffaa; text-transform:uppercase; }
+h1 { font-size:30px; color:#fff; margin:6px 0 2px; font-weight:900; }
+.desc { font-size:13px; color:#ffffffbb; margin-bottom:14px; }
+.sw { display:flex; gap:8px; margin-bottom:16px; }
+.sw div { width:34px; height:34px; border-radius:9px; border:1px solid #ffffff30; }
+.row { display:flex; gap:16px; align-items:flex-start; }
+.card { border-radius:18px; padding:16px; width:290px; }
+.mini { font-size:10px; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+.duel { display:flex; align-items:center; justify-content:space-between; }
+.duel img { width:38px; border-radius:4px; }
+.nm { font-size:12.5px; font-weight:700; margin-top:4px; text-align:center; }
+.btn { margin-top:14px; border-radius:13px; padding:11px; text-align:center; font-weight:800; font-size:14px; }
+.chips { display:flex; gap:8px; margin-top:14px; }
+.chip { border-radius:10px; padding:7px 11px; font-size:11.5px; font-weight:700; }
+.head { font-size:34px; font-weight:900; line-height:1.1; width:230px; }
+.sub { font-size:12px; margin-top:8px; }
+.pill { display:inline-block; border-radius:99px; padding:6px 12px; font-size:11px; font-weight:700; margin-top:10px; }
+
+/* A — VIOLETA PRISMA (Finity) */
+#A { background:linear-gradient(140deg,#2a1257 0%,#1c0b3e 55%,#160833 100%); }
+#A .blob1 { position:absolute; right:-60px; top:-60px; width:280px; height:280px; border-radius:60px; background:#7B3FE4; opacity:0.5; filter:blur(2px); transform:rotate(18deg); }
+#A .orb { position:absolute; border-radius:50%; background:radial-gradient(circle at 32% 28%, #fff59a, #FCFF52 45%, #c9a616); }
+#A .card { background:linear-gradient(160deg,#8a5cf5cc,#6C2BD9cc); border:1px solid #b79ced66; box-shadow:0 18px 40px #00000055; backdrop-filter:blur(6px); }
+#A .mini { color:#e6dcff; } #A .nm { color:#fff; }
+#A .btn { background:#FCFF52; color:#1c0b3e; box-shadow:0 8px 22px #fcff5240; }
+#A .chip { background:#ffffff14; border:1px solid #b79ced55; color:#e6dcff; }
+#A .head { color:#fff; } #A .head b{ color:#FCFF52; }
+#A .sub { color:#cbb8f0; }
+#A .pill { background:#ffffff12; border:1px solid #b79ced55; color:#e6dcff; }
+
+/* B — CHROME NOIR (Metrick) */
+#B { background:#070403; }
+#B .gridbg { position:absolute; inset:0; background-image:linear-gradient(to right,#ff7a1a14 1px,transparent 1px),linear-gradient(to bottom,#ff7a1a14 1px,transparent 1px); background-size:44px 44px; }
+#B .glowb { position:absolute; left:50%; bottom:-140px; width:700px; height:340px; transform:translateX(-50%); background:radial-gradient(ellipse at center,#ff7a1a55,transparent 65%); filter:blur(10px); }
+#B .irid { position:absolute; right:36px; top:36px; width:190px; height:14px; border-radius:99px; background:linear-gradient(90deg,#22d3ee,#22c55e,#fbbf24,#ef4444,#e879f9); box-shadow:0 0 24px #e879f966; }
+#B .card { background:linear-gradient(165deg,#1a1412,#0c0806); border:1px solid #ff7a1a44; box-shadow:inset 0 1px 0 #ffffff14, 0 16px 34px #000; }
+#B .mini { color:#ffb27a; } #B .nm { color:#f5ede6; }
+#B .btn { background:linear-gradient(120deg,#e8e8f0,#b9bac4); color:#0c0806; }
+#B .chip { background:#ff7a1a14; border:1px solid #ff7a1a55; color:#ffcf9e; }
+#B .head { color:#f5ede6; } #B .head b { background:linear-gradient(90deg,#22d3ee,#e879f9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+#B .sub { color:#c9b7a8; }
+#B .pill { background:#1a1412; border:1px solid #ff7a1a55; color:#ffb27a; }
+
+/* C — ARCADE BOLD (Pancake) */
+#C { background:radial-gradient(120% 120% at 20% 0%,#3a1b6e 0%,#27124a 45%,#1B0F33 100%); }
+#C .star { position:absolute; color:#ffffff55; font-size:15px; }
+#C .card { background:#372157; border:2px solid #7645D9; box-shadow:0 10px 0 #150a2b; border-radius:22px; }
+#C .mini { color:#1FC7D4; } #C .nm { color:#fff; }
+#C .btn { background:#1FC7D4; color:#0d2b2e; border-radius:16px; box-shadow:0 6px 0 #12818a; }
+#C .chip { background:#ED4B9E22; border:2px solid #ED4B9E; color:#ffb8dd; border-radius:12px; }
+#C .head { color:#fff; }
+#C .head b { background:#7645D9; padding:1px 10px; border-radius:8px; color:#fff; }
+#C .sub { color:#c8b8ea; }
+#C .pill { background:#7645D9; color:#fff; }
+
+/* D — AURORA CARTOGRÁFICA (evolución del actual) */
+#D { background:#020510; }
+#D .aur { position:absolute; left:-10%; top:-30%; width:120%; height:90%; background:
+  radial-gradient(50% 60% at 30% 50%, #22d3ee33, transparent 70%),
+  radial-gradient(50% 60% at 70% 40%, #e879f933, transparent 70%),
+  radial-gradient(40% 50% at 50% 70%, #22c55e2b, transparent 70%); filter:blur(20px); }
+#D .hair { position:absolute; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,#22d3ee66,transparent); }
+#D .card { background:#0a0f1eb8; border:1px solid #22d3ee3d; backdrop-filter:blur(10px); box-shadow:0 0 0 1px #ffffff08, 0 18px 40px #000000aa; }
+#D .mini { color:#7deefe; } #D .nm { color:#fff; }
+#D .btn { background:linear-gradient(100deg,#22d3ee,#22c55e); color:#02180f; }
+#D .chip { background:#22d3ee12; border:1px solid #22d3ee55; color:#aef4ff; }
+#D .head { color:#fff; } #D .head b { background:linear-gradient(100deg,#22d3ee,#e879f9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+#D .sub { color:#9fb3cf; }
+#D .pill { background:#0a0f1e; border:1px solid #e879f955; color:#f0c8fb; }
+</style></head><body>
+<div id="grid">
+
+<div class="tile" id="A">
+  <div class="blob1"></div>
+  <div class="orb" style="right:70px;top:120px;width:34px;height:34px"></div>
+  <div class="orb" style="right:130px;top:70px;width:20px;height:20px"></div>
+  <div class="orb" style="right:44px;top:200px;width:16px;height:16px"></div>
+  <div class="tag">Dirección A</div>
+  <h1>Violeta Prisma</h1>
+  <div class="desc">Finity-like: violeta profundo + vidrio suave + dorado Celo. Premium, redondeado, amable.</div>
+  <div class="sw"><div style="background:#1c0b3e"></div><div style="background:#6C2BD9"></div><div style="background:#B79CED"></div><div style="background:#FCFF52"></div><div style="background:#fff"></div></div>
+  <div class="row">
+    <div>
+      <div class="head">Conecta el <b>mundo.</b></div>
+      <div class="sub">Un reto diario. Premio real en stablecoins.</div>
+      <div class="pill">🏆 Pot de hoy · $2.48</div>
+    </div>
+    <div class="card">
+      <div class="mini">Reto del día</div>
+      <div class="duel">
+        <div><img src="https://flagcdn.com/bn.svg"><div class="nm">Brunéi</div></div>
+        <div style="color:#e6dcff">→</div>
+        <div><img src="https://flagcdn.com/de.svg"><div class="nm">Alemania</div></div>
+      </div>
+      <div class="btn">▶ Jugar</div>
+      <div class="chips"><div class="chip">💡 Pista · 0.05</div><div class="chip">⭐⭐⭐</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tile" id="B">
+  <div class="gridbg"></div><div class="glowb"></div><div class="irid"></div>
+  <div class="tag" style="color:#ffb27a">Dirección B</div>
+  <h1>Chrome Noir</h1>
+  <div class="desc" style="color:#c9b7a8">Metrick-like: negro cálido + ámbar + cromo, con la franja iridiscente como firma prismática.</div>
+  <div class="sw"><div style="background:#070403"></div><div style="background:#ff7a1a"></div><div style="background:#e8e8f0"></div><div style="background:linear-gradient(90deg,#22d3ee,#e879f9)"></div><div style="background:#f5ede6"></div></div>
+  <div class="row">
+    <div>
+      <div class="head">Conecta el <b>mundo.</b></div>
+      <div class="sub">Un reto diario. Premio real en stablecoins.</div>
+      <div class="pill">🏆 Pot de hoy · $2.48</div>
+    </div>
+    <div class="card">
+      <div class="mini">Reto del día</div>
+      <div class="duel">
+        <div><img src="https://flagcdn.com/bn.svg"><div class="nm">Brunéi</div></div>
+        <div style="color:#ffb27a">→</div>
+        <div><img src="https://flagcdn.com/de.svg"><div class="nm">Alemania</div></div>
+      </div>
+      <div class="btn">▶ Jugar</div>
+      <div class="chips"><div class="chip">💡 Pista · 0.05</div><div class="chip">⭐⭐⭐</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tile" id="C">
+  <span class="star" style="left:340px;top:40px">✦</span><span class="star" style="left:560px;top:110px">✦</span><span class="star" style="left:420px;top:520px">✦</span>
+  <div class="tag" style="color:#1FC7D4">Dirección C</div>
+  <h1>Arcade Bold</h1>
+  <div class="desc">Pancake-like: juguetón y chunky. Tipografía enorme con bloque, botones con "peso", mascota protagonista.</div>
+  <div class="sw"><div style="background:#1B0F33"></div><div style="background:#7645D9"></div><div style="background:#1FC7D4"></div><div style="background:#ED4B9E"></div><div style="background:#fff"></div></div>
+  <div class="row">
+    <div>
+      <div class="head">Conecta el <b>mundo.</b></div>
+      <div class="sub">Un reto diario. Premio real en stablecoins.</div>
+      <div class="pill">🏆 Pot de hoy · $2.48</div>
+    </div>
+    <div class="card">
+      <div class="mini">Reto del día</div>
+      <div class="duel">
+        <div><img src="https://flagcdn.com/bn.svg"><div class="nm">Brunéi</div></div>
+        <div style="color:#1FC7D4">→</div>
+        <div><img src="https://flagcdn.com/de.svg"><div class="nm">Alemania</div></div>
+      </div>
+      <div class="btn">▶ Jugar</div>
+      <div class="chips"><div class="chip">💡 Pista · 0.05</div><div class="chip">⭐⭐⭐</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="tile" id="D">
+  <div class="aur"></div>
+  <div class="hair" style="top:120px"></div><div class="hair" style="top:340px"></div><div class="hair" style="top:500px"></div>
+  <div class="tag" style="color:#7deefe">Dirección D</div>
+  <h1>Aurora Cartográfica</h1>
+  <div class="desc" style="color:#9fb3cf">Evolución del Frontle actual: negro azulado + auroras suaves + hairlines neón. Sofisticado, "holo-mapa".</div>
+  <div class="sw"><div style="background:#020510"></div><div style="background:#22d3ee"></div><div style="background:#22c55e"></div><div style="background:#e879f9"></div><div style="background:#0a0f1e"></div></div>
+  <div class="row">
+    <div>
+      <div class="head">Conecta el <b>mundo.</b></div>
+      <div class="sub">Un reto diario. Premio real en stablecoins.</div>
+      <div class="pill">🏆 Pot de hoy · $2.48</div>
+    </div>
+    <div class="card">
+      <div class="mini">Reto del día</div>
+      <div class="duel">
+        <div><img src="https://flagcdn.com/bn.svg"><div class="nm">Brunéi</div></div>
+        <div style="color:#7deefe">→</div>
+        <div><img src="https://flagcdn.com/de.svg"><div class="nm">Alemania</div></div>
+      </div>
+      <div class="btn">▶ Jugar</div>
+      <div class="chips"><div class="chip">💡 Pista · 0.05</div><div class="chip">⭐⭐⭐</div></div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body></html>

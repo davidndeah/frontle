@@ -250,7 +250,7 @@ export default function BordyTutorial({ onDone }: { onDone: () => void }) {
             for (const [name, st] of ev.set!) n[name] = st;
             return n;
           });
-          const st = ev.set[0][1];
+          const st = ev.set![0][1];
           chime(mutedRef.current, st === "yellow" ? [330, 262] : st === "red" ? [262, 175] : [659, 880]);
         }, ev.t));
       }

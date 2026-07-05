@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+* { margin:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
+body { background:#06070e; width:1680px; height:640px; display:flex; }
+.v { width:560px; height:640px; position:relative; }
+.v + .v { border-left:1px solid #ffffff14; }
+.glow { position:absolute; left:50%; top:55%; width:70%; height:55%; transform:translate(-50%,-50%); border-radius:50%;
+  filter:blur(60px); opacity:0.35; pointer-events:none; }
+canvas { position:absolute; inset:0; }
+.cap { position:absolute; top:22px; left:0; right:0; text-align:center; z-index:5; }
+.cap h2 { color:#fff; font-size:19px; font-weight:900; }
+.cap p { color:#8791a8; font-size:12px; margin-top:4px; padding:0 30px; line-height:1.5; }
+</style></head><body>
+
+<div class="v" id="v1">
+  <div class="glow" style="background:radial-gradient(circle,#e879f9,#22d3ee)"></div>
+  <div class="cap"><h2>S1 · Soft Toy (Pancake)</h2><p>Redondo, brillante y achuchable — plástico glossy con acentos prisma emisivos.</p></div>
+</div>
+<div class="v" id="v2">
+  <div class="glow" style="background:radial-gradient(circle,#22d3ee,#7c3aed)"></div>
+  <div class="cap"><h2>S2 · Game-ready</h2><p>Mech-buddy de videojuego — metal grafito, visor prismático emisivo, rim lights dramáticas.</p></div>
+</div>
+<div class="v" id="v3">
+  <div class="glow" style="background:radial-gradient(circle,#22c55e,#0ea5e9)"></div>
+  <div class="cap"><h2>S3 · Minimal Clay</h2><p>Una sola forma de arcilla mate + anillo prismático flotante. Museo, silencio, elegancia.</p></div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+const PRISM = ['#22d3ee','#22c55e','#fbbf24','#e879f9'];
+
+function prismTexture(vertical=false){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
+  const g = c.getContext('2d');
+  const gr = vertical ? g.createLinearGradient(0,0,0,64) : g.createLinearGradient(0,0,256,0);
+  gr.addColorStop(0,'#22d3ee'); gr.addColorStop(0.35,'#22c55e'); gr.addColorStop(0.65,'#fbbf24'); gr.addColorStop(1,'#e879f9');
+  g.fillStyle = gr; g.fillRect(0,0,256,64);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function shadowTexture(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128,128,10,128,128,128);
+  gr.addColorStop(0,'rgba(0,0,0,0.85)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+
+function makeView(el, build, camPos){
+  const W = 560, H = 640;
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  renderer.setSize(W,H); renderer.setPixelRatio(2);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+  el.appendChild(renderer.domElement);
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(34, W/H, 0.1, 50);
+  cam.position.set(...camPos); cam.lookAt(0, 0.75, 0);
+  // sombra de contacto
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(3.4,3.4),
+    new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent:true, depthWrite:false }));
+  sh.rotation.x = -Math.PI/2; sh.position.y = -0.62; scene.add(sh);
+  build(scene);
+  renderer.render(scene, cam);
+  return () => renderer.render(scene, cam);
+}
+
+// ---------- S1 · SOFT TOY ----------
+function buildToy(scene){
+  const g = new THREE.Group(); g.rotation.y = -0.38; scene.add(g);
+  const glossy = (color) => new THREE.MeshPhysicalMaterial({ color, roughness:0.22, clearcoat:1, clearcoatRoughness:0.15 });
+  const navy = glossy('#1b2a4a');
+  // cabeza XL
+  const head = new THREE.Mesh(new RoundedBoxGeometry(1.9, 1.5, 1.5, 8, 0.62), navy);
+  head.position.y = 1.15; g.add(head);
+  // cara (placa)
+  const face = new THREE.Mesh(new RoundedBoxGeometry(1.35, 0.95, 0.25, 6, 0.3),
+    new THREE.MeshPhysicalMaterial({ color:'#0b1120', roughness:0.35, clearcoat:0.8 }));
+  face.position.set(0, 1.12, 0.72); g.add(face);
+  // ojos glossy grandes
+  for (const s of [-1,1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.185, 32, 32),
+      new THREE.MeshPhysicalMaterial({ color:'#22d3ee', emissive:'#22d3ee', emissiveIntensity:0.75, roughness:0.1, clearcoat:1 }));
+    eye.position.set(0.34*s, 1.2, 0.83); g.add(eye);
+    const hi = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 16),
+      new THREE.MeshBasicMaterial({ color:'#ffffff' }));
+    hi.position.set(0.34*s - 0.05, 1.27, 0.985); g.add(hi);
+  }
+  // sonrisa (torito magenta)
+  const smile = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.045, 16, 32, Math.PI*0.8),
+    new THREE.MeshStandardMaterial({ color:'#e879f9', emissive:'#e879f9', emissiveIntensity:0.7 }));
+  smile.position.set(0, 0.94, 0.84); smile.rotation.z = Math.PI + 0.35; g.add(smile);
+  // antena
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.34, 16),
+    new THREE.MeshStandardMaterial({ color:'#16a34a' }));
+  stem.position.y = 2.05; g.add(stem);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 24),
+    new THREE.MeshPhysicalMaterial({ color:'#22c55e', emissive:'#22c55e', emissiveIntensity:0.9, clearcoat:1, roughness:0.15 }));
+  bulb.position.y = 2.3; g.add(bulb);
+  // cuerpo mini
+  const body = new THREE.Mesh(new RoundedBoxGeometry(1.15, 0.85, 0.95, 8, 0.4), navy);
+  body.position.y = 0.0; g.add(body);
+  // botón pecho ámbar
+  const btn = new THREE.Mesh(new THREE.SphereGeometry(0.14, 24, 24),
+    new THREE.MeshPhysicalMaterial({ color:'#fbbf24', emissive:'#fbbf24', emissiveIntensity:0.8, clearcoat:1 }));
+  btn.position.set(0, 0.05, 0.52); g.add(btn);
+  // bracitos esfera
+  for (const s of [-1,1]) {
+    const arm = new THREE.Mesh(new THREE.SphereGeometry(0.21, 24, 24), glossy(s<0?'#22d3ee':'#e879f9'));
+    arm.position.set(0.82*s, 0.12, 0); g.add(arm);
+  }
+  // piecitos
+  for (const s of [-1,1]) {
+    const foot = new THREE.Mesh(new RoundedBoxGeometry(0.36, 0.24, 0.42, 6, 0.12), glossy('#0b1120'));
+    foot.position.set(0.33*s, -0.5, 0.06); g.add(foot);
+  }
+  // luces cálidas + rims prisma
+  scene.add(new THREE.AmbientLight('#8890b0', 0.55));
+  const key = new THREE.DirectionalLight('#fff5e6', 2.2); key.position.set(2.5, 4, 3); scene.add(key);
+  const rimL = new THREE.DirectionalLight('#22d3ee', 2.0); rimL.position.set(-4, 1.5, -2); scene.add(rimL);
+  const rimR = new THREE.DirectionalLight('#e879f9', 2.0); rimR.position.set(4, 1, -2.5); scene.add(rimR);
+}
+
+// ---------- S2 · GAME-READY ----------
+function buildGame(scene){
+  const g = new THREE.Group(); g.rotation.y = -0.45; scene.add(g);
+  const metal = (color, rough=0.35) => new THREE.MeshStandardMaterial({ color, metalness:0.85, roughness:rough });
+  const graphite = metal('#2a3348', 0.4), dark = metal('#151b2c', 0.5);
+  // cabeza angular
+  const head = new THREE.Mesh(new RoundedBoxGeometry(1.7, 1.25, 1.35, 4, 0.22), graphite);
+  head.position.y = 1.3; g.add(head);
+  // visor prismático emisivo
+  const visTex = prismTexture();
+  const visor = new THREE.Mesh(new RoundedBoxGeometry(1.45, 0.42, 0.18, 4, 0.12),
+    new THREE.MeshStandardMaterial({ map:visTex, emissiveMap:visTex, emissive:'#ffffff', emissiveIntensity:1.4, roughness:0.2, metalness:0.2 }));
+  visor.position.set(0, 1.36, 0.68); g.add(visor);
+  // "orejas" laterales
+  for (const s of [-1,1]) {
+    const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.18, 24), dark);
+    ear.rotation.z = Math.PI/2; ear.position.set(0.95*s, 1.32, 0); g.add(ear);
+    const earGlow = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.2, 24),
+      new THREE.MeshStandardMaterial({ color:s<0?'#22d3ee':'#e879f9', emissive:s<0?'#22d3ee':'#e879f9', emissiveIntensity:1.6 }));
+    earGlow.rotation.z = Math.PI/2; earGlow.position.set(0.96*s, 1.32, 0); g.add(earGlow);
+  }
+  // aleta antena
+  const fin = new THREE.Mesh(new RoundedBoxGeometry(0.1, 0.4, 0.55, 3, 0.05), metal('#e879f9', 0.3));
+  fin.position.set(0, 2.05, -0.15); g.add(fin);
+  // cuello
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.28, 24), dark);
+  neck.position.y = 0.58; g.add(neck);
+  // torso
+  const torso = new THREE.Mesh(new RoundedBoxGeometry(1.35, 1.0, 0.95, 4, 0.18), graphite);
+  torso.position.y = 0.0; g.add(torso);
+  // núcleo del pecho
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 32),
+    new THREE.MeshStandardMaterial({ color:'#22d3ee', emissive:'#22d3ee', emissiveIntensity:2.0 }));
+  core.rotation.x = Math.PI/2; core.position.set(0, 0.08, 0.51); g.add(core);
+  const coreRing = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.045, 16, 40), metal('#0d1322', 0.3));
+  coreRing.position.set(0, 0.08, 0.51); g.add(coreRing);
+  // hombreras
+  for (const s of [-1,1]) {
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 24, 0, Math.PI*2, 0, Math.PI/1.8), metal(s<0?'#22d3ee':'#e879f9', 0.35));
+    sh.position.set(0.85*s, 0.4, 0); sh.rotation.z = -0.2*s; g.add(sh);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.5, 8, 16), dark);
+    arm.position.set(0.95*s, -0.05, 0); g.add(arm);
+  }
+  // luces frías dramáticas
+  scene.add(new THREE.AmbientLight('#3a4470', 0.5));
+  const key = new THREE.DirectionalLight('#dfe8ff', 1.6); key.position.set(2, 4, 3); scene.add(key);
+  const rimL = new THREE.DirectionalLight('#22d3ee', 3.2); rimL.position.set(-4.5, 2, -2); scene.add(rimL);
+  const rimR = new THREE.DirectionalLight('#e879f9', 3.2); rimR.position.set(4.5, 1.4, -2.5); scene.add(rimR);
+  const under = new THREE.PointLight('#7c3aed', 8, 6); under.position.set(0, -0.4, 1.6); scene.add(under);
+}
+
+// ---------- S3 · MINIMAL CLAY ----------
+function buildClay(scene){
+  const g = new THREE.Group(); g.rotation.y = -0.3; scene.add(g);
+  const clay = new THREE.MeshStandardMaterial({ color:'#262e44', roughness:0.9, metalness:0.02 });
+  // una sola forma: cápsula
+  const bodyHead = new THREE.Mesh(new THREE.CapsuleGeometry(0.78, 1.0, 12, 32), clay);
+  bodyHead.position.y = 0.85; g.add(bodyHead);
+  // ojos: dos puntos emisivos
+  for (const s of [-1,1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16),
+      new THREE.MeshStandardMaterial({ color:'#dffbff', emissive:'#9ff2ff', emissiveIntensity:2.4 }));
+    eye.position.set(0.26*s, 1.32, 0.72); g.add(eye);
+  }
+  // anillo prismático flotante (la única "joya")
+  const ringTex = prismTexture();
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.12, 0.05, 20, 96),
+    new THREE.MeshStandardMaterial({ map:ringTex, emissiveMap:ringTex, emissive:'#ffffff', emissiveIntensity:1.1, roughness:0.3 }));
+  ring.position.y = 0.8; ring.rotation.x = Math.PI/2.25; ring.rotation.y = 0.15; g.add(ring);
+  // antena mínima
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 16),
+    new THREE.MeshStandardMaterial({ color:'#22c55e', emissive:'#22c55e', emissiveIntensity:1.6 }));
+  dot.position.y = 2.05; g.add(dot);
+  const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.22, 8), clay);
+  stem.position.y = 1.9; g.add(stem);
+  // iluminación de museo, suave y envolvente
+  scene.add(new THREE.AmbientLight('#aab4d4', 0.85));
+  const key = new THREE.DirectionalLight('#ffffff', 1.6); key.position.set(2.5, 4, 3.5); scene.add(key);
+  const fill = new THREE.DirectionalLight('#8fb8ff', 0.7); fill.position.set(-3, 1, 2); scene.add(fill);
+  const rim = new THREE.DirectionalLight('#22c55e', 1.4); rim.position.set(-2, 2.5, -3); scene.add(rim);
+  const rim2 = new THREE.DirectionalLight('#e879f9', 1.0); rim2.position.set(3, 1, -3); scene.add(rim2);
+}
+
+const r1 = makeView(document.getElementById('v1'), buildToy,  [2.4, 1.9, 5.4]);
+const r2 = makeView(document.getElementById('v2'), buildGame, [2.6, 1.8, 5.6]);
+const r3 = makeView(document.getElementById('v3'), buildClay, [2.2, 1.7, 5.6]);
+setTimeout(() => { r1(); r2(); r3(); window.__done = true; }, 600);
+</script>
+</body></html>

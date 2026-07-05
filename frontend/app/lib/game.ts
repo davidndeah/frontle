@@ -7,11 +7,15 @@
 
 import { COUNTRIES, COUNTRY_NAMES, getCountry, areNeighbors } from "./countries";
 
+export type Difficulty = "easy" | "medium" | "hard";
+export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+
 export interface DailyChallenge {
   start: string;
   end: string;
   optimal: number; // # de países intermedios en la ruta más corta
   path: string[]; // una ruta óptima (start ... end)
+  level: Difficulty; // nivel de dificultad (por rareza de los países)
 }
 
 // --- BFS: ruta más corta por fronteras ---
@@ -127,30 +131,131 @@ export function dateSeed(d = new Date()): number {
   return y * 10000 + m * 100 + day;
 }
 
-// Genera el reto del día: un par de países cuya ruta más corta
-// tenga una dificultad razonable (entre 3 y 6 países intermedios).
-export function dailyChallenge(seed = dateSeed()): DailyChallenge {
-  const rand = mulberry32(seed);
-  const names = COUNTRY_NAMES;
-  const MIN_OPT = 3;
-  const MAX_OPT = 6;
+// --- Dificultad por fama y conectividad ---
+// La dificultad de un nivel viene de qué tan CONOCIDOS son sus países:
+//  - fácil  → países muy reconocidos mundialmente (fama pura, set curado)
+//  - medio  → el resto, más conectado en el grafo
+//  - difícil→ el resto, menos conectado (países aislados / dead-ends / oscuros)
+// La fama la define el set curado (no el grado); la conectividad solo separa
+// medio de difícil entre los NO famosos.
 
-  // Hasta 200 intentos de encontrar un par con dificultad objetivo.
-  for (let i = 0; i < 200; i++) {
-    const a = names[Math.floor(rand() * names.length)];
-    const b = names[Math.floor(rand() * names.length)];
+// Grado (nº de vecinos) = conectividad de un país en el grafo.
+function degreeOf(name: string): number {
+  return COUNTRIES[name]?.neighbors.length ?? 0;
+}
+
+// Países muy reconocidos mundialmente → nivel "fácil". La pertenencia a este
+// set (no el grado) es lo que hace fácil a un país. Los que no existan en el
+// grafo se ignoran automáticamente.
+const FAMOUS_ANCHORS = new Set<string>([
+  // América
+  "United States", "Canada", "Mexico", "Brazil", "Argentina", "Colombia",
+  "Chile", "Peru", "Venezuela", "Ecuador", "Bolivia", "Uruguay", "Cuba",
+  "Costa Rica", "Panama",
+  // Europa
+  "France", "Germany", "Spain", "Italy", "Portugal", "Netherlands", "Belgium",
+  "Switzerland", "Austria", "Poland", "Greece", "Sweden", "Norway", "Denmark",
+  "Finland", "Ireland", "Ukraine", "Russia", "United Kingdom", "Croatia",
+  "Hungary", "Czech Republic", "Romania",
+  // Asia
+  "China", "India", "Japan", "South Korea", "North Korea", "Thailand",
+  "Vietnam", "Indonesia", "Pakistan", "Afghanistan", "Turkey", "Iran", "Iraq",
+  "Israel", "Saudi Arabia", "Qatar", "United Arab Emirates", "Syria", "Lebanon",
+  "Jordan",
+  // África
+  "Egypt", "Morocco", "Algeria", "Tunisia", "Libya", "South Africa", "Nigeria",
+  "Kenya", "Ethiopia", "Ghana", "Sudan", "Somalia",
+]);
+
+// Nivel de cada país: fácil = famoso (set curado); el resto se parte por
+// conectividad (mitad superior → medio, mitad inferior → difícil).
+// Determinístico y estable (mismo resultado en todo build/cliente).
+const COUNTRY_TIER: Record<string, Difficulty> = (() => {
+  const tier: Record<string, Difficulty> = {};
+  const rest: string[] = [];
+  for (const name of COUNTRY_NAMES) {
+    if (FAMOUS_ANCHORS.has(name)) tier[name] = "easy";
+    else rest.push(name);
+  }
+  // Los NO famosos: más conectados → medio; menos conectados → difícil.
+  rest.sort((a, b) => degreeOf(b) - degreeOf(a) || (a < b ? -1 : 1));
+  const half = Math.ceil(rest.length / 2);
+  rest.forEach((name, i) => {
+    tier[name] = i < half ? "medium" : "hard";
+  });
+  return tier;
+})();
+
+// Nivel al que pertenece un país (por su fama). Útil para UI/depuración.
+export function tierOf(name: string): Difficulty | undefined {
+  return COUNTRY_TIER[name];
+}
+
+// Mezcla la semilla del día con el nivel → cada nivel tiene su propio reto,
+// pero sigue siendo determinístico por fecha (todos ven lo mismo).
+function seedForLevel(seed: number, level: Difficulty): number {
+  const idx = DIFFICULTIES.indexOf(level);
+  return (seed * 31 + (idx + 1) * 0x9e37) | 0;
+}
+
+// Genera el reto de un NIVEL para un día: un par de países del pool de ese
+// nivel cuya ruta más corta caiga en una banda jugable de intermedios.
+export function dailyChallenge(seed = dateSeed(), level: Difficulty = "medium"): DailyChallenge {
+  const rand = mulberry32(seedForLevel(seed, level));
+  const pool = COUNTRY_NAMES.filter((n) => COUNTRY_TIER[n] === level);
+  const MIN_OPT = 2;
+  const MAX_OPT = 7;
+
+  // 1) Estricto: AMBOS extremos del nivel, cadena dentro de la banda.
+  for (let i = 0; i < 400; i++) {
+    const a = pool[Math.floor(rand() * pool.length)];
+    const b = pool[Math.floor(rand() * pool.length)];
     if (a === b) continue;
     const path = shortestPath(a, b);
     if (!path) continue;
     const optimal = path.length - 2; // intermedios = total - origen - destino
     if (optimal >= MIN_OPT && optimal <= MAX_OPT) {
-      return { start: a, end: b, optimal, path };
+      return { start: a, end: b, optimal, path, level };
     }
   }
 
-  // Fallback garantizado: Colombia → Argentina
-  const fallback = shortestPath("Colombia", "Argentina")!;
-  return { start: "Colombia", end: "Argentina", optimal: fallback.length - 2, path: fallback };
+  // 2) Relajado: un extremo del nivel (mantiene la rareza), el otro de cualquier
+  //    lado, para asegurar una cadena conectable en la banda.
+  for (let i = 0; i < 400; i++) {
+    const a = pool[Math.floor(rand() * pool.length)];
+    const b = COUNTRY_NAMES[Math.floor(rand() * COUNTRY_NAMES.length)];
+    if (a === b) continue;
+    const path = shortestPath(a, b);
+    if (!path) continue;
+    const optimal = path.length - 2;
+    if (optimal >= MIN_OPT && optimal <= MAX_OPT) {
+      return { start: a, end: b, optimal, path, level };
+    }
+  }
+
+  // 3) Fallback garantizado: primer par conectable dentro del pool.
+  for (const a of pool) {
+    for (const b of pool) {
+      if (a === b) continue;
+      const path = shortestPath(a, b);
+      if (path && path.length >= 3) {
+        return { start: a, end: b, optimal: path.length - 2, path, level };
+      }
+    }
+  }
+
+  // 4) Último recurso: Colombia → Argentina.
+  const fb = shortestPath("Colombia", "Argentina")!;
+  return { start: "Colombia", end: "Argentina", optimal: fb.length - 2, path: fb, level };
+}
+
+// Los 3 retos del día (uno por nivel). Lo que consumirá la UI del selector.
+export function dailyChallenges(seed = dateSeed()): Record<Difficulty, DailyChallenge> {
+  return {
+    easy: dailyChallenge(seed, "easy"),
+    medium: dailyChallenge(seed, "medium"),
+    hard: dailyChallenge(seed, "hard"),
+  };
 }
 
 // --- Semáforo: qué tan buena es una jugada ---
@@ -276,8 +381,8 @@ export function nextHintCountry(state: PlayState): string | null {
 }
 
 // --- Reto aleatorio (para "Jugar de nuevo") ---
-export function randomChallenge(): DailyChallenge {
-  return dailyChallenge(Math.floor(Math.random() * 1_000_000_000));
+export function randomChallenge(level: Difficulty = "medium"): DailyChallenge {
+  return dailyChallenge(Math.floor(Math.random() * 1_000_000_000), level);
 }
 
 // --- Cuenta regresiva al próximo reto diario (medianoche UTC) ---

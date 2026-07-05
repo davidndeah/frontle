@@ -10,6 +10,7 @@ import {
   msUntilNextDailyUTC,
   type PlayState,
   type Status,
+  type Difficulty,
 } from "./lib/game";
 import {
   detectLocale,
@@ -55,8 +56,10 @@ function Flag({ code, size = 32 }: { code: string; size?: number }) {
 
 export default function Frontle() {
   const [locale, setLocale] = useState<Locale>("es");
+  // Nivel activo (fácil/medio/difícil). Cada nivel es un reto y ranking aparte.
+  const [level, setLevel] = useState<Difficulty>("easy");
   const [state, setState] = useState<PlayState>(() => ({
-    challenge: dailyChallenge(),
+    challenge: dailyChallenge(dateSeed(), "easy"),
     chain: [],
     solved: false,
   }));
@@ -87,7 +90,7 @@ export default function Frontle() {
 
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
-  const [claimingDay, setClaimingDay] = useState<number | null>(null);
+  const [claimingKey, setClaimingKey] = useState<string | null>(null);
 
   // Navegación (app shell) + sheet de wallet
   const [tab, setTab] = useState<Tab>("jugar");
@@ -116,8 +119,8 @@ export default function Frontle() {
   const fmt = (usdt: number) => formatMoney(usdt, currency, copmRate);
   const cn = (canonical: string) => countryName(canonical, locale);
   const day = dateSeed();
-  const bestKey = `frontle-best-${day}`;
-  const gameKey = `frontle-game-${day}`;
+  const bestKey = `frontle-best-${day}-${level}`;
+  const gameKey = `frontle-game-${day}-${level}`;
 
   // Persiste la partida del día para que al refrescar NO se pueda volver a
   // jugar gratis (el estado se restaura: en curso o resuelta).
@@ -136,8 +139,10 @@ export default function Frontle() {
       const sp = new URLSearchParams(window.location.search);
       if (sp.has("reset")) {
         const d = dateSeed();
-        localStorage.removeItem(`frontle-game-${d}`);
-        localStorage.removeItem(`frontle-best-${d}`);
+        for (const lv of ["easy", "medium", "hard"]) {
+          localStorage.removeItem(`frontle-game-${d}-${lv}`);
+          localStorage.removeItem(`frontle-best-${d}-${lv}`);
+        }
         localStorage.removeItem("frontle-tutorial-hide");
         window.location.replace("/");
       }
@@ -146,30 +151,51 @@ export default function Frontle() {
 
   useEffect(() => setLocale(detectLocale()), []);
   useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
-  useEffect(() => {
-    getIpCountry().then(setIpCountry);
-    getRanking(day).then(setRanking);
-  }, [day]);
+  useEffect(() => { getIpCountry().then(setIpCountry); }, []);
 
+  // Cargar el nivel (y reaccionar al cambio de nivel/día): reto de ese nivel,
+  // su partida guardada, su mejor marca y su ranking. Cada nivel es un juego
+  // independiente con persistencia propia (clave por día+nivel).
   useEffect(() => {
-    const stored = typeof localStorage !== "undefined" ? localStorage.getItem(bestKey) : null;
-    if (stored) setBest(parseInt(stored, 10));
-  }, [bestKey]);
-
-  // Restaurar la partida del día (si ya empezó/resolvió, no se reinicia)
-  useEffect(() => {
+    const challengeForLevel = dailyChallenge(day, level);
+    let started = false;
+    let chain: PlayState["chain"] = [];
+    let solved = false;
+    let elapsed = 0;
     try {
-      const raw = localStorage.getItem(gameKey);
-      if (!raw) return;
-      const g = JSON.parse(raw);
-      if (g?.started) {
-        startRef.current = g.startMs || Date.now();
-        setStarted(true);
-        setState((prev) => ({ ...prev, chain: g.chain ?? [], solved: !!g.solved }));
-        setElapsedMs(g.solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now()));
+      const raw = localStorage.getItem(`frontle-game-${day}-${level}`);
+      if (raw) {
+        const g = JSON.parse(raw);
+        if (g?.started) {
+          started = true;
+          chain = g.chain ?? [];
+          solved = !!g.solved;
+          startRef.current = g.startMs || Date.now();
+          elapsed = solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now());
+        }
       }
     } catch {}
-  }, [gameKey]);
+    if (!started) startRef.current = 0;
+    setState({ challenge: challengeForLevel, chain, solved });
+    setStarted(started);
+    setElapsedMs(elapsed);
+    // limpiar UI transitoria del nivel anterior
+    setInput("");
+    setSuggestions([]);
+    setMessage(null);
+    setShowNextSil(false);
+    setShowAllSil(false);
+    setShowInitial(false);
+    // mejor marca del nivel
+    let b: number | null = null;
+    try {
+      const s = localStorage.getItem(`frontle-best-${day}-${level}`);
+      if (s) b = parseInt(s, 10);
+    } catch {}
+    setBest(b);
+    // ranking del nivel
+    getRanking(day, level).then(setRanking);
+  }, [day, level]);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
@@ -231,21 +257,21 @@ export default function Frontle() {
   // contrato confirma como cobrables (rolled && winner==yo && !claimed).
   const loadPrizes = useCallback(async (addr: string) => {
     if (!addr) return setPrizes([]);
-    const days = await getMyWinDays(addr);
-    setPrizes(await getClaimablePrizes(days, addr));
+    const entries = await getMyWinDays(addr);
+    setPrizes(await getClaimablePrizes(entries, addr));
   }, []);
 
   useEffect(() => {
     if (myId) loadPrizes(myId);
   }, [myId, loadPrizes]);
 
-  async function handleClaim(day: number) {
-    setClaimingDay(day);
-    const ok = await claimPrize(day);
-    setClaimingDay(null);
+  async function handleClaim(day: number, lv: Difficulty) {
+    setClaimingKey(`${day}-${lv}`);
+    const ok = await claimPrize(day, lv);
+    setClaimingKey(null);
     if (ok) {
       setMessage({ text: tr.prizeClaimedMsg, ok: true });
-      await loadPrizes(myId); // refresca: el día reclamado desaparece
+      await loadPrizes(myId); // refresca: el (día,nivel) reclamado desaparece
     } else {
       setMessage({ text: tr.prizeClaimError, ok: false });
     }
@@ -310,8 +336,8 @@ export default function Frontle() {
 
   // Envía la marca al ranking usando la DIRECCIÓN como identidad.
   function pushScore(addr: string, score: number, timeMs: number) {
-    return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr })
-      .then(() => getRanking(day).then(setRanking));
+    return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr, level })
+      .then(() => getRanking(day, level).then(setRanking));
   }
 
   // Al resolver: si hay wallet (MiniPay), entra al ranking sin fricción.
@@ -373,7 +399,7 @@ export default function Frontle() {
   const silhouettes = showNextSil && nextHint ? [nextHint] : [];
   const panel = "panel";
   // Gamificación derivada de los días jugados (real, no inventado)
-  const level = Math.floor(daysPlayed / 3) + 1;
+  const xpLevel = Math.floor(daysPlayed / 3) + 1;
   const xpPct = ((daysPlayed % 3) / 3) * 100;
 
   return (
@@ -418,7 +444,7 @@ export default function Frontle() {
               <div className="w-px h-7 bg-white/10" />
               <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-semibold text-[#c4b5fd]">⚡ Nivel {level}</span>
+                  <span className="font-semibold text-[#c4b5fd]">⚡ Nivel {xpLevel}</span>
                   <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -433,6 +459,9 @@ export default function Frontle() {
         <div className="flex justify-center">
           <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
         </div>
+
+        {/* Selector de nivel de dificultad (fácil/medio/difícil) */}
+        <LevelSelect tr={tr} level={level} onChange={setLevel} />
 
         {/* Reto del día (oculto hasta pulsar Play) */}
         <section className={`${panel} p-4`}>
@@ -605,7 +634,9 @@ export default function Frontle() {
                 <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
               </div>
             )}
-            <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} />
+            {/* Selector de nivel: cada nivel tiene su ranking */}
+            <LevelSelect tr={tr} level={level} onChange={setLevel} />
+            <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} levelLabel={tr.levels[level]} />
             <p className="text-center text-[11px] text-neutral-400">{tr.nextChallenge(countdown)}</p>
           </>
         )}
@@ -633,7 +664,7 @@ export default function Frontle() {
               <StatCard v={prizes.length} k="premios" color="#e879f9" />
             </div>
             {prizes.length > 0 && (
-              <PrizesCard tr={tr} prizes={prizes} claimingDay={claimingDay} onClaim={handleClaim} panel={panel} fmt={fmt} />
+              <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
             <div className="flex justify-center gap-4 text-[11px] text-neutral-400 mt-1">
               <span className="underline cursor-pointer">Términos</span>
@@ -839,6 +870,54 @@ function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; 
   );
 }
 
+// Selector de nivel: control segmentado Fácil / Medio / Difícil. Cambiar de
+// nivel carga el reto y el ranking de ese nivel (cada uno es independiente).
+function LevelSelect({
+  tr,
+  level,
+  onChange,
+}: {
+  tr: ReturnType<typeof t>;
+  level: Difficulty;
+  onChange: (l: Difficulty) => void;
+}) {
+  // Cada nivel con su identidad: icono + color (estética Violeta Prisma)
+  const META: Record<Difficulty, { icon: string; color: string }> = {
+    easy: { icon: "🌱", color: "#22c55e" },
+    medium: { icon: "⚡", color: "#fcff52" },
+    hard: { icon: "💀", color: "#e879f9" },
+  };
+  const opts: Difficulty[] = ["easy", "medium", "hard"];
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">{tr.chooseLevel}</span>
+      <div className="grid grid-cols-3 gap-2 w-full">
+        {opts.map((l) => {
+          const on = level === l;
+          const m = META[l];
+          return (
+            <button
+              key={l}
+              type="button"
+              onClick={() => onChange(l)}
+              aria-pressed={on}
+              className={`flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 transition active:scale-95 backdrop-blur-sm ${
+                on ? "bg-[#1c0b3e]/80" : "bg-[#1c0b3e]/35 opacity-60"
+              }`}
+              style={{ borderColor: on ? m.color : "rgba(183,156,237,0.2)" }}
+            >
+              <span className="text-xl leading-none">{m.icon}</span>
+              <span className="font-display text-[12.5px] font-bold" style={{ color: on ? m.color : "#c3cbdd" }}>
+                {tr.levels[l]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 type ChipKind = Status;
 function CountryChip({ code, name, kind }: { code: string; name: string; kind: ChipKind }) {
   const styles: Record<ChipKind, string> = {
@@ -859,15 +938,15 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
 function PrizesCard({
   tr,
   prizes,
-  claimingDay,
+  claimingKey,
   onClaim,
   panel,
   fmt,
 }: {
   tr: ReturnType<typeof t>;
   prizes: ClaimablePrize[];
-  claimingDay: number | null;
-  onClaim: (day: number) => void;
+  claimingKey: string | null;
+  onClaim: (day: number, level: Difficulty) => void;
   panel: string;
   fmt: (usdt: number) => string;
 }) {
@@ -875,18 +954,23 @@ function PrizesCard({
     <section className={`${panel} p-3`}>
       <p className="text-[10px] uppercase tracking-widest text-amber-300 mb-2 text-center">{tr.prizesTitle}</p>
       <ul className="flex flex-col gap-2">
-        {prizes.map((p) => (
-          <li key={p.day} className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2">
-            <span className="text-sm text-amber-100">{tr.prizeRow(fmt(p.amount))}</span>
-            <button
-              onClick={() => onClaim(p.day)}
-              disabled={claimingDay !== null}
-              className="rounded-lg border border-amber-400/60 bg-amber-400/20 px-3 py-1.5 text-xs font-medium text-amber-100 transition active:scale-95 hover:bg-amber-400/30 disabled:opacity-60"
-            >
-              {claimingDay === p.day ? tr.prizeClaiming : tr.prizeClaim}
-            </button>
-          </li>
-        ))}
+        {prizes.map((p) => {
+          const key = `${p.day}-${p.level}`;
+          return (
+            <li key={key} className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2">
+              <span className="text-sm text-amber-100">
+                {tr.prizeRow(fmt(p.amount))} <span className="text-amber-300/80">· {tr.levels[p.level]}</span>
+              </span>
+              <button
+                onClick={() => onClaim(p.day, p.level)}
+                disabled={claimingKey !== null}
+                className="rounded-lg border border-amber-400/60 bg-amber-400/20 px-3 py-1.5 text-xs font-medium text-amber-100 transition active:scale-95 hover:bg-amber-400/30 disabled:opacity-60"
+              >
+                {claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -898,16 +982,18 @@ function RankingCard({
   best,
   panel,
   myId,
+  levelLabel,
 }: {
   tr: ReturnType<typeof t>;
   ranking: ScoreEntry[];
   best: number | null;
   panel: string;
   myId: string;
+  levelLabel: string;
 }) {
   return (
     <section className={`${panel} p-3`}>
-      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle}</p>
+      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
       {ranking.length === 0 ? (
         <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
       ) : (

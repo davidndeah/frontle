@@ -19,10 +19,16 @@ import {
   type Address,
 } from "viem";
 import { celo } from "viem/chains";
+import type { Difficulty } from "./game";
+
+// Índice on-chain de cada nivel (FrontleGame v2: LEVEL_EASY=0/MEDIUM=1/HARD=2).
+const LEVEL_INDEX: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2 };
 
 // --- Configuración de red / contrato (Celo Mainnet) --------------------
 const CHAIN_ID: number = 42220; // Celo Mainnet
-const GAME_ADDRESS: Address = "0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09";
+// FrontleGame v2 (niveles) — Celo Mainnet, desplegado 2026-07-05.
+// ABI por (día,nivel): winnerOf/prize/claimed/claim. (v1 ganador único: 0x7Ea1…Fa09).
+const GAME_ADDRESS: Address = "0xaDcA9A707F394509C8aA906B89B93cb222f2BeBE";
 const TOKEN_ADDRESS: Address = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // USDT (USD₮)
 const TOKEN_DECIMALS = 6; // USDT usa 6 decimales
 
@@ -65,8 +71,21 @@ const gameAbi = [
   {
     type: "function",
     name: "winnerOf",
-    inputs: [{ name: "day", type: "uint256" }],
+    inputs: [
+      { name: "day", type: "uint256" },
+      { name: "level", type: "uint8" },
+    ],
     outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "prize",
+    inputs: [
+      { name: "day", type: "uint256" },
+      { name: "level", type: "uint8" },
+    ],
+    outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
   {
@@ -79,14 +98,20 @@ const gameAbi = [
   {
     type: "function",
     name: "claimed",
-    inputs: [{ name: "day", type: "uint256" }],
+    inputs: [
+      { name: "day", type: "uint256" },
+      { name: "level", type: "uint8" },
+    ],
     outputs: [{ type: "bool" }],
     stateMutability: "view",
   },
   {
     type: "function",
     name: "claim",
-    inputs: [{ name: "day", type: "uint256" }],
+    inputs: [
+      { name: "day", type: "uint256" },
+      { name: "level", type: "uint8" },
+    ],
     outputs: [],
     stateMutability: "nonpayable",
   },
@@ -229,42 +254,50 @@ export async function getDailyPot(): Promise<number | null> {
   }
 }
 
-// --- Premios: días reclamables y reclamo --------------------------------
-// El contrato es la fuente de verdad. Recibe los días candidatos (de la tabla
-// `winners` de Supabase) y deja SOLO los que la wallet puede cobrar ahora:
-// rolled && winnerOf == yo && !claimed. Devuelve el monto del pot por día.
+// --- Premios: (día, nivel) reclamables y reclamo ------------------------
+// El contrato es la fuente de verdad. Recibe los (día, nivel) candidatos (de la
+// tabla `winners` de Supabase) y deja SOLO los que la wallet puede cobrar ahora:
+// rolled && winnerOf(día,nivel) == yo && !claimed(día,nivel). Devuelve el monto
+// del premio de ESE nivel (prize[día][nivel]), no el pot entero.
+export interface ClaimableEntry {
+  day: number;
+  level: Difficulty;
+}
+
 export interface ClaimablePrize {
   day: number;
+  level: Difficulty;
   amount: number; // en USDT
 }
 
-export async function getClaimablePrizes(days: number[], address: string): Promise<ClaimablePrize[]> {
-  if (!address || days.length === 0) return [];
+export async function getClaimablePrizes(entries: ClaimableEntry[], address: string): Promise<ClaimablePrize[]> {
+  if (!address || entries.length === 0) return [];
   const me = address.toLowerCase();
   try {
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
     const out: ClaimablePrize[] = [];
-    for (const day of days) {
+    for (const { day, level } of entries) {
       const d = BigInt(day);
+      const lv = LEVEL_INDEX[level];
       const [rolled, winner, claimed] = await Promise.all([
         publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "rolled", args: [d] }),
-        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "winnerOf", args: [d] }),
-        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "claimed", args: [d] }),
+        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "winnerOf", args: [d, lv] }),
+        publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "claimed", args: [d, lv] }),
       ]);
       if (!rolled || claimed) continue;
       if (String(winner).toLowerCase() !== me) continue;
-      const amount = await publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "pot", args: [d] });
-      out.push({ day, amount: Number(formatUnits(amount, TOKEN_DECIMALS)) });
+      const amount = await publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "prize", args: [d, lv] });
+      out.push({ day, level, amount: Number(formatUnits(amount, TOKEN_DECIMALS)) });
     }
     return out;
   } catch (err) {
-    console.error("[premio] no se pudieron leer los días reclamables:", err);
+    console.error("[premio] no se pudieron leer los (día,nivel) reclamables:", err);
     return [];
   }
 }
 
-// El ganador reclama el pot de un día. Devuelve true solo si se confirmó on-chain.
-export async function claimPrize(day: number): Promise<boolean> {
+// El ganador reclama su parte de un (día, nivel). Devuelve true solo si se confirmó on-chain.
+export async function claimPrize(day: number, level: Difficulty): Promise<boolean> {
   const provider = getProvider();
   if (!provider) return false;
   try {
@@ -299,7 +332,7 @@ export async function claimPrize(day: number): Promise<boolean> {
       address: GAME_ADDRESS,
       abi: gameAbi,
       functionName: "claim",
-      args: [BigInt(day)],
+      args: [BigInt(day), LEVEL_INDEX[level]],
       ...feeOpts,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
