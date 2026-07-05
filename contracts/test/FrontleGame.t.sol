@@ -13,9 +13,13 @@ contract FrontleGameTest is Test {
     // owner = address(this) (este contrato despliega el juego en setUp)
     address internal operator = makeAddr("operator");
     address internal player = makeAddr("player");
-    address internal winner = makeAddr("winner");
     address internal stranger = makeAddr("stranger");
     address internal treasury = makeAddr("treasury");
+
+    // Ganadores por nivel
+    address internal hardW = makeAddr("hardWinner");
+    address internal medW = makeAddr("medWinner");
+    address internal easyW = makeAddr("easyWinner");
 
     uint256 internal constant ATTEMPT_FEE = 0.10 ether;
     uint256 internal constant PROTOCOL_BPS = 2000; // 20%
@@ -26,11 +30,17 @@ contract FrontleGameTest is Test {
     uint256 internal constant FEE_INITIAL = 0.05 ether;
     uint256 internal constant FEE_ALL = 0.10 ether;
 
+    // Niveles (espejo de las constantes del contrato)
+    uint8 internal constant L_EASY = 0;
+    uint8 internal constant L_MEDIUM = 1;
+    uint8 internal constant L_HARD = 2;
+
     event AttemptPaid(address indexed player, uint256 indexed day, uint256 amount);
     event HintPaid(address indexed player, uint256 indexed day, uint8 hintType, uint256 amount);
     event PotFunded(uint256 indexed day, address indexed from, uint256 amount);
-    event DayRolled(uint256 indexed day, address indexed winner, uint256 pot);
-    event Claimed(uint256 indexed day, address indexed winner, uint256 amount);
+    event DayRolled(uint256 indexed day, address hardWinner, address medWinner, address easyWinner, uint256 pot);
+    event Claimed(uint256 indexed day, uint8 indexed level, address indexed winner, uint256 amount);
+    event UnrolledPotRecovered(uint256 indexed day, address indexed to, uint256 amount);
     event ProtocolWithdrawn(address indexed to, uint256 amount);
     event OperatorUpdated(address indexed operator);
     event FeesUpdated(uint256 attemptFee, uint256 protocolBps);
@@ -49,12 +59,20 @@ contract FrontleGameTest is Test {
         vm.prank(player);
         token.approve(address(game), type(uint256).max);
 
-        token.mint(address(this), 100 ether);
+        token.mint(address(this), 1_000 ether);
         token.approve(address(game), type(uint256).max);
     }
 
     function _today() internal view returns (uint256) {
         return block.timestamp / 1 days;
+    }
+
+    /// @dev Siembra `amount` en el pot del día actual y devuelve el índice del día,
+    ///      ya con el día terminado (warp +1) listo para rollDay.
+    function _seedAndEndDay(uint256 amount) internal returns (uint256 day) {
+        day = _today();
+        game.fundPot(amount);
+        vm.warp(block.timestamp + 1 days);
     }
 
     // ------------------------------------------------------------
@@ -155,24 +173,84 @@ contract FrontleGameTest is Test {
     }
 
     // ------------------------------------------------------------
-    //  rollDay
+    //  rollDay — reparto por niveles (_computeShares)
     // ------------------------------------------------------------
 
-    function test_RollDay_AssignsWinner() public {
-        uint256 day = _today();
-        vm.prank(player);
-        game.payAttempt();
+    function test_RollDay_AllThree_50_35_15() public {
+        uint256 day = _seedAndEndDay(100 ether);
 
-        vm.warp(block.timestamp + 1 days); // el día `day` ya terminó
-
-        vm.expectEmit(true, true, false, true);
-        emit DayRolled(day, winner, game.pot(day));
+        vm.expectEmit(true, false, false, true);
+        emit DayRolled(day, hardW, medW, easyW, 100 ether);
 
         vm.prank(operator);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
 
         assertTrue(game.rolled(day));
-        assertEq(game.winnerOf(day), winner);
+        assertEq(game.prize(day, L_HARD), 50 ether);
+        assertEq(game.prize(day, L_MEDIUM), 35 ether);
+        assertEq(game.prize(day, L_EASY), 15 ether);
+        assertEq(game.winnerOf(day, L_HARD), hardW);
+        assertEq(game.winnerOf(day, L_MEDIUM), medW);
+        assertEq(game.winnerOf(day, L_EASY), easyW);
+    }
+
+    function test_RollDay_NoEasy_50_50() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, hardW, medW, address(0)); // falta fácil
+
+        assertEq(game.prize(day, L_HARD), 50 ether);
+        assertEq(game.prize(day, L_MEDIUM), 50 ether);
+        assertEq(game.prize(day, L_EASY), 0);
+        assertEq(game.winnerOf(day, L_EASY), address(0));
+    }
+
+    function test_RollDay_NoMedium_85_15() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, hardW, address(0), easyW); // falta medio
+
+        assertEq(game.prize(day, L_HARD), 85 ether);
+        assertEq(game.prize(day, L_EASY), 15 ether);
+        assertEq(game.prize(day, L_MEDIUM), 0);
+    }
+
+    function test_RollDay_NoHard_75_25() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, address(0), medW, easyW); // falta difícil (regla equipo)
+
+        assertEq(game.prize(day, L_MEDIUM), 75 ether);
+        assertEq(game.prize(day, L_EASY), 25 ether);
+        assertEq(game.prize(day, L_HARD), 0);
+    }
+
+    function test_RollDay_OnlyHard_100() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, hardW, address(0), address(0));
+        assertEq(game.prize(day, L_HARD), 100 ether);
+    }
+
+    function test_RollDay_OnlyMedium_100() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, address(0), medW, address(0));
+        assertEq(game.prize(day, L_MEDIUM), 100 ether);
+    }
+
+    function test_RollDay_OnlyEasy_100() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, address(0), address(0), easyW);
+        assertEq(game.prize(day, L_EASY), 100 ether);
+    }
+
+    function test_RollDay_RevertWhenNoWinners() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        vm.expectRevert(FrontleGame.NoWinners.selector);
+        game.rollDay(day, address(0), address(0), address(0));
     }
 
     function test_RollDay_RevertWhenNotOperator() public {
@@ -180,87 +258,136 @@ contract FrontleGameTest is Test {
         vm.warp(block.timestamp + 1 days);
         vm.prank(stranger);
         vm.expectRevert(FrontleGame.NotOperator.selector);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
     }
 
     function test_RollDay_RevertWhenDayNotEnded() public {
         vm.prank(operator);
         vm.expectRevert(FrontleGame.DayNotEnded.selector);
-        game.rollDay(_today(), winner); // día en curso
-    }
-
-    function test_RollDay_RevertOnZeroWinner() public {
-        uint256 day = _today();
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(operator);
-        vm.expectRevert(FrontleGame.ZeroAddress.selector);
-        game.rollDay(day, address(0));
+        game.rollDay(_today(), hardW, medW, easyW); // día en curso
     }
 
     function test_RollDay_RevertOnDoubleRoll() public {
-        uint256 day = _today();
-        vm.warp(block.timestamp + 1 days);
+        uint256 day = _seedAndEndDay(100 ether);
         vm.prank(operator);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
         vm.prank(operator);
         vm.expectRevert(FrontleGame.AlreadyRolled.selector);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
     }
 
     // ------------------------------------------------------------
-    //  claim
+    //  claim — por nivel
     // ------------------------------------------------------------
 
-    function test_Claim_WinnerTakesPot() public {
-        uint256 day = _today();
-        vm.prank(player);
-        game.payAttempt();
-        game.fundPot(1 ether); // premio base
-        uint256 expectedPot = game.pot(day);
-
-        vm.warp(block.timestamp + 1 days);
+    function test_Claim_EachWinnerTakesTheirShare() public {
+        uint256 day = _seedAndEndDay(100 ether);
         vm.prank(operator);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
 
-        vm.expectEmit(true, true, false, true);
-        emit Claimed(day, winner, expectedPot);
+        vm.expectEmit(true, true, true, true);
+        emit Claimed(day, L_HARD, hardW, 50 ether);
+        vm.prank(hardW);
+        game.claim(day, L_HARD);
 
-        vm.prank(winner);
-        game.claim(day);
+        vm.prank(medW);
+        game.claim(day, L_MEDIUM);
+        vm.prank(easyW);
+        game.claim(day, L_EASY);
 
-        assertEq(token.balanceOf(winner), expectedPot);
-        assertTrue(game.claimed(day));
+        assertEq(token.balanceOf(hardW), 50 ether);
+        assertEq(token.balanceOf(medW), 35 ether);
+        assertEq(token.balanceOf(easyW), 15 ether);
+        assertTrue(game.claimed(day, L_HARD));
+        assertTrue(game.claimed(day, L_MEDIUM));
+        assertTrue(game.claimed(day, L_EASY));
+        assertEq(token.balanceOf(address(game)), 0); // pot repartido por completo
     }
 
     function test_Claim_RevertWhenNotRolled() public {
-        vm.prank(winner);
+        vm.prank(hardW);
         vm.expectRevert(FrontleGame.NotRolled.selector);
-        game.claim(_today());
+        game.claim(_today(), L_HARD);
+    }
+
+    function test_Claim_RevertOnInvalidLevel() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, hardW, medW, easyW);
+        vm.prank(hardW);
+        vm.expectRevert(FrontleGame.InvalidLevel.selector);
+        game.claim(day, 3);
     }
 
     function test_Claim_RevertWhenNotWinner() public {
-        uint256 day = _today();
-        vm.warp(block.timestamp + 1 days);
+        uint256 day = _seedAndEndDay(100 ether);
         vm.prank(operator);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
 
+        // stranger intenta cobrar el nivel difícil
         vm.prank(stranger);
         vm.expectRevert(FrontleGame.NotWinner.selector);
-        game.claim(day);
+        game.claim(day, L_HARD);
+    }
+
+    function test_Claim_RevertWhenLevelHadNoWinner() public {
+        uint256 day = _seedAndEndDay(100 ether);
+        vm.prank(operator);
+        game.rollDay(day, hardW, medW, address(0)); // fácil sin ganador
+
+        // nadie puede cobrar el nivel fácil (winnerOf == address(0))
+        vm.prank(easyW);
+        vm.expectRevert(FrontleGame.NotWinner.selector);
+        game.claim(day, L_EASY);
     }
 
     function test_Claim_RevertOnDoubleClaim() public {
-        uint256 day = _today();
-        game.fundPot(1 ether);
-        vm.warp(block.timestamp + 1 days);
+        uint256 day = _seedAndEndDay(100 ether);
         vm.prank(operator);
-        game.rollDay(day, winner);
+        game.rollDay(day, hardW, medW, easyW);
 
-        vm.prank(winner);
-        game.claim(day);
-        vm.prank(winner);
+        vm.prank(hardW);
+        game.claim(day, L_HARD);
+        vm.prank(hardW);
         vm.expectRevert(FrontleGame.AlreadyClaimed.selector);
-        game.claim(day);
+        game.claim(day, L_HARD);
+    }
+
+    // ------------------------------------------------------------
+    //  recoverUnrolledPot — días sin ganador
+    // ------------------------------------------------------------
+
+    function test_RecoverUnrolledPot_OwnerRecovers() public {
+        uint256 day = _seedAndEndDay(7 ether);
+
+        vm.expectEmit(true, true, false, true);
+        emit UnrolledPotRecovered(day, treasury, 7 ether);
+
+        game.recoverUnrolledPot(day, treasury);
+        assertEq(token.balanceOf(treasury), 7 ether);
+        assertEq(game.pot(day), 0);
+        assertTrue(game.rolled(day));
+    }
+
+    function test_RecoverUnrolledPot_BlocksLaterRoll() public {
+        uint256 day = _seedAndEndDay(7 ether);
+        game.recoverUnrolledPot(day, treasury);
+        vm.prank(operator);
+        vm.expectRevert(FrontleGame.AlreadyRolled.selector);
+        game.rollDay(day, hardW, medW, easyW);
+    }
+
+    function test_RecoverUnrolledPot_RevertWhenNotOwner() public {
+        uint256 day = _seedAndEndDay(7 ether);
+        vm.prank(stranger);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, stranger));
+        game.recoverUnrolledPot(day, treasury);
+    }
+
+    function test_RecoverUnrolledPot_RevertWhenDayNotEnded() public {
+        game.fundPot(7 ether);
+        vm.expectRevert(FrontleGame.DayNotEnded.selector);
+        game.recoverUnrolledPot(_today(), treasury);
     }
 
     // ------------------------------------------------------------
@@ -352,7 +479,7 @@ contract FrontleGameTest is Test {
     }
 
     // ------------------------------------------------------------
-    //  Fuzz: el split siempre conserva el total (pot + protocolo = fee)
+    //  Fuzz: el split de pago siempre conserva el total (pot + protocolo = fee)
     // ------------------------------------------------------------
 
     function testFuzz_Collect_ConservesTotal(uint96 fee, uint16 bps) public {
@@ -365,5 +492,28 @@ contract FrontleGameTest is Test {
         game.payAttempt();
 
         assertEq(game.pot(day) + game.protocolAccrued(), fee);
+    }
+
+    // ------------------------------------------------------------
+    //  Fuzz: el reparto por niveles siempre conserva el pot completo
+    //  (sin importar qué combinación de niveles tenga ganador)
+    // ------------------------------------------------------------
+
+    function testFuzz_Roll_ConservesPot(uint96 potAmount, bool hasHard, bool hasMed, bool hasEasy) public {
+        potAmount = uint96(bound(potAmount, 1, 1_000 ether));
+        vm.assume(hasHard || hasMed || hasEasy); // al menos un ganador
+
+        uint256 day = _seedAndEndDay(potAmount);
+
+        vm.prank(operator);
+        game.rollDay(
+            day,
+            hasHard ? hardW : address(0),
+            hasMed ? medW : address(0),
+            hasEasy ? easyW : address(0)
+        );
+
+        uint256 sum = game.prize(day, L_HARD) + game.prize(day, L_MEDIUM) + game.prize(day, L_EASY);
+        assertEq(sum, potAmount); // nada de polvo perdido
     }
 }

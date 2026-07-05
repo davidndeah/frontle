@@ -7,12 +7,15 @@
 //  bandera), nunca la IP en sí.
 // ============================================================
 
+import type { Difficulty } from "./game";
+
 export interface ScoreEntry {
   day: number;
   countries: number;
   timeMs: number;
   countryCode: string; // ISO-2 (bandera de la IP)
   playerId: string; // identifica a cada jugador (anónimo, por navegador)
+  level?: Difficulty; // nivel del reto; si falta, se asume "medium"
   createdAt?: string;
 }
 
@@ -52,6 +55,7 @@ export async function getIpCountry(): Promise<string> {
 }
 
 export async function submitScore(e: ScoreEntry): Promise<void> {
+  const level: Difficulty = e.level ?? "medium";
   if (useSupabase) {
     try {
       await fetch(`${SUPA_URL}/rest/v1/scores`, {
@@ -68,6 +72,7 @@ export async function submitScore(e: ScoreEntry): Promise<void> {
           time_ms: e.timeMs,
           country_code: e.countryCode,
           player_id: e.playerId,
+          level,
         }),
       });
     } catch {
@@ -75,9 +80,9 @@ export async function submitScore(e: ScoreEntry): Promise<void> {
     }
   } else {
     try {
-      const k = `frontle-ranking-${e.day}`;
+      const k = `frontle-ranking-${e.day}-${level}`;
       const arr: ScoreEntry[] = JSON.parse(localStorage.getItem(k) || "[]");
-      arr.push({ ...e, createdAt: new Date().toISOString() });
+      arr.push({ ...e, level, createdAt: new Date().toISOString() });
       localStorage.setItem(k, JSON.stringify(arr));
     } catch {}
   }
@@ -101,11 +106,15 @@ function bestPerPlayer(entries: ScoreEntry[], limit: number): ScoreEntry[] {
   return out;
 }
 
-export async function getRanking(day: number, limit = 10): Promise<ScoreEntry[]> {
+export async function getRanking(
+  day: number,
+  level: Difficulty = "medium",
+  limit = 10
+): Promise<ScoreEntry[]> {
   if (useSupabase) {
     try {
       const r = await fetch(
-        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&order=countries.asc,time_ms.asc&limit=500`,
+        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&level=eq.${level}&order=countries.asc,time_ms.asc&limit=500`,
         { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       const j = await r.json();
@@ -115,6 +124,7 @@ export async function getRanking(day: number, limit = 10): Promise<ScoreEntry[]>
         timeMs: Number(x.time_ms),
         countryCode: String(x.country_code ?? ""),
         playerId: String(x.player_id ?? ""),
+        level: (x.level as Difficulty) ?? "medium",
         createdAt: x.created_at as string | undefined,
       }));
       return bestPerPlayer(all, limit);
@@ -123,26 +133,31 @@ export async function getRanking(day: number, limit = 10): Promise<ScoreEntry[]>
     }
   }
   try {
-    const arr: ScoreEntry[] = JSON.parse(localStorage.getItem(`frontle-ranking-${day}`) || "[]");
+    const arr: ScoreEntry[] = JSON.parse(
+      localStorage.getItem(`frontle-ranking-${day}-${level}`) || "[]"
+    );
     return bestPerPlayer(arr, limit);
   } catch {
     return [];
   }
 }
 
-// --- Premios: días que esta wallet ganó (según la tabla `winners`) ------
-// Devuelve los índices de día. La verificación real de si se puede cobrar
+// --- Premios: (día, nivel) que esta wallet ganó (tabla `winners`) --------
+// Devuelve los pares (día, nivel). La verificación real de si se puede cobrar
 // (y el cobro) la hace el contrato vía payments.getClaimablePrizes/claimPrize.
 // Sin Supabase no hay tabla compartida de ganadores → array vacío.
-export async function getMyWinDays(address: string): Promise<number[]> {
+export async function getMyWinDays(address: string): Promise<{ day: number; level: Difficulty }[]> {
   if (!useSupabase || !address) return [];
   try {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/winners?winner_address=eq.${address.toLowerCase()}&select=day&order=day.desc&limit=60`,
+      `${SUPA_URL}/rest/v1/winners?winner_address=eq.${address.toLowerCase()}&select=day,level&order=day.desc&limit=60`,
       { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
     );
     const j = await r.json();
-    return (Array.isArray(j) ? j : []).map((x: { day: number }) => Number(x.day));
+    return (Array.isArray(j) ? j : []).map((x: { day: number; level?: string }) => ({
+      day: Number(x.day),
+      level: (x.level === "easy" || x.level === "hard" ? x.level : "medium") as Difficulty,
+    }));
   } catch {
     return [];
   }
