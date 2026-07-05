@@ -22,6 +22,7 @@ import {
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, type ScoreEntry } from "./lib/ranking";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
+import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
   requestPayment,
@@ -36,6 +37,8 @@ import { PRIVY_ENABLED } from "./providers";
 import { PrivyIdentityBridge, EmailLoginButton } from "./components/PrivyLogin";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
+
+type Tab = "jugar" | "ranking" | "perfil" | "aprender";
 
 // Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
 function Flag({ code, size = 32 }: { code: string; size?: number }) {
@@ -86,6 +89,27 @@ export default function Frontle() {
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
   const [claimingDay, setClaimingDay] = useState<number | null>(null);
 
+  // Navegación (app shell) + sheet de wallet
+  const [tab, setTab] = useState<Tab>("jugar");
+  const [walletOpen, setWalletOpen] = useState(false);
+  // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
+  const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
+  function openPregame() {
+    let hide = false;
+    try { hide = localStorage.getItem("frontle-tutorial-hide") === "1"; } catch {}
+    setOverlay(hide ? "quick" : "full");
+  }
+  const [daysPlayed, setDaysPlayed] = useState(0);
+  useEffect(() => {
+    try {
+      let n = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        if (localStorage.key(i)?.startsWith("frontle-best-")) n++;
+      }
+      setDaysPlayed(n);
+    } catch {}
+  }, [best, tab]);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
   const tr = t(locale);
@@ -105,6 +129,20 @@ export default function Frontle() {
       );
     } catch {}
   }
+
+  // Reset de desarrollo: /?reset=1 limpia la partida del día y el tutorial
+  useEffect(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.has("reset")) {
+        const d = dateSeed();
+        localStorage.removeItem(`frontle-game-${d}`);
+        localStorage.removeItem(`frontle-best-${d}`);
+        localStorage.removeItem("frontle-tutorial-hide");
+        window.location.replace("/");
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => setLocale(detectLocale()), []);
   useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
@@ -333,33 +371,66 @@ export default function Frontle() {
   const endC = getCountry(challenge.end)!;
   const guessCount = state.chain.length;
   const silhouettes = showNextSil && nextHint ? [nextHint] : [];
-  const panel = "rounded-2xl bg-black/45 backdrop-blur-md border border-white/15";
+  const panel = "panel";
+  // Gamificación derivada de los días jugados (real, no inventado)
+  const level = Math.floor(daysPlayed / 3) + 1;
+  const xpPct = ((daysPlayed % 3) / 3) * 100;
 
   return (
-    <main className="relative min-h-dvh bg-black bg-grid text-white flex flex-col items-center px-4 py-6 overflow-hidden">
+    <main className="relative min-h-dvh bg-grid text-white flex flex-col items-center overflow-hidden">
       {/* Puente de la wallet embebida (login por correo). Sin UI. */}
       {PRIVY_ENABLED && <PrivyIdentityBridge onIdentity={handlePrivyIdentity} />}
-      <div className="prism-glow" />
-      <div className="prism-core" />
-      <div className="relative z-10 w-full max-w-md flex flex-col gap-5">
-        {/* Header */}
-        <header className="text-center">
-          <h1 className="text-4xl font-black tracking-tight prism-text">FRONTLE</h1>
-          <p className="text-sm text-white mt-1 drop-shadow">{tr.tagline}</p>
-          {/* Chip de saldo COPm oculto temporalmente (a pedido). El selector USDT/COPm sigue activo. */}
-        </header>
 
-        {/* Premio del día (pot on-chain) */}
+      {/* Header fijo: logo + chip de pot + chip de wallet */}
+      <header className="fixed top-0 inset-x-0 z-30 flex items-center gap-2 px-4 h-14 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
+        <span className="font-display text-xl font-bold tracking-tight prism-text">FRONTLE</span>
+        <div className="flex-1" />
         {pot !== null && (
-          <div className="text-center -mb-1">
-            <span className="inline-block rounded-full bg-amber-400/15 border border-amber-300/40 px-4 py-1.5 text-sm font-bold text-amber-300">
-              {tr.prize(fmt(pot))}
-            </span>
+          <span className="rounded-full bg-amber-400/15 border border-amber-300/40 px-3 py-1 text-xs font-bold text-amber-300 whitespace-nowrap">
+            🏆 {fmt(pot)}
+          </span>
+        )}
+        <button
+          onClick={() => setWalletOpen(true)}
+          className="rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
+        >
+          {myId ? shortId(myId) : "👤 Entrar"}
+        </button>
+      </header>
+
+      {/* Contenido del tab activo */}
+      <div className="relative z-10 w-full max-w-md flex flex-col gap-4 px-4 pt-[70px] pb-24">
+        {tab === "jugar" && (
+          <>
+        {/* Título + gamificación (sin hero gigante; Bordy vive en la esquina) */}
+        {!started && (
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <h2 className="font-display text-2xl font-bold text-white text-center leading-tight">
+              Conecta el <span className="text-[#fcff52]">mundo</span>
+            </h2>
+            {/* Strip de gamificación: racha + nivel (XP) */}
+            <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl">🔥</span>
+                <span className="font-display font-bold text-white text-lg leading-none">{daysPlayed}</span>
+                <span className="text-[11px] text-neutral-400">racha</span>
+              </div>
+              <div className="w-px h-7 bg-white/10" />
+              <div className="flex flex-col flex-1">
+                <div className="flex items-center justify-between text-[11px] mb-1">
+                  <span className="font-semibold text-[#c4b5fd]">⚡ Nivel {level}</span>
+                  <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-[#fcff52]" style={{ width: `${xpPct}%` }} />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
         {/* Selector de moneda de visualización (solo display; el token es USDT) */}
-        <div className="flex justify-center -mt-2">
+        <div className="flex justify-center">
           <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
         </div>
 
@@ -385,7 +456,7 @@ export default function Frontle() {
         {/* Cronómetro (visible al jugar) */}
         {started && (
           <p className="text-center -my-2">
-            <span className="inline-block text-lg font-mono font-bold bg-black/50 rounded-full px-4 py-1 tabular-nums">
+            <span className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
               🕒 {formatTime(elapsedMs)}
             </span>
           </p>
@@ -401,7 +472,7 @@ export default function Frontle() {
             resetKey={`${challenge.start}->${challenge.end}`}
           />
         ) : (
-          <div className="w-full rounded-2xl bg-black border border-white/15 min-h-[220px] flex flex-col items-center justify-center gap-3 py-5">
+          <div className="w-full flex flex-col items-center justify-center gap-3 py-2">
             {!myId && (hasWallet || PRIVY_ENABLED) && (
               <div className="flex flex-col items-center gap-2">
                 {hasWallet && (
@@ -422,12 +493,11 @@ export default function Frontle() {
               </div>
             )}
             <button
-              onClick={startGame}
-              className="rounded-2xl bg-white text-black font-black text-xl px-10 py-4 active:scale-95 transition shadow-lg"
+              onClick={openPregame}
+              className="btn-3d font-display font-bold text-2xl px-12 py-4"
             >
               {tr.play}
             </button>
-            <p className="text-xs text-neutral-300">{tr.timerHint}</p>
             {!hasWallet && !PRIVY_ENABLED && (
               <p className="text-[11px] text-amber-300/80">{tr.noWallet}</p>
             )}
@@ -438,7 +508,7 @@ export default function Frontle() {
         {started && (
           <>
             <div className="flex items-center justify-center -mt-2">
-              <div className="flex items-center gap-3 text-[11px] text-white bg-black/55 backdrop-blur-sm rounded-full px-3 py-1.5">
+              <div className="flex items-center gap-3 text-[11px] text-white bg-[#1c0b3e]/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#b79ced]/20">
                 <Legend color="#22d3ee" label={tr.legend.origin} />
                 <Legend color="#e879f9" label={tr.legend.destination} />
                 <Legend color="#22c55e" label={tr.legend.good} />
@@ -480,13 +550,13 @@ export default function Frontle() {
                     placeholder={tr.placeholder}
                     autoComplete="off"
                     autoCapitalize="off"
-                    className="flex-1 rounded-xl bg-neutral-950 border border-white/20 px-4 py-3 text-base text-white outline-none focus:border-white/60 transition"
+                    className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
                   />
-                  <button type="submit" className="rounded-xl bg-white px-5 py-3 font-bold text-black active:scale-95 transition">OK</button>
+                  <button type="submit" className="rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e] active:scale-95 transition">OK</button>
                 </form>
 
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-20 top-14 w-full rounded-xl bg-neutral-950 border border-white/20 overflow-hidden shadow-2xl">
+                  <ul className="absolute z-20 top-14 w-full rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 overflow-hidden shadow-2xl">
                     {suggestions.map((s) => (
                       <li key={s}>
                         <button type="button" onClick={() => submitCountry(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
@@ -523,20 +593,205 @@ export default function Frontle() {
           </>
         )}
 
-        {/* Premios reclamables (días ganados sin cobrar) */}
-        {prizes.length > 0 && (
-          <PrizesCard tr={tr} prizes={prizes} claimingDay={claimingDay} onClaim={handleClaim} panel={panel} fmt={fmt} />
+          </>
         )}
 
-        {/* Ranking diario */}
-        <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} />
+        {/* ---------- TAB RANKING ---------- */}
+        {tab === "ranking" && (
+          <>
+            {pot !== null && (
+              <div className="panel p-3 flex items-center justify-between">
+                <span className="text-sm font-bold text-amber-300">{tr.prize(fmt(pot))}</span>
+                <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
+              </div>
+            )}
+            <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} />
+            <p className="text-center text-[11px] text-neutral-400">{tr.nextChallenge(countdown)}</p>
+          </>
+        )}
 
-        {/* Contador */}
-        <p className="text-center text-xs text-white bg-black/40 rounded-full px-3 py-1 self-center">🕒 {tr.nextChallenge(countdown)}</p>
+        {/* ---------- TAB PERFIL ---------- */}
+        {tab === "perfil" && (
+          <>
+            <section className="panel p-4 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-[#160833] border border-[#b79ced]/30 flex items-center justify-center overflow-hidden">
+                {ipCountry ? <Flag code={ipCountry} size={30} /> : <span className="text-xl">👤</span>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-white truncate">{myId ? shortId(myId) : "Invitado"}</div>
+                <div className="text-[11px] text-neutral-400">{myId ? "Conectado" : "Conéctate para el ranking"}</div>
+              </div>
+              {!myId && hasWallet && (
+                <button onClick={connectForRanking} className="rounded-lg border border-emerald-300/50 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 active:scale-95 transition">
+                  {tr.connectWallet}
+                </button>
+              )}
+            </section>
+            <div className="grid grid-cols-3 gap-2">
+              <StatCard v={daysPlayed} k="días jugados" color="#fcff52" />
+              <StatCard v={best ?? "—"} k="mejor hoy" color="#22d3ee" />
+              <StatCard v={prizes.length} k="premios" color="#e879f9" />
+            </div>
+            {prizes.length > 0 && (
+              <PrizesCard tr={tr} prizes={prizes} claimingDay={claimingDay} onClaim={handleClaim} panel={panel} fmt={fmt} />
+            )}
+            <div className="flex justify-center gap-4 text-[11px] text-neutral-400 mt-1">
+              <span className="underline cursor-pointer">Términos</span>
+              <span className="underline cursor-pointer">Privacidad</span>
+              <span className="underline cursor-pointer">Soporte</span>
+            </div>
+            <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
+          </>
+        )}
 
-        <footer className="text-center text-xs text-neutral-400">{tr.footer}</footer>
+        {/* ---------- TAB APRENDER ---------- */}
+        {tab === "aprender" && (
+          <>
+            <div className="flex flex-col gap-3">
+              {[
+                "¡Hola! Soy Bordy 👋 Cada día conectas el país de origen con el de destino nombrando países que compartan frontera.",
+                "El semáforo te guía: verde vas por la mejor ruta, amarillo te desviaste un poco, rojo te alejaste.",
+                "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
+              ].map((txt, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-[#160833] border border-[#b79ced]/40 flex items-center justify-center text-lg flex-none">🤖</div>
+                  <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setTab("jugar")} className="rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
+              ▶ {tr.play}
+            </button>
+            <button disabled className="rounded-2xl border border-[#b79ced]/30 text-neutral-300 px-6 py-3 opacity-60">
+              🎲 Modo práctica (próximamente)
+            </button>
+          </>
+        )}
       </div>
+
+      {/* Bordy de esquina (mascota persistente; abre el tutorial completo).
+          Oculto durante la partida activa para no tapar el input/OK. */}
+      {!overlay && !(tab === "jugar" && started && !state.solved) && (
+        <button
+          onClick={() => setOverlay("full")}
+          aria-label="Bordy"
+          className="fixed bottom-20 right-2 z-30 w-[64px] h-[76px] bordy-float-sm active:scale-90 transition"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bordy-m2.png" alt="Bordy" className="w-full h-full object-contain drop-shadow-xl" />
+        </button>
+      )}
+
+      {/* Bottom-nav */}
+      <TabBar tab={tab} onTab={setTab} />
+
+      {/* Overlays pre-juego */}
+      {overlay === "full" && (
+        <BordyTutorial
+          onDone={() => {
+            setOverlay(null);
+            if (!started) startGame();
+          }}
+        />
+      )}
+      {overlay === "quick" && (
+        <QuickStart
+          onDone={() => {
+            setOverlay(null);
+            if (!started) startGame();
+          }}
+          onFull={() => setOverlay("full")}
+        />
+      )}
+
+      {/* Wallet sheet */}
+      {walletOpen && (
+        <WalletSheet onClose={() => setWalletOpen(false)} myId={myId} hasWallet={hasWallet} onConnect={connectForRanking} tr={tr} />
+      )}
     </main>
+  );
+}
+
+// Tarjeta de estadística (perfil)
+function StatCard({ v, k, color }: { v: number | string; k: string; color: string }) {
+  return (
+    <div className="panel p-3 text-center">
+      <div className="text-2xl font-black tabular-nums" style={{ color }}>{v}</div>
+      <div className="text-[10px] text-neutral-400 mt-0.5">{k}</div>
+    </div>
+  );
+}
+
+// Bottom-nav de 4 tabs
+function TabBar({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+  const items: { id: Tab; icon: string; label: string }[] = [
+    { id: "jugar", icon: "🌍", label: "Jugar" },
+    { id: "ranking", icon: "🏆", label: "Ranking" },
+    { id: "perfil", icon: "👤", label: "Perfil" },
+    { id: "aprender", icon: "❓", label: "Aprender" },
+  ];
+  return (
+    <nav className="fixed bottom-0 inset-x-0 z-30 h-16 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">
+      {items.map((it) => {
+        const on = tab === it.id;
+        return (
+          <button
+            key={it.id}
+            onClick={() => onTab(it.id)}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
+              on ? "text-white" : "text-neutral-400"
+            }`}
+          >
+            <span className={`text-xl ${on ? "" : "opacity-60 grayscale"}`}>{it.icon}</span>
+            {it.label}
+            {on && <span className="absolute bottom-1.5 w-8 h-0.5 rounded-full bg-[#fcff52]" />}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// Sheet de wallet (identidad / conexión)
+function WalletSheet({
+  onClose,
+  myId,
+  hasWallet,
+  onConnect,
+  tr,
+}: {
+  onClose: () => void;
+  myId: string;
+  hasWallet: boolean;
+  onConnect: () => void;
+  tr: ReturnType<typeof t>;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
+      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
+        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
+        <h3 className="text-white font-bold text-base mb-3">💰 Tu wallet</h3>
+        {myId ? (
+          <div className="panel p-4">
+            <div className="text-[11px] text-neutral-400">Conectado como</div>
+            <div className="font-mono text-white text-sm mt-0.5 break-all">{myId}</div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {hasWallet && (
+              <button onClick={() => { onConnect(); onClose(); }} className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition">
+                {tr.connectWallet}
+              </button>
+            )}
+            {PRIVY_ENABLED && (
+              <EmailLoginButton label={tr.emailLogin} className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-6 py-3 font-bold text-sky-200 active:scale-95 transition" />
+            )}
+            <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -575,7 +830,7 @@ function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; 
       <select
         value={currency}
         onChange={(e) => onChange(e.target.value as DisplayCurrency)}
-        className="rounded-md border border-white/20 bg-black/60 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-white/40"
+        className="rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
       >
         <option value="USDT">USDT</option>
         <option value="COPM">COPm</option>
@@ -594,7 +849,7 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
     red: "border-rose-400/50 text-rose-100",
   };
   return (
-    <div className={`flex flex-col items-center justify-center rounded-xl border bg-black/50 backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}>
+    <div className={`flex flex-col items-center justify-center rounded-xl border bg-[#1c0b3e]/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}>
       <Flag code={code} size={30} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
@@ -741,7 +996,7 @@ function WinCard({
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
       <div className="flex flex-col gap-2 mt-4">
-        <button onClick={share} className="rounded-xl bg-white px-6 py-3 font-bold text-black active:scale-95 transition">
+        <button onClick={share} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
           {copied ? tr.copied : tr.share}
         </button>
         {/* Siempre disponible: aun con marca perfecta se puede reintentar para mejorar el TIEMPO (desempate del ranking). */}
