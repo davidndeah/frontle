@@ -204,7 +204,13 @@ export function dailyChallenge(seed = dateSeed(), level: Difficulty = "medium"):
   const rand = mulberry32(seedForLevel(seed, level));
   const pool = COUNTRY_NAMES.filter((n) => COUNTRY_TIER[n] === level);
   const MIN_OPT = 2;
-  const MAX_OPT = 7;
+  // Cap de intermedios por nivel. Fácil se limita a rutas cortas: máx 3
+  // intermedios = 5 países en total (contando origen y destino). El resto sigue
+  // en 7. Se aplica SOLO desde EASY_CAP_FROM para no alterar los retos del ciclo
+  // en curso (el reto diario es determinístico por fecha; cambiarlo hoy
+  // desincronizaría el ranking/pot). El seed del reto diario es YYYYMMDD.
+  const EASY_CAP_FROM = 20260706; // protege 2026-07-05 y días anteriores
+  const MAX_OPT = level === "easy" && seed >= EASY_CAP_FROM ? 3 : 7;
 
   // 1) Estricto: AMBOS extremos del nivel, cadena dentro de la banda.
   for (let i = 0; i < 400; i++) {
