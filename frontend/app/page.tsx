@@ -8,6 +8,7 @@ import {
   tryGuess,
   nextHintCountry,
   msUntilNextDailyUTC,
+  connectsThroughKnown,
   type PlayState,
   type Status,
   type Difficulty,
@@ -107,6 +108,12 @@ export default function Frontle() {
   // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
   const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
   function openPregame() {
+    // Reto de hoy ya resuelto (volvió del Home tras ganar): directo a la
+    // pantalla de victoria, sin tutorial ni cuenta regresiva.
+    if (state.solved) {
+      setStarted(true);
+      return;
+    }
     let hide = false;
     try { hide = localStorage.getItem("frontle-tutorial-hide") === "1"; } catch {}
     setOverlay(hide ? "quick" : "full");
@@ -181,6 +188,16 @@ export default function Frontle() {
           started = true;
           chain = g.chain ?? [];
           solved = !!g.solved;
+          // Auto-reparación: una versión previa pisaba solved:true al volver a
+          // entrar tras ganar. La cadena manda: si ya conecta origen y destino,
+          // la partida está resuelta; se corrige también en localStorage.
+          if (!solved && chain.length > 0) {
+            const known = new Set<string>([challengeForLevel.start, challengeForLevel.end, ...chain.map((c) => c.country)]);
+            if (connectsThroughKnown(challengeForLevel.start, challengeForLevel.end, known)) {
+              solved = true;
+              try { localStorage.setItem(`frontle-game-${day}-${level}`, JSON.stringify({ ...g, solved: true })); } catch {}
+            }
+          }
           startRef.current = g.startMs || Date.now();
           elapsed = solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now());
         }
@@ -300,6 +317,13 @@ export default function Frontle() {
     // Gate de identidad: fuera de MiniPay no se juega sin wallet/correo. En
     // MiniPay `myId` se auto-setea al cargar, así que esto no añade fricción.
     if (!myId) return;
+    // Partida ya resuelta hoy: volver a la pantalla de victoria SIN reiniciar
+    // el reloj ni tocar la partida guardada — pisarla con solved:false aquí
+    // dejaba el día como "en curso" con la cadena ya ganadora.
+    if (state.solved) {
+      setStarted(true);
+      return;
+    }
     startRef.current = Date.now();
     setElapsedMs(0);
     setStarted(true);
