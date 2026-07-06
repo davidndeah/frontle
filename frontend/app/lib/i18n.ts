@@ -109,6 +109,8 @@ type Dict = {
   connectWallet: string;
   connectBenefit: string;
   emailLogin: string;
+  welcomeBonus: (amount: string) => string;
+  bonusDismiss: string;
   levels: { easy: string; medium: string; hard: string };
   chooseLevel: string;
   rankingTitle: string;
@@ -164,6 +166,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectWallet: "🔗 Conectar wallet",
     connectBenefit: "Para el ranking y las pistas",
     emailLogin: "✉️ Entrar con correo",
+    welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
+    bonusDismiss: "¡Gracias!",
     levels: { easy: "Fácil", medium: "Medio", hard: "Difícil" },
     chooseLevel: "Elige nivel",
     rankingTitle: "Ranking diario",
@@ -224,6 +228,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectWallet: "🔗 Connect wallet",
     connectBenefit: "For the ranking and hints",
     emailLogin: "✉️ Sign in with email",
+    welcomeBonus: (a) => `Hi! I'm Bordy 👋 Here's ${a} as a welcome gift for hints or retries. Let's play! 🎁`,
+    bonusDismiss: "Thanks!",
     levels: { easy: "Easy", medium: "Medium", hard: "Hard" },
     chooseLevel: "Choose level",
     rankingTitle: "Daily ranking",
@@ -284,6 +290,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectWallet: "🔗 Conectar wallet",
     connectBenefit: "Para o ranking e as dicas",
     emailLogin: "✉️ Entrar com e-mail",
+    welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
+    bonusDismiss: "Obrigado!",
     levels: { easy: "Fácil", medium: "Médio", hard: "Difícil" },
     chooseLevel: "Escolha o nível",
     rankingTitle: "Ranking diário",
@@ -344,6 +352,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectWallet: "🔗 Connecter wallet",
     connectBenefit: "Pour le classement et les indices",
     emailLogin: "✉️ Se connecter par e-mail",
+    welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
+    bonusDismiss: "Merci !",
     levels: { easy: "Facile", medium: "Moyen", hard: "Difficile" },
     chooseLevel: "Choisir le niveau",
     rankingTitle: "Classement du jour",

@@ -96,6 +96,8 @@ export default function Frontle() {
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
   const [claimingKey, setClaimingKey] = useState<string | null>(null);
+  // Bono de bienvenida recién otorgado (monto en USDT) → aviso de Bordy.
+  const [bonus, setBonus] = useState<string | null>(null);
 
   // Navegación (app shell) + sheet de wallet
   const [tab, setTab] = useState<Tab>("jugar");
@@ -414,7 +416,9 @@ export default function Frontle() {
   return (
     <main className="relative min-h-dvh bg-grid text-white flex flex-col items-center overflow-hidden">
       {/* Puente de la wallet embebida (login por correo). Sin UI. */}
-      {PRIVY_ENABLED && <PrivyIdentityBridge onIdentity={handlePrivyIdentity} />}
+      {PRIVY_ENABLED && (
+        <PrivyIdentityBridge onIdentity={handlePrivyIdentity} onWelcomeBonus={(a) => setBonus(a)} />
+      )}
 
       {/* Header fijo: logo + chip de pot + chip de wallet */}
       <header className="fixed top-0 inset-x-0 z-30 flex items-center gap-2 px-4 h-14 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
@@ -767,6 +771,25 @@ export default function Frontle() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.png" alt="Bordy" className="w-full h-full object-contain drop-shadow-xl" />
         </button>
+      )}
+
+      {/* Aviso de Bordy: bono de bienvenida recién otorgado */}
+      {bonus && (
+        <div className="fixed inset-x-0 bottom-24 z-40 flex justify-center px-4">
+          <div className="panel flex items-start gap-3 max-w-sm w-full p-3 border-[#fcff52]/40 shadow-xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/bordy-m2.png" alt="Bordy" className="w-12 h-14 object-contain shrink-0 bordy-talk" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white leading-snug">{tr.welcomeBonus(fmt(Number(bonus)))}</p>
+              <button
+                onClick={() => setBonus(null)}
+                className="mt-2 rounded-lg bg-[#fcff52] px-3 py-1.5 text-xs font-bold text-[#1c0b3e] active:scale-95 transition"
+              >
+                {tr.bonusDismiss}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Bottom-nav */}
