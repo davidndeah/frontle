@@ -33,6 +33,7 @@ import {
   connectWallet,
   getClaimablePrizes,
   claimPrize,
+  getWalletBalances,
   type ClaimablePrize,
   type PayResult,
 } from "./lib/payments";
@@ -94,6 +95,8 @@ export default function Frontle() {
   // y sin feedback el usuario re-clickeaba o creía que no funcionó.
   const [paying, setPaying] = useState<null | "retry" | "initial" | "next" | "all">(null);
   const [payError, setPayError] = useState<string | null>(null); // error visible en la WinCard
+  // Saldo de la wallet activa (USDT + CELO de gas), para la tarjeta del Perfil.
+  const [balances, setBalances] = useState<{ usdt: number; celo: number } | null>(null);
 
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
@@ -259,6 +262,14 @@ export default function Frontle() {
     });
     return () => { alive = false; };
   }, [started, state.solved, elapsedMs, myId, day, level, gameKey]);
+
+  // Saldo de la wallet: se carga al abrir el Perfil (y se refresca al volver).
+  useEffect(() => {
+    if (tab !== "perfil" || !myId) return;
+    let alive = true;
+    getWalletBalances().then((b) => { if (alive) setBalances(b); });
+    return () => { alive = false; };
+  }, [tab, myId]);
 
   // Premio (pot) del día: cargar al inicio y refrescar cada 30s para reflejar pagos de otros.
   useEffect(() => {
@@ -809,6 +820,7 @@ export default function Frontle() {
                 </button>
               )}
             </section>
+            {myId && balances && <WalletCard address={myId} usdt={balances.usdt} celo={balances.celo} fmt={fmt} />}
             <div className="grid grid-cols-3 gap-2">
               <StatCard v={daysPlayed} k="días jugados" color="#fcff52" />
               <StatCard v={best ?? "—"} k="mejor hoy" color="#22d3ee" />
@@ -910,6 +922,33 @@ export default function Frontle() {
         <WalletSheet onClose={() => setWalletOpen(false)} myId={myId} hasWallet={hasWallet} onConnect={connectForRanking} tr={tr} />
       )}
     </main>
+  );
+}
+
+// Tarjeta de saldo (perfil): el usuario de CORREO no tiene otra vista de su
+// wallet embebida. Muestra USDT (en la moneda elegida), el CELO de gas y la
+// dirección completa con copiar — necesaria para recargar la wallet.
+function WalletCard({ address, usdt, celo, fmt }: { address: string; usdt: number; celo: number; fmt: (u: number) => string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <section className="panel p-4">
+      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2">Saldo de tu wallet</p>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-2xl font-black text-white">{fmt(usdt)}</span>
+        <span className="text-[11px] text-neutral-400" title="CELO para la comisión de red">⛽ {celo.toFixed(3)} CELO</span>
+      </div>
+      <button
+        onClick={() => {
+          navigator.clipboard?.writeText(address);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        }}
+        className="mt-2 w-full truncate rounded-lg border border-white/15 px-2 py-1.5 text-[11px] font-mono text-neutral-300 active:scale-95 transition hover:bg-white/10"
+        title={address}
+      >
+        {copied ? "¡Dirección copiada!" : `${address} 📋`}
+      </button>
+    </section>
   );
 }
 

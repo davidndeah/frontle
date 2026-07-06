@@ -360,6 +360,29 @@ export async function claimPrize(day: number, level: Difficulty): Promise<boolea
   }
 }
 
+// --- Lectura: saldos de la wallet activa (USDT + CELO) ------------------
+// Para el Perfil: el usuario de CORREO no tiene otra vista de su wallet
+// embebida (el de MiniPay ve su saldo en la app). Devuelve null sin wallet.
+export async function getWalletBalances(): Promise<{ usdt: number; celo: number } | null> {
+  const active = getProvider();
+  if (!active) return null;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(active.provider as any) });
+    const [account] = await walletClient.getAddresses();
+    if (!account) return null;
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const [usdt, celo] = await Promise.all([
+      publicClient.readContract({ address: TOKEN_ADDRESS, abi: erc20Abi, functionName: "balanceOf", args: [account] }),
+      publicClient.getBalance({ address: account }),
+    ]);
+    return { usdt: Number(formatUnits(usdt, TOKEN_DECIMALS)), celo: Number(formatUnits(celo, 18)) };
+  } catch (err) {
+    console.error("[saldo] no se pudo leer:", err);
+    return null;
+  }
+}
+
 // --- Lectura: saldo de COPm (peso colombiano) de la wallet conectada ----
 // Localización para el mercado colombiano de MiniPay. Devuelve el saldo o null.
 export async function getCopmBalance(): Promise<number | null> {
