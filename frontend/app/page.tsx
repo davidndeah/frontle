@@ -391,6 +391,9 @@ export default function Frontle() {
 
   // Envía la marca al ranking usando la DIRECCIÓN como identidad.
   function pushScore(addr: string, score: number, timeMs: number) {
+    // Un tiempo 0 es imposible (resolver toma segundos): venía de partidas
+    // auto-reparadas sin finalMs y contaminaba el ranking. No enviar.
+    if (!(timeMs > 0)) return Promise.resolve();
     return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr, level })
       .then(() => getRanking(day, level).then(setRanking));
   }

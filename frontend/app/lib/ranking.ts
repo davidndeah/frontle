@@ -149,8 +149,10 @@ export async function getMyScore(day: number, level: Difficulty, playerId: strin
   if (!playerId) return null;
   if (useSupabase) {
     try {
+      // time_ms=gt.0: ignora marcas imposibles (filas basura con tiempo 0 que
+      // dejó el bug de partidas corrompidas — justo lo que se quiere reparar).
       const r = await fetch(
-        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&level=eq.${level}&player_id=eq.${encodeURIComponent(playerId)}&order=countries.asc,time_ms.asc&limit=1`,
+        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&level=eq.${level}&player_id=eq.${encodeURIComponent(playerId)}&time_ms=gt.0&order=countries.asc,time_ms.asc&limit=1`,
         { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       const j = await r.json();
@@ -172,7 +174,7 @@ export async function getMyScore(day: number, level: Difficulty, playerId: strin
   try {
     const arr: ScoreEntry[] = JSON.parse(localStorage.getItem(`frontle-ranking-${day}-${level}`) || "[]");
     const mine = arr
-      .filter((e) => e.playerId === playerId)
+      .filter((e) => e.playerId === playerId && e.timeMs > 0)
       .sort((a, b) => a.countries - b.countries || a.timeMs - b.timeMs);
     return mine[0] ?? null;
   } catch {
