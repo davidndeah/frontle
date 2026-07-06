@@ -95,6 +95,8 @@ export default function Frontle() {
   // Navegación (app shell) + sheet de wallet
   const [tab, setTab] = useState<Tab>("jugar");
   const [walletOpen, setWalletOpen] = useState(false);
+  // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
+  const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
   // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
   const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
   function openPregame() {
@@ -455,15 +457,54 @@ export default function Frontle() {
           </div>
         )}
 
-        {/* Selector de moneda de visualización (solo display; el token es USDT) */}
-        <div className="flex justify-center">
-          <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
-        </div>
+        {/* ---- Flujo pre-juego: 1) modos ---- */}
+        {!started && jugarStep === "modes" && (
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setJugarStep("level")}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+            >
+              <span className="text-3xl">🌍</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">Reto diario</span>
+                <span className="text-xs text-neutral-300">3 niveles · premio real del pot 🏆</span>
+              </span>
+              <span className="text-[#fcff52] text-2xl">→</span>
+            </button>
+            <div className="panel p-4 flex items-center gap-3 opacity-50">
+              <span className="text-3xl">🎲</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">Nuevos modos</span>
+                <span className="text-xs text-neutral-300">práctica, duelos y más…</span>
+              </span>
+              <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">coming soon</span>
+            </div>
+          </div>
+        )}
 
-        {/* Selector de nivel de dificultad (fácil/medio/difícil) */}
-        <LevelSelect tr={tr} level={level} onChange={setLevel} />
+        {/* ---- 2) dificultad ---- */}
+        {!started && jugarStep === "level" && (
+          <div className="flex flex-col gap-3">
+            <BackRow onClick={() => setJugarStep("modes")} label="Modos" />
+            <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
+          </div>
+        )}
+
+        {/* ---- 3) reto del nivel elegido ---- */}
+        {!started && jugarStep === "reto" && (
+          <div className="flex items-center justify-between">
+            <BackRow onClick={() => setJugarStep("level")} label={tr.levels[level]} />
+            <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
+          </div>
+        )}
+        {started && (
+          <div className="flex justify-center">
+            <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
+          </div>
+        )}
 
         {/* Reto del día (oculto hasta pulsar Play) */}
+        {(started || jugarStep === "reto") && (
         <section className={`${panel} p-4`}>
           <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">{tr.daily}</p>
           <div className="flex items-center justify-between gap-2">
@@ -481,6 +522,7 @@ export default function Frontle() {
             {started ? tr.optimal(challenge.optimal) : tr.timerHint}
           </p>
         </section>
+        )}
 
         {/* Cronómetro (visible al jugar) */}
         {started && (
@@ -491,7 +533,7 @@ export default function Frontle() {
           </p>
         )}
 
-        {/* Mapa o pantalla de Play */}
+        {/* Mapa o pantalla de Play (solo en el paso reto) */}
         {started ? (
           <WorldMap
             statusByCountry={statusByCountry}
@@ -500,7 +542,7 @@ export default function Frontle() {
             showAllOutlines={showAllSil}
             resetKey={`${challenge.start}->${challenge.end}`}
           />
-        ) : (
+        ) : jugarStep === "reto" ? (
           <div className="w-full flex flex-col items-center justify-center gap-3 py-2">
             {!myId && (hasWallet || PRIVY_ENABLED) && (
               <div className="flex flex-col items-center gap-2">
@@ -531,7 +573,7 @@ export default function Frontle() {
               <p className="text-[11px] text-amber-300/80">{tr.noWallet}</p>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Juego (solo al jugar) */}
         {started && (
@@ -823,6 +865,16 @@ function WalletSheet({
         )}
       </div>
     </>
+  );
+}
+
+// Botón de "volver" del flujo pre-juego
+function BackRow({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+      <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center text-base leading-none">←</span>
+      <span className="font-display font-semibold">{label}</span>
+    </button>
   );
 }
 
