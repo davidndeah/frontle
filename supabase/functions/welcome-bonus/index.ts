@@ -16,7 +16,11 @@
 //    PRIVY_APP_SECRET       app secret de Privy (server-side; NUNCA en el repo)
 //    FAUCET_PRIVATE_KEY     0x... wallet faucet dedicada (USDT + CELO para gas)
 //    BONUS_DAILY_CAP        opcional, nº max de bonos/dia (default 100 = 10 USDT)
-//    BONUS_GAS_CELO         opcional, CELO de gas por bono (default 0.01)
+//    BONUS_GAS_CELO         opcional, CELO de gas por bono (default 0.2).
+//                           OJO: el baseFee de Celo ronda 200 gwei y el nodo
+//                           exige saldo >= gas x ~2x baseFee por tx (~0.06
+//                           CELO para una tx del juego); 0.2 cubre approve +
+//                           varias compras. No bajar de ~0.1.
 //    CELO_RPC_URL           opcional, default https://forno.celo.org
 // ============================================================
 
@@ -98,10 +102,10 @@ Deno.serve(async (req) => {
       // Ya recibio el USDT. Compat: bonos entregados ANTES del regalo de gas
       // (o wallets que lo agotaron) quedan sin CELO y no pueden transaccionar
       // (la embebida de Privy paga gas en CELO, no soporta feeCurrency).
-      // Top-up: si su saldo esta bajo el regalo, rellenar hasta una vez por
-      // request. Costo maximo del abuso: ~0.01 CELO por login, despreciable.
+      // Top-up: si su saldo esta bajo la mitad del regalo, rellenar (una vez
+      // por request). Costo maximo del abuso: BONUS_GAS_CELO por login (~$0.06).
       try {
-        const GAS_CELO = Deno.env.get("BONUS_GAS_CELO") || "0.01";
+        const GAS_CELO = Deno.env.get("BONUS_GAS_CELO") || "0.2";
         const gasRaw = parseEther(GAS_CELO);
         const publicClient = createPublicClient({ chain: celo, transport: http(rpcUrl) });
         const balCelo = await publicClient.getBalance({ address: wallet as `0x${string}` });
@@ -143,7 +147,7 @@ Deno.serve(async (req) => {
     //    la reserva. Se verifican AMBOS saldos antes de enviar nada, para no
     //    quedar a medias (CELO enviado pero USDT no, o viceversa).
     try {
-      const GAS_CELO = Deno.env.get("BONUS_GAS_CELO") || "0.01";
+      const GAS_CELO = Deno.env.get("BONUS_GAS_CELO") || "0.2";
       const gasRaw = parseEther(GAS_CELO);
       const account = privateKeyToAccount(Deno.env.get("FAUCET_PRIVATE_KEY")! as `0x${string}`);
       const publicClient = createPublicClient({ chain: celo, transport: http(rpcUrl) });
