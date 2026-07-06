@@ -297,6 +297,9 @@ export default function Frontle() {
   const nextHint = useMemo(() => nextHintCountry(state), [state]);
 
   function startGame() {
+    // Gate de identidad: fuera de MiniPay no se juega sin wallet/correo. En
+    // MiniPay `myId` se auto-setea al cargar, así que esto no añade fricción.
+    if (!myId) return;
     startRef.current = Date.now();
     setElapsedMs(0);
     setStarted(true);
@@ -561,8 +564,18 @@ export default function Frontle() {
           />
         ) : jugarStep === "reto" ? (
           <div className="w-full flex flex-col items-center justify-center gap-3 py-2">
-            {!myId && (hasWallet || PRIVY_ENABLED) && (
+            {myId ? (
+              // Con identidad (MiniPay auto-conecta, o wallet/correo conectados) → a jugar.
+              <button
+                onClick={openPregame}
+                className="btn-3d font-display font-bold text-2xl px-12 py-4"
+              >
+                {tr.play}
+              </button>
+            ) : hasWallet || PRIVY_ENABLED ? (
+              // Fuera de MiniPay hay que autenticarse (wallet o correo) para poder jugar.
               <div className="flex flex-col items-center gap-2">
+                <p className="text-sm font-semibold text-white text-center">{tr.connectToPlay}</p>
                 {hasWallet && (
                   <button
                     onClick={connectForRanking}
@@ -579,15 +592,9 @@ export default function Frontle() {
                 )}
                 <p className="text-[11px] text-emerald-300/80">{tr.connectBenefit}</p>
               </div>
-            )}
-            <button
-              onClick={openPregame}
-              className="btn-3d font-display font-bold text-2xl px-12 py-4"
-            >
-              {tr.play}
-            </button>
-            {!hasWallet && !PRIVY_ENABLED && (
-              <p className="text-[11px] text-amber-300/80">{tr.noWallet}</p>
+            ) : (
+              // Ni wallet inyectada ni correo → sugerir abrir en MiniPay.
+              <p className="text-[12px] text-amber-300/90 text-center max-w-xs">{tr.openInMiniPay}</p>
             )}
           </div>
         ) : null}

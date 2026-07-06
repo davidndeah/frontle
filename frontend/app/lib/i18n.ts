@@ -108,6 +108,8 @@ type Dict = {
   connectToRank: string;
   connectWallet: string;
   connectBenefit: string;
+  connectToPlay: string;
+  openInMiniPay: string;
   emailLogin: string;
   welcomeBonus: (amount: string) => string;
   bonusDismiss: string;
@@ -165,6 +167,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Conecta tu wallet para entrar al ranking",
     connectWallet: "🔗 Conectar wallet",
     connectBenefit: "Para el ranking y las pistas",
+    connectToPlay: "Conéctate para jugar",
+    openInMiniPay: "Conéctate con tu wallet o correo para jugar, o abre Frontle desde MiniPay.",
     emailLogin: "✉️ Entrar con correo",
     welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
     bonusDismiss: "¡Gracias!",
@@ -227,6 +231,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Connect your wallet to join the ranking",
     connectWallet: "🔗 Connect wallet",
     connectBenefit: "For the ranking and hints",
+    connectToPlay: "Sign in to play",
+    openInMiniPay: "Connect your wallet or email to play, or open Frontle from MiniPay.",
     emailLogin: "✉️ Sign in with email",
     welcomeBonus: (a) => `Hi! I'm Bordy 👋 Here's ${a} as a welcome gift for hints or retries. Let's play! 🎁`,
     bonusDismiss: "Thanks!",
@@ -289,6 +295,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Conecte sua wallet para entrar no ranking",
     connectWallet: "🔗 Conectar wallet",
     connectBenefit: "Para o ranking e as dicas",
+    connectToPlay: "Entre para jogar",
+    openInMiniPay: "Conecte sua wallet ou e-mail para jogar, ou abra o Frontle no MiniPay.",
     emailLogin: "✉️ Entrar com e-mail",
     welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
     bonusDismiss: "Obrigado!",
@@ -351,6 +359,8 @@ const STRINGS: Record<Locale, Dict> = {
     connectToRank: "🔗 Connectez votre wallet pour rejoindre le classement",
     connectWallet: "🔗 Connecter wallet",
     connectBenefit: "Pour le classement et les indices",
+    connectToPlay: "Connecte-toi pour jouer",
+    openInMiniPay: "Connecte ton wallet ou e-mail pour jouer, ou ouvre Frontle depuis MiniPay.",
     emailLogin: "✉️ Se connecter par e-mail",
     welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
     bonusDismiss: "Merci !",
