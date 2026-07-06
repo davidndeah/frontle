@@ -34,6 +34,7 @@ import {
   getClaimablePrizes,
   claimPrize,
   type ClaimablePrize,
+  type PayResult,
 } from "./lib/payments";
 import { PRIVY_ENABLED } from "./providers";
 import { PrivyIdentityBridge, EmailLoginButton } from "./components/PrivyLogin";
@@ -431,18 +432,26 @@ export default function Frontle() {
     if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
   }
 
+  // Mensaje según el motivo del fallo (cancelado / sin USDT / sin gas / otro).
+  function payFailText(res: PayResult, price: number): string {
+    if (res === "cancelled") return tr.payCancelled;
+    if (res === "no_funds") return tr.payNoFunds(fmt(price));
+    if (res === "no_gas") return tr.payNoGas;
+    return tr.payFailed;
+  }
+
   async function retry() {
     if (paying) return;
     setPaying("retry");
     setPayError(null);
-    let paid = false;
+    let res: PayResult = "error";
     try {
-      paid = await requestPayment(PRICES.retry, "reintento del reto diario");
+      res = await requestPayment(PRICES.retry, "reintento del reto diario");
     } finally {
       setPaying(null);
     }
-    if (!paid) {
-      setPayError(tr.payFailed);
+    if (res !== "success") {
+      setPayError(payFailText(res, PRICES.retry));
       return;
     }
     getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
@@ -463,14 +472,14 @@ export default function Frontle() {
     const price = kind === "all" ? PRICES.hintAll : kind === "initial" ? PRICES.hintInitial : PRICES.hintNext;
     setPaying(kind);
     setMessage({ text: tr.paying, ok: true });
-    let paid = false;
+    let res: PayResult = "error";
     try {
-      paid = await requestPayment(price, `pista: ${kind}`);
+      res = await requestPayment(price, `pista: ${kind}`);
     } finally {
       setPaying(null);
     }
-    if (!paid) {
-      setMessage({ text: tr.payFailed, ok: false });
+    if (res !== "success") {
+      setMessage({ text: payFailText(res, price), ok: false });
       return;
     }
     setMessage(null);

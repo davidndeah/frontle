@@ -14,6 +14,7 @@ import {
   http,
   defineChain,
   parseUnits,
+  parseEther,
   formatUnits,
   maxUint256,
   type Address,
@@ -384,16 +385,36 @@ export async function getCopmBalance(): Promise<number | null> {
 }
 
 // --- Pago ---------------------------------------------------------------
-export async function requestPayment(amountUSDm: number, reason: string): Promise<boolean> {
+// Resultado tipado para que la UI pueda dar el mensaje correcto:
+//   success   → confirmado on-chain
+//   cancelled → el usuario rechazó la firma en su wallet
+//   no_funds  → USDT insuficiente para el precio de la compra
+//   no_gas    → (embebida) sin CELO para la comisión de red
+//   error     → cualquier otro fallo (red, contrato, etc.)
+export type PayResult = "success" | "cancelled" | "no_funds" | "no_gas" | "error";
+
+// ¿El error es un rechazo del usuario? (viem lo envuelve; recorrer los cause)
+function isUserRejection(err: unknown): boolean {
+  let e = err as { code?: number; name?: string; message?: string; cause?: unknown } | undefined;
+  while (e) {
+    if (e.code === 4001 || e.name === "UserRejectedRequestError" || /user rejected|user denied/i.test(String(e.message ?? ""))) {
+      return true;
+    }
+    e = e.cause as typeof e;
+  }
+  return false;
+}
+
+export async function requestPayment(amountUSDm: number, reason: string): Promise<PayResult> {
   const active = getProvider();
   if (!active) {
     console.warn("[pago] No hay wallet (window.ethereum ni embebida). ¿Abierto fuera de MiniPay?");
-    return false;
+    return "error";
   }
   const action = resolveAction(reason);
   if (!action) {
     console.error("[pago] reason no reconocido:", reason);
-    return false;
+    return "error";
   }
 
   try {
@@ -405,7 +426,7 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
     // Auto-connect: en MiniPay getAddresses ya devuelve la cuenta sin prompt.
     let [account] = await walletClient.getAddresses();
     if (!account) [account] = await walletClient.requestAddresses();
-    if (!account) return false;
+    if (!account) return "error";
 
     // Asegurar que la wallet está en la red correcta (Rabby en desktop puede estar
     // en Mainnet). En MiniPay normalmente ya coincide y esto se salta.
@@ -427,6 +448,21 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
 
     const feeWei = parseUnits(String(amountUSDm), TOKEN_DECIMALS);
     const feeOpts = feeOptsFor(active.embedded);
+
+    // Pre-chequeo de fondos: mejor un mensaje claro ANTES que una tx fallida.
+    const usdtBal = await publicClient.readContract({
+      address: TOKEN_ADDRESS,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [account],
+    });
+    if (usdtBal < feeWei) return "no_funds";
+    if (active.embedded) {
+      // La embebida paga gas en CELO: bajo ~0.02 ni el approve pasa la
+      // validación del nodo (exige saldo >= gas × ~2× baseFee).
+      const gasBal = await publicClient.getBalance({ address: account });
+      if (gasBal < parseEther("0.02")) return "no_gas";
+    }
 
     // approve una vez si la autorización no alcanza
     const allowance = await publicClient.readContract({
@@ -459,9 +495,15 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
       ...feeOpts,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    return receipt.status === "success";
+    return receipt.status === "success" ? "success" : "error";
   } catch (err) {
     console.error("[pago] falló o cancelado:", err);
-    return false;
+    if (isUserRejection(err)) return "cancelled";
+    // El pre-chequeo es best-effort: si el gas fluctuó y aun así no alcanzó,
+    // clasificar el fallo residual como falta de fondos/gas.
+    if (/insufficient funds|gas required exceeds allowance|exceeds the balance/i.test(String((err as Error)?.message ?? ""))) {
+      return active.embedded ? "no_gas" : "no_funds";
+    }
+    return "error";
   }
 }

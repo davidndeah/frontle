@@ -95,6 +95,9 @@ type Dict = {
   retry: string;
   paying: string;
   payFailed: string;
+  payCancelled: string;
+  payNoFunds: (amount: string) => string;
+  payNoGas: string;
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -155,7 +158,10 @@ const STRINGS: Record<Locale, Dict> = {
     comeback: "Vuelve mañana para el siguiente reto 🗓️",
     retry: "Reintentar para mejorar tu marca",
     paying: "Procesando pago…",
-    payFailed: "No se pudo completar el pago. Revisa tu saldo e intenta de nuevo.",
+    payFailed: "No se pudo completar el pago. Intenta de nuevo.",
+    payCancelled: "Pago cancelado.",
+    payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu wallet para continuar.`,
+    payNoGas: "Tu wallet no tiene CELO para la comisión de red. Vuelve a entrar con tu correo para recargar gas.",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
@@ -221,7 +227,10 @@ const STRINGS: Record<Locale, Dict> = {
     comeback: "Come back tomorrow for the next challenge 🗓️",
     retry: "Retry to beat your score",
     paying: "Processing payment…",
-    payFailed: "Payment didn't go through. Check your balance and try again.",
+    payFailed: "Payment didn't go through. Please try again.",
+    payCancelled: "Payment cancelled.",
+    payNoFunds: (a) => `Insufficient balance: this purchase costs ${a}. Top up your wallet to continue.`,
+    payNoGas: "Your wallet has no CELO for the network fee. Log in with your email again to refill gas.",
     footer: "Frontle · Onchain Agents Hackathon · Celo Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -287,7 +296,10 @@ const STRINGS: Record<Locale, Dict> = {
     comeback: "Volte amanhã para o próximo desafio 🗓️",
     retry: "Tentar de novo para melhorar sua marca",
     paying: "Processando pagamento…",
-    payFailed: "O pagamento não foi concluído. Verifique seu saldo e tente de novo.",
+    payFailed: "O pagamento não foi concluído. Tente de novo.",
+    payCancelled: "Pagamento cancelado.",
+    payNoFunds: (a) => `Saldo insuficiente: esta compra custa ${a}. Recarregue sua carteira para continuar.`,
+    payNoGas: "Sua carteira não tem CELO para a taxa de rede. Entre de novo com seu e-mail para recarregar.",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -353,7 +365,10 @@ const STRINGS: Record<Locale, Dict> = {
     comeback: "Revenez demain pour le prochain défi 🗓️",
     retry: "Réessayer pour battre votre score",
     paying: "Paiement en cours…",
-    payFailed: "Le paiement n'a pas abouti. Vérifiez votre solde et réessayez.",
+    payFailed: "Le paiement n'a pas abouti. Réessayez.",
+    payCancelled: "Paiement annulé.",
+    payNoFunds: (a) => `Solde insuffisant : cet achat coûte ${a}. Rechargez votre portefeuille pour continuer.`,
+    payNoGas: "Votre portefeuille n'a pas de CELO pour les frais de réseau. Reconnectez-vous avec votre e-mail pour recharger.",
     footer: "Frontle · Hackathon des Agents Onchain · Celo Colombia",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
