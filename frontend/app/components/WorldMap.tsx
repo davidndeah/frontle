@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { geoEqualEarth, geoPath, geoCentroid } from "d3-geo";
+import { geoEqualEarth, geoPath, geoCentroid, geoGraticule } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 import { COUNTRY_NAMES } from "../lib/countries";
@@ -133,7 +133,7 @@ export default function WorldMap({
       (x) => statusByCountry[x.name!] === "start" || statusByCountry[x.name!] === "end"
     );
     const fitFeatures = (anchor.length ? anchor : [...known, ...sil]).map((k) => k.f);
-    if (fitFeatures.length === 0) return { outlines: [], silhouettes: [], known: [] };
+    if (fitFeatures.length === 0) return { graticule: "", outlines: [], silhouettes: [], known: [] };
 
     const fc: FeatureCollection = { type: "FeatureCollection", features: fitFeatures };
     // Rotar la proyección al centroide de la región: evita que países que
@@ -146,6 +146,8 @@ export default function WorldMap({
     const pathGen = geoPath(projection);
 
     return {
+      // Paralelos y meridianos: dan textura de "mapa" aunque no haya países revelados
+      graticule: pathGen(geoGraticule().step([10, 10])()) ?? "",
       outlines: showAllOutlines ? features.map((f, i) => ({ d: pathGen(f) ?? "", key: "o" + i })) : [],
       silhouettes: sil.map((k) => ({ d: pathGen(k.f) ?? "", key: "s" + k.name })),
       known: known.map((k) => ({ d: pathGen(k.f) ?? "", fill: COLORS[statusByCountry[k.name!]], key: k.name! })),
@@ -196,10 +198,10 @@ export default function WorldMap({
   }
 
   const btn =
-    "w-7 h-7 rounded-md bg-black/70 border border-white/25 text-white text-base leading-none flex items-center justify-center active:scale-90 transition";
+    "w-7 h-7 rounded-md bg-[#1c0b3e]/80 border border-[#b79ced]/30 text-white text-base leading-none flex items-center justify-center active:scale-90 transition";
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-black border border-white/15">
+    <div className="relative w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20">
       {!render ? (
         <div className="h-[220px] flex items-center justify-center text-neutral-300 text-sm">
           {loadingLabel}
@@ -216,6 +218,9 @@ export default function WorldMap({
             onPointerLeave={onPointerUp}
           >
             <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
+              {render.graticule && (
+                <path d={render.graticule} fill="none" stroke="rgba(183,156,237,0.16)" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />
+              )}
               {render.outlines.map((p) => (
                 <path key={p.key} d={p.d} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={0.3} vectorEffect="non-scaling-stroke" />
               ))}

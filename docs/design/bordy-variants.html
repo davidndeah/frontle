@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+* { margin:0; box-sizing:border-box; font-family:Arial,Helvetica,sans-serif; }
+body { background:#06070e; width:1600px; height:560px; display:flex; }
+.v { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:26px; position:relative; }
+.v + .v { border-left:1px solid #ffffff12; }
+h2 { color:#fff; font-size:17px; font-weight:900; letter-spacing:0.5px; }
+p { color:#8791a8; font-size:11.5px; text-align:center; padding:0 18px; margin-top:4px; line-height:1.5; height:52px; }
+svg { margin-top:8px; }
+</style></head><body>
+
+<!-- V1: POLY — cabeza facetada estilo MetaMask -->
+<div class="v">
+  <h2>V1 · Poly</h2>
+  <p>Facetado low-poly estilo zorro de MetaMask: cada cara un tono del prisma. Geométrico y icónico.</p>
+  <svg width="230" height="330" viewBox="0 0 230 330">
+    <defs>
+      <linearGradient id="p1" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#22c55e"/><stop offset="100%" stop-color="#0e7490"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="115" cy="300" rx="62" ry="10" fill="#000" opacity="0.6"/>
+    <ellipse cx="115" cy="300" rx="36" ry="6" fill="#22d3ee" opacity="0.25"/>
+    <!-- cabeza facetada -->
+    <polygon points="115,40 55,85 75,150 115,175 155,150 175,85" fill="#141d33"/>
+    <polygon points="115,40 55,85 90,105" fill="#22d3ee"/>
+    <polygon points="115,40 90,105 115,120" fill="#4be0f7" opacity="0.9"/>
+    <polygon points="115,40 115,120 140,105" fill="#22c55e"/>
+    <polygon points="115,40 140,105 175,85" fill="#7ce9a3" opacity="0.85"/>
+    <polygon points="55,85 75,150 90,105" fill="#0ea5c8"/>
+    <polygon points="90,105 75,150 115,175 115,120" fill="#101828"/>
+    <polygon points="115,120 115,175 155,150 140,105" fill="#0b1424"/>
+    <polygon points="140,105 155,150 175,85" fill="#16a34a"/>
+    <!-- ojos -->
+    <polygon points="88,128 106,122 106,140 88,143" fill="#e879f9"/>
+    <polygon points="124,122 142,128 142,143 124,140" fill="#e879f9"/>
+    <!-- cuerpo mínimo -->
+    <polygon points="87,185 143,185 152,245 115,262 78,245" fill="#101828" stroke="#22d3ee" stroke-width="2"/>
+    <polygon points="115,196 138,204 132,236 115,244 98,236 92,204" fill="none" stroke="#e879f9" stroke-width="2"/>
+    <circle cx="115" cy="220" r="7" fill="#fbbf24"/>
+  </svg>
+</div>
+
+<!-- V2: VISOR — monolito con visor iridiscente -->
+<div class="v">
+  <h2>V2 · Visor</h2>
+  <p>Monolito minimal con visor iridiscente (guiño Metrick). Sereno, premium, casi sin rasgos.</p>
+  <svg width="230" height="330" viewBox="0 0 230 330">
+    <defs>
+      <linearGradient id="iri" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#22d3ee"/><stop offset="30%" stop-color="#22c55e"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#e879f9"/>
+      </linearGradient>
+      <linearGradient id="mono" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#232c47"/><stop offset="60%" stop-color="#0d1322"/><stop offset="100%" stop-color="#070b14"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="115" cy="300" rx="58" ry="10" fill="#000" opacity="0.6"/>
+    <ellipse cx="115" cy="300" rx="34" ry="6" fill="#e879f9" opacity="0.22"/>
+    <rect x="63" y="52" width="104" height="130" rx="34" fill="url(#mono)" stroke="#3b4a6b" stroke-width="1.5"/>
+    <rect x="72" y="58" width="86" height="34" rx="17" fill="#ffffff" opacity="0.05"/>
+    <rect x="76" y="106" width="78" height="22" rx="11" fill="url(#iri)"/>
+    <rect x="76" y="106" width="78" height="22" rx="11" fill="#fff" opacity="0.12"/>
+    <circle cx="97" cy="117" r="4.5" fill="#06070e"/>
+    <circle cx="133" cy="117" r="4.5" fill="#06070e"/>
+    <rect x="83" y="196" width="64" height="70" rx="22" fill="url(#mono)" stroke="#3b4a6b" stroke-width="1.5"/>
+    <rect x="104" y="222" width="22" height="22" rx="6" fill="none" stroke="url(#iri)" stroke-width="2.5"/>
+    <line x1="115" y1="38" x2="115" y2="52" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="115" cy="32" r="7" fill="#22c55e"/>
+  </svg>
+</div>
+
+<!-- V3: ORB — esfera con anillo prismático -->
+<div class="v">
+  <h2>V3 · Orb</h2>
+  <p>Esfera-dron con anillo prismático (planeta + órbita = geografía). Un solo ojo curioso. Flotante.</p>
+  <svg width="230" height="330" viewBox="0 0 230 330">
+    <defs>
+      <radialGradient id="orbg" cx="35%" cy="30%" r="80%">
+        <stop offset="0%" stop-color="#2b3a61"/><stop offset="60%" stop-color="#101a30"/><stop offset="100%" stop-color="#080d18"/>
+      </radialGradient>
+      <linearGradient id="ring" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#22d3ee"/><stop offset="35%" stop-color="#22c55e"/><stop offset="65%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#e879f9"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="115" cy="300" rx="55" ry="10" fill="#000" opacity="0.6"/>
+    <ellipse cx="115" cy="300" rx="30" ry="6" fill="#22d3ee" opacity="0.25"/>
+    <ellipse cx="115" cy="152" rx="88" ry="26" fill="none" stroke="url(#ring)" stroke-width="7" transform="rotate(-14 115 152)" opacity="0.45"/>
+    <circle cx="115" cy="140" r="62" fill="url(#orbg)" stroke="#3b4a6b" stroke-width="1.5"/>
+    <path d="M 70 120 Q 115 96 160 120" fill="none" stroke="#ffffff22" stroke-width="2"/>
+    <path d="M 66 150 Q 115 168 164 150" fill="none" stroke="#ffffff18" stroke-width="2"/>
+    <circle cx="115" cy="140" r="24" fill="#0a1120" stroke="#22d3ee" stroke-width="2.5"/>
+    <circle cx="115" cy="140" r="12" fill="#22d3ee"/>
+    <circle cx="110" cy="135" r="4" fill="#fff"/>
+    <ellipse cx="115" cy="152" rx="88" ry="26" fill="none" stroke="url(#ring)" stroke-width="7" transform="rotate(-14 115 152)"
+      stroke-dasharray="150 400" stroke-dashoffset="-40"/>
+    <circle cx="115" cy="66" r="6" fill="#e879f9"/>
+  </svg>
+</div>
+
+<!-- V4: HEXA — cabeza hexagonal con cara-globo -->
+<div class="v">
+  <h2>V4 · Hexa</h2>
+  <p>Hexágono con retícula de globo en la cara y aristas prisma: el mapa ES el rostro. Marca cartográfica pura.</p>
+  <svg width="230" height="330" viewBox="0 0 230 330">
+    <defs>
+      <linearGradient id="edge" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stop-color="#22d3ee"/><stop offset="50%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#e879f9"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="115" cy="300" rx="58" ry="10" fill="#000" opacity="0.6"/>
+    <ellipse cx="115" cy="300" rx="32" ry="6" fill="#fbbf24" opacity="0.22"/>
+    <polygon points="115,42 172,76 172,144 115,178 58,144 58,76" fill="#0c1322" stroke="url(#edge)" stroke-width="4"/>
+    <ellipse cx="115" cy="110" rx="40" ry="52" fill="none" stroke="#22d3ee44" stroke-width="1.5"/>
+    <ellipse cx="115" cy="110" rx="18" ry="52" fill="none" stroke="#22d3ee44" stroke-width="1.5"/>
+    <line x1="63" y1="110" x2="167" y2="110" stroke="#22d3ee44" stroke-width="1.5"/>
+    <path d="M 70 86 Q 115 70 160 86" fill="none" stroke="#22d3ee44" stroke-width="1.5"/>
+    <path d="M 70 134 Q 115 150 160 134" fill="none" stroke="#22d3ee44" stroke-width="1.5"/>
+    <circle cx="93" cy="104" r="9" fill="#22d3ee"/>
+    <circle cx="137" cy="104" r="9" fill="#e879f9"/>
+    <path d="M 100 132 Q 115 142 130 132" stroke="#fbbf24" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <polygon points="92,190 138,190 146,240 115,254 84,240" fill="#0c1322" stroke="#3b4a6b" stroke-width="1.5"/>
+    <path d="M 100 224 Q 115 206 130 214" stroke="url(#edge)" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="100" cy="224" r="5" fill="#22d3ee"/><circle cx="130" cy="214" r="5" fill="#e879f9"/>
+    <line x1="115" y1="28" x2="115" y2="42" stroke="#22c55e" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="115" cy="22" r="6.5" fill="#22c55e"/>
+  </svg>
+</div>
+
+<!-- V5: CHIBI — proporciones mascota (cabeza grande) -->
+<div class="v">
+  <h2>V5 · Chibi</h2>
+  <p>Proporciones Pancake (cabezón, cuerpo mini): el actual Bordy evolucionado a facetas suaves. Máxima ternura.</p>
+  <svg width="230" height="330" viewBox="0 0 230 330">
+    <defs>
+      <linearGradient id="rim" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stop-color="#22d3ee"/><stop offset="35%" stop-color="#22c55e"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#e879f9"/>
+      </linearGradient>
+      <radialGradient id="hb" cx="35%" cy="25%" r="90%">
+        <stop offset="0%" stop-color="#2a3a5f"/><stop offset="60%" stop-color="#141d33"/><stop offset="100%" stop-color="#0b1020"/>
+      </radialGradient>
+      <radialGradient id="ey" cx="35%" cy="30%" r="80%">
+        <stop offset="0%" stop-color="#9ff2ff"/><stop offset="55%" stop-color="#22d3ee"/><stop offset="100%" stop-color="#0891b2"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="115" cy="300" rx="60" ry="10" fill="#000" opacity="0.6"/>
+    <ellipse cx="115" cy="300" rx="34" ry="6" fill="#22d3ee" opacity="0.25"/>
+    <!-- cabeza XL, ligeramente facetada -->
+    <path d="M 115 40 L 168 62 L 178 120 L 152 162 L 78 162 L 52 120 L 62 62 Z" fill="url(#hb)" stroke="url(#rim)" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M 115 40 L 168 62 L 115 74 Z" fill="#ffffff" opacity="0.06"/>
+    <path d="M 115 40 L 62 62 L 115 74 Z" fill="#ffffff" opacity="0.1"/>
+    <circle cx="92" cy="112" r="13" fill="url(#ey)"/><circle cx="87.5" cy="107" r="4.5" fill="#fff"/>
+    <circle cx="138" cy="112" r="13" fill="url(#ey)"/><circle cx="133.5" cy="107" r="4.5" fill="#fff"/>
+    <path d="M 100 138 Q 115 148 130 138" stroke="#e879f9" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <!-- cuerpo mini -->
+    <path d="M 95 172 L 135 172 L 142 214 L 115 226 L 88 214 Z" fill="url(#hb)" stroke="url(#rim)" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M 104 202 Q 115 188 126 194" stroke="url(#rim)" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    <circle cx="104" cy="202" r="4" fill="#22d3ee"/><circle cx="126" cy="194" r="4" fill="#e879f9"/>
+    <!-- bracitos flotantes -->
+    <circle cx="66" cy="192" r="10" fill="#141d33" stroke="#22d3ee" stroke-width="3"/>
+    <circle cx="164" cy="192" r="10" fill="#141d33" stroke="#e879f9" stroke-width="3"/>
+    <line x1="115" y1="26" x2="115" y2="40" stroke="#22c55e" stroke-width="4.5" stroke-linecap="round"/>
+    <circle cx="115" cy="20" r="7" fill="#22c55e"/><circle cx="112.5" cy="17.5" r="2.5" fill="#eafff4"/>
+  </svg>
+</div>
+
+</body></html>

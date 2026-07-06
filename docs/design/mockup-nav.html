@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Mockup navegación v1</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family: Arial, Helvetica, sans-serif; }
+body { background:#15161c; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:24px 0; }
+#phone { position:relative; width:390px; height:780px; background:#04050a; border-radius:34px; overflow:hidden;
+  border:6px solid #26272e; box-shadow:0 30px 80px rgba(0,0,0,0.6); }
+#bgGrid { position:absolute; inset:0; background-image:
+  linear-gradient(to right, rgba(255,255,255,0.10) 1px, transparent 1px),
+  linear-gradient(to bottom, rgba(255,255,255,0.10) 1px, transparent 1px); background-size:46px 46px; }
+#glow { position:absolute; left:50%; top:58%; width:95%; height:70%; transform:translate(-50%,-50%);
+  background:linear-gradient(93deg,#2563eb,#22c55e,#fff,#fbbf24,#e11d48);
+  -webkit-mask-image:radial-gradient(ellipse 55% 55% at 50% 50%, #000 5%, rgba(0,0,0,0.6) 48%, transparent 78%);
+  mask-image:radial-gradient(ellipse 55% 55% at 50% 50%, #000 5%, rgba(0,0,0,0.6) 48%, transparent 78%);
+  filter:blur(46px) saturate(1.3); opacity:0.9; }
+.prism { background:linear-gradient(100deg,#22d3ee,#22c55e,#fbbf24,#e879f9); -webkit-background-clip:text; background-clip:text; color:transparent; }
+/* HEADER */
+#hdr { position:absolute; top:0; left:0; right:0; height:56px; display:flex; align-items:center; gap:8px;
+  padding:0 14px; z-index:20; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,0.08); }
+#hdr .logo { font-weight:900; font-size:17px; letter-spacing:1px; }
+#hdr .sp { flex:1; }
+.chip { display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.18);
+  border-radius:999px; padding:6px 11px; font-size:12.5px; color:#fff; cursor:pointer; }
+.chip b { color:#fbbf24; }
+/* CONTENT */
+.tab { position:absolute; top:56px; bottom:64px; left:0; right:0; overflow-y:auto; padding:14px 16px 20px; z-index:10; display:none; }
+.tab.on { display:block; }
+.card { background:rgba(0,0,0,0.45); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.15); border-radius:16px; padding:14px; margin-bottom:14px; }
+.lbl { font-size:10px; letter-spacing:0.2em; text-transform:uppercase; color:#8791a8; margin-bottom:8px; text-align:center; }
+.btn { display:block; width:100%; background:#fff; color:#000; font-weight:bold; font-size:16px; border:0; border-radius:14px; padding:13px; cursor:pointer; text-align:center; }
+.btn.sec { background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,0.3); }
+.btn:active { transform:scale(0.97); }
+/* JUGAR */
+.duel { display:flex; align-items:center; justify-content:space-between; }
+.duel .c { flex:1; text-align:center; }
+.duel img { width:44px; border-radius:4px; }
+.duel .n1 { color:#22d3ee; font-weight:600; font-size:13.5px; margin-top:4px; }
+.duel .n2 { color:#e879f9; font-weight:600; font-size:13.5px; margin-top:4px; }
+.duel .arr { color:#8791a8; font-size:20px; }
+.sub { text-align:center; color:#8791a8; font-size:11.5px; margin-top:8px; }
+#mapMock { height:190px; border-radius:14px; background:#05070f; border:1px solid rgba(255,255,255,0.15); position:relative; overflow:hidden; margin-bottom:10px; }
+#mapMock .cty { position:absolute; border-radius:30% 60% 45% 55%; opacity:0.95; }
+.legend { display:flex; gap:9px; justify-content:center; font-size:10.5px; color:#c3cbdd; background:rgba(0,0,0,0.55);
+  border-radius:999px; padding:6px 10px; width:fit-content; margin:0 auto 12px; }
+.dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:3px; vertical-align:-1px; }
+.inrow { display:flex; gap:8px; margin-bottom:10px; }
+.inp { flex:1; background:#0a0e1d; border:1.5px solid rgba(255,255,255,0.25); border-radius:13px; padding:12px 14px; color:#6b7280; font-size:14.5px; }
+.ok { width:64px; background:#fff; color:#000; font-weight:bold; border:0; border-radius:13px; font-size:15px; cursor:pointer; }
+.timer { position:absolute; top:66px; right:16px; z-index:15; background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.2);
+  border-radius:999px; padding:5px 12px; font-family:Consolas,monospace; font-size:14px; color:#fff; }
+/* RANKING */
+.seg { display:flex; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:3px; margin-bottom:12px; }
+.seg div { flex:1; text-align:center; padding:8px 0; border-radius:9px; font-size:12.5px; color:#8791a8; cursor:pointer; }
+.seg .on { background:#fff; color:#000; font-weight:bold; }
+table { width:100%; border-collapse:collapse; font-size:13px; color:#fff; }
+td { padding:8px 4px; border-top:1px solid rgba(255,255,255,0.08); }
+tr.me { background:rgba(251,191,36,0.14); color:#fde68a; }
+td img { width:20px; border-radius:2px; vertical-align:middle; }
+.mono { font-family:Consolas,monospace; }
+/* PERFIL */
+.pgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.stat { background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.15); border-radius:14px; padding:12px; text-align:center; }
+.stat .v { font-size:24px; font-weight:900; }
+.stat .k { font-size:10.5px; color:#8791a8; margin-top:3px; }
+.foot { display:flex; gap:14px; justify-content:center; font-size:11px; color:#8791a8; margin-top:16px; }
+.foot span { text-decoration:underline; cursor:pointer; }
+/* APRENDER */
+.bordy { display:flex; gap:10px; align-items:flex-start; margin-bottom:12px; }
+.bordy .av { width:52px; height:52px; border-radius:14px; background:#101828; border:2px solid; border-image:linear-gradient(100deg,#22d3ee,#e879f9) 1;
+  display:flex; align-items:center; justify-content:center; font-size:26px; flex:none; }
+.bordy .bub { background:rgba(12,17,32,0.95); border:1.5px solid #7dd3fc; border-radius:14px; padding:11px 13px; font-size:13.5px; color:#fff; line-height:1.45; }
+/* BOTTOM NAV */
+#nav { position:absolute; bottom:0; left:0; right:0; height:64px; display:flex; z-index:20;
+  background:rgba(0,0,0,0.72); backdrop-filter:blur(14px); border-top:1px solid rgba(255,255,255,0.1); }
+#nav div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  font-size:10px; color:#8791a8; cursor:pointer; }
+#nav div .i { font-size:20px; filter:grayscale(1) opacity(0.6); }
+#nav div.on { color:#fff; }
+#nav div.on .i { filter:none; }
+/* SHEETS */
+#dim { position:absolute; inset:0; background:rgba(0,0,0,0.55); z-index:30; display:none; }
+.sheet { position:absolute; left:0; right:0; bottom:0; z-index:31; background:#0a0e1d; border:1px solid rgba(255,255,255,0.18);
+  border-radius:22px 22px 0 0; padding:16px 18px 26px; display:none; }
+.sheet .grab { width:38px; height:4px; background:rgba(255,255,255,0.25); border-radius:99px; margin:0 auto 14px; }
+.sheet h3 { color:#fff; font-size:16px; margin-bottom:12px; }
+.hint { display:flex; align-items:center; justify-content:space-between; border:1px solid rgba(255,255,255,0.18);
+  border-radius:12px; padding:11px 13px; margin-bottom:9px; color:#fff; font-size:13.5px; cursor:pointer; }
+.hint b { color:#fbbf24; font-size:12.5px; }
+.hint.done { border-color:rgba(251,191,36,0.6); background:rgba(251,191,36,0.12); color:#fde68a; }
+.note { font-size:11px; color:#8791a8; text-align:center; margin-top:8px; }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div id="bgGrid"></div><div id="glow"></div>
+
+  <div id="hdr">
+    <span class="logo prism">FRONTLE</span>
+    <span class="sp"></span>
+    <span class="chip" onclick="alert('Detalle del premio del día')">🏆 <b>$2.48</b></span>
+    <span class="chip" onclick="openSheet('shWallet')">💰 12.40</span>
+  </div>
+
+  <!-- TAB JUGAR -->
+  <div class="tab on" id="tJugar">
+    <div class="timer">⏱ 00:12</div>
+    <div class="card">
+      <div class="lbl">Reto del día</div>
+      <div class="duel">
+        <div class="c"><img src="https://flagcdn.com/bn.svg"><div class="n1">Brunéi</div></div>
+        <div class="arr">→</div>
+        <div class="c"><img src="https://flagcdn.com/de.svg"><div class="n2">Alemania</div></div>
+      </div>
+      <div class="sub">Ruta óptima: 6 países</div>
+    </div>
+    <div id="mapMock">
+      <div class="cty" style="left:18%;top:58%;width:34px;height:26px;background:#22d3ee;box-shadow:0 0 10px #22d3ee"></div>
+      <div class="cty" style="left:34%;top:44%;width:52px;height:38px;background:#22c55e;box-shadow:0 0 10px #22c55e"></div>
+      <div class="cty" style="left:52%;top:30%;width:44px;height:32px;background:#eab308;box-shadow:0 0 10px #eab308"></div>
+      <div class="cty" style="left:70%;top:18%;width:40px;height:30px;background:#e879f9;box-shadow:0 0 10px #e879f9"></div>
+      <div style="position:absolute;bottom:8px;right:10px;color:#3f4756;font-size:10px">mapa (pan · zoom · ⌖)</div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#22d3ee"></span>Origen</span>
+      <span><span class="dot" style="background:#e879f9"></span>Destino</span>
+      <span><span class="dot" style="background:#22c55e"></span>Bien</span>
+      <span><span class="dot" style="background:#eab308"></span>Lateral</span>
+      <span><span class="dot" style="background:#ef4444"></span>Lejos</span>
+    </div>
+    <div class="inrow"><div class="inp">Escribe un país…</div><button class="ok">OK</button></div>
+    <button class="btn sec" onclick="openSheet('shHints')">💡 Pistas</button>
+  </div>
+
+  <!-- TAB RANKING -->
+  <div class="tab" id="tRanking">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <span style="color:#fff;font-size:13px">🏆 Pot de hoy: <b style="color:#fbbf24">$2.48</b></span>
+      <span class="mono" style="color:#8791a8;font-size:12px">nuevo reto en 03:46:12</span>
+    </div>
+    <div class="seg"><div class="on">Hoy</div><div>Semana</div><div>Histórico</div></div>
+    <div class="card" style="padding:6px 10px">
+      <table>
+        <tr><td>🥇</td><td><img src="https://flagcdn.com/co.svg"></td><td>gardo</td><td align="right">6</td><td align="right" class="mono">00:21</td></tr>
+        <tr><td>🥈</td><td><img src="https://flagcdn.com/co.svg"></td><td>santi.f</td><td align="right">6</td><td align="right" class="mono">00:34</td></tr>
+        <tr><td>🥉</td><td><img src="https://flagcdn.com/ng.svg"></td><td>ade_o</td><td align="right">7</td><td align="right" class="mono">00:19</td></tr>
+        <tr><td>4</td><td><img src="https://flagcdn.com/br.svg"></td><td>joaozito</td><td align="right">7</td><td align="right" class="mono">00:41</td></tr>
+        <tr class="me"><td>5</td><td><img src="https://flagcdn.com/co.svg"></td><td>tú (david) 👈</td><td align="right">8</td><td align="right" class="mono">00:12</td></tr>
+      </table>
+    </div>
+    <div class="note">A igualdad de países gana el menor tiempo · el ganador del día se lleva el pot</div>
+  </div>
+
+  <!-- TAB PERFIL -->
+  <div class="tab" id="tPerfil">
+    <div class="card" style="display:flex;align-items:center;gap:12px">
+      <img src="https://flagcdn.com/co.svg" style="width:42px;border-radius:6px">
+      <div style="flex:1"><div style="color:#fff;font-weight:bold;font-size:16px">david ✏️</div>
+      <div style="color:#8791a8;font-size:11px">0x54e8…4dd0</div></div>
+    </div>
+    <div class="pgrid">
+      <div class="stat"><div class="v" style="color:#fbbf24">🔥 4</div><div class="k">días de racha</div></div>
+      <div class="stat"><div class="v" style="color:#fde68a">⭐ 23</div><div class="k">estrellas</div></div>
+      <div class="stat"><div class="v" style="color:#22c55e">2</div><div class="k">victorias</div></div>
+      <div class="stat"><div class="v mono" style="color:#22d3ee">00:12</div><div class="k">mejor tiempo</div></div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="text-align:left">🎁 Premios por reclamar</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:13.5px">
+        <span>Ganaste <b style="color:#fbbf24">$1.84</b> — 2 jul</span>
+        <button class="btn" style="width:auto;padding:8px 18px;font-size:13px">Reclamar</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="text-align:left">Historial</div>
+      <table>
+        <tr><td>3 jul</td><td>🇧🇳→🇩🇪</td><td>⭐⭐</td><td align="right" class="mono">00:12</td></tr>
+        <tr><td>2 jul</td><td>🇿🇦→🇪🇬</td><td>⭐⭐⭐</td><td align="right" class="mono">00:34</td></tr>
+        <tr><td>1 jul</td><td>🇯🇴→🇲🇾</td><td>⭐</td><td align="right" class="mono">01:02</td></tr>
+      </table>
+    </div>
+    <div class="foot"><span>Términos</span><span>Privacidad</span><span>Stats</span><span>Soporte</span></div>
+  </div>
+
+  <!-- TAB APRENDER -->
+  <div class="tab" id="tAprender">
+    <div class="bordy"><div class="av">🤖</div><div class="bub">¡Hola! Soy <b>Bordy</b> 👋 Cada día hay un reto: conecta el país de <b style="color:#22d3ee">origen</b> con el de <b style="color:#e879f9">destino</b> nombrando países que compartan frontera.</div></div>
+    <div class="bordy"><div class="av">🤖</div><div class="bub">El <b>semáforo</b> te guía: <b style="color:#22c55e">verde</b> vas por la mejor ruta, <b style="color:#eab308">amarillo</b> te desviaste un poco, <b style="color:#ef4444">rojo</b> te alejaste.</div></div>
+    <div class="bordy"><div class="av">🤖</div><div class="bub">Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el <b style="color:#fbbf24">pot 🏆</b>. El primer intento es gratis; pistas y reintentos cuestan centavos.</div></div>
+    <button class="btn" onclick="go('tJugar')">▶ Jugar el reto de hoy</button>
+    <div style="height:12px"></div>
+    <button class="btn sec">🎲 Modo práctica (próximamente)</button>
+  </div>
+
+  <!-- SHEETS -->
+  <div id="dim" onclick="closeSheets()"></div>
+  <div class="sheet" id="shHints">
+    <div class="grab"></div><h3>💡 Pistas</h3>
+    <div class="hint done"><span>Inicial del siguiente país ✓</span><b>comprada</b></div>
+    <div class="hint"><span>Silueta del siguiente país</span><b>0.05 USDT</b></div>
+    <div class="hint"><span>Silueta de todos los países</span><b>0.10 USDT</b></div>
+    <div class="note">Los pagos alimentan el pot del día · network fee incluido</div>
+  </div>
+  <div class="sheet" id="shWallet">
+    <div class="grab"></div><h3>💰 Tu saldo</h3>
+    <div class="card" style="margin-bottom:10px"><div style="color:#fff;font-size:22px;font-weight:900">12.40 <span style="font-size:13px;color:#8791a8">USDT</span></div>
+    <div style="color:#8791a8;font-size:12px;margin-top:2px">≈ 49.600 COP · 0x54e8…4dd0</div></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn" style="flex:1">Depositar</button>
+      <button class="btn sec" style="flex:1">Retirar</button>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div id="nav">
+    <div class="on" data-t="tJugar" onclick="go('tJugar')"><span class="i">🌍</span>Jugar</div>
+    <div data-t="tRanking" onclick="go('tRanking')"><span class="i">🏆</span>Ranking</div>
+    <div data-t="tPerfil" onclick="go('tPerfil')"><span class="i">👤</span>Perfil</div>
+    <div data-t="tAprender" onclick="go('tAprender')"><span class="i">❓</span>Aprender</div>
+  </div>
+</div>
+<script>
+function go(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelectorAll('#nav div').forEach(n=>n.classList.toggle('on', n.dataset.t===id));
+  closeSheets();
+}
+function openSheet(id){ document.getElementById('dim').style.display='block'; document.getElementById(id).style.display='block'; }
+function closeSheets(){ document.getElementById('dim').style.display='none'; document.querySelectorAll('.sheet').forEach(s=>s.style.display='none'); }
+</script>
+</body>
+</html>
