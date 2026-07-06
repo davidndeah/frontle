@@ -53,38 +53,54 @@ export function PrivyIdentityBridge({
   const { wallets, ready } = useWallets();
   const { getAccessToken } = usePrivy();
   const registeredFor = useRef<string | null>(null);
+  const bonusFor = useRef<string | null>(null);
+
+  // Callbacks en refs: sus identidades cambian cada render (arrows inline en
+  // page.tsx). Guardarlas en refs evita que el efecto se re-ejecute y cancele
+  // el async en vuelo (por eso antes el bono se otorgaba pero Bordy no avisaba).
+  const onIdentityRef = useRef(onIdentity);
+  const onBonusRef = useRef(onWelcomeBonus);
+  onIdentityRef.current = onIdentity;
+  onBonusRef.current = onWelcomeBonus;
 
   useEffect(() => {
     if (!ready) return;
     const embedded = wallets.find((w) => w.walletClientType === "privy");
     if (!embedded) return;
     const addr = embedded.address?.toLowerCase();
-    if (!addr || registeredFor.current === addr) return;
+    if (!addr) return;
 
-    let cancelled = false;
-    (async () => {
-      try {
-        const provider = await embedded.getEthereumProvider();
-        if (cancelled) return;
-        setEmbeddedProvider(provider); // payments.ts lo usará como fallback
-        registeredFor.current = addr;
-        onIdentity(addr); // page.tsx: entra al ranking con esta dirección
-
-        // Bono de bienvenida: intenta reclamarlo (el server decide si aplica).
-        if (onWelcomeBonus) {
-          const token = await getAccessToken();
-          if (cancelled || !token) return;
-          const amount = await claimWelcomeBonus(token);
-          if (!cancelled && amount) onWelcomeBonus(amount);
+    // 1) Identidad (una vez por dirección).
+    if (registeredFor.current !== addr) {
+      registeredFor.current = addr;
+      (async () => {
+        try {
+          const provider = await embedded.getEthereumProvider();
+          setEmbeddedProvider(provider); // payments.ts lo usará como fallback
+          onIdentityRef.current(addr); // page.tsx: entra al ranking con esta dirección
+        } catch (e) {
+          console.error("[privy] no se pudo registrar la wallet embebida:", e);
         }
-      } catch (e) {
-        console.error("[privy] no se pudo registrar la wallet embebida:", e);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [wallets, ready, onIdentity, onWelcomeBonus, getAccessToken]);
+      })();
+    }
+
+    // 2) Bono de bienvenida (una vez por dirección; el server decide si aplica).
+    //    Independiente de la identidad y SIN cancelación: es idempotente y
+    //    one-shot, así que un re-render no debe abortarlo.
+    if (bonusFor.current !== addr && onBonusRef.current) {
+      bonusFor.current = addr;
+      (async () => {
+        try {
+          const token = await getAccessToken();
+          if (!token) return;
+          const amount = await claimWelcomeBonus(token);
+          if (amount) onBonusRef.current?.(amount);
+        } catch (e) {
+          console.error("[bono] no se pudo reclamar:", e);
+        }
+      })();
+    }
+  }, [wallets, ready, getAccessToken]);
 
   return null;
 }
