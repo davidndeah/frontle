@@ -142,6 +142,44 @@ export async function getRanking(
   }
 }
 
+// Mejor marca de UN jugador en (día, nivel). Sirve para recuperar el tiempo
+// real de una partida auto-reparada (el finalMs local se perdió, pero la
+// marca enviada al ganar sigue en el ranking).
+export async function getMyScore(day: number, level: Difficulty, playerId: string): Promise<ScoreEntry | null> {
+  if (!playerId) return null;
+  if (useSupabase) {
+    try {
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&level=eq.${level}&player_id=eq.${encodeURIComponent(playerId)}&order=countries.asc,time_ms.asc&limit=1`,
+        { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      const j = await r.json();
+      const x = Array.isArray(j) ? (j[0] as Record<string, unknown>) : null;
+      if (!x) return null;
+      return {
+        day: Number(x.day),
+        countries: Number(x.countries),
+        timeMs: Number(x.time_ms),
+        countryCode: String(x.country_code ?? ""),
+        playerId: String(x.player_id ?? ""),
+        level: (x.level as Difficulty) ?? "medium",
+        createdAt: x.created_at as string | undefined,
+      };
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const arr: ScoreEntry[] = JSON.parse(localStorage.getItem(`frontle-ranking-${day}-${level}`) || "[]");
+    const mine = arr
+      .filter((e) => e.playerId === playerId)
+      .sort((a, b) => a.countries - b.countries || a.timeMs - b.timeMs);
+    return mine[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // --- Premios: (día, nivel) que esta wallet ganó (tabla `winners`) --------
 // Devuelve los pares (día, nivel). La verificación real de si se puede cobrar
 // (y el cobro) la hace el contrato vía payments.getClaimablePrizes/claimPrize.

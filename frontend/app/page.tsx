@@ -21,7 +21,7 @@ import {
   t,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, type ScoreEntry } from "./lib/ranking";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
@@ -235,6 +235,23 @@ export default function Frontle() {
     const id = setInterval(() => setElapsedMs(Date.now() - startRef.current), 250);
     return () => clearInterval(id);
   }, [started, state.solved]);
+
+  // Partida auto-reparada: el finalMs local se perdió al corromperse, pero la
+  // marca real quedó en el ranking al ganar. Recuperarla y re-persistirla.
+  // (Un tiempo 0 real es imposible — resolver toma al menos segundos.)
+  useEffect(() => {
+    if (!started || !state.solved || elapsedMs !== 0 || !myId) return;
+    let alive = true;
+    getMyScore(day, level, myId).then((mine) => {
+      if (!alive || !mine || !(mine.timeMs > 0)) return;
+      setElapsedMs(mine.timeMs);
+      try {
+        const raw = localStorage.getItem(gameKey);
+        if (raw) localStorage.setItem(gameKey, JSON.stringify({ ...JSON.parse(raw), finalMs: mine.timeMs }));
+      } catch {}
+    });
+    return () => { alive = false; };
+  }, [started, state.solved, elapsedMs, myId, day, level, gameKey]);
 
   // Premio (pot) del día: cargar al inicio y refrescar cada 30s para reflejar pagos de otros.
   useEffect(() => {
