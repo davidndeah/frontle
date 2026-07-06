@@ -128,6 +128,8 @@ export default function Frontle() {
   const day = dateSeed();
   const bestKey = `frontle-best-${day}-${level}`;
   const gameKey = `frontle-game-${day}-${level}`;
+  // Monto que se lleva el ganador del nivel activo (parte base del pot del día).
+  const levelPot = pot !== null ? (pot * BASE_SHARE[level]) / 100 : null;
 
   // Persiste la partida del día para que al refrescar NO se pueda volver a
   // jugar gratis (el estado se restaura: en curso o resuelta).
@@ -512,10 +514,10 @@ export default function Frontle() {
         {(started || jugarStep === "reto") && (
         <section className={`${panel} p-4`}>
           <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-1">{tr.daily}</p>
-          {/* Parte del pot que se lleva el ganador de este nivel (mínimo; sube si faltan niveles) */}
-          {pot !== null && (
+          {/* Monto que se lleva el ganador de este nivel (sin % dentro del reto) */}
+          {levelPot !== null && (
             <p className="text-[11px] text-amber-300/70 text-center mb-3">
-              {tr.levelShare(BASE_SHARE[level], fmt((pot * BASE_SHARE[level]) / 100))}
+              {tr.levelPrize(fmt(levelPot))}
             </p>
           )}
           <div className="flex items-center justify-between gap-2">
@@ -616,6 +618,7 @@ export default function Frontle() {
                 chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
                 onRetry={retry}
                 retryPrice={PRICES.retry}
+                onHome={() => { setStarted(false); setJugarStep("level"); }}
                 hasWallet={hasWallet}
                 inRanking={!!myId}
                 onConnect={connectForRanking}
@@ -681,9 +684,9 @@ export default function Frontle() {
         {/* ---------- TAB RANKING ---------- */}
         {tab === "ranking" && (
           <>
-            {pot !== null && (
+            {levelPot !== null && (
               <div className="panel p-3 flex items-center justify-between">
-                <span className="text-sm font-bold text-amber-300">{tr.prize(fmt(pot))}</span>
+                <span className="text-sm font-bold text-amber-300">{tr.levelPrize(fmt(levelPot))}</span>
                 <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
               </div>
             )}
@@ -1104,6 +1107,7 @@ function WinCard({
   chain,
   onRetry,
   retryPrice,
+  onHome,
   hasWallet,
   inRanking,
   onConnect,
@@ -1117,6 +1121,7 @@ function WinCard({
   chain: string[];
   onRetry: () => void;
   retryPrice: number;
+  onHome: () => void;
   hasWallet: boolean;
   inRanking: boolean;
   onConnect: () => void;
@@ -1151,6 +1156,10 @@ function WinCard({
         {/* Siempre disponible: aun con marca perfecta se puede reintentar para mejorar el TIEMPO (desempate del ranking). */}
         <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
           {tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span>
+        </button>
+        {/* Volver a la selección de nivel: jugar otro nivel (o revisar este). */}
+        <button onClick={onHome} className="rounded-xl border border-[#b79ced]/40 px-6 py-3 font-bold text-[#c4b5fd] active:scale-95 transition hover:bg-white/10">
+          🎮 {tr.chooseLevel}
         </button>
         {!inRanking && hasWallet && (
           <button onClick={onConnect} className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20">
