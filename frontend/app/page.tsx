@@ -88,6 +88,11 @@ export default function Frontle() {
   const [started, setStarted] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const startRef = useRef(0);
+  // Pago en curso (pista o reintento): deshabilita los botones de compra y
+  // muestra "procesando" — con la wallet embebida la tx tarda varios segundos
+  // y sin feedback el usuario re-clickeaba o creía que no funcionó.
+  const [paying, setPaying] = useState<null | "retry" | "initial" | "next" | "all">(null);
+  const [payError, setPayError] = useState<string | null>(null); // error visible en la WinCard
 
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
@@ -211,6 +216,7 @@ export default function Frontle() {
     setInput("");
     setSuggestions([]);
     setMessage(null);
+    setPayError(null);
     setShowNextSil(false);
     setShowAllSil(false);
     setShowInitial(false);
@@ -426,8 +432,19 @@ export default function Frontle() {
   }
 
   async function retry() {
-    const paid = await requestPayment(PRICES.retry, "reintento del reto diario");
-    if (!paid) return;
+    if (paying) return;
+    setPaying("retry");
+    setPayError(null);
+    let paid = false;
+    try {
+      paid = await requestPayment(PRICES.retry, "reintento del reto diario");
+    } finally {
+      setPaying(null);
+    }
+    if (!paid) {
+      setPayError(tr.payFailed);
+      return;
+    }
     getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
     setState((prev) => ({ challenge: prev.challenge, chain: [], solved: false }));
     setMessage(null);
@@ -442,9 +459,21 @@ export default function Frontle() {
   }
 
   async function buyHint(kind: "initial" | "next" | "all") {
+    if (paying) return;
     const price = kind === "all" ? PRICES.hintAll : kind === "initial" ? PRICES.hintInitial : PRICES.hintNext;
-    const paid = await requestPayment(price, `pista: ${kind}`);
-    if (!paid) return;
+    setPaying(kind);
+    setMessage({ text: tr.paying, ok: true });
+    let paid = false;
+    try {
+      paid = await requestPayment(price, `pista: ${kind}`);
+    } finally {
+      setPaying(null);
+    }
+    if (!paid) {
+      setMessage({ text: tr.payFailed, ok: false });
+      return;
+    }
+    setMessage(null);
     getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
     if (kind === "initial") setShowInitial(true);
     if (kind === "next") setShowNextSil(true);
@@ -673,7 +702,9 @@ export default function Frontle() {
                 chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
                 onRetry={retry}
                 retryPrice={PRICES.retry}
-                onHome={() => { setStarted(false); setJugarStep("level"); }}
+                retryBusy={paying === "retry"}
+                payError={payError}
+                onHome={() => { setStarted(false); setJugarStep("level"); setPayError(null); }}
                 hasWallet={hasWallet}
                 inRanking={!!myId}
                 onConnect={connectForRanking}
@@ -715,9 +746,9 @@ export default function Frontle() {
                 <div className={`${panel} p-3`}>
                   <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">{tr.hintsTitle}</p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    <HintButton active={showInitial} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} fmt={fmt} />
-                    <HintButton active={showNextSil} onClick={() => buyHint("next")} label={tr.hintSilhouetteNext} price={PRICES.hintNext} fmt={fmt} />
-                    <HintButton active={showAllSil} onClick={() => buyHint("all")} label={tr.hintSilhouetteAll} price={PRICES.hintAll} fmt={fmt} />
+                    <HintButton active={showInitial} busy={paying === "initial"} locked={paying !== null && paying !== "initial"} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} fmt={fmt} />
+                    <HintButton active={showNextSil} busy={paying === "next"} locked={paying !== null && paying !== "next"} onClick={() => buyHint("next")} label={tr.hintSilhouetteNext} price={PRICES.hintNext} fmt={fmt} />
+                    <HintButton active={showAllSil} busy={paying === "all"} locked={paying !== null && paying !== "all"} onClick={() => buyHint("all")} label={tr.hintSilhouetteAll} price={PRICES.hintAll} fmt={fmt} />
                   </div>
                   {showInitial && nextHint && (
                     <p className="text-center text-sm text-amber-300 mt-2">{tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}</p>
@@ -979,16 +1010,20 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function HintButton({ active, onClick, label, price, fmt }: { active: boolean; onClick: () => void; label: string; price: number; fmt: (usdt: number) => string }) {
+function HintButton({ active, busy, locked, onClick, label, price, fmt }: { active: boolean; busy: boolean; locked: boolean; onClick: () => void; label: string; price: number; fmt: (usdt: number) => string }) {
   return (
     <button
       onClick={onClick}
-      disabled={active}
+      disabled={active || busy || locked}
       className={`rounded-lg border px-3 py-1.5 text-xs transition active:scale-95 ${
-        active ? "border-amber-400/60 bg-amber-400/20 text-amber-200" : "border-white/25 text-white hover:bg-white/10"
+        active
+          ? "border-amber-400/60 bg-amber-400/20 text-amber-200"
+          : busy
+            ? "border-white/25 text-white animate-pulse"
+            : `border-white/25 text-white hover:bg-white/10 ${locked ? "opacity-50" : ""}`
       }`}
     >
-      {label} {active ? "✓" : <span className="opacity-70">· {fmt(price)}</span>}
+      {label} {active ? "✓" : busy ? "⏳" : <span className="opacity-70">· {fmt(price)}</span>}
     </button>
   );
 }
@@ -1181,6 +1216,8 @@ function WinCard({
   chain,
   onRetry,
   retryPrice,
+  retryBusy,
+  payError,
   onHome,
   hasWallet,
   inRanking,
@@ -1195,6 +1232,8 @@ function WinCard({
   chain: string[];
   onRetry: () => void;
   retryPrice: number;
+  retryBusy: boolean;
+  payError: string | null;
   onHome: () => void;
   hasWallet: boolean;
   inRanking: boolean;
@@ -1228,9 +1267,14 @@ function WinCard({
           {copied ? tr.copied : tr.share}
         </button>
         {/* Siempre disponible: aun con marca perfecta se puede reintentar para mejorar el TIEMPO (desempate del ranking). */}
-        <button onClick={onRetry} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
-          {tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span>
+        <button
+          onClick={onRetry}
+          disabled={retryBusy}
+          className={`rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10 ${retryBusy ? "animate-pulse" : ""}`}
+        >
+          {retryBusy ? <>⏳ {tr.paying}</> : <>{tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span></>}
         </button>
+        {payError && <p className="text-xs text-rose-400">{payError}</p>}
         {/* Volver a la selección de nivel: jugar otro nivel (o revisar este). */}
         <button onClick={onHome} className="rounded-xl border border-[#b79ced]/40 px-6 py-3 font-bold text-[#c4b5fd] active:scale-95 transition hover:bg-white/10">
           🎮 {tr.chooseLevel}

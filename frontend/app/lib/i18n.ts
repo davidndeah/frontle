@@ -93,6 +93,8 @@ type Dict = {
   copied: string;
   comeback: string;
   retry: string;
+  paying: string;
+  payFailed: string;
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -152,6 +154,8 @@ const STRINGS: Record<Locale, Dict> = {
     copied: "¡Copiado!",
     comeback: "Vuelve mañana para el siguiente reto 🗓️",
     retry: "Reintentar para mejorar tu marca",
+    paying: "Procesando pago…",
+    payFailed: "No se pudo completar el pago. Revisa tu saldo e intenta de nuevo.",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
@@ -216,6 +220,8 @@ const STRINGS: Record<Locale, Dict> = {
     copied: "Copied!",
     comeback: "Come back tomorrow for the next challenge 🗓️",
     retry: "Retry to beat your score",
+    paying: "Processing payment…",
+    payFailed: "Payment didn't go through. Check your balance and try again.",
     footer: "Frontle · Onchain Agents Hackathon · Celo Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -280,6 +286,8 @@ const STRINGS: Record<Locale, Dict> = {
     copied: "Copiado!",
     comeback: "Volte amanhã para o próximo desafio 🗓️",
     retry: "Tentar de novo para melhorar sua marca",
+    paying: "Processando pagamento…",
+    payFailed: "O pagamento não foi concluído. Verifique seu saldo e tente de novo.",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -344,6 +352,8 @@ const STRINGS: Record<Locale, Dict> = {
     copied: "Copié !",
     comeback: "Revenez demain pour le prochain défi 🗓️",
     retry: "Réessayer pour battre votre score",
+    paying: "Paiement en cours…",
+    payFailed: "Le paiement n'a pas abouti. Vérifiez votre solde et réessayez.",
     footer: "Frontle · Hackathon des Agents Onchain · Celo Colombia",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
