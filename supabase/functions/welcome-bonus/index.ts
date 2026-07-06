@@ -1,7 +1,9 @@
 // ============================================================
 //  Frontle — Edge Function "welcome-bonus" (faucet de bienvenida)
-//  Da 0.10 USDT (una sola vez) a un usuario NUEVO que entra por correo (Privy),
-//  para que pueda comprar pistas o reintentar. Bordy le avisa en el front.
+//  Da 0.10 USDT + un poco de CELO (una sola vez) a un usuario NUEVO que entra
+//  por correo (Privy), para que pueda comprar pistas o reintentar. El CELO es
+//  para el GAS: la wallet embebida de Privy no soporta feeCurrency (CIP-64),
+//  así que sus transacciones pagan gas en CELO. Bordy le avisa en el front.
 //
 //  Anti-abuso (clave): NO confia en la direccion que manda el cliente. Verifica
 //  el ACCESS TOKEN de Privy server-side (firma ES256 contra el JWKS del app),
@@ -14,6 +16,7 @@
 //    PRIVY_APP_SECRET       app secret de Privy (server-side; NUNCA en el repo)
 //    FAUCET_PRIVATE_KEY     0x... wallet faucet dedicada (USDT + CELO para gas)
 //    BONUS_DAILY_CAP        opcional, nº max de bonos/dia (default 100 = 10 USDT)
+//    BONUS_GAS_CELO         opcional, CELO de gas por bono (default 0.01)
 //    CELO_RPC_URL           opcional, default https://forno.celo.org
 // ============================================================
 
@@ -24,6 +27,7 @@ import {
   createWalletClient,
   http,
   parseUnits,
+  parseEther,
 } from "https://esm.sh/viem@2.21.0";
 import { privateKeyToAccount } from "https://esm.sh/viem@2.21.0/accounts";
 import { celo } from "https://esm.sh/viem@2.21.0/chains";
@@ -115,14 +119,26 @@ Deno.serve(async (req) => {
       return json({ ok: true, granted: false, reason: "ya recibido" });
     }
 
-    // 6) Transferir 0.10 USDT desde el faucet. Si falla, liberar la reserva.
+    // 6) Transferir 0.10 USDT + CELO de gas desde el faucet. Si falla, liberar
+    //    la reserva. Se verifican AMBOS saldos antes de enviar nada, para no
+    //    quedar a medias (CELO enviado pero USDT no, o viceversa).
     try {
+      const GAS_CELO = Deno.env.get("BONUS_GAS_CELO") || "0.01";
+      const gasRaw = parseEther(GAS_CELO);
       const account = privateKeyToAccount(Deno.env.get("FAUCET_PRIVATE_KEY")! as `0x${string}`);
       const publicClient = createPublicClient({ chain: celo, transport: http(rpcUrl) });
       const walletClient = createWalletClient({ account, chain: celo, transport: http(rpcUrl) });
 
       const bal = await publicClient.readContract({ address: USDT, abi: erc20Abi, functionName: "balanceOf", args: [account.address] });
       if (bal < amountRaw) throw new Error("faucet sin USDT suficiente");
+      // El regalo de gas + margen para pagar las 2 tx del propio faucet.
+      const celoBal = await publicClient.getBalance({ address: account.address });
+      if (celoBal < gasRaw + parseEther("0.005")) throw new Error("faucet sin CELO suficiente");
+
+      // Primero el CELO (barato): si el USDT fallara después, liberar la
+      // reserva solo re-regala centavos de gas, nunca duplica el USDT.
+      const gasTx = await walletClient.sendTransaction({ to: wallet as `0x${string}`, value: gasRaw });
+      await publicClient.waitForTransactionReceipt({ hash: gasTx });
 
       const tx = await walletClient.writeContract({
         address: USDT, abi: erc20Abi, functionName: "transfer", args: [wallet as `0x${string}`, amountRaw],
@@ -130,7 +146,7 @@ Deno.serve(async (req) => {
       await publicClient.waitForTransactionReceipt({ hash: tx });
 
       await supabase.from("welcome_bonus").update({ tx_hash: tx }).eq("privy_did", did);
-      return json({ ok: true, granted: true, amount: BONUS, tx });
+      return json({ ok: true, granted: true, amount: BONUS, gas: GAS_CELO, tx, gasTx });
     } catch (sendErr) {
       // Liberar la reserva para que pueda reintentar en otro login.
       await supabase.from("welcome_bonus").delete().eq("privy_did", did);

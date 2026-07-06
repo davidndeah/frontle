@@ -194,12 +194,28 @@ export function setEmbeddedProvider(raw: unknown | undefined): void {
   });
 }
 
-function getProvider(): unknown | undefined {
+// Provider activo + si es la wallet embebida. La embebida tiene PRIORIDAD:
+// si Privy la creó, el usuario se identificó por CORREO y su identidad de
+// ranking es esa dirección — enrutar el pago a una extensión instalada
+// (otra dirección) rompería identidad y premio. En MiniPay nunca hay
+// embeddedProvider, así que ahí sigue mandando window.ethereum.
+type ActiveProvider = { provider: unknown; embedded: boolean };
+
+function getProvider(): ActiveProvider | undefined {
+  if (embeddedProvider) return { provider: embeddedProvider, embedded: true };
   if (typeof window !== "undefined") {
     const injected = (window as unknown as { ethereum?: unknown }).ethereum;
-    if (injected) return injected; // MiniPay / extensión tienen prioridad
+    if (injected) return { provider: injected, embedded: false };
   }
-  return embeddedProvider; // fallback: wallet embebida por correo (Privy)
+  return undefined;
+}
+
+// La wallet embebida de Privy solo firma tx estándar (legacy/eip1559...):
+// una tx CIP-64 (type 0x7b, la que genera viem al incluir feeCurrency) lanza
+// "Unsupported transaction type". Para ella se omite feeCurrency y el gas se
+// paga en CELO (el bono de bienvenida incluye un poco de CELO para esto).
+function feeOptsFor(embedded: boolean): { feeCurrency?: Address } {
+  return FEE_CURRENCY && !embedded ? { feeCurrency: FEE_CURRENCY } : {};
 }
 
 // --- Identidad: dirección de la wallet ---------------------------------
@@ -207,11 +223,11 @@ function getProvider(): unknown | undefined {
 // contrato necesita para pagar el premio (rollDay/claim). En MiniPay la wallet
 // ya está conectada → getAddresses la entrega SIN abrir prompt.
 export async function getWalletAddress(): Promise<string | null> {
-  const provider = getProvider();
-  if (!provider) return null;
+  const active = getProvider();
+  if (!active) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(active.provider as any) });
     const [account] = await walletClient.getAddresses();
     return account ? account.toLowerCase() : null;
   } catch {
@@ -222,11 +238,11 @@ export async function getWalletAddress(): Promise<string | null> {
 // Solicita conexión de wallet (ABRE prompt). Para navegador con extensión:
 // "Conecta tu wallet para entrar al ranking".
 export async function connectWallet(): Promise<string | null> {
-  const provider = getProvider();
-  if (!provider) return null;
+  const active = getProvider();
+  if (!active) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(active.provider as any) });
     let [account] = await walletClient.getAddresses();
     if (!account) [account] = await walletClient.requestAddresses();
     return account ? account.toLowerCase() : null;
@@ -298,11 +314,11 @@ export async function getClaimablePrizes(entries: ClaimableEntry[], address: str
 
 // El ganador reclama su parte de un (día, nivel). Devuelve true solo si se confirmó on-chain.
 export async function claimPrize(day: number, level: Difficulty): Promise<boolean> {
-  const provider = getProvider();
-  if (!provider) return false;
+  const active = getProvider();
+  if (!active) return false;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const transport = custom(provider as any);
+    const transport = custom(active.provider as any);
     const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
 
@@ -325,7 +341,7 @@ export async function claimPrize(day: number, level: Difficulty): Promise<boolea
       }
     }
 
-    const feeOpts = FEE_CURRENCY ? { feeCurrency: FEE_CURRENCY } : {};
+    const feeOpts = feeOptsFor(active.embedded);
     const hash = await walletClient.writeContract({
       account,
       chain: ACTIVE_CHAIN,
@@ -346,11 +362,11 @@ export async function claimPrize(day: number, level: Difficulty): Promise<boolea
 // --- Lectura: saldo de COPm (peso colombiano) de la wallet conectada ----
 // Localización para el mercado colombiano de MiniPay. Devuelve el saldo o null.
 export async function getCopmBalance(): Promise<number | null> {
-  const provider = getProvider();
-  if (!provider) return null;
+  const active = getProvider();
+  if (!active) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(provider as any) });
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(active.provider as any) });
     const [account] = await walletClient.getAddresses();
     if (!account) return null;
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
@@ -369,9 +385,9 @@ export async function getCopmBalance(): Promise<number | null> {
 
 // --- Pago ---------------------------------------------------------------
 export async function requestPayment(amountUSDm: number, reason: string): Promise<boolean> {
-  const provider = getProvider();
-  if (!provider) {
-    console.warn("[pago] No hay wallet (window.ethereum). ¿Abierto fuera de MiniPay?");
+  const active = getProvider();
+  if (!active) {
+    console.warn("[pago] No hay wallet (window.ethereum ni embebida). ¿Abierto fuera de MiniPay?");
     return false;
   }
   const action = resolveAction(reason);
@@ -382,7 +398,7 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const transport = custom(provider as any);
+    const transport = custom(active.provider as any);
     const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
 
@@ -410,7 +426,7 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
     }
 
     const feeWei = parseUnits(String(amountUSDm), TOKEN_DECIMALS);
-    const feeOpts = FEE_CURRENCY ? { feeCurrency: FEE_CURRENCY } : {};
+    const feeOpts = feeOptsFor(active.embedded);
 
     // approve una vez si la autorización no alcanza
     const allowance = await publicClient.readContract({
