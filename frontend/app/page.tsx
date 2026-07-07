@@ -120,16 +120,17 @@ export default function Frontle() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   useEffect(() => setAliasState(getAlias()), []);
-  // Coachmarks de las pistas: primera vez que se entra al juego
-  const [coachOpen, setCoachOpen] = useState(false);
-  useEffect(() => {
-    if (!started || state.solved || tab !== "jugar") return;
-    let seen = "1";
-    try { seen = localStorage.getItem("frontle-coach-hints") ?? "0"; } catch {}
-    if (seen === "1") return;
-    const id = setTimeout(() => setCoachOpen(true), 900);
-    return () => clearTimeout(id);
-  }, [started, state.solved, tab]);
+  // Coachmarks de las pistas (1ª vez): el juego se muestra en "modo previo"
+  // (países ocultos, cronómetro congelado) mientras Bordy explica. El reloj
+  // arranca SOLO al terminar el coach → nadie gana ventaja.
+  const [coaching, setCoaching] = useState(false);
+  function coachSeen(): boolean {
+    try { return localStorage.getItem("frontle-coach-hints") === "1"; } catch { return true; }
+  }
+  function enterGame() {
+    if (coachSeen()) startGame();
+    else setCoaching(true);
+  }
   // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
   const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
   function openPregame() {
@@ -654,22 +655,23 @@ export default function Frontle() {
         </section>
         )}
 
-        {/* Cronómetro (visible al jugar) */}
-        {started && (
+        {/* Cronómetro (visible al jugar; congelado en 00:00 durante el coach) */}
+        {(started || coaching) && (
           <p className="text-center -my-2">
             <span id="game-timer" className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
-              🕒 {formatTime(elapsedMs)}
+              🕒 {formatTime(coaching ? 0 : elapsedMs)}
             </span>
           </p>
         )}
 
-        {/* Mapa o pantalla de Play (solo en el paso reto) */}
-        {started ? (
+        {/* Mapa o pantalla de Play (solo en el paso reto).
+            Durante el coach: mapa vacío (sin países) para no dar ventaja. */}
+        {started || coaching ? (
           <WorldMap
-            statusByCountry={statusByCountry}
+            statusByCountry={coaching ? {} : statusByCountry}
             loadingLabel={tr.loadingMap}
-            silhouettes={silhouettes}
-            showAllOutlines={showAllSil}
+            silhouettes={coaching ? [] : silhouettes}
+            showAllOutlines={!coaching && showAllSil}
             resetKey={`${challenge.start}->${challenge.end}`}
           />
         ) : jugarStep === "reto" ? (
@@ -710,7 +712,7 @@ export default function Frontle() {
         ) : null}
 
         {/* Juego (solo al jugar) */}
-        {started && (
+        {(started || coaching) && (
           <>
             <div className="flex items-center justify-center -mt-2">
               <div className="flex items-center gap-3 text-[11px] text-white bg-[#1c0b3e]/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#b79ced]/20">
@@ -722,13 +724,16 @@ export default function Frontle() {
               </div>
             </div>
 
-            <section className="flex flex-wrap justify-center gap-2">
-              <CountryChip code={startC.code} name={cn(challenge.start)} kind="start" />
-              {state.chain.map((item) => (
-                <CountryChip key={item.country} code={getCountry(item.country)!.code} name={cn(item.country)} kind={item.quality} />
-              ))}
-              <CountryChip code={endC.code} name={cn(challenge.end)} kind="end" />
-            </section>
+            {/* Chips de la ruta: ocultos durante el coach (no revelar el reto) */}
+            {!coaching && (
+              <section className="flex flex-wrap justify-center gap-2">
+                <CountryChip code={startC.code} name={cn(challenge.start)} kind="start" />
+                {state.chain.map((item) => (
+                  <CountryChip key={item.country} code={getCountry(item.country)!.code} name={cn(item.country)} kind={item.quality} />
+                ))}
+                <CountryChip code={endC.code} name={cn(challenge.end)} kind="end" />
+              </section>
+            )}
 
             {state.solved ? (
               <WinCard
@@ -950,7 +955,7 @@ export default function Frontle() {
         <BordyTutorial
           onDone={() => {
             setOverlay(null);
-            if (!started) startGame();
+            if (!started) enterGame();
           }}
         />
       )}
@@ -958,7 +963,7 @@ export default function Frontle() {
         <QuickStart
           onDone={() => {
             setOverlay(null);
-            if (!started) startGame();
+            if (!started) enterGame();
           }}
           onFull={() => setOverlay("full")}
         />
@@ -969,17 +974,19 @@ export default function Frontle() {
         <WalletSheet onClose={() => setWalletOpen(false)} myId={myId} hasWallet={hasWallet} onConnect={connectForRanking} tr={tr} />
       )}
 
-      {/* Coachmarks de las pistas (1ª partida) */}
-      {coachOpen && (
+      {/* Coachmarks de las pistas (1ª partida): el juego está en modo previo
+          (reto oculto, reloj en 00:00); al terminar arranca la partida real */}
+      {coaching && (
         <Coachmarks
           steps={[
             { target: "game-input", text: "Escribe aquí un país que comparta frontera con el origen (o con cualquiera revelado). Te autocompleto mientras escribes 😉" },
             { target: "hints-panel", text: "💡 ¿Atascado? Compra una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆" },
-            { target: "game-timer", text: "⏱️ El cronómetro desempata: a igual número de países, gana quien resolvió más rápido. ¡No te duermas!" },
+            { target: "game-timer", text: "⏱️ El cronómetro desempata: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄" },
           ]}
           onDone={() => {
-            setCoachOpen(false);
             try { localStorage.setItem("frontle-coach-hints", "1"); } catch {}
+            setCoaching(false);
+            startGame();
           }}
         />
       )}
