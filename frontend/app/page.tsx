@@ -882,9 +882,9 @@ export default function Frontle() {
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
             <div className="flex justify-center gap-4 text-[11px] text-neutral-400 mt-1">
-              <span className="underline cursor-pointer">Términos</span>
-              <span className="underline cursor-pointer">Privacidad</span>
-              <span className="underline cursor-pointer">Soporte</span>
+              <a href="/terms" className="underline">Términos</a>
+              <a href="/privacy" className="underline">Privacidad</a>
+              <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">Soporte</a>
             </div>
             <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
           </>
