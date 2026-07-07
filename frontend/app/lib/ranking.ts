@@ -16,7 +16,26 @@ export interface ScoreEntry {
   countryCode: string; // ISO-2 (bandera de la IP)
   playerId: string; // identifica a cada jugador (anónimo, por navegador)
   level?: Difficulty; // nivel del reto; si falta, se asume "medium"
+  name?: string; // nombre de perfil elegido por el jugador (opcional)
   createdAt?: string;
+}
+
+// --- Nombre de perfil (alias) -------------------------------------------
+// Se guarda local y viaja con cada score para mostrarse en el ranking.
+const ALIAS_KEY = "frontle-alias";
+export function getAlias(): string {
+  try {
+    return (localStorage.getItem(ALIAS_KEY) || "").trim().slice(0, 16);
+  } catch {
+    return "";
+  }
+}
+export function setAlias(name: string): void {
+  const clean = name.trim().slice(0, 16);
+  try {
+    if (clean) localStorage.setItem(ALIAS_KEY, clean);
+    else localStorage.removeItem(ALIAS_KEY);
+  } catch {}
 }
 
 // ID anónimo y estable por navegador (se guarda en localStorage).
@@ -58,23 +77,28 @@ export async function submitScore(e: ScoreEntry): Promise<void> {
   const level: Difficulty = e.level ?? "medium";
   if (useSupabase) {
     try {
-      await fetch(`${SUPA_URL}/rest/v1/scores`, {
-        method: "POST",
-        headers: {
-          apikey: SUPA_KEY!,
-          Authorization: `Bearer ${SUPA_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({
-          day: e.day,
-          countries: e.countries,
-          time_ms: e.timeMs,
-          country_code: e.countryCode,
-          player_id: e.playerId,
-          level,
-        }),
-      });
+      const post = (withName: boolean) =>
+        fetch(`${SUPA_URL}/rest/v1/scores`, {
+          method: "POST",
+          headers: {
+            apikey: SUPA_KEY!,
+            Authorization: `Bearer ${SUPA_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            day: e.day,
+            countries: e.countries,
+            time_ms: e.timeMs,
+            country_code: e.countryCode,
+            player_id: e.playerId,
+            level,
+            ...(withName && e.name ? { name: e.name } : {}),
+          }),
+        });
+      const r = await post(true);
+      // Fallback: si la columna `name` aún no existe en prod, reintenta sin ella.
+      if (!r.ok && e.name) await post(false);
     } catch {
       /* silencioso: no bloquear el juego por el ranking */
     }
@@ -125,6 +149,7 @@ export async function getRanking(
         countryCode: String(x.country_code ?? ""),
         playerId: String(x.player_id ?? ""),
         level: (x.level as Difficulty) ?? "medium",
+        name: (x.name as string) || undefined,
         createdAt: x.created_at as string | undefined,
       }));
       return bestPerPlayer(all, limit);

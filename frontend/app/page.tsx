@@ -21,7 +21,8 @@ import {
   t,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, type ScoreEntry } from "./lib/ranking";
+import Coachmarks from "./components/Coachmarks";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
@@ -114,6 +115,21 @@ export default function Frontle() {
   const [walletOpen, setWalletOpen] = useState(false);
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
   const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
+  // Nombre de perfil (alias): local + viaja con cada score al ranking
+  const [alias, setAliasState] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  useEffect(() => setAliasState(getAlias()), []);
+  // Coachmarks de las pistas: primera vez que se entra al juego
+  const [coachOpen, setCoachOpen] = useState(false);
+  useEffect(() => {
+    if (!started || state.solved || tab !== "jugar") return;
+    let seen = "1";
+    try { seen = localStorage.getItem("frontle-coach-hints") ?? "0"; } catch {}
+    if (seen === "1") return;
+    const id = setTimeout(() => setCoachOpen(true), 900);
+    return () => clearTimeout(id);
+  }, [started, state.solved, tab]);
   // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
   const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
   function openPregame() {
@@ -171,6 +187,7 @@ export default function Frontle() {
           localStorage.removeItem(`frontle-best-${d}-${lv}`);
         }
         localStorage.removeItem("frontle-tutorial-hide");
+        localStorage.removeItem("frontle-coach-hints");
         window.location.replace("/");
       }
     } catch {}
@@ -412,7 +429,7 @@ export default function Frontle() {
     // Un tiempo 0 es imposible (resolver toma segundos): venía de partidas
     // auto-reparadas sin finalMs y contaminaba el ranking. No enviar.
     if (!(timeMs > 0)) return Promise.resolve();
-    return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr, level })
+    return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr, level, name: alias || undefined })
       .then(() => getRanking(day, level).then(setRanking));
   }
 
@@ -529,7 +546,7 @@ export default function Frontle() {
           onClick={() => setWalletOpen(true)}
           className="rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
         >
-          {myId ? shortId(myId) : "👤 Entrar"}
+          {alias || (myId ? shortId(myId) : "👤 Entrar")}
         </button>
       </header>
 
@@ -640,7 +657,7 @@ export default function Frontle() {
         {/* Cronómetro (visible al jugar) */}
         {started && (
           <p className="text-center -my-2">
-            <span className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
+            <span id="game-timer" className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
               🕒 {formatTime(elapsedMs)}
             </span>
           </p>
@@ -733,7 +750,7 @@ export default function Frontle() {
               />
             ) : (
               <section className="relative flex flex-col gap-3">
-                <form onSubmit={handleSubmit} className="flex gap-2">
+                <form id="game-input" onSubmit={handleSubmit} className="flex gap-2">
                   <input
                     ref={inputRef}
                     value={input}
@@ -763,7 +780,7 @@ export default function Frontle() {
                   <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
                 )}
 
-                <div className={`${panel} p-3`}>
+                <div id="hints-panel" className={`${panel} p-3`}>
                   <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">{tr.hintsTitle}</p>
                   <div className="flex flex-wrap justify-center gap-2">
                     <HintButton active={showInitial} busy={paying === "initial"} locked={paying !== null && paying !== "initial"} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} fmt={fmt} />
@@ -811,8 +828,38 @@ export default function Frontle() {
                 {ipCountry ? <Flag code={ipCountry} size={30} /> : <span className="text-xl">👤</span>}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-bold text-white truncate">{myId ? shortId(myId) : "Invitado"}</div>
-                <div className="text-[11px] text-neutral-400">{myId ? "Conectado" : "Conéctate para el ranking"}</div>
+                {editingName ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      setAlias(nameDraft);
+                      setAliasState(getAlias());
+                      setEditingName(false);
+                    }}
+                    className="flex gap-1.5"
+                  >
+                    <input
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      maxLength={16}
+                      autoFocus
+                      placeholder="Tu nombre…"
+                      className="w-full min-w-0 rounded-lg bg-[#160833] border border-[#b79ced]/40 px-2 py-1 text-sm text-white outline-none focus:border-[#fcff52]/70"
+                    />
+                    <button type="submit" className="rounded-lg bg-[#fcff52] text-[#1c0b3e] font-bold text-xs px-2.5 active:scale-95 transition">OK</button>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => { setNameDraft(alias); setEditingName(true); }}
+                    className="font-bold text-white truncate flex items-center gap-1.5 active:scale-95 transition"
+                  >
+                    <span className="truncate">{alias || (myId ? shortId(myId) : "Invitado")}</span>
+                    <span className="text-xs opacity-60 flex-none">✏️</span>
+                  </button>
+                )}
+                <div className="text-[11px] text-neutral-400 truncate">
+                  {myId ? shortId(myId) : "Conéctate para el ranking"}
+                </div>
               </div>
               {!myId && hasWallet && (
                 <button onClick={connectForRanking} className="rounded-lg border border-emerald-300/50 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 active:scale-95 transition">
@@ -920,6 +967,21 @@ export default function Frontle() {
       {/* Wallet sheet */}
       {walletOpen && (
         <WalletSheet onClose={() => setWalletOpen(false)} myId={myId} hasWallet={hasWallet} onConnect={connectForRanking} tr={tr} />
+      )}
+
+      {/* Coachmarks de las pistas (1ª partida) */}
+      {coachOpen && (
+        <Coachmarks
+          steps={[
+            { target: "game-input", text: "Escribe aquí un país que comparta frontera con el origen (o con cualquiera revelado). Te autocompleto mientras escribes 😉" },
+            { target: "hints-panel", text: "💡 ¿Atascado? Compra una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆" },
+            { target: "game-timer", text: "⏱️ El cronómetro desempata: a igual número de países, gana quien resolvió más rápido. ¡No te duermas!" },
+          ]}
+          onDone={() => {
+            setCoachOpen(false);
+            try { localStorage.setItem("frontle-coach-hints", "1"); } catch {}
+          }}
+        />
       )}
     </main>
   );
@@ -1240,7 +1302,10 @@ function RankingCard({
                 >
                   <td className="py-1.5">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
                   <td className="py-1.5"><Flag code={r.countryCode} size={20} /></td>
-                  <td className="py-1.5 font-mono text-xs">{shortId(r.playerId)}{mine ? " 👈" : ""}</td>
+                  <td className="py-1.5 text-xs">
+                    {r.name ? <span className="font-semibold">{r.name}</span> : <span className="font-mono">{shortId(r.playerId)}</span>}
+                    {mine ? " 👈" : ""}
+                  </td>
                   <td className="py-1.5 text-right tabular-nums">{r.countries}</td>
                   <td className="py-1.5 text-right tabular-nums font-mono">{formatTime(r.timeMs)}</td>
                 </tr>
