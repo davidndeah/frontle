@@ -894,11 +894,7 @@ export default function Frontle() {
         {tab === "aprender" && (
           <>
             <div className="flex flex-col gap-3">
-              {[
-                "¡Hola! Soy Bordy 👋 Cada día conectas el país de origen con el de destino nombrando países que compartan frontera.",
-                "El semáforo te guía: verde vas por la mejor ruta, amarillo te desviaste un poco, rojo te alejaste.",
-                "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
-              ].map((txt, i) => (
+              {tr.learnBubbles.map((txt, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <div className="w-9 h-9 rounded-xl bg-[#160833] border border-[#b79ced]/40 flex items-center justify-center text-lg flex-none">🤖</div>
                   <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
@@ -909,7 +905,7 @@ export default function Frontle() {
               ▶ {tr.play}
             </button>
             <button disabled className="rounded-2xl border border-[#b79ced]/30 text-neutral-300 px-6 py-3 opacity-60">
-              🎲 Modo práctica (próximamente)
+              🎲 {tr.practiceSoon}
             </button>
           </>
         )}

@@ -134,6 +134,8 @@ type Dict = {
   legalTerms: string;
   legalPrivacy: string;
   legalSupport: string;
+  learnBubbles: string[];
+  practiceSoon: string;
   rankingTitle: string;
   bestToday: (n: number) => string;
   noScoreYet: string;
@@ -212,6 +214,12 @@ const STRINGS: Record<Locale, Dict> = {
     legalTerms: "Términos",
     legalPrivacy: "Privacidad",
     legalSupport: "Soporte",
+    learnBubbles: [
+      "¡Hola! Soy Bordy 👋 Cada día conectas el país de origen con el de destino nombrando países que compartan frontera.",
+      "El semáforo te guía: verde vas por la mejor ruta, amarillo te desviaste un poco, rojo te alejaste.",
+      "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
+    ],
+    practiceSoon: "Modo práctica (próximamente)",
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
@@ -295,6 +303,12 @@ const STRINGS: Record<Locale, Dict> = {
     legalTerms: "Terms",
     legalPrivacy: "Privacy",
     legalSupport: "Support",
+    learnBubbles: [
+      "Hi! I'm Bordy 👋 Every day you connect the start country to the destination by naming countries that share a border.",
+      "The traffic light guides you: green means you're on the best route, yellow you drifted a bit, red you went off course.",
+      "Fewer countries and less time = higher rank. The day's best takes the pot 🏆. Your first try is free.",
+    ],
+    practiceSoon: "Practice mode (coming soon)",
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
@@ -378,6 +392,12 @@ const STRINGS: Record<Locale, Dict> = {
     legalTerms: "Termos",
     legalPrivacy: "Privacidade",
     legalSupport: "Suporte",
+    learnBubbles: [
+      "Olá! Eu sou o Bordy 👋 Cada dia você conecta o país de origem ao de destino nomeando países que compartilham fronteira.",
+      "O semáforo te guia: verde você está na melhor rota, amarelo desviou um pouco, vermelho se afastou.",
+      "Menos países e menos tempo = melhor posição. O melhor do dia leva o pot 🏆. A primeira tentativa é grátis.",
+    ],
+    practiceSoon: "Modo prática (em breve)",
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
@@ -461,6 +481,12 @@ const STRINGS: Record<Locale, Dict> = {
     legalTerms: "Conditions",
     legalPrivacy: "Confidentialité",
     legalSupport: "Support",
+    learnBubbles: [
+      "Salut ! Je suis Bordy 👋 Chaque jour, tu relies le pays de départ au pays d'arrivée en nommant des pays qui partagent une frontière.",
+      "Le feu tricolore te guide : vert tu es sur la meilleure route, jaune tu t'es un peu écarté, rouge tu t'éloignes.",
+      "Moins de pays et moins de temps = meilleur classement. Le meilleur du jour remporte le pot 🏆. Le premier essai est gratuit.",
+    ],
+    practiceSoon: "Mode entraînement (bientôt)",
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
