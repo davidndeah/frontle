@@ -848,7 +848,7 @@ export default function Frontle() {
                       onChange={(e) => setNameDraft(e.target.value)}
                       maxLength={16}
                       autoFocus
-                      placeholder="Tu nombre…"
+                      placeholder={tr.namePlaceholder}
                       className="w-full min-w-0 rounded-lg bg-[#160833] border border-[#b79ced]/40 px-2 py-1 text-sm text-white outline-none focus:border-[#fcff52]/70"
                     />
                     <button type="submit" className="rounded-lg bg-[#fcff52] text-[#1c0b3e] font-bold text-xs px-2.5 active:scale-95 transition">OK</button>
@@ -858,12 +858,12 @@ export default function Frontle() {
                     onClick={() => { setNameDraft(alias); setEditingName(true); }}
                     className="font-bold text-white truncate flex items-center gap-1.5 active:scale-95 transition"
                   >
-                    <span className="truncate">{alias || (myId ? shortId(myId) : "Invitado")}</span>
+                    <span className="truncate">{alias || (myId ? shortId(myId) : tr.profileGuest)}</span>
                     <span className="text-xs opacity-60 flex-none">✏️</span>
                   </button>
                 )}
                 <div className="text-[11px] text-neutral-400 truncate">
-                  {myId ? shortId(myId) : "Conéctate para el ranking"}
+                  {myId ? shortId(myId) : tr.profileConnectHint}
                 </div>
               </div>
               {!myId && hasWallet && (
@@ -872,19 +872,19 @@ export default function Frontle() {
                 </button>
               )}
             </section>
-            {myId && balances && <WalletCard address={myId} usdt={balances.usdt} celo={balances.celo} fmt={fmt} />}
+            {myId && balances && <WalletCard tr={tr} address={myId} usdt={balances.usdt} celo={balances.celo} fmt={fmt} />}
             <div className="grid grid-cols-3 gap-2">
-              <StatCard v={daysPlayed} k="días jugados" color="#fcff52" />
-              <StatCard v={best ?? "—"} k="mejor hoy" color="#22d3ee" />
-              <StatCard v={prizes.length} k="premios" color="#e879f9" />
+              <StatCard v={daysPlayed} k={tr.statDays} color="#fcff52" />
+              <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
+              <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
             {prizes.length > 0 && (
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
             <div className="flex justify-center gap-4 text-[11px] text-neutral-400 mt-1">
-              <a href="/terms" className="underline">Términos</a>
-              <a href="/privacy" className="underline">Privacidad</a>
-              <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">Soporte</a>
+              <a href="/terms" className="underline">{tr.legalTerms}</a>
+              <a href="/privacy" className="underline">{tr.legalPrivacy}</a>
+              <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">{tr.legalSupport}</a>
             </div>
             <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
           </>
@@ -894,11 +894,7 @@ export default function Frontle() {
         {tab === "aprender" && (
           <>
             <div className="flex flex-col gap-3">
-              {[
-                "¡Hola! Soy Bordy 👋 Cada día conectas el país de origen con el de destino nombrando países que compartan frontera.",
-                "El semáforo te guía: verde vas por la mejor ruta, amarillo te desviaste un poco, rojo te alejaste.",
-                "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
-              ].map((txt, i) => (
+              {tr.learnBubbles.map((txt, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <div className="w-9 h-9 rounded-xl bg-[#160833] border border-[#b79ced]/40 flex items-center justify-center text-lg flex-none">🤖</div>
                   <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
@@ -909,7 +905,7 @@ export default function Frontle() {
               ▶ {tr.play}
             </button>
             <button disabled className="rounded-2xl border border-[#b79ced]/30 text-neutral-300 px-6 py-3 opacity-60">
-              🎲 Modo práctica (próximamente)
+              🎲 {tr.practiceSoon}
             </button>
           </>
         )}
@@ -948,11 +944,13 @@ export default function Frontle() {
       )}
 
       {/* Bottom-nav */}
-      <TabBar tab={tab} onTab={setTab} />
+      <TabBar tr={tr} tab={tab} onTab={setTab} />
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
         <BordyTutorial
+          tr={tr}
+          locale={locale}
           onDone={() => {
             setOverlay(null);
             if (!started) enterGame();
@@ -961,6 +959,7 @@ export default function Frontle() {
       )}
       {overlay === "quick" && (
         <QuickStart
+          tr={tr}
           onDone={() => {
             setOverlay(null);
             if (!started) enterGame();
@@ -979,10 +978,11 @@ export default function Frontle() {
       {coaching && (
         <Coachmarks
           steps={[
-            { target: "game-input", text: "Escribe aquí un país que comparta frontera con el origen (o con cualquiera revelado). Te autocompleto mientras escribes 😉" },
-            { target: "hints-panel", text: "💡 ¿Atascado? Compra una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆" },
-            { target: "game-timer", text: "⏱️ El cronómetro desempata: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄" },
+            { target: "game-input", text: tr.coachSteps[0] },
+            { target: "hints-panel", text: tr.coachSteps[1] },
+            { target: "game-timer", text: tr.coachSteps[2] },
           ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
           onDone={() => {
             try { localStorage.setItem("frontle-coach-hints", "1"); } catch {}
             setCoaching(false);
@@ -997,14 +997,14 @@ export default function Frontle() {
 // Tarjeta de saldo (perfil): el usuario de CORREO no tiene otra vista de su
 // wallet embebida. Muestra USDT (en la moneda elegida), el CELO de gas y la
 // dirección completa con copiar — necesaria para recargar la wallet.
-function WalletCard({ address, usdt, celo, fmt }: { address: string; usdt: number; celo: number; fmt: (u: number) => string }) {
+function WalletCard({ tr, address, usdt, celo, fmt }: { tr: ReturnType<typeof t>; address: string; usdt: number; celo: number; fmt: (u: number) => string }) {
   const [copied, setCopied] = useState(false);
   return (
     <section className="panel p-4">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2">Saldo de tu wallet</p>
+      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2">{tr.walletBalanceTitle}</p>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-2xl font-black text-white">{fmt(usdt)}</span>
-        <span className="text-[11px] text-neutral-400" title="CELO para la comisión de red">⛽ {celo.toFixed(3)} CELO</span>
+        <span className="text-[11px] text-neutral-400" title={tr.walletGasTitle}>⛽ {celo.toFixed(3)} CELO</span>
       </div>
       <button
         onClick={() => {
@@ -1015,7 +1015,7 @@ function WalletCard({ address, usdt, celo, fmt }: { address: string; usdt: numbe
         className="mt-2 w-full truncate rounded-lg border border-white/15 px-2 py-1.5 text-[11px] font-mono text-neutral-300 active:scale-95 transition hover:bg-white/10"
         title={address}
       >
-        {copied ? "¡Dirección copiada!" : `${address} 📋`}
+        {copied ? tr.addressCopied : `${address} 📋`}
       </button>
     </section>
   );
@@ -1032,12 +1032,12 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
-function TabBar({ tab, onTab }: { tab: Tab; onTab: (t: Tab) => void }) {
+function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab: (t: Tab) => void }) {
   const items: { id: Tab; icon: string; label: string }[] = [
-    { id: "jugar", icon: "🌍", label: "Jugar" },
-    { id: "ranking", icon: "🏆", label: "Ranking" },
-    { id: "perfil", icon: "👤", label: "Perfil" },
-    { id: "aprender", icon: "❓", label: "Aprender" },
+    { id: "jugar", icon: "🌍", label: tr.tabs.jugar },
+    { id: "ranking", icon: "🏆", label: tr.tabs.ranking },
+    { id: "perfil", icon: "👤", label: tr.tabs.perfil },
+    { id: "aprender", icon: "❓", label: tr.tabs.aprender },
   ];
   return (
     <nav className="fixed bottom-0 inset-x-0 z-30 h-16 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">

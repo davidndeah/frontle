@@ -8,8 +8,11 @@
 //  mostrar" y QuickStart (3·2·1) para veteranos.
 // ============================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TUTORIAL_MAP } from "../lib/tutorialMap";
+import { countryName, t, type Locale } from "../lib/i18n";
+
+type Dict = ReturnType<typeof t>;
 
 const COLORS: Record<string, string> = {
   start: "#22d3ee", end: "#e879f9", green: "#22c55e", yellow: "#eab308", red: "#ef4444", off: "transparent",
@@ -17,52 +20,59 @@ const COLORS: Record<string, string> = {
 
 type DemoStatus = Record<string, keyof typeof COLORS | "off">;
 
-// Guion sincronizado: texto de Bordy + animaciones del tablero por paso
-const STEPS: {
+type Step = {
   icon: string;
   text: string;
   timeline: { t: number; input?: string; set?: [string, keyof typeof COLORS][] }[];
-}[] = [
-  {
-    icon: "🌍",
-    text: "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
-    timeline: [
-      { t: 200, set: [["Portugal", "start"], ["Germany", "end"]] },
-    ],
-  },
-  {
-    icon: "🟢",
-    text: "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
-    timeline: [
-      { t: 300, input: "España" },
-      { t: 1800, input: "", set: [["Spain", "green"]] },
-    ],
-  },
-  {
-    icon: "🟡",
-    text: "Amarillo = desvío. Suiza te saca un poco del camino… no es grave, pero gastas países de más.",
-    timeline: [
-      { t: 300, input: "Suiza" },
-      { t: 1800, input: "", set: [["Switzerland", "yellow"]] },
-    ],
-  },
-  {
-    icon: "🔴",
-    text: "Rojo = ¡te alejas! Marruecos va en dirección contraria a Alemania. Ojo con el semáforo.",
-    timeline: [
-      { t: 300, input: "Marruecos" },
-      { t: 1800, input: "", set: [["Morocco", "red"]] },
-    ],
-  },
-  {
-    icon: "🏆",
-    text: "Francia completa la ruta ✅ Menos países y menos tiempo = mejor puesto. ¡El mejor del día se lleva el pot!",
-    timeline: [
-      { t: 300, input: "Francia" },
-      { t: 1800, input: "", set: [["France", "green"]] },
-    ],
-  },
-];
+};
+
+// Guion sincronizado: texto de Bordy (del diccionario) + animaciones del
+// tablero por paso. Los nombres que Bordy "escribe" salen de countryName
+// (Intl por código ISO) para que el demo hable el idioma del jugador.
+function buildSteps(tr: Dict, locale: Locale): Step[] {
+  const n = (canonical: string) => countryName(canonical, locale);
+  return [
+    {
+      icon: "🌍",
+      text: tr.tutorialSteps[0],
+      timeline: [
+        { t: 200, set: [["Portugal", "start"], ["Germany", "end"]] },
+      ],
+    },
+    {
+      icon: "🟢",
+      text: tr.tutorialSteps[1],
+      timeline: [
+        { t: 300, input: n("Spain") },
+        { t: 1800, input: "", set: [["Spain", "green"]] },
+      ],
+    },
+    {
+      icon: "🟡",
+      text: tr.tutorialSteps[2],
+      timeline: [
+        { t: 300, input: n("Switzerland") },
+        { t: 1800, input: "", set: [["Switzerland", "yellow"]] },
+      ],
+    },
+    {
+      icon: "🔴",
+      text: tr.tutorialSteps[3],
+      timeline: [
+        { t: 300, input: n("Morocco") },
+        { t: 1800, input: "", set: [["Morocco", "red"]] },
+      ],
+    },
+    {
+      icon: "🏆",
+      text: tr.tutorialSteps[4],
+      timeline: [
+        { t: 300, input: n("France") },
+        { t: 1800, input: "", set: [["France", "green"]] },
+      ],
+    },
+  ];
+}
 
 const TYPE_MS = 24;
 
@@ -114,7 +124,7 @@ function useMuted() {
 }
 
 // --- Mini-tablero demo ---
-function DemoBoard({ status }: { status: DemoStatus }) {
+function DemoBoard({ status, locale }: { status: DemoStatus; locale: Locale }) {
   const revealed = TUTORIAL_MAP.play.filter((p) => status[p.name] && status[p.name] !== "off");
   return (
     <div className="panel w-full max-w-sm p-3 pop-in">
@@ -122,11 +132,11 @@ function DemoBoard({ status }: { status: DemoStatus }) {
       <div className="flex items-center justify-center gap-3 mb-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="https://flagcdn.com/pt.svg" alt="" className="w-7 rounded-[3px]" />
-        <span className="text-[13px] font-bold text-cyan-300">Portugal</span>
+        <span className="text-[13px] font-bold text-cyan-300">{countryName("Portugal", locale)}</span>
         <span className="text-neutral-400">→</span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="https://flagcdn.com/de.svg" alt="" className="w-7 rounded-[3px]" />
-        <span className="text-[13px] font-bold text-fuchsia-300">Alemania</span>
+        <span className="text-[13px] font-bold text-fuchsia-300">{countryName("Germany", locale)}</span>
       </div>
       {/* mapa */}
       <div className="rounded-xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20">
@@ -160,7 +170,7 @@ function DemoBoard({ status }: { status: DemoStatus }) {
             <span key={p.name} className="pop-in flex items-center gap-1 rounded-lg border bg-[#1c0b3e]/60 px-1.5 py-0.5" style={{ borderColor: c }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`https://flagcdn.com/${p.code}.svg`} alt="" className="w-4 rounded-[2px]" />
-              <span className="text-[9px] text-white font-semibold">{{ Switzerland: "Suiza", Spain: "España", France: "Francia", Germany: "Alemania", Morocco: "Marruecos" }[p.name] ?? p.name}</span>
+              <span className="text-[9px] text-white font-semibold">{countryName(p.name, locale)}</span>
             </span>
           );
         })}
@@ -169,11 +179,19 @@ function DemoBoard({ status }: { status: DemoStatus }) {
   );
 }
 
-// Input del juego (demo): Bordy "escribe" y aparece la sugerencia con bandera
-const SUGGEST: Record<string, string> = { España: "es", Suiza: "ch", Marruecos: "ma", Francia: "fr" };
-function InputDemo({ text }: { text: string }) {
+// Input del juego (demo): Bordy "escribe" y aparece la sugerencia con bandera.
+// Los países del demo, con su nombre localizado (Intl) para el autocompletado.
+const SUGGEST_COUNTRIES: { canonical: string; code: string }[] = [
+  { canonical: "Spain", code: "es" },
+  { canonical: "Switzerland", code: "ch" },
+  { canonical: "Morocco", code: "ma" },
+  { canonical: "France", code: "fr" },
+];
+function InputDemo({ text, locale, placeholder }: { text: string; locale: Locale; placeholder: string }) {
   const match = text.length >= 2
-    ? Object.entries(SUGGEST).find(([n]) => n.toLowerCase().startsWith(text.toLowerCase()))
+    ? SUGGEST_COUNTRIES
+        .map((c) => ({ name: countryName(c.canonical, locale), code: c.code }))
+        .find((c) => c.name.toLowerCase().startsWith(text.toLowerCase()))
     : undefined;
   return (
     <div className="w-full max-w-sm">
@@ -184,7 +202,7 @@ function InputDemo({ text }: { text: string }) {
             <span className="inline-block w-[2px] h-3.5 bg-white ml-0.5 align-middle animate-pulse" />
           </>
         ) : (
-          <span className="text-neutral-500">Escribe un país…</span>
+          <span className="text-neutral-500">{placeholder}</span>
         )}
       </div>
       {/* espacio RESERVADO para la sugerencia: aparece sin tapar a Bordy ni la burbuja */}
@@ -192,8 +210,8 @@ function InputDemo({ text }: { text: string }) {
         {match && (
           <div className="pop-in rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 px-3.5 py-2.5 flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`https://flagcdn.com/${match[1]}.svg`} alt="" className="w-5 rounded-[2px]" />
-            <span className="text-[13px] text-white">{match[0]}</span>
+            <img src={`https://flagcdn.com/${match.code}.svg`} alt="" className="w-5 rounded-[2px]" />
+            <span className="text-[13px] text-white">{match.name}</span>
           </div>
         )}
       </div>
@@ -202,13 +220,14 @@ function InputDemo({ text }: { text: string }) {
 }
 
 // --- Tutorial completo ---
-export default function BordyTutorial({ onDone }: { onDone: () => void }) {
+export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale: Locale; onDone: () => void }) {
   const [step, setStep] = useState(0);
   const [chars, setChars] = useState(0);
   const [status, setStatus] = useState<DemoStatus>({});
   const [demoInput, setDemoInput] = useState("");
   const [hideNext, setHideNext] = useState(false);
   const { muted, ref: mutedRef, toggle } = useMuted();
+  const STEPS = useMemo(() => buildSteps(tr, locale), [tr, locale]);
 
   const full = STEPS[step].text;
   const typing = chars < full.length;
@@ -224,7 +243,7 @@ export default function BordyTutorial({ onDone }: { onDone: () => void }) {
       });
     }, TYPE_MS);
     return () => clearInterval(id);
-  }, [step, mutedRef]);
+  }, [step, mutedRef, STEPS]);
 
   // Timeline del tablero por paso (el typing se expande letra a letra)
   useEffect(() => {
@@ -256,7 +275,7 @@ export default function BordyTutorial({ onDone }: { onDone: () => void }) {
       }
     }
     return () => timers.forEach(clearTimeout);
-  }, [step, mutedRef]);
+  }, [step, mutedRef, STEPS]);
 
   function finish() {
     try { if (hideNext) localStorage.setItem("frontle-tutorial-hide", "1"); } catch {}
@@ -284,10 +303,10 @@ export default function BordyTutorial({ onDone }: { onDone: () => void }) {
       </button>
 
       {/* tablero demo */}
-      <DemoBoard status={status} />
+      <DemoBoard status={status} locale={locale} />
 
       {/* input del juego: Bordy "escribe" aquí */}
-      <InputDemo text={demoInput} />
+      <InputDemo text={demoInput} locale={locale} placeholder={tr.placeholder} />
 
       {/* Bordy + burbuja */}
       <div className="flex items-center gap-2 w-full max-w-sm">
@@ -314,23 +333,23 @@ export default function BordyTutorial({ onDone }: { onDone: () => void }) {
 
       {/* acciones */}
       <button onClick={next} className="btn-3d font-display font-bold text-lg px-11 py-3">
-        {typing ? "..." : step < STEPS.length - 1 ? "Siguiente →" : "¡A jugar!"}
+        {typing ? "..." : step < STEPS.length - 1 ? tr.tutNext : tr.tutPlay}
       </button>
 
       <label className="flex items-center gap-2 text-[11.5px] text-neutral-300 cursor-pointer select-none">
         <input type="checkbox" checked={hideNext} onChange={(e) => setHideNext(e.target.checked)}
           className="w-3.5 h-3.5 accent-[#fcff52]" />
-        No volver a mostrar
+        {tr.dontShowAgain}
       </label>
       <button onClick={finish} className="text-[11px] text-neutral-400 underline active:scale-95 transition -mt-1">
-        Saltar tutorial
+        {tr.skipTutorial}
       </button>
     </div>
   );
 }
 
 // --- Pantalla rápida (veteranos): ¿Listo? 3 · 2 · 1 ---
-export function QuickStart({ onDone, onFull }: { onDone: () => void; onFull: () => void }) {
+export function QuickStart({ tr, onDone, onFull }: { tr: Dict; onDone: () => void; onFull: () => void }) {
   const [n, setN] = useState(3);
   const { ref: mutedRef } = useMuted();
   useEffect(() => {
@@ -347,11 +366,11 @@ export function QuickStart({ onDone, onFull }: { onDone: () => void; onFull: () 
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/bordy-m2.png" alt="Bordy" className="bordy-talk w-full h-full object-contain drop-shadow-xl" />
       </div>
-      <p className="font-display font-bold text-white text-xl">¿Listo?</p>
+      <p className="font-display font-bold text-white text-xl">{tr.ready}</p>
       <div key={n} className="pop-in font-display font-bold text-7xl text-[#fcff52] tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
-        {n > 0 ? n : "¡YA!"}
+        {n > 0 ? n : tr.go}
       </div>
-      <button onClick={onFull} className="text-[11px] text-neutral-400 underline mt-2">Ver tutorial completo</button>
+      <button onClick={onFull} className="text-[11px] text-neutral-400 underline mt-2">{tr.fullTutorial}</button>
     </div>
   );
 }

@@ -10,8 +10,9 @@
 import { useEffect, useState } from "react";
 
 export type CoachStep = { target: string; text: string };
+export type CoachLabels = { skip: string; next: string; done: string };
 
-export default function Coachmarks({ steps, onDone }: { steps: CoachStep[]; onDone: () => void }) {
+export default function Coachmarks({ steps, labels, onDone }: { steps: CoachStep[]; labels: CoachLabels; onDone: () => void }) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<{ left: number; top: number; width: number; height: number; bottom: number } | null>(null);
 
@@ -62,13 +63,13 @@ export default function Coachmarks({ steps, onDone }: { steps: CoachStep[]; onDo
               <span className="text-[10px] text-neutral-400 tabular-nums">{i + 1}/{steps.length}</span>
               <div className="flex items-center gap-3">
                 <button onClick={onDone} className="text-[11px] text-neutral-400 underline active:scale-95 transition">
-                  Saltar
+                  {labels.skip}
                 </button>
                 <button
                   onClick={() => (i < steps.length - 1 ? setI(i + 1) : onDone())}
                   className="btn-3d font-display font-bold text-[13px] px-4 py-1.5"
                 >
-                  {i < steps.length - 1 ? "Siguiente →" : "¡Entendido!"}
+                  {i < steps.length - 1 ? labels.next : labels.done}
                 </button>
               </div>
             </div>
