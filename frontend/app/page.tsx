@@ -949,6 +949,8 @@ export default function Frontle() {
       {/* Overlays pre-juego */}
       {overlay === "full" && (
         <BordyTutorial
+          tr={tr}
+          locale={locale}
           onDone={() => {
             setOverlay(null);
             if (!started) enterGame();
@@ -957,6 +959,7 @@ export default function Frontle() {
       )}
       {overlay === "quick" && (
         <QuickStart
+          tr={tr}
           onDone={() => {
             setOverlay(null);
             if (!started) enterGame();
@@ -975,10 +978,11 @@ export default function Frontle() {
       {coaching && (
         <Coachmarks
           steps={[
-            { target: "game-input", text: "Escribe aquí un país que comparta frontera con el origen (o con cualquiera revelado). Te autocompleto mientras escribes 😉" },
-            { target: "hints-panel", text: "💡 ¿Atascado? Compra una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆" },
-            { target: "game-timer", text: "⏱️ El cronómetro desempata: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄" },
+            { target: "game-input", text: tr.coachSteps[0] },
+            { target: "hints-panel", text: tr.coachSteps[1] },
+            { target: "game-timer", text: tr.coachSteps[2] },
           ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
           onDone={() => {
             try { localStorage.setItem("frontle-coach-hints", "1"); } catch {}
             setCoaching(false);

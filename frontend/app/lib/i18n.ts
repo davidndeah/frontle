@@ -136,6 +136,17 @@ type Dict = {
   legalSupport: string;
   learnBubbles: string[];
   practiceSoon: string;
+  tutorialSteps: string[];
+  tutNext: string;
+  tutPlay: string;
+  dontShowAgain: string;
+  skipTutorial: string;
+  ready: string;
+  go: string;
+  fullTutorial: string;
+  coachSteps: string[];
+  coachSkip: string;
+  coachDone: string;
   rankingTitle: string;
   bestToday: (n: number) => string;
   noScoreYet: string;
@@ -220,6 +231,27 @@ const STRINGS: Record<Locale, Dict> = {
       "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
     ],
     practiceSoon: "Modo práctica (próximamente)",
+    tutorialSteps: [
+      "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
+      "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
+      "Amarillo = desvío. Suiza te saca un poco del camino… no es grave, pero gastas países de más.",
+      "Rojo = ¡te alejas! Marruecos va en dirección contraria a Alemania. Ojo con el semáforo.",
+      "Francia completa la ruta ✅ Menos países y menos tiempo = mejor puesto. ¡El mejor del día se lleva el pot!",
+    ],
+    tutNext: "Siguiente →",
+    tutPlay: "¡A jugar!",
+    dontShowAgain: "No volver a mostrar",
+    skipTutorial: "Saltar tutorial",
+    ready: "¿Listo?",
+    go: "¡YA!",
+    fullTutorial: "Ver tutorial completo",
+    coachSteps: [
+      "Escribe aquí un país que comparta frontera con el origen (o con cualquiera revelado). Te autocompleto mientras escribes 😉",
+      "💡 ¿Atascado? Compra una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆",
+      "⏱️ El cronómetro desempata: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄",
+    ],
+    coachSkip: "Saltar",
+    coachDone: "¡Entendido!",
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
@@ -309,6 +341,27 @@ const STRINGS: Record<Locale, Dict> = {
       "Fewer countries and less time = higher rank. The day's best takes the pot 🏆. Your first try is free.",
     ],
     practiceSoon: "Practice mode (coming soon)",
+    tutorialSteps: [
+      "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
+      "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
+      "Yellow = detour. Switzerland takes you a bit off track… not a big deal, but you spend extra countries.",
+      "Red = you're drifting away! Morocco goes in the opposite direction from Germany. Watch the traffic light.",
+      "France completes the route ✅ Fewer countries and less time = higher rank. The day's best takes the pot!",
+    ],
+    tutNext: "Next →",
+    tutPlay: "Let's play!",
+    dontShowAgain: "Don't show this again",
+    skipTutorial: "Skip tutorial",
+    ready: "Ready?",
+    go: "GO!",
+    fullTutorial: "See the full tutorial",
+    coachSteps: [
+      "Type a country here that shares a border with the start (or with any revealed country). I'll autocomplete as you type 😉",
+      "💡 Stuck? Buy a hint: the next country's INITIAL, its SILHOUETTE on the map, or all the silhouettes. They cost cents and 80% feeds the day's pot 🏆",
+      "⏱️ The timer breaks ties: with the same number of countries, the fastest wins. It starts when you tap Got it! — the challenge stays hidden, so nobody gets an edge 😄",
+    ],
+    coachSkip: "Skip",
+    coachDone: "Got it!",
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
@@ -398,6 +451,27 @@ const STRINGS: Record<Locale, Dict> = {
       "Menos países e menos tempo = melhor posição. O melhor do dia leva o pot 🏆. A primeira tentativa é grátis.",
     ],
     practiceSoon: "Modo prática (em breve)",
+    tutorialSteps: [
+      "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
+      "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
+      "Amarelo = desvio. A Suíça te tira um pouco do caminho… não é grave, mas você gasta países a mais.",
+      "Vermelho = você está se afastando! O Marrocos vai na direção contrária à Alemanha. Olho no semáforo.",
+      "A França completa a rota ✅ Menos países e menos tempo = melhor posição. O melhor do dia leva o pot!",
+    ],
+    tutNext: "Próximo →",
+    tutPlay: "Vamos jogar!",
+    dontShowAgain: "Não mostrar de novo",
+    skipTutorial: "Pular tutorial",
+    ready: "Pronto?",
+    go: "JÁ!",
+    fullTutorial: "Ver o tutorial completo",
+    coachSteps: [
+      "Escreva aqui um país que faça fronteira com a origem (ou com qualquer país revelado). Eu autocompleto enquanto você digita 😉",
+      "💡 Travou? Compre uma dica: a INICIAL do próximo país, sua SILHUETA no mapa, ou todas as silhuetas. Custam centavos e 80% alimenta o pot do dia 🏆",
+      "⏱️ O cronômetro desempata: com o mesmo número de países, ganha o mais rápido. Ele começa quando você tocar em Entendi! — o desafio segue oculto, então ninguém ganha vantagem 😄",
+    ],
+    coachSkip: "Pular",
+    coachDone: "Entendi!",
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
@@ -487,6 +561,27 @@ const STRINGS: Record<Locale, Dict> = {
       "Moins de pays et moins de temps = meilleur classement. Le meilleur du jour remporte le pot 🏆. Le premier essai est gratuit.",
     ],
     practiceSoon: "Mode entraînement (bientôt)",
+    tutorialSteps: [
+      "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
+      "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",
+      "Jaune = détour. La Suisse t'écarte un peu du chemin… pas grave, mais tu dépenses des pays en plus.",
+      "Rouge = tu t'éloignes ! Le Maroc va dans la direction opposée à l'Allemagne. Attention au feu tricolore.",
+      "La France complète la route ✅ Moins de pays et moins de temps = meilleur classement. Le meilleur du jour remporte le pot !",
+    ],
+    tutNext: "Suivant →",
+    tutPlay: "C'est parti !",
+    dontShowAgain: "Ne plus afficher",
+    skipTutorial: "Passer le tutoriel",
+    ready: "Prêt ?",
+    go: "GO !",
+    fullTutorial: "Voir le tutoriel complet",
+    coachSteps: [
+      "Écris ici un pays qui partage une frontière avec le départ (ou avec un pays déjà révélé). Je complète pendant que tu écris 😉",
+      "💡 Bloqué ? Achète un indice : l'INITIALE du pays suivant, sa SILHOUETTE sur la carte, ou toutes les silhouettes. Quelques centimes, et 80 % alimentent le pot du jour 🏆",
+      "⏱️ Le chrono départage : à nombre de pays égal, le plus rapide gagne. Il démarre quand tu touches Compris ! — le défi reste caché, donc personne n'est avantagé 😄",
+    ],
+    coachSkip: "Passer",
+    coachDone: "Compris !",
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
