@@ -120,6 +120,20 @@ type Dict = {
   bonusDismiss: string;
   levels: { easy: string; medium: string; hard: string };
   chooseLevel: string;
+  tabs: { jugar: string; ranking: string; perfil: string; aprender: string };
+  profileGuest: string;
+  profileConnected: string;
+  profileConnectHint: string;
+  namePlaceholder: string;
+  statDays: string;
+  statBestToday: string;
+  statPrizes: string;
+  walletBalanceTitle: string;
+  walletGasTitle: string;
+  addressCopied: string;
+  legalTerms: string;
+  legalPrivacy: string;
+  legalSupport: string;
   rankingTitle: string;
   bestToday: (n: number) => string;
   noScoreYet: string;
@@ -184,6 +198,20 @@ const STRINGS: Record<Locale, Dict> = {
     bonusDismiss: "¡Gracias!",
     levels: { easy: "Fácil", medium: "Medio", hard: "Difícil" },
     chooseLevel: "Elige nivel",
+    tabs: { jugar: "Jugar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
+    profileGuest: "Invitado",
+    profileConnected: "Conectado",
+    profileConnectHint: "Conéctate para el ranking",
+    namePlaceholder: "Tu nombre…",
+    statDays: "días jugados",
+    statBestToday: "mejor hoy",
+    statPrizes: "premios",
+    walletBalanceTitle: "Saldo de tu wallet",
+    walletGasTitle: "CELO para la comisión de red",
+    addressCopied: "¡Dirección copiada!",
+    legalTerms: "Términos",
+    legalPrivacy: "Privacidad",
+    legalSupport: "Soporte",
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
@@ -253,6 +281,20 @@ const STRINGS: Record<Locale, Dict> = {
     bonusDismiss: "Thanks!",
     levels: { easy: "Easy", medium: "Medium", hard: "Hard" },
     chooseLevel: "Choose level",
+    tabs: { jugar: "Play", ranking: "Ranking", perfil: "Profile", aprender: "Learn" },
+    profileGuest: "Guest",
+    profileConnected: "Connected",
+    profileConnectHint: "Connect to join the ranking",
+    namePlaceholder: "Your name…",
+    statDays: "days played",
+    statBestToday: "best today",
+    statPrizes: "prizes",
+    walletBalanceTitle: "Your wallet balance",
+    walletGasTitle: "CELO for the network fee",
+    addressCopied: "Address copied!",
+    legalTerms: "Terms",
+    legalPrivacy: "Privacy",
+    legalSupport: "Support",
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
@@ -322,6 +364,20 @@ const STRINGS: Record<Locale, Dict> = {
     bonusDismiss: "Obrigado!",
     levels: { easy: "Fácil", medium: "Médio", hard: "Difícil" },
     chooseLevel: "Escolha o nível",
+    tabs: { jugar: "Jogar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
+    profileGuest: "Convidado",
+    profileConnected: "Conectado",
+    profileConnectHint: "Conecte-se para o ranking",
+    namePlaceholder: "Seu nome…",
+    statDays: "dias jogados",
+    statBestToday: "melhor hoje",
+    statPrizes: "prêmios",
+    walletBalanceTitle: "Saldo da sua carteira",
+    walletGasTitle: "CELO para a taxa de rede",
+    addressCopied: "Endereço copiado!",
+    legalTerms: "Termos",
+    legalPrivacy: "Privacidade",
+    legalSupport: "Suporte",
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
@@ -391,6 +447,20 @@ const STRINGS: Record<Locale, Dict> = {
     bonusDismiss: "Merci !",
     levels: { easy: "Facile", medium: "Moyen", hard: "Difficile" },
     chooseLevel: "Choisir le niveau",
+    tabs: { jugar: "Jouer", ranking: "Classement", perfil: "Profil", aprender: "Apprendre" },
+    profileGuest: "Invité",
+    profileConnected: "Connecté",
+    profileConnectHint: "Connectez-vous pour le classement",
+    namePlaceholder: "Votre nom…",
+    statDays: "jours joués",
+    statBestToday: "meilleur du jour",
+    statPrizes: "prix",
+    walletBalanceTitle: "Solde de votre portefeuille",
+    walletGasTitle: "CELO pour les frais de réseau",
+    addressCopied: "Adresse copiée !",
+    legalTerms: "Conditions",
+    legalPrivacy: "Confidentialité",
+    legalSupport: "Support",
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
