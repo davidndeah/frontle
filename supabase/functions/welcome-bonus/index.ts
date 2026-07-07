@@ -99,26 +99,10 @@ Deno.serve(async (req) => {
       .or(`privy_did.eq.${did},wallet_address.eq.${wallet}`)
       .limit(1);
     if (prev && prev.length > 0) {
-      // Ya recibio el USDT. Compat: bonos entregados ANTES del regalo de gas
-      // (o wallets que lo agotaron) quedan sin CELO y no pueden transaccionar
-      // (la embebida de Privy paga gas en CELO, no soporta feeCurrency).
-      // Top-up: si su saldo esta bajo la mitad del regalo, rellenar (una vez
-      // por request). Costo maximo del abuso: BONUS_GAS_CELO por login (~$0.06).
-      try {
-        const GAS_CELO = Deno.env.get("BONUS_GAS_CELO") || "0.2";
-        const gasRaw = parseEther(GAS_CELO);
-        const publicClient = createPublicClient({ chain: celo, transport: http(rpcUrl) });
-        const balCelo = await publicClient.getBalance({ address: wallet as `0x${string}` });
-        if (balCelo < gasRaw / 2n) {
-          const account = privateKeyToAccount(Deno.env.get("FAUCET_PRIVATE_KEY")! as `0x${string}`);
-          const walletClient = createWalletClient({ account, chain: celo, transport: http(rpcUrl) });
-          const gasTx = await walletClient.sendTransaction({ to: wallet as `0x${string}`, value: gasRaw });
-          await publicClient.waitForTransactionReceipt({ hash: gasTx });
-          return json({ ok: true, granted: false, reason: "ya recibido", gasTopup: GAS_CELO, gasTx });
-        }
-      } catch (topErr) {
-        console.error("[bono] top-up de gas fallo:", topErr);
-      }
+      // Ya recibio el bono (USDT + gas de bienvenida). El bono es one-shot: NO
+      // se recarga gas en logins posteriores. Si el usuario agota su CELO, debe
+      // conseguir CELO por su cuenta (la embebida de Privy paga gas en CELO y no
+      // soporta feeCurrency). El front se lo avisa con payNoGas.
       return json({ ok: true, granted: false, reason: "ya recibido" });
     }
 
