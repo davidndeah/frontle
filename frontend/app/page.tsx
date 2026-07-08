@@ -23,6 +23,7 @@ import {
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, type ScoreEntry } from "./lib/ranking";
 import Coachmarks from "./components/Coachmarks";
+import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
@@ -120,6 +121,17 @@ export default function Frontle() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   useEffect(() => setAliasState(getAlias()), []);
+  // Prompt de nombre al registrarse: si hay identidad y aún no eligió nombre,
+  // se le pide una vez (así el ranking muestra nombres, no wallets).
+  const [nameModal, setNameModal] = useState(false);
+  useEffect(() => {
+    let asked = "1";
+    try { asked = localStorage.getItem("frontle-name-asked") ?? "0"; } catch {}
+    if (myId && !getAlias() && asked !== "1") {
+      setNameDraft("");
+      setNameModal(true);
+    }
+  }, [myId]);
   // Coachmarks de las pistas (1ª vez): el juego se muestra en "modo previo"
   // (países ocultos, cronómetro congelado) mientras Bordy explica. El reloj
   // arranca SOLO al terminar el coach → nadie gana ventaja.
@@ -189,6 +201,7 @@ export default function Frontle() {
         }
         localStorage.removeItem("frontle-tutorial-hide");
         localStorage.removeItem("frontle-coach-hints");
+        localStorage.removeItem("frontle-name-asked");
         window.location.replace("/");
       }
     } catch {}
@@ -397,6 +410,12 @@ export default function Frontle() {
       }),
       ok: result.ok,
     });
+    // SFX según el resultado del intento
+    if (!result.ok) sfxInvalid();
+    else if (result.solved) sfxWin();
+    else if (result.quality === "green") sfxGood();
+    else if (result.quality === "yellow") sfxLateral();
+    else if (result.quality === "red") sfxFar();
     if (result.ok && result.country && result.quality) {
       const newChain = [...state.chain, { country: result.country, quality: result.quality }];
       const solved = result.solved;
@@ -516,6 +535,7 @@ export default function Frontle() {
     if (kind === "initial") setShowInitial(true);
     if (kind === "next") setShowNextSil(true);
     if (kind === "all") setShowAllSil(true);
+    sfxHint();
   }
 
   const startC = getCountry(challenge.start)!;
@@ -973,6 +993,24 @@ export default function Frontle() {
         <WalletSheet onClose={() => setWalletOpen(false)} myId={myId} hasWallet={hasWallet} onConnect={connectForRanking} tr={tr} />
       )}
 
+      {/* Prompt de nombre al registrarse */}
+      {nameModal && (
+        <NamePrompt
+          tr={tr}
+          initial={alias}
+          onSave={(name) => {
+            setAlias(name);
+            setAliasState(getAlias());
+            try { localStorage.setItem("frontle-name-asked", "1"); } catch {}
+            setNameModal(false);
+          }}
+          onSkip={() => {
+            try { localStorage.setItem("frontle-name-asked", "1"); } catch {}
+            setNameModal(false);
+          }}
+        />
+      )}
+
       {/* Coachmarks de las pistas (1ª partida): el juego está en modo previo
           (reto oculto, reloj en 00:00); al terminar arranca la partida real */}
       {coaching && (
@@ -1105,6 +1143,54 @@ function WalletSheet({
 }
 
 // Botón de "volver" del flujo pre-juego
+// Modal de elección de nombre al registrarse (pendiente i18n como los coachmarks)
+function NamePrompt({
+  tr,
+  initial,
+  onSave,
+  onSkip,
+}: {
+  tr: ReturnType<typeof t>;
+  initial: string;
+  onSave: (name: string) => void;
+  onSkip: () => void;
+}) {
+  const [draft, setDraft] = useState(initial);
+  const clean = draft.trim();
+  return (
+    <>
+      <div className="fixed inset-0 z-[65] bg-black/60" onClick={onSkip} />
+      <div className="fixed inset-x-0 bottom-0 z-[66] rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8 pop-in">
+        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
+        <div className="flex items-center gap-3 mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bordy-m2.png" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
+          <div>
+            <h3 className="font-display font-bold text-white text-lg leading-tight">¡Elige tu nombre!</h3>
+            <p className="text-xs text-neutral-300">Así apareces en el ranking (en vez de tu wallet).</p>
+          </div>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            maxLength={16}
+            autoFocus
+            placeholder={tr.namePlaceholder}
+            className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
+          />
+          <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
+            Guardar
+          </button>
+        </form>
+        <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
+          Usar mi wallet
+        </button>
+      </div>
+    </>
+  );
+}
+
 function BackRow({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button onClick={onClick} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
