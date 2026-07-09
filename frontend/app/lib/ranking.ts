@@ -97,7 +97,10 @@ export async function submitScore(e: ScoreEntry): Promise<void> {
           }),
         });
       const r = await post(true);
-      // Fallback: si la columna `name` aún no existe en prod, reintenta sin ella.
+      // Reintento sin `name`. La columna ya existe en prod (migración 0005,
+      // aplicada 2026-07-09), así que esto ya no es un parche de despliegue:
+      // ahora cubre que el nombre viole el `check` de la columna (1..16
+      // caracteres). Perder el nombre es mejor que perder la marca entera.
       if (!r.ok && e.name) await post(false);
     } catch {
       /* silencioso: no bloquear el juego por el ranking */

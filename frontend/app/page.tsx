@@ -885,7 +885,7 @@ export default function Frontle() {
             )}
             {/* Selector de nivel: cada nivel tiene su ranking */}
             <LevelSelect tr={tr} level={level} onChange={setLevel} />
-            <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} levelLabel={tr.levels[level]} />
+            <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
             <p className="text-center text-[11px] text-neutral-400">{tr.nextChallenge(countdown)}</p>
           </>
         )}
@@ -1463,6 +1463,7 @@ function RankingCard({
   best,
   panel,
   myId,
+  alias,
   levelLabel,
 }: {
   tr: ReturnType<typeof t>;
@@ -1470,6 +1471,7 @@ function RankingCard({
   best: number | null;
   panel: string;
   myId: string;
+  alias: string;
   levelLabel: string;
 }) {
   return (
@@ -1511,7 +1513,9 @@ function RankingCard({
         </table>
       )}
       <p className="text-[11px] text-neutral-400 mt-2 text-center">
-        {myId ? `Tu ID: ${shortId(myId)} · ` : ""}{best !== null ? `${tr.bestToday(best)} · ` : ""}{tr.rankingNote}
+        {/* El nombre manda; la dirección truncada solo si aún no hay nombre.
+            MiniPay no admite un 0x… como identidad principal. */}
+        {myId ? `${alias || shortId(myId)} · ` : ""}{best !== null ? `${tr.bestToday(best)} · ` : ""}{tr.rankingNote}
       </p>
     </section>
   );
