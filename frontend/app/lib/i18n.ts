@@ -149,7 +149,7 @@ type Dict = {
   statBestToday: string;
   statPrizes: string;
   walletBalanceTitle: string;
-  walletGasTitle: string;
+  deposit: string;
   addressCopied: string;
   legalTerms: string;
   legalPrivacy: string;
@@ -243,7 +243,7 @@ const STRINGS: Record<Locale, Dict> = {
     payFailed: "No se pudo completar el pago. Intenta de nuevo.",
     payCancelled: "Pago cancelado.",
     payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu wallet para continuar.`,
-    payNoGas: "Tu wallet se quedó sin CELO para la comisión de red. El saldo de bienvenida ya se agotó; necesitas un poco de CELO en tu wallet para pagar pistas o reintentos.",
+    payNoGas: "Tu wallet no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
@@ -275,7 +275,7 @@ const STRINGS: Record<Locale, Dict> = {
     statBestToday: "mejor hoy",
     statPrizes: "premios",
     walletBalanceTitle: "Saldo de tu wallet",
-    walletGasTitle: "CELO para la comisión de red",
+    deposit: "Depositar",
     addressCopied: "¡Dirección copiada!",
     legalTerms: "Términos",
     legalPrivacy: "Privacidad",
@@ -391,7 +391,7 @@ const STRINGS: Record<Locale, Dict> = {
     payFailed: "Payment didn't go through. Please try again.",
     payCancelled: "Payment cancelled.",
     payNoFunds: (a) => `Insufficient balance: this purchase costs ${a}. Top up your wallet to continue.`,
-    payNoGas: "Your wallet ran out of CELO for the network fee. Your welcome balance is used up; you need some CELO in your wallet to pay for hints or retries.",
+    payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
     footer: "Frontle · Onchain Agents Hackathon · Celo Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -423,7 +423,7 @@ const STRINGS: Record<Locale, Dict> = {
     statBestToday: "best today",
     statPrizes: "prizes",
     walletBalanceTitle: "Your wallet balance",
-    walletGasTitle: "CELO for the network fee",
+    deposit: "Deposit",
     addressCopied: "Address copied!",
     legalTerms: "Terms",
     legalPrivacy: "Privacy",
@@ -539,7 +539,7 @@ const STRINGS: Record<Locale, Dict> = {
     payFailed: "O pagamento não foi concluído. Tente de novo.",
     payCancelled: "Pagamento cancelado.",
     payNoFunds: (a) => `Saldo insuficiente: esta compra custa ${a}. Recarregue sua carteira para continuar.`,
-    payNoGas: "Sua carteira ficou sem CELO para a taxa de rede. O saldo de boas-vindas acabou; você precisa de um pouco de CELO na carteira para pagar dicas ou novas tentativas.",
+    payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
     footer: "Frontle · Hackathon de Agentes Onchain · Celo Colombia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -571,7 +571,7 @@ const STRINGS: Record<Locale, Dict> = {
     statBestToday: "melhor hoje",
     statPrizes: "prêmios",
     walletBalanceTitle: "Saldo da sua carteira",
-    walletGasTitle: "CELO para a taxa de rede",
+    deposit: "Depositar",
     addressCopied: "Endereço copiado!",
     legalTerms: "Termos",
     legalPrivacy: "Privacidade",
@@ -687,7 +687,7 @@ const STRINGS: Record<Locale, Dict> = {
     payFailed: "Le paiement n'a pas abouti. Réessayez.",
     payCancelled: "Paiement annulé.",
     payNoFunds: (a) => `Solde insuffisant : cet achat coûte ${a}. Rechargez votre portefeuille pour continuer.`,
-    payNoGas: "Votre portefeuille n'a plus de CELO pour les frais de réseau. Le solde de bienvenue est épuisé ; il vous faut un peu de CELO dans votre portefeuille pour payer des indices ou des essais.",
+    payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
     footer: "Frontle · Hackathon des Agents Onchain · Celo Colombia",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
@@ -719,7 +719,7 @@ const STRINGS: Record<Locale, Dict> = {
     statBestToday: "meilleur du jour",
     statPrizes: "prix",
     walletBalanceTitle: "Solde de votre portefeuille",
-    walletGasTitle: "CELO pour les frais de réseau",
+    deposit: "Déposer",
     addressCopied: "Adresse copiée !",
     legalTerms: "Conditions",
     legalPrivacy: "Confidentialité",

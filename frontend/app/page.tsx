@@ -22,6 +22,7 @@ import {
   type Locale,
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, type ScoreEntry } from "./lib/ranking";
+import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import Coachmarks from "./components/Coachmarks";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
@@ -97,8 +98,16 @@ export default function Frontle() {
   // y sin feedback el usuario re-clickeaba o creía que no funcionó.
   const [paying, setPaying] = useState<null | "retry" | "initial" | "next" | "all">(null);
   const [payError, setPayError] = useState<string | null>(null); // error visible en la WinCard
-  // Saldo de la wallet activa (USDT + CELO de gas), para la tarjeta del Perfil.
+  // El fallo fue por saldo insuficiente. MiniPay exige mandar a recargar en vez
+  // de dejar al usuario contra un error sin salida.
+  const [payLow, setPayLow] = useState(false);
+  // Saldo de la wallet activa. `celo` NUNCA se muestra: MiniPay prohíbe exhibir
+  // el token, y la app solo lo usa internamente para el pre-chequeo de la
+  // wallet embebida (ver payments.ts). Se guarda por eso, no para pintarlo.
   const [balances, setBalances] = useState<{ usdt: number; celo: number } | null>(null);
+  // ¿Estamos dentro de MiniPay? Se resuelve en un efecto y no en el render
+  // porque `window` no existe en el servidor y provocaría hidratación distinta.
+  const [inMiniPay, setInMiniPay] = useState(false);
 
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
@@ -208,6 +217,7 @@ export default function Frontle() {
   }, []);
 
   useEffect(() => setLocale(detectLocale()), []);
+  useEffect(() => setInMiniPay(isMiniPay()), []);
   useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
   useEffect(() => { getIpCountry().then(setIpCountry); }, []);
 
@@ -480,7 +490,11 @@ export default function Frontle() {
     if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
   }
 
-  // Mensaje según el motivo del fallo (cancelado / sin USDT / sin gas / otro).
+  // ¿El pago falló porque no alcanzaba el saldo? (ni para el precio, ni para
+  // la comisión de red). Es el caso que dispara el deeplink de recarga.
+  const isLowBalance = (res: PayResult) => res === "no_funds" || res === "no_gas";
+
+  // Mensaje según el motivo del fallo (cancelado / sin saldo / otro).
   function payFailText(res: PayResult, price: number): string {
     if (res === "cancelled") return tr.payCancelled;
     if (res === "no_funds") return tr.payNoFunds(fmt(price));
@@ -492,6 +506,7 @@ export default function Frontle() {
     if (paying) return;
     setPaying("retry");
     setPayError(null);
+    setPayLow(false);
     let res: PayResult = "error";
     try {
       res = await requestPayment(PRICES.retry, "reintento del reto diario");
@@ -500,6 +515,7 @@ export default function Frontle() {
     }
     if (res !== "success") {
       setPayError(payFailText(res, PRICES.retry));
+      setPayLow(isLowBalance(res));
       return;
     }
     getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
@@ -528,6 +544,7 @@ export default function Frontle() {
     }
     if (res !== "success") {
       setMessage({ text: payFailText(res, price), ok: false });
+      setPayLow(isLowBalance(res));
       return;
     }
     setMessage(null);
@@ -766,7 +783,8 @@ export default function Frontle() {
                 retryPrice={PRICES.retry}
                 retryBusy={paying === "retry"}
                 payError={payError}
-                onHome={() => { setStarted(false); setJugarStep("level"); setPayError(null); }}
+                showDeposit={payLow && inMiniPay}
+                onHome={() => { setStarted(false); setJugarStep("level"); setPayError(null); setPayLow(false); }}
                 hasWallet={hasWallet}
                 inRanking={!!myId}
                 onConnect={connectForRanking}
@@ -803,6 +821,13 @@ export default function Frontle() {
 
                 {message && (
                   <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
+                )}
+
+                {/* Pista impagable por saldo: salida a la pantalla de recarga */}
+                {payLow && inMiniPay && (
+                  <div className="flex flex-col">
+                    <DepositButton label={tr.deposit} />
+                  </div>
                 )}
 
                 <div id="hints-panel" className={`${panel} p-3`}>
@@ -892,7 +917,9 @@ export default function Frontle() {
                 </button>
               )}
             </section>
-            {myId && balances && <WalletCard tr={tr} address={myId} usdt={balances.usdt} celo={balances.celo} fmt={fmt} />}
+            {myId && balances && (
+              <WalletCard tr={tr} address={myId} usdt={balances.usdt} fmt={fmt} showAddress={!inMiniPay} />
+            )}
             <div className="grid grid-cols-3 gap-2">
               <StatCard v={daysPlayed} k={tr.statDays} color="#fcff52" />
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
@@ -990,7 +1017,15 @@ export default function Frontle() {
 
       {/* Wallet sheet */}
       {walletOpen && (
-        <WalletSheet onClose={() => setWalletOpen(false)} myId={myId} hasWallet={hasWallet} onConnect={connectForRanking} tr={tr} />
+        <WalletSheet
+          onClose={() => setWalletOpen(false)}
+          myId={myId}
+          alias={alias}
+          hasWallet={hasWallet}
+          inMiniPay={inMiniPay}
+          onConnect={connectForRanking}
+          tr={tr}
+        />
       )}
 
       {/* Prompt de nombre al registrarse */}
@@ -1032,29 +1067,59 @@ export default function Frontle() {
   );
 }
 
-// Tarjeta de saldo (perfil): el usuario de CORREO no tiene otra vista de su
-// wallet embebida. Muestra USDT (en la moneda elegida), el CELO de gas y la
-// dirección completa con copiar — necesaria para recargar la wallet.
-function WalletCard({ tr, address, usdt, celo, fmt }: { tr: ReturnType<typeof t>; address: string; usdt: number; celo: number; fmt: (u: number) => string }) {
+// Botón de recarga. MiniPay pide que un saldo insuficiente lleve a su pantalla
+// de depósito y no a un error sin salida. Solo tiene sentido dentro de MiniPay:
+// fuera, el deeplink no resuelve a nada.
+function DepositButton({ label }: { label: string }) {
+  return (
+    <a
+      href={ADD_CASH_URL}
+      className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 text-center font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+    >
+      ↓ {label}
+    </a>
+  );
+}
+
+// Tarjeta de saldo (perfil). Muestra el stablecoin en la moneda elegida.
+//
+// Dos cosas que MiniPay prohíbe y que por eso NO aparecen aquí dentro:
+//   · El token CELO: la comisión de red se paga con el stablecoin (CIP-64) y
+//     MiniPay lo oculta al usuario.
+//   · La dirección 0x cruda como identidad. Se sigue mostrando FUERA de
+//     MiniPay porque el usuario de correo no tiene otra forma de recargar su
+//     wallet embebida; dentro de MiniPay el propio wallet ya la provee.
+function WalletCard({
+  tr,
+  address,
+  usdt,
+  fmt,
+  showAddress,
+}: {
+  tr: ReturnType<typeof t>;
+  address: string;
+  usdt: number;
+  fmt: (u: number) => string;
+  showAddress: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <section className="panel p-4">
       <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2">{tr.walletBalanceTitle}</p>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-2xl font-black text-white">{fmt(usdt)}</span>
-        <span className="text-[11px] text-neutral-400" title={tr.walletGasTitle}>⛽ {celo.toFixed(3)} CELO</span>
-      </div>
-      <button
-        onClick={() => {
-          navigator.clipboard?.writeText(address);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }}
-        className="mt-2 w-full truncate rounded-lg border border-white/15 px-2 py-1.5 text-[11px] font-mono text-neutral-300 active:scale-95 transition hover:bg-white/10"
-        title={address}
-      >
-        {copied ? tr.addressCopied : `${address} 📋`}
-      </button>
+      <span className="text-2xl font-black text-white">{fmt(usdt)}</span>
+      {showAddress && (
+        <button
+          onClick={() => {
+            navigator.clipboard?.writeText(address);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          className="mt-2 w-full truncate rounded-lg border border-white/15 px-2 py-1.5 text-[11px] font-mono text-neutral-300 active:scale-95 transition hover:bg-white/10"
+          title={address}
+        >
+          {copied ? tr.addressCopied : `${address} 📋`}
+        </button>
+      )}
     </section>
   );
 }
@@ -1103,13 +1168,17 @@ function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab:
 function WalletSheet({
   onClose,
   myId,
+  alias,
   hasWallet,
+  inMiniPay,
   onConnect,
   tr,
 }: {
   onClose: () => void;
   myId: string;
+  alias: string;
   hasWallet: boolean;
+  inMiniPay: boolean;
   onConnect: () => void;
   tr: ReturnType<typeof t>;
 }) {
@@ -1122,11 +1191,17 @@ function WalletSheet({
         {myId ? (
           <div className="panel p-4">
             <div className="text-[11px] text-neutral-400">Conectado como</div>
-            <div className="font-mono text-white text-sm mt-0.5 break-all">{myId}</div>
+            {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
+                forma truncada, que MiniPay solo admite como pista secundaria. */}
+            <div className="text-white text-sm mt-0.5 break-all">
+              {alias || <span className="font-mono">{shortId(myId)}</span>}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {hasWallet && (
+            {/* Zero-click connect: dentro de MiniPay la wallet ya está
+                conectada, así que enseñar "Conectar" está prohibido. */}
+            {hasWallet && !inMiniPay && (
               <button onClick={() => { onConnect(); onClose(); }} className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition">
                 {tr.connectWallet}
               </button>
@@ -1424,6 +1499,7 @@ function WinCard({
   retryPrice,
   retryBusy,
   payError,
+  showDeposit,
   onHome,
   hasWallet,
   inRanking,
@@ -1440,6 +1516,7 @@ function WinCard({
   retryPrice: number;
   retryBusy: boolean;
   payError: string | null;
+  showDeposit: boolean;
   onHome: () => void;
   hasWallet: boolean;
   inRanking: boolean;
@@ -1481,6 +1558,7 @@ function WinCard({
           {retryBusy ? <>⏳ {tr.paying}</> : <>{tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span></>}
         </button>
         {payError && <p className="text-xs text-rose-400">{payError}</p>}
+        {showDeposit && <DepositButton label={tr.deposit} />}
         {/* Volver a la selección de nivel: jugar otro nivel (o revisar este). */}
         <button onClick={onHome} className="rounded-xl border border-[#b79ced]/40 px-6 py-3 font-bold text-[#c4b5fd] active:scale-95 transition hover:bg-white/10">
           🎮 {tr.chooseLevel}
