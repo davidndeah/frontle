@@ -3,26 +3,45 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CONTRACT_INFO, getPublicStats, type PublicStats } from "../lib/payments";
-import { getCommunityStats, getTopCountries, type CommunityStats, type CountryStat } from "../lib/ranking";
+import {
+  getCommunityStats,
+  getRetention,
+  getTopCountries,
+  type CommunityStats,
+  type CountryStat,
+  type RetentionWindow,
+} from "../lib/ranking";
+import { getChainActivity, type ChainActivity } from "../lib/onchain";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO, SUPPORT_X, SUPPORT_X_URL } from "../lib/support";
 import { codeToFlag, detectLocale, regionName, t, type Locale } from "../lib/i18n";
 
 // Cuerpo de /stats. Cliente porque el idioma se detecta del navegador y los
-// números se leen en vivo (contrato por RPC público + vistas de Supabase).
-// Ninguna de las dos fuentes necesita wallet ni claves privadas.
+// números se leen en vivo: contrato por RPC público, vistas de Supabase y la
+// API pública de Blockscout. Ninguna fuente necesita wallet ni claves privadas.
 export default function StatsView() {
   const [locale, setLocale] = useState<Locale>("es");
   const [chain, setChain] = useState<PublicStats | null>(null);
   const [community, setCommunity] = useState<CommunityStats | null>(null);
   const [countries, setCountries] = useState<CountryStat[]>([]);
+  const [retention, setRetention] = useState<RetentionWindow[]>([]);
+  const [activity, setActivity] = useState<ChainActivity | null>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => setLocale(detectLocale()), []);
 
   useEffect(() => {
-    Promise.all([getPublicStats(), getCommunityStats(), getTopCountries()]).then(([c, s, top]) => {
+    Promise.all([
+      getPublicStats(),
+      getCommunityStats(),
+      getTopCountries(),
+      getRetention(),
+      getChainActivity([CONTRACT_INFO.address, CONTRACT_INFO.addressV1]),
+    ]).then(([c, s, top, ret, act]) => {
       setChain(c);
       setCommunity(s);
       setCountries(top);
+      setRetention(ret);
+      setActivity(act);
       setDone(true);
     });
   }, []);
@@ -30,6 +49,7 @@ export default function StatsView() {
   const tr = t(locale).stats;
   const usdt = (n: number) => n.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const num = (n: number) => n.toLocaleString(locale);
+  const pct = (n: number) => `${(n * 100).toLocaleString(locale, { maximumFractionDigits: 1 })}%`;
 
   // La barra de cada país se mide contra el líder, no contra el total: así el
   // primero llena la barra y la comparación entre países se lee de un vistazo.
@@ -58,9 +78,43 @@ export default function StatsView() {
       >
         <Stat label={tr.plays} value={community && num(community.plays)} done={done} />
         <Stat label={tr.players} value={community && num(community.players)} done={done} />
+        <Stat label={tr.activeMonth} value={community && num(community.players30d)} done={done} />
         <Stat label={tr.daysPlayed} value={community && num(community.daysPlayed)} done={done} />
         <Stat label={tr.countries} value={community && num(community.countriesReached)} done={done} />
       </Section>
+
+      {retention.length > 0 && (
+        <section>
+          <SectionHead title={tr.retention} aside={tr.retentionHint} />
+          <div className="grid grid-cols-3 gap-2">
+            {retention.map((r) => (
+              <div key={r.windowDays} className="panel p-3 flex flex-col gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">
+                  D{r.windowDays}
+                </span>
+                {/* Sin cohorte madura no hay porcentaje que mostrar: un 0%
+                    ahí significaría "nadie volvió", y lo cierto es que aún
+                    nadie ha tenido tantos días para volver. */}
+                {r.cohort > 0 ? (
+                  <>
+                    <span className="font-display text-2xl font-bold text-white tabular-nums leading-none">
+                      {pct(r.retained / r.cohort)}
+                    </span>
+                    <span className="text-[10px] text-neutral-500 leading-tight tabular-nums">
+                      {num(r.retained)}/{num(r.cohort)}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="font-display text-2xl font-bold text-neutral-600 leading-none">—</span>
+                    <span className="text-[10px] text-neutral-500 leading-tight">{tr.noCohort}</span>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {countries.length > 0 && (
         <section>
@@ -110,6 +164,31 @@ export default function StatsView() {
         />
       </Section>
 
+      {activity && (
+        <section>
+          <SectionHead title={tr.onchain} aside={tr.bothContracts} />
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label={tr.txTotal} value={num(activity.txTotal)} done={done} />
+            <Stat label={tr.onchainUsers} value={num(activity.uniqueUsers)} done={done} />
+            <Stat label={tr.failedRate} value={pct(activity.failedRate)} done={done} />
+          </div>
+
+          <div className="panel p-3 mt-2 flex flex-col gap-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-neutral-400">{tr.byAction}</span>
+            {activity.byMethod.map((m) => (
+              <div key={m.method} className="flex items-baseline justify-between gap-2 text-[13px]">
+                <span className="text-neutral-200 truncate">{m.method}</span>
+                <span className="text-neutral-400 tabular-nums shrink-0">{num(m.count)}</span>
+              </div>
+            ))}
+          </div>
+
+          {activity.truncated && (
+            <p className="text-[10px] text-neutral-500 mt-1.5 px-0.5 leading-relaxed">{tr.partialData}</p>
+          )}
+        </section>
+      )}
+
       <section className="panel p-4 flex flex-col gap-3 text-sm text-neutral-200 leading-relaxed">
         <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">{tr.moneyTitle}</h2>
         <p>{tr.money1}</p>
@@ -119,8 +198,25 @@ export default function StatsView() {
 
       <section className="panel p-4 flex flex-col gap-3 text-sm">
         <SectionHead title={tr.contractsTitle} aside={`${CONTRACT_INFO.chainName} · ${CONTRACT_INFO.token}`} bare />
-        <ContractRow tag="v2" role={tr.contractInUse} address={CONTRACT_INFO.address} href={CONTRACT_INFO.explorer} accent />
-        <ContractRow tag="v1" role={tr.contractLegacy} address={CONTRACT_INFO.addressV1} href={CONTRACT_INFO.explorerV1} />
+        <ContractRow
+          tag="v2"
+          role={tr.contractInUse}
+          address={CONTRACT_INFO.address}
+          href={CONTRACT_INFO.explorer}
+          verified={CONTRACT_INFO.verifiedV2}
+          verifiedLabel={tr.verified}
+          unverifiedLabel={tr.unverified}
+          accent
+        />
+        <ContractRow
+          tag="v1"
+          role={tr.contractLegacy}
+          address={CONTRACT_INFO.addressV1}
+          href={CONTRACT_INFO.explorerV1}
+          verified={CONTRACT_INFO.verifiedV1}
+          verifiedLabel={tr.verified}
+          unverifiedLabel={tr.unverified}
+        />
         <p className="text-[11px] text-neutral-400 leading-relaxed">
           {tr.contractsNote}{" "}
           <a
@@ -133,6 +229,29 @@ export default function StatsView() {
           </a>
           .
         </p>
+      </section>
+
+      {/* Soporte alcanzable desde dentro de la app (requisito de MiniPay).
+          El correo es el canal oficial; X es de apoyo, no cuenta como válido. */}
+      <section className="panel p-4 flex flex-col gap-2 text-sm">
+        <SectionHead title={tr.supportTitle} bare />
+        <p className="text-[13px] text-neutral-200">{tr.supportNote}</p>
+        <div className="flex flex-col gap-2 mt-1">
+          <a
+            href={SUPPORT_MAILTO}
+            className="rounded-lg border border-[#b79ced]/25 bg-white/[0.03] px-3 py-2 text-[13px] text-white active:scale-95 transition hover:bg-white/10"
+          >
+            ✉️ {tr.supportEmail} · <span className="text-[#fcff52]">{SUPPORT_EMAIL}</span>
+          </a>
+          <a
+            href={SUPPORT_X_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-[#b79ced]/25 bg-white/[0.03] px-3 py-2 text-[13px] text-white active:scale-95 transition hover:bg-white/10"
+          >
+            𝕏 · <span className="text-[#c4b5fd]">@{SUPPORT_X}</span>
+          </a>
+        </div>
       </section>
 
       <footer className="text-center text-[11px] text-neutral-500">
@@ -214,18 +333,27 @@ function Stat({
   );
 }
 
-// Una fila de contrato: etiqueta de versión, para qué sirve y su dirección.
+// Una fila de contrato: versión, para qué sirve, si está verificado, y su
+// dirección. El estado de verificación se muestra tal cual es: fingir que un
+// contrato está verificado en la página de transparencia sería justo lo
+// contrario de lo que la página promete.
 function ContractRow({
   tag,
   role,
   address,
   href,
+  verified,
+  verifiedLabel,
+  unverifiedLabel,
   accent = false,
 }: {
   tag: string;
   role: string;
   address: string;
   href: string;
+  verified: boolean;
+  verifiedLabel: string;
+  unverifiedLabel: string;
   accent?: boolean;
 }) {
   return (
@@ -238,7 +366,16 @@ function ContractRow({
         {tag}
       </span>
       <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="text-[11px] text-neutral-400 leading-tight">{role}</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] text-neutral-400 leading-tight">{role}</span>
+          <span
+            className={`rounded px-1 py-px text-[9px] font-semibold ${
+              verified ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-300"
+            }`}
+          >
+            {verified ? `✓ ${verifiedLabel}` : `⚠ ${unverifiedLabel}`}
+          </span>
+        </div>
         <a
           href={href}
           target="_blank"

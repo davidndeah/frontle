@@ -27,7 +27,7 @@ export default function Privacy() {
           <p><b className="text-white">4. Qué NO hacemos.</b> No vendemos datos. No hay cookies de publicidad ni analytics de terceros. No pedimos nombre real, teléfono ni documentos.</p>
           <p><b className="text-white">5. Borrar tus datos.</b> Lo local se elimina limpiando los datos del sitio en tu navegador. Para retirar tu nombre/marcas del ranking, escríbenos con tu dirección de wallet. Lo publicado en blockchain es inmutable por diseño y no puede borrarse.</p>
           <p><b className="text-white">6. Menores.</b> Frontle con pagos no está dirigido a menores de la edad legal de su jurisdicción.</p>
-          <p><b className="text-white">7. Contacto.</b> DM en <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="text-[#fcff52] underline">X @frontle_app</a>.</p>
+          <p><b className="text-white">7. Contacto.</b> Escríbenos a <a href="mailto:appfrontle@gmail.com" className="text-[#fcff52] underline">appfrontle@gmail.com</a> o por DM en <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">X @frontle_app</a>.</p>
         </section>
 
         <footer className="text-center text-[11px] text-neutral-500">

@@ -238,7 +238,8 @@ export interface CommunityStats {
   daysPlayed: number;
   countriesReached: number;
   playsToday: number;
-  playersToday: number;
+  playersToday: number; // DAU
+  players30d: number; // MAU
   firstPlay: string; // YYYY-MM-DD
 }
 
@@ -258,10 +259,38 @@ export async function getCommunityStats(): Promise<CommunityStats | null> {
       countriesReached: Number(row.countries_reached ?? 0),
       playsToday: Number(row.plays_today ?? 0),
       playersToday: Number(row.players_today ?? 0),
+      players30d: Number(row.players_30d ?? 0),
       firstPlay: String(row.first_play ?? ""),
     };
   } catch {
     return null;
+  }
+}
+
+// Retención por cohorte (vista `retention_cohorts`). `cohort` es el número de
+// jugadores que YA tuvieron N días para volver; si es 0, la ventana aún no
+// tiene cohorte madura y no se debe mostrar porcentaje.
+export interface RetentionWindow {
+  windowDays: number; // 1, 7, 30
+  cohort: number;
+  retained: number;
+}
+
+export async function getRetention(): Promise<RetentionWindow[]> {
+  if (!useSupabase) return [];
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/retention_cohorts?select=*&order=window_days.asc`, {
+      headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` },
+    });
+    const j = await r.json();
+    if (!Array.isArray(j)) return [];
+    return j.map((x: { window_days: number; cohort: number; retained: number }) => ({
+      windowDays: Number(x.window_days),
+      cohort: Number(x.cohort ?? 0),
+      retained: Number(x.retained ?? 0),
+    }));
+  } catch {
+    return [];
   }
 }
 

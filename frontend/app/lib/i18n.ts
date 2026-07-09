@@ -197,6 +197,16 @@ type Dict = {
     since: (date: string) => string;
     daysPlayed: string;
     countries: string;
+    activeMonth: string;
+    retention: string;
+    retentionHint: string;
+    noCohort: string;
+    onchain: string;
+    txTotal: string;
+    onchainUsers: string;
+    failedRate: string;
+    byAction: string;
+    partialData: string;
     topCountries: string;
     last30d: string;
     economy: string;
@@ -215,7 +225,12 @@ type Dict = {
     contractInUse: string;
     contractLegacy: string;
     contractsNote: string;
+    verified: string;
+    unverified: string;
     sourceOpen: string;
+    supportTitle: string;
+    supportNote: string;
+    supportEmail: string;
     footerTerms: string;
     footerPrivacy: string;
   };
@@ -344,6 +359,16 @@ const STRINGS: Record<Locale, Dict> = {
       since: (d) => `desde el ${d}`,
       daysPlayed: "Días jugados",
       countries: "Países",
+      activeMonth: "Activos del mes",
+      retention: "Retención",
+      retentionHint: "de cada cohorte que ya tuvo tiempo de volver",
+      noCohort: "sin cohorte",
+      onchain: "On-chain",
+      txTotal: "Transacciones",
+      onchainUsers: "Wallets únicas",
+      failedRate: "Fallidas",
+      byAction: "Por acción",
+      partialData: "Cuenta las transacciones más recientes; el historial completo es mayor.",
       topCountries: "Top países",
       last30d: "últimos 30 días",
       economy: "Economía",
@@ -364,8 +389,13 @@ const STRINGS: Record<Locale, Dict> = {
       contractInUse: "En uso · premio por nivel",
       contractLegacy: "Histórico · ganador único",
       contractsNote:
-        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los dos. Ambos están verificados y puedes auditar cada transacción en el explorador.",
+        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los dos. Puedes auditar cada transacción en el explorador.",
+      verified: "verificado",
+      unverified: "sin verificar",
       sourceOpen: "Ver el código en GitHub",
+      supportTitle: "Soporte",
+      supportNote: "¿Algo no funciona? Escríbenos y respondemos.",
+      supportEmail: "Correo",
       footerTerms: "Términos",
       footerPrivacy: "Privacidad",
     },
@@ -492,6 +522,16 @@ const STRINGS: Record<Locale, Dict> = {
       since: (d) => `since ${d}`,
       daysPlayed: "Days played",
       countries: "Countries",
+      activeMonth: "Monthly active",
+      retention: "Retention",
+      retentionHint: "of each cohort that has had time to come back",
+      noCohort: "no cohort",
+      onchain: "On-chain",
+      txTotal: "Transactions",
+      onchainUsers: "Unique wallets",
+      failedRate: "Failed",
+      byAction: "By action",
+      partialData: "Counts the most recent transactions; the full history is larger.",
       topCountries: "Top countries",
       last30d: "last 30 days",
       economy: "Economy",
@@ -512,8 +552,13 @@ const STRINGS: Record<Locale, Dict> = {
       contractInUse: "In use · prize per level",
       contractLegacy: "Historical · single winner",
       contractsNote:
-        "v1 no longer takes payments and its prizes were all claimed; the figures above add up both. Both are verified and you can audit every transaction on the explorer.",
+        "v1 no longer takes payments and its prizes were all claimed; the figures above add up both. You can audit every transaction on the explorer.",
+      verified: "verified",
+      unverified: "unverified",
       sourceOpen: "See the code on GitHub",
+      supportTitle: "Support",
+      supportNote: "Something broken? Write to us and we'll answer.",
+      supportEmail: "Email",
       footerTerms: "Terms",
       footerPrivacy: "Privacy",
     },
@@ -640,6 +685,16 @@ const STRINGS: Record<Locale, Dict> = {
       since: (d) => `desde ${d}`,
       daysPlayed: "Dias jogados",
       countries: "Países",
+      activeMonth: "Ativos do mês",
+      retention: "Retenção",
+      retentionHint: "de cada coorte que já teve tempo de voltar",
+      noCohort: "sem coorte",
+      onchain: "On-chain",
+      txTotal: "Transações",
+      onchainUsers: "Carteiras únicas",
+      failedRate: "Falhas",
+      byAction: "Por ação",
+      partialData: "Conta as transações mais recentes; o histórico completo é maior.",
       topCountries: "Top países",
       last30d: "últimos 30 dias",
       economy: "Economia",
@@ -660,8 +715,13 @@ const STRINGS: Record<Locale, Dict> = {
       contractInUse: "Em uso · prêmio por nível",
       contractLegacy: "Histórico · vencedor único",
       contractsNote:
-        "O v1 já não recebe pagamentos e seus prêmios foram resgatados; os números acima somam os dois. Ambos estão verificados e você pode auditar cada transação no explorador.",
+        "O v1 já não recebe pagamentos e seus prêmios foram resgatados; os números acima somam os dois. Você pode auditar cada transação no explorador.",
+      verified: "verificado",
+      unverified: "não verificado",
       sourceOpen: "Ver o código no GitHub",
+      supportTitle: "Suporte",
+      supportNote: "Algo não funciona? Escreva para nós e respondemos.",
+      supportEmail: "E-mail",
       footerTerms: "Termos",
       footerPrivacy: "Privacidade",
     },
@@ -788,6 +848,16 @@ const STRINGS: Record<Locale, Dict> = {
       since: (d) => `depuis le ${d}`,
       daysPlayed: "Jours joués",
       countries: "Pays",
+      activeMonth: "Actifs du mois",
+      retention: "Rétention",
+      retentionHint: "de chaque cohorte ayant eu le temps de revenir",
+      noCohort: "pas de cohorte",
+      onchain: "On-chain",
+      txTotal: "Transactions",
+      onchainUsers: "Portefeuilles uniques",
+      failedRate: "Échouées",
+      byAction: "Par action",
+      partialData: "Compte les transactions les plus récentes ; l'historique complet est plus grand.",
       topCountries: "Top pays",
       last30d: "30 derniers jours",
       economy: "Économie",
@@ -808,8 +878,13 @@ const STRINGS: Record<Locale, Dict> = {
       contractInUse: "En service · gain par niveau",
       contractLegacy: "Historique · gagnant unique",
       contractsNote:
-        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les deux. Les deux sont vérifiés et vous pouvez auditer chaque transaction sur l'explorateur.",
+        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les deux. Vous pouvez auditer chaque transaction sur l'explorateur.",
+      verified: "vérifié",
+      unverified: "non vérifié",
       sourceOpen: "Voir le code sur GitHub",
+      supportTitle: "Assistance",
+      supportNote: "Un problème ? Écrivez-nous, nous répondons.",
+      supportEmail: "E-mail",
       footerTerms: "Conditions",
       footerPrivacy: "Confidentialité",
     },

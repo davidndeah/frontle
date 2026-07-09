@@ -23,6 +23,7 @@ import {
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, type ScoreEntry } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
+import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
@@ -928,10 +929,15 @@ export default function Frontle() {
             {prizes.length > 0 && (
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
-            <div className="flex justify-center gap-4 text-[11px] text-neutral-400 mt-1">
+            {/* Enlaces exigidos por el listado de MiniPay, alcanzables desde
+                dentro de la app. Soporte va al correo: el DM de X no cuenta
+                como canal válido. */}
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-neutral-400 mt-1">
               <a href="/terms" className="underline">{tr.legalTerms}</a>
               <a href="/privacy" className="underline">{tr.legalPrivacy}</a>
-              <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">{tr.legalSupport}</a>
+              <a href="/stats" className="underline">{tr.stats.title}</a>
+              <a href={SUPPORT_MAILTO} className="underline">{tr.legalSupport}</a>
+              <a href={SUPPORT_X_URL} target="_blank" rel="noopener noreferrer" className="underline">𝕏</a>
             </div>
             <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
           </>

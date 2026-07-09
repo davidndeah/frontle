@@ -24,7 +24,7 @@ export default function Terms() {
           <p><b className="text-white">7. Disponibilidad.</b> El servicio se ofrece &quot;tal cual&quot;, sin garantía de disponibilidad continua. Las transacciones en blockchain son irreversibles; verifica antes de confirmar.</p>
           <p><b className="text-white">8. Edad y jurisdicción.</b> Debes tener la edad mínima legal de tu país para usar aplicaciones con pagos digitales, y cumplir tus leyes locales.</p>
           <p><b className="text-white">9. Cambios.</b> Podemos actualizar estos términos; la fecha de arriba siempre refleja la versión vigente.</p>
-          <p><b className="text-white">10. Contacto.</b> ¿Dudas o problemas? Escríbenos por DM en <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="text-[#fcff52] underline">X @frontle_app</a>.</p>
+          <p><b className="text-white">10. Contacto.</b> ¿Dudas o problemas? Escríbenos a <a href="mailto:appfrontle@gmail.com" className="text-[#fcff52] underline">appfrontle@gmail.com</a> o por DM en <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">X @frontle_app</a>. Atendemos las incidencias críticas en menos de 24 horas.</p>
         </section>
 
         <footer className="text-center text-[11px] text-neutral-500">
