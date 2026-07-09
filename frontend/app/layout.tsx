@@ -36,6 +36,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: "#020617",
+  // MiniPay dibuja la app a pantalla completa: sin esto, env(safe-area-inset-*)
+  // siempre vale 0 y el header queda bajo el notch.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

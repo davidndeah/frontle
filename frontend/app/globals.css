@@ -84,6 +84,30 @@ body {
   min-height: 100dvh;
 }
 
+/* Safe-areas de MiniPay (viewport-fit=cover en layout.tsx).
+   El header y la barra inferior llegan hasta los bordes físicos del
+   dispositivo, así que cada uno reserva su inset por dentro: el fondo cubre
+   el notch y la barra de gestos, pero el contenido nunca cae debajo. */
+.app-header {
+  height: calc(3.5rem + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.app-nav {
+  height: calc(4rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.app-content {
+  padding-top: calc(70px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Bordy flotante: se apoya sobre la nav, que ya creció con su inset */
+.bordy-fab {
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* Grilla lavanda sutil sobre el violeta */
 .bg-grid {
   background-image:

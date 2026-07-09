@@ -555,7 +555,7 @@ export default function Frontle() {
       )}
 
       {/* Header fijo: logo + chip de pot + chip de wallet */}
-      <header className="fixed top-0 inset-x-0 z-30 flex items-center gap-2 px-4 h-14 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
+      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-2 px-4 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
         <span className="font-display text-xl font-bold tracking-tight prism-text">FRONTLE</span>
         <div className="flex-1" />
         {pot !== null && (
@@ -572,7 +572,7 @@ export default function Frontle() {
       </header>
 
       {/* Contenido del tab activo */}
-      <div className="relative z-10 w-full max-w-md flex flex-col gap-4 px-4 pt-[70px] pb-24">
+      <div className="app-content relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {tab === "jugar" && (
           <>
         {/* Título + gamificación (sin hero gigante; Bordy vive en la esquina) */}
@@ -937,7 +937,7 @@ export default function Frontle() {
         <button
           onClick={() => setOverlay("full")}
           aria-label="Bordy"
-          className="fixed bottom-20 right-2 z-30 w-[64px] h-[76px] bordy-float-sm active:scale-90 transition"
+          className="bordy-fab fixed right-2 z-30 w-[64px] h-[76px] bordy-float-sm active:scale-90 transition"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.png" alt="Bordy" className="w-full h-full object-contain drop-shadow-xl" />
@@ -1078,14 +1078,14 @@ function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab:
     { id: "aprender", icon: "❓", label: tr.tabs.aprender },
   ];
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-30 h-16 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">
+    <nav className="app-nav fixed bottom-0 inset-x-0 z-30 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">
       {items.map((it) => {
         const on = tab === it.id;
         return (
           <button
             key={it.id}
             onClick={() => onTab(it.id)}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
               on ? "text-white" : "text-neutral-400"
             }`}
           >
