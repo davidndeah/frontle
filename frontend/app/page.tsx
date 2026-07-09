@@ -973,7 +973,7 @@ export default function Frontle() {
           className="bordy-fab fixed right-2 z-30 w-[64px] h-[76px] bordy-float-sm active:scale-90 transition"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.png" alt="Bordy" className="w-full h-full object-contain drop-shadow-xl" />
+          <img src="/bordy-m2.webp" alt="Bordy" className="w-full h-full object-contain drop-shadow-xl" />
         </button>
       )}
 
@@ -982,7 +982,7 @@ export default function Frontle() {
         <div className="fixed inset-x-0 bottom-24 z-40 flex justify-center px-4">
           <div className="panel flex items-start gap-3 max-w-sm w-full p-3 border-[#fcff52]/40 shadow-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/bordy-m2.png" alt="Bordy" className="w-12 h-14 object-contain shrink-0 bordy-talk" />
+            <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain shrink-0 bordy-talk" />
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white leading-snug">{tr.welcomeBonus(fmt(Number(bonus)))}</p>
               <button
@@ -1245,7 +1245,7 @@ function NamePrompt({
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
         <div className="flex items-center gap-3 mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.png" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
+          <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
           <div>
             <h3 className="font-display font-bold text-white text-lg leading-tight">¡Elige tu nombre!</h3>
             <p className="text-xs text-neutral-300">Así apareces en el ranking (en vez de tu wallet).</p>

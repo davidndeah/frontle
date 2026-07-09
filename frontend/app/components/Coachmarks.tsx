@@ -56,7 +56,7 @@ export default function Coachmarks({ steps, labels, onDone }: { steps: CoachStep
       >
         <div className="flex items-center gap-2 pop-in">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.png" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm drop-shadow-xl" />
+          <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm drop-shadow-xl" />
           <div className="panel px-3.5 py-3 flex-1">
             <p className="text-white text-[13px] leading-relaxed">{steps[i].text}</p>
             <div className="flex items-center justify-between mt-2.5">

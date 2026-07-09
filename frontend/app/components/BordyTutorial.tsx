@@ -312,7 +312,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
       <div className="flex items-center gap-2 w-full max-w-sm">
         <div className="relative w-[76px] h-[90px] flex-none">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.png" alt="Bordy"
+          <img src="/bordy-m2.webp" alt="Bordy"
             className={`w-full h-full object-contain drop-shadow-xl ${typing ? "bordy-talk" : "bordy-float-sm"}`} />
         </div>
         <div className="panel relative flex-1 px-4 py-3 min-h-[86px]">
@@ -364,7 +364,7 @@ export function QuickStart({ tr, onDone, onFull }: { tr: Dict; onDone: () => voi
       style={{ background: "radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%)" }}>
       <div className="w-[96px] h-[112px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/bordy-m2.png" alt="Bordy" className="bordy-talk w-full h-full object-contain drop-shadow-xl" />
+        <img src="/bordy-m2.webp" alt="Bordy" className="bordy-talk w-full h-full object-contain drop-shadow-xl" />
       </div>
       <p className="font-display font-bold text-white text-xl">{tr.ready}</p>
       <div key={n} className="pop-in font-display font-bold text-7xl text-[#fcff52] tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
