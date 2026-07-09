@@ -14,8 +14,12 @@ remappings = [
 celo_sepolia = "${CELO_SEPOLIA_RPC}"
 celo = "${CELO_RPC}"
 
+# Etherscan V2: los endpoints V1 de Celoscan (api.celoscan.io/api) están
+# deprecados y responden "You are using a deprecated V1 endpoint". La V2 es un
+# único host y la cadena va en `chainid`, que debe ir EN la URL: forge no lo
+# añade solo. Verificado el 2026-07-09 con `forge verify-contract`.
 [etherscan]
-celo_sepolia = { key = "${CELOSCAN_API_KEY}", url = "https://api-sepolia.celoscan.io/api", chain = 11142220 }
-celo = { key = "${CELOSCAN_API_KEY}", url = "https://api.celoscan.io/api", chain = 42220 }
+celo_sepolia = { key = "${CELOSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=11142220", chain = 11142220 }
+celo = { key = "${CELOSCAN_API_KEY}", url = "https://api.etherscan.io/v2/api?chainid=42220", chain = 42220 }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

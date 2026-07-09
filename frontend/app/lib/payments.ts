@@ -293,10 +293,11 @@ export async function getDailyPot(): Promise<number | null> {
 
 // Datos fijos del despliegue, para enlazar al explorador.
 //
-// `verified` refleja el estado REAL en el explorador, comprobado el 2026-07-09:
-// el v1 aparece verificado; el v2 no (Blockscout devuelve is_verified:false y
-// Celoscan ofrece "Are you the contract creator"). Verificar el v2 es requisito
-// de listado en MiniPay. Cuando se verifique, pon `verifiedV2: true`.
+// `verified` refleja el estado REAL en el explorador. Ambos verificados el
+// 2026-07-09 (el v2 estaba sin verificar hasta ese día) en Blockscout y
+// Celoscan, con solc 0.8.28 y optimizer 200. Es requisito de listado en
+// MiniPay y de elegibilidad en Proof of Ship: si se despliega un v3, nace en
+// `false` hasta que se verifique.
 const explorerUrl = ACTIVE_CHAIN.blockExplorers.default.url;
 export const CONTRACT_INFO = {
   address: GAME_ADDRESS,
@@ -306,7 +307,7 @@ export const CONTRACT_INFO = {
   chainName: ACTIVE_CHAIN.name,
   explorer: `${explorerUrl}/address/${GAME_ADDRESS}`,
   explorerV1: `${explorerUrl}/address/${GAME_V1_ADDRESS}`,
-  verifiedV2: false,
+  verifiedV2: true,
   verifiedV1: true,
 } as const;
 
