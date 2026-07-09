@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { getCountry } from "./lib/countries";
 import {
   dailyChallenge,
@@ -41,10 +42,16 @@ import {
   type ClaimablePrize,
   type PayResult,
 } from "./lib/payments";
-import { PRIVY_ENABLED } from "./providers";
-import { PrivyIdentityBridge, EmailLoginButton } from "./components/PrivyLogin";
+import { PRIVY_ENABLED } from "./lib/privy";
+import { EmailLoginButton } from "./components/PrivyLogin";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
+
+// El SDK de Privy (~1.27 MB) sale del bundle inicial. `ssr: false` porque solo
+// existe en cliente. Ojo: se monta únicamente DESPUÉS de comprobar si estamos
+// en MiniPay — montarlo antes descargaría el chunk igual, aunque luego se
+// desmontara, que es justo lo que queremos evitar allí.
+const PrivyGate = dynamic(() => import("./components/PrivyGate"), { ssr: false });
 
 // Reparto base del pot por nivel (los 3 con ganador), igual que _computeShares
 // del contrato. Si algún nivel queda vacío, su parte sube al inmediato superior
@@ -108,7 +115,11 @@ export default function Frontle() {
   const [balances, setBalances] = useState<{ usdt: number; celo: number } | null>(null);
   // ¿Estamos dentro de MiniPay? Se resuelve en un efecto y no en el render
   // porque `window` no existe en el servidor y provocaría hidratación distinta.
+  // `mpChecked` distingue "todavía no lo sé" de "no lo estamos": sin esa
+  // distinción, PrivyGate se montaría en el primer render y bajaría su chunk
+  // dentro de MiniPay antes de que pudiéramos desmontarlo.
   const [inMiniPay, setInMiniPay] = useState(false);
+  const [mpChecked, setMpChecked] = useState(false);
 
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
@@ -218,7 +229,14 @@ export default function Frontle() {
   }, []);
 
   useEffect(() => setLocale(detectLocale()), []);
-  useEffect(() => setInMiniPay(isMiniPay()), []);
+  useEffect(() => {
+    setInMiniPay(isMiniPay());
+    setMpChecked(true);
+  }, []);
+
+  // Privy solo tiene sentido fuera de MiniPay: allí el wallet ya viene
+  // inyectado y el SDK sería más de un megabyte de código muerto.
+  const privyActive = PRIVY_ENABLED && mpChecked && !inMiniPay;
   useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
   useEffect(() => { getIpCountry().then(setIpCountry); }, []);
 
@@ -567,9 +585,10 @@ export default function Frontle() {
 
   return (
     <main className="relative min-h-dvh bg-grid text-white flex flex-col items-center overflow-hidden">
-      {/* Puente de la wallet embebida (login por correo). Sin UI. */}
-      {PRIVY_ENABLED && (
-        <PrivyIdentityBridge onIdentity={handlePrivyIdentity} onWelcomeBonus={(a) => setBonus(a)} />
+      {/* Privy: provider + puente de la wallet embebida + oyente del login.
+          Sin UI, cargado aparte, y nunca dentro de MiniPay. */}
+      {privyActive && (
+        <PrivyGate onIdentity={handlePrivyIdentity} onWelcomeBonus={(a) => setBonus(a)} />
       )}
 
       {/* Header fijo: logo + chip de pot + chip de wallet */}
@@ -722,7 +741,7 @@ export default function Frontle() {
               >
                 {tr.play}
               </button>
-            ) : hasWallet || PRIVY_ENABLED ? (
+            ) : hasWallet || privyActive ? (
               // Fuera de MiniPay hay que autenticarse (wallet o correo) para poder jugar.
               <div className="flex flex-col items-center gap-2">
                 <p className="text-sm font-semibold text-white text-center">{tr.connectToPlay}</p>
@@ -734,7 +753,7 @@ export default function Frontle() {
                     {tr.connectWallet}
                   </button>
                 )}
-                {PRIVY_ENABLED && (
+                {privyActive && (
                   <EmailLoginButton
                     label={tr.emailLogin}
                     className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-8 py-3 font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
@@ -1029,6 +1048,7 @@ export default function Frontle() {
           alias={alias}
           hasWallet={hasWallet}
           inMiniPay={inMiniPay}
+          emailLogin={privyActive}
           onConnect={connectForRanking}
           tr={tr}
         />
@@ -1177,6 +1197,7 @@ function WalletSheet({
   alias,
   hasWallet,
   inMiniPay,
+  emailLogin,
   onConnect,
   tr,
 }: {
@@ -1185,6 +1206,7 @@ function WalletSheet({
   alias: string;
   hasWallet: boolean;
   inMiniPay: boolean;
+  emailLogin: boolean;
   onConnect: () => void;
   tr: ReturnType<typeof t>;
 }) {
@@ -1212,7 +1234,7 @@ function WalletSheet({
                 {tr.connectWallet}
               </button>
             )}
-            {PRIVY_ENABLED && (
+            {emailLogin && (
               <EmailLoginButton label={tr.emailLogin} className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-6 py-3 font-bold text-sky-200 active:scale-95 transition" />
             )}
             <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>

@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import "./globals.css";
-import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,9 +50,11 @@ export default function RootLayout({
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Providers>{children}</Providers>
-      </body>
+      {/* Sin Providers: el PrivyProvider ya no envuelve la app. Vive dentro de
+          PrivyGate, que page.tsx carga aparte y solo fuera de MiniPay. Antes,
+          envolverlo aquí metía el SDK de Privy en TODAS las rutas — /terms
+          llegaba a pedir 2.98 MB de JS para mostrar texto. */}
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }
