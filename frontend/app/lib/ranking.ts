@@ -228,6 +228,43 @@ export async function getMyWinDays(address: string): Promise<{ day: number; leve
   }
 }
 
+// --- Agregados públicos para /stats ------------------------------------
+// Lee la vista `public_stats` (una fila). Sin datos personales: la vista solo
+// cuenta, no expone player_id ni correos. En local, sin credenciales de
+// Supabase, no hay nada que contar → null.
+export interface CommunityStats {
+  plays: number;
+  players: number;
+  daysPlayed: number;
+  countriesReached: number;
+  playsToday: number;
+  playersToday: number;
+  firstPlay: string; // YYYY-MM-DD
+}
+
+export async function getCommunityStats(): Promise<CommunityStats | null> {
+  if (!useSupabase) return null;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/public_stats?select=*`, {
+      headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` },
+    });
+    const j = await r.json();
+    const row = Array.isArray(j) ? j[0] : null;
+    if (!row) return null;
+    return {
+      plays: Number(row.plays ?? 0),
+      players: Number(row.players ?? 0),
+      daysPlayed: Number(row.days_played ?? 0),
+      countriesReached: Number(row.countries_reached ?? 0),
+      playsToday: Number(row.plays_today ?? 0),
+      playersToday: Number(row.players_today ?? 0),
+      firstPlay: String(row.first_play ?? ""),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function formatTime(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;

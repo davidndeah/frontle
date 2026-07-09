@@ -23,7 +23,9 @@ export default function Stats() {
         <StatsNumbers />
 
         <section className="panel p-4 flex flex-col gap-3 text-sm text-neutral-200 leading-relaxed">
-          <h2 className="font-display text-lg font-bold text-white">A dónde va tu dinero</h2>
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">
+            A dónde va tu dinero
+          </h2>
           <p>
             El primer intento de cada reto diario es <b className="text-white">gratis</b>. Las pistas y los reintentos
             son compras opcionales en USDT.
@@ -39,35 +41,33 @@ export default function Stats() {
           </p>
         </section>
 
-        <section className="panel p-4 flex flex-col gap-2 text-sm">
-          <h2 className="font-display text-lg font-bold text-white">Los contratos</h2>
-          <Row label="Red">
-            {CONTRACT_INFO.chainName} (id {CONTRACT_INFO.chainId})
-          </Row>
-          <Row label="Moneda">{CONTRACT_INFO.token}</Row>
-          <Row label="En uso (v2 · premio por nivel)">
-            <a
-              href={CONTRACT_INFO.explorer}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#fcff52] underline font-mono text-xs break-all"
-            >
-              {CONTRACT_INFO.address}
-            </a>
-          </Row>
-          <Row label="Histórico (v1 · ganador único)">
-            <a
-              href={CONTRACT_INFO.explorerV1}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#c4b5fd] underline font-mono text-xs break-all"
-            >
-              {CONTRACT_INFO.addressV1}
-            </a>
-          </Row>
-          <p className="text-[11px] text-neutral-400 mt-1">
-            El v1 ya no recibe pagos; sus premios están todos reclamados. Las cifras de arriba suman los dos. Ambos
-            están verificados y el código es abierto en{" "}
+        <section className="panel p-4 flex flex-col gap-3 text-sm">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">
+              Los contratos
+            </h2>
+            <span className="text-[10px] text-neutral-500">
+              {CONTRACT_INFO.chainName} · {CONTRACT_INFO.token}
+            </span>
+          </div>
+
+          <ContractRow
+            tag="v2"
+            role="En uso · premio por nivel"
+            address={CONTRACT_INFO.address}
+            href={CONTRACT_INFO.explorer}
+            accent
+          />
+          <ContractRow
+            tag="v1"
+            role="Histórico · ganador único"
+            address={CONTRACT_INFO.addressV1}
+            href={CONTRACT_INFO.explorerV1}
+          />
+
+          <p className="text-[11px] text-neutral-400 leading-relaxed">
+            El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los dos. Ambos están
+            verificados, el código es abierto en{" "}
             <a
               href="https://github.com/davidndeah/frontle"
               target="_blank"
@@ -75,8 +75,8 @@ export default function Stats() {
               className="underline"
             >
               GitHub
-            </a>
-            . Puedes auditar cada transacción en el explorador.
+            </a>{" "}
+            y puedes auditar cada transacción en el explorador.
           </p>
         </section>
 
@@ -91,11 +91,42 @@ export default function Stats() {
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+// Una fila de contrato: etiqueta de versión, para qué sirve y su dirección.
+function ContractRow({
+  tag,
+  role,
+  address,
+  href,
+  accent = false,
+}: {
+  tag: string;
+  role: string;
+  address: string;
+  href: string;
+  accent?: boolean;
+}) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[11px] text-neutral-400">{label}</span>
-      <span className="text-neutral-200">{children}</span>
+    <div className="flex items-start gap-3 rounded-lg bg-white/[0.03] border border-[#b79ced]/15 p-2.5">
+      <span
+        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold font-display ${
+          accent ? "bg-[#fcff52]/15 text-[#fcff52]" : "bg-white/10 text-neutral-400"
+        }`}
+      >
+        {tag}
+      </span>
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-[11px] text-neutral-400 leading-tight">{role}</span>
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline font-mono text-[11px] break-all leading-tight ${
+            accent ? "text-[#fcff52]" : "text-[#c4b5fd]"
+          }`}
+        >
+          {address}
+        </a>
+      </div>
     </div>
   );
 }
