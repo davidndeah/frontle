@@ -32,7 +32,8 @@ export default function Privacy() {
 
         <footer className="text-center text-[11px] text-neutral-500">
           Frontle · construido sobre <a href="https://celo.org" className="underline" target="_blank" rel="noopener noreferrer">Celo</a> ·{" "}
-          <Link href="/terms" className="underline">Términos</Link>
+          <Link href="/terms" className="underline">Términos</Link> ·{" "}
+          <Link href="/stats" className="underline">Transparencia</Link>
         </footer>
       </div>
     </main>

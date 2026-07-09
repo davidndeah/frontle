@@ -29,7 +29,8 @@ export default function Terms() {
 
         <footer className="text-center text-[11px] text-neutral-500">
           Frontle · construido sobre <a href="https://celo.org" className="underline" target="_blank" rel="noopener noreferrer">Celo</a> ·{" "}
-          <Link href="/privacy" className="underline">Privacidad</Link>
+          <Link href="/privacy" className="underline">Privacidad</Link> ·{" "}
+          <Link href="/stats" className="underline">Transparencia</Link>
         </footer>
       </div>
     </main>

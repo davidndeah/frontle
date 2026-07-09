@@ -271,6 +271,74 @@ export async function getDailyPot(): Promise<number | null> {
   }
 }
 
+// --- Lectura: datos públicos para /stats -------------------------------
+// Todo sale del contrato vía RPC público: sin wallet, sin backend, sin claves.
+// Es la página de transparencia que pide el listing de MiniPay.
+
+// Datos fijos del despliegue, para enlazar al explorador.
+export const CONTRACT_INFO = {
+  address: GAME_ADDRESS,
+  token: "USDT",
+  chainId: CHAIN_ID,
+  chainName: ACTIVE_CHAIN.name,
+  explorer: `${ACTIVE_CHAIN.blockExplorers.default.url}/address/${GAME_ADDRESS}`,
+} as const;
+
+export interface PublicStats {
+  day: number; // índice del día UTC en curso
+  potToday: number; // premio acumulado hoy (USDT)
+  prizesPaid: number; // premios ya asignados en los días cerrados (USDT)
+  daysClosed: number; // días cerrados dentro de la ventana consultada
+  locked: number; // USDT en poder del contrato
+}
+
+// Recorre los últimos `lookback` días cerrados y suma los premios por nivel.
+export async function getPublicStats(lookback = 14): Promise<PublicStats | null> {
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const game = { address: GAME_ADDRESS, abi: gameAbi } as const;
+
+    const [dayRaw, locked] = await Promise.all([
+      publicClient.readContract({ ...game, functionName: "currentDay" }),
+      publicClient.readContract({
+        address: TOKEN_ADDRESS,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [GAME_ADDRESS],
+      }),
+    ]);
+    const day = Number(dayRaw);
+
+    const potToday = await publicClient.readContract({ ...game, functionName: "pot", args: [dayRaw] });
+
+    // Días anteriores al de hoy, hasta `lookback`. El día 0 no existe.
+    const past = Array.from({ length: Math.min(lookback, day) }, (_, i) => day - 1 - i)
+      .filter((d) => d > 0)
+      .map((d) => BigInt(d));
+    const rolled = await Promise.all(past.map((d) => publicClient.readContract({ ...game, functionName: "rolled", args: [d] })));
+    const closed = past.filter((_, i) => rolled[i]);
+
+    // prize(día, nivel) para cada nivel de cada día cerrado.
+    const prizes = await Promise.all(
+      closed.flatMap((d) =>
+        [0, 1, 2].map((lv) => publicClient.readContract({ ...game, functionName: "prize", args: [d, lv] })),
+      ),
+    );
+    const prizesPaid = prizes.reduce((acc, p) => acc + Number(formatUnits(p, TOKEN_DECIMALS)), 0);
+
+    return {
+      day,
+      potToday: Number(formatUnits(potToday, TOKEN_DECIMALS)),
+      prizesPaid,
+      daysClosed: closed.length,
+      locked: Number(formatUnits(locked, TOKEN_DECIMALS)),
+    };
+  } catch (err) {
+    console.error("[stats] no se pudieron leer los datos del contrato:", err);
+    return null;
+  }
+}
+
 // --- Premios: (día, nivel) reclamables y reclamo ------------------------
 // El contrato es la fuente de verdad. Recibe los (día, nivel) candidatos (de la
 // tabla `winners` de Supabase) y deja SOLO los que la wallet puede cobrar ahora:
