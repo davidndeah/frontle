@@ -46,6 +46,26 @@ export function countryName(canonical: string, locale: Locale): string {
   }
 }
 
+// Nombre de país a partir del código ISO alpha-2 (el que guarda `scores`,
+// derivado de la IP). Mismo criterio que countryName: nunca se traduce a mano.
+export function regionName(code: string, locale: Locale): string {
+  const cc = code.toUpperCase();
+  const dn = displayNames(locale);
+  if (!dn) return cc;
+  try {
+    return dn.of(cc) || cc;
+  } catch {
+    return cc;
+  }
+}
+
+// Bandera emoji desde el código ISO: cada letra → su Regional Indicator.
+export function codeToFlag(code: string): string {
+  const cc = code.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return "🏳️";
+  return String.fromCodePoint(...[...cc].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
+}
+
 // --- Resolución de input en cualquier idioma ---
 const LOCALIZED_INDEX: Record<string, string> = (() => {
   const idx: Record<string, string> = {};
@@ -164,6 +184,41 @@ type Dict = {
   colTime: string;
   rankingEmpty: string;
   feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
+  stats: {
+    back: string;
+    title: string;
+    subtitle: (chain: string) => string;
+    today: string;
+    dayNo: (n: number) => string;
+    prize: string;
+    plays: string;
+    players: string;
+    community: string;
+    since: (date: string) => string;
+    daysPlayed: string;
+    countries: string;
+    topCountries: string;
+    last30d: string;
+    economy: string;
+    bothContracts: string;
+    prizesPaid: string;
+    daysClosed: string;
+    playerFunds: string;
+    playerFundsHint: string;
+    protocolFees: string;
+    protocolFeesHint: string;
+    moneyTitle: string;
+    money1: string;
+    money2: (pot: string, fee: string) => string;
+    money3: string;
+    contractsTitle: string;
+    contractInUse: string;
+    contractLegacy: string;
+    contractsNote: string;
+    sourceOpen: string;
+    footerTerms: string;
+    footerPrivacy: string;
+  };
 };
 
 const STRINGS: Record<Locale, Dict> = {
@@ -276,6 +331,44 @@ const STRINGS: Record<Locale, Dict> = {
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — vas de lado`
       : `${c.country} — te alejaste`,
+    stats: {
+      back: "← Volver a Frontle",
+      title: "Estadísticas",
+      subtitle: (chain) => `Datos leídos en vivo del contrato en ${chain}. Nadie los edita a mano.`,
+      today: "Hoy",
+      dayNo: (n) => `día #${n} · UTC`,
+      prize: "Premio",
+      plays: "Partidas",
+      players: "Jugadores",
+      community: "Comunidad",
+      since: (d) => `desde el ${d}`,
+      daysPlayed: "Días jugados",
+      countries: "Países",
+      topCountries: "Top países",
+      last30d: "últimos 30 días",
+      economy: "Economía",
+      bothContracts: "contratos v1 + v2",
+      prizesPaid: "Premios repartidos",
+      daysClosed: "Días cerrados",
+      playerFunds: "Fondos de los jugadores",
+      playerFundsHint: "premio de hoy + premios sin reclamar",
+      protocolFees: "Comisión de plataforma",
+      protocolFeesHint: "el 20% de mantenimiento, aparte del premio",
+      moneyTitle: "A dónde va tu dinero",
+      money1: "El primer intento de cada reto diario es gratis. Las pistas y los reintentos son compras opcionales en USDT.",
+      money2: (pot, fee) =>
+        `De cada compra, el ${pot} alimenta el premio del día y el ${fee} cubre el mantenimiento de la plataforma. Al cierre del día (UTC) el premio se reparte entre los mejores de cada nivel, y los ganadores lo reclaman desde la app.`,
+      money3:
+        "Frontle nunca custodia tus fondos: los pagos van directo de tu wallet al contrato inteligente. La comisión se contabiliza aparte y no toca el premio.",
+      contractsTitle: "Los contratos",
+      contractInUse: "En uso · premio por nivel",
+      contractLegacy: "Histórico · ganador único",
+      contractsNote:
+        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los dos. Ambos están verificados y puedes auditar cada transacción en el explorador.",
+      sourceOpen: "Ver el código en GitHub",
+      footerTerms: "Términos",
+      footerPrivacy: "Privacidad",
+    },
   },
   en: {
     tagline: "Connect countries through borders",
@@ -386,6 +479,44 @@ const STRINGS: Record<Locale, Dict> = {
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — sideways`
       : `${c.country} — you drifted away`,
+    stats: {
+      back: "← Back to Frontle",
+      title: "Stats",
+      subtitle: (chain) => `Read live from the contract on ${chain}. Nobody edits these by hand.`,
+      today: "Today",
+      dayNo: (n) => `day #${n} · UTC`,
+      prize: "Prize",
+      plays: "Plays",
+      players: "Players",
+      community: "Community",
+      since: (d) => `since ${d}`,
+      daysPlayed: "Days played",
+      countries: "Countries",
+      topCountries: "Top countries",
+      last30d: "last 30 days",
+      economy: "Economy",
+      bothContracts: "contracts v1 + v2",
+      prizesPaid: "Prizes paid out",
+      daysClosed: "Days closed",
+      playerFunds: "Player funds",
+      playerFundsHint: "today's prize + unclaimed prizes",
+      protocolFees: "Platform fee",
+      protocolFeesHint: "the 20% for upkeep, kept apart from the prize",
+      moneyTitle: "Where your money goes",
+      money1: "The first attempt at each daily challenge is free. Hints and retries are optional purchases in USDT.",
+      money2: (pot, fee) =>
+        `Of every purchase, ${pot} feeds the day's prize and ${fee} covers platform upkeep. When the day closes (UTC) the prize is split among the best of each level, and winners claim it from the app.`,
+      money3:
+        "Frontle never holds your funds: payments go straight from your wallet to the smart contract. The fee is accounted for separately and never touches the prize.",
+      contractsTitle: "The contracts",
+      contractInUse: "In use · prize per level",
+      contractLegacy: "Historical · single winner",
+      contractsNote:
+        "v1 no longer takes payments and its prizes were all claimed; the figures above add up both. Both are verified and you can audit every transaction on the explorer.",
+      sourceOpen: "See the code on GitHub",
+      footerTerms: "Terms",
+      footerPrivacy: "Privacy",
+    },
   },
   pt: {
     tagline: "Conecte países pelas fronteiras",
@@ -496,6 +627,44 @@ const STRINGS: Record<Locale, Dict> = {
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — de lado`
       : `${c.country} — você se afastou`,
+    stats: {
+      back: "← Voltar ao Frontle",
+      title: "Estatísticas",
+      subtitle: (chain) => `Dados lidos ao vivo do contrato na ${chain}. Ninguém os edita à mão.`,
+      today: "Hoje",
+      dayNo: (n) => `dia #${n} · UTC`,
+      prize: "Prêmio",
+      plays: "Partidas",
+      players: "Jogadores",
+      community: "Comunidade",
+      since: (d) => `desde ${d}`,
+      daysPlayed: "Dias jogados",
+      countries: "Países",
+      topCountries: "Top países",
+      last30d: "últimos 30 dias",
+      economy: "Economia",
+      bothContracts: "contratos v1 + v2",
+      prizesPaid: "Prêmios distribuídos",
+      daysClosed: "Dias encerrados",
+      playerFunds: "Fundos dos jogadores",
+      playerFundsHint: "prêmio de hoje + prêmios não resgatados",
+      protocolFees: "Taxa da plataforma",
+      protocolFeesHint: "os 20% de manutenção, à parte do prêmio",
+      moneyTitle: "Para onde vai seu dinheiro",
+      money1: "A primeira tentativa de cada desafio diário é grátis. Dicas e novas tentativas são compras opcionais em USDT.",
+      money2: (pot, fee) =>
+        `De cada compra, ${pot} alimenta o prêmio do dia e ${fee} cobre a manutenção da plataforma. Ao encerrar o dia (UTC) o prêmio é dividido entre os melhores de cada nível, e os vencedores o resgatam pelo app.`,
+      money3:
+        "O Frontle nunca guarda seus fundos: os pagamentos vão direto da sua carteira para o contrato inteligente. A taxa é contabilizada à parte e não toca no prêmio.",
+      contractsTitle: "Os contratos",
+      contractInUse: "Em uso · prêmio por nível",
+      contractLegacy: "Histórico · vencedor único",
+      contractsNote:
+        "O v1 já não recebe pagamentos e seus prêmios foram resgatados; os números acima somam os dois. Ambos estão verificados e você pode auditar cada transação no explorador.",
+      sourceOpen: "Ver o código no GitHub",
+      footerTerms: "Termos",
+      footerPrivacy: "Privacidade",
+    },
   },
   fr: {
     tagline: "Reliez les pays par leurs frontières",
@@ -606,6 +775,44 @@ const STRINGS: Record<Locale, Dict> = {
       : c.quality === "green" ? `${c.country} ✓`
       : c.quality === "yellow" ? `${c.country} — de côté`
       : `${c.country} — vous vous êtes éloigné`,
+    stats: {
+      back: "← Retour à Frontle",
+      title: "Statistiques",
+      subtitle: (chain) => `Données lues en direct du contrat sur ${chain}. Personne ne les modifie à la main.`,
+      today: "Aujourd'hui",
+      dayNo: (n) => `jour n°${n} · UTC`,
+      prize: "Cagnotte",
+      plays: "Parties",
+      players: "Joueurs",
+      community: "Communauté",
+      since: (d) => `depuis le ${d}`,
+      daysPlayed: "Jours joués",
+      countries: "Pays",
+      topCountries: "Top pays",
+      last30d: "30 derniers jours",
+      economy: "Économie",
+      bothContracts: "contrats v1 + v2",
+      prizesPaid: "Gains distribués",
+      daysClosed: "Jours clôturés",
+      playerFunds: "Fonds des joueurs",
+      playerFundsHint: "cagnotte du jour + gains non réclamés",
+      protocolFees: "Commission de la plateforme",
+      protocolFeesHint: "les 20 % d'entretien, à part de la cagnotte",
+      moneyTitle: "Où va votre argent",
+      money1: "Le premier essai de chaque défi quotidien est gratuit. Les indices et les essais supplémentaires sont des achats optionnels en USDT.",
+      money2: (pot, fee) =>
+        `Sur chaque achat, ${pot} alimente la cagnotte du jour et ${fee} couvre l'entretien de la plateforme. À la clôture du jour (UTC) la cagnotte est partagée entre les meilleurs de chaque niveau, et les gagnants la réclament depuis l'app.`,
+      money3:
+        "Frontle ne détient jamais vos fonds : les paiements vont directement de votre portefeuille au contrat intelligent. La commission est comptabilisée à part et ne touche pas la cagnotte.",
+      contractsTitle: "Les contrats",
+      contractInUse: "En service · gain par niveau",
+      contractLegacy: "Historique · gagnant unique",
+      contractsNote:
+        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les deux. Les deux sont vérifiés et vous pouvez auditer chaque transaction sur l'explorateur.",
+      sourceOpen: "Voir le code sur GitHub",
+      footerTerms: "Conditions",
+      footerPrivacy: "Confidentialité",
+    },
   },
 };
 
