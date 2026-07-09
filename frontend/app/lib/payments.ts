@@ -30,6 +30,12 @@ const CHAIN_ID: number = 42220; // Celo Mainnet
 // FrontleGame v2 (niveles) — Celo Mainnet, desplegado 2026-07-05.
 // ABI por (día,nivel): winnerOf/prize/claimed/claim. (v1 ganador único: 0x7Ea1…Fa09).
 const GAME_ADDRESS: Address = "0xaDcA9A707F394509C8aA906B89B93cb222f2BeBE";
+// FrontleGame v1 (ganador único, sin niveles). Ya no recibe pagos, pero
+// conserva el historial de premios; /stats lo suma. El ganador se llevaba
+// pot(día) entero, por eso el v1 no tiene `prize`.
+const GAME_V1_ADDRESS: Address = "0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09";
+// Día UTC en que se desplegó el v1 (2026-06-17): inicio del historial.
+const FIRST_DAY = 20621;
 const TOKEN_ADDRESS: Address = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // USDT (USD₮)
 const TOKEN_DECIMALS = 6; // USDT usa 6 decimales
 
@@ -116,6 +122,16 @@ const gameAbi = [
     outputs: [],
     stateMutability: "nonpayable",
   },
+  // Comisión de plataforma acumulada (el 20%). No es dinero de los jugadores.
+  { type: "function", name: "protocolAccrued", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
+] as const;
+
+// ABI mínimo del v1, solo para las lecturas del histórico de /stats.
+// Ojo: `pot(día)` ES el premio del ganador (no hay `prize` ni niveles).
+const gameV1Abi = [
+  { type: "function", name: "pot", inputs: [{ name: "day", type: "uint256" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "rolled", inputs: [{ name: "day", type: "uint256" }], outputs: [{ type: "bool" }], stateMutability: "view" },
+  { type: "function", name: "protocolAccrued", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
 ] as const;
 
 const erc20Abi = [
@@ -276,62 +292,101 @@ export async function getDailyPot(): Promise<number | null> {
 // Es la página de transparencia que pide el listing de MiniPay.
 
 // Datos fijos del despliegue, para enlazar al explorador.
+const explorerUrl = ACTIVE_CHAIN.blockExplorers.default.url;
 export const CONTRACT_INFO = {
   address: GAME_ADDRESS,
+  addressV1: GAME_V1_ADDRESS,
   token: "USDT",
   chainId: CHAIN_ID,
   chainName: ACTIVE_CHAIN.name,
-  explorer: `${ACTIVE_CHAIN.blockExplorers.default.url}/address/${GAME_ADDRESS}`,
+  explorer: `${explorerUrl}/address/${GAME_ADDRESS}`,
+  explorerV1: `${explorerUrl}/address/${GAME_V1_ADDRESS}`,
 } as const;
 
 export interface PublicStats {
   day: number; // índice del día UTC en curso
   potToday: number; // premio acumulado hoy (USDT)
-  prizesPaid: number; // premios ya asignados en los días cerrados (USDT)
-  daysClosed: number; // días cerrados dentro de la ventana consultada
-  locked: number; // USDT en poder del contrato
+  prizesPaid: number; // premios asignados en TODOS los días cerrados, v1 + v2
+  daysClosed: number; // días cerrados desde FIRST_DAY, v1 + v2
+  playerFunds: number; // USDT de los jugadores (pot de hoy + premios sin reclamar)
+  protocolFees: number; // comisión de plataforma acumulada — NO es de los jugadores
 }
 
-// Recorre los últimos `lookback` días cerrados y suma los premios por nivel.
-export async function getPublicStats(lookback = 14): Promise<PublicStats | null> {
+// Lee el histórico completo de ambos contratos (v1 + v2) desde FIRST_DAY.
+// Usa multicall para agrupar las lecturas en pocas llamadas al RPC.
+//
+// Cuidado con los saldos: balanceOf incluye la comisión de plataforma
+// acumulada (`protocolAccrued`). Restarla es lo que hace que "fondos de los
+// jugadores" signifique lo que dice.
+export async function getPublicStats(): Promise<PublicStats | null> {
   try {
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
-    const game = { address: GAME_ADDRESS, abi: gameAbi } as const;
 
-    const [dayRaw, locked] = await Promise.all([
-      publicClient.readContract({ ...game, functionName: "currentDay" }),
-      publicClient.readContract({
-        address: TOKEN_ADDRESS,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [GAME_ADDRESS],
-      }),
-    ]);
+    // 1) Día actual, comisión acumulada y saldo de cada contrato.
+    const [dayRaw, accruedV1, accruedV2, balV1, balV2] = await publicClient.multicall({
+      allowFailure: false,
+      contracts: [
+        { address: GAME_ADDRESS, abi: gameAbi, functionName: "currentDay" },
+        { address: GAME_V1_ADDRESS, abi: gameV1Abi, functionName: "protocolAccrued" },
+        { address: GAME_ADDRESS, abi: gameAbi, functionName: "protocolAccrued" },
+        { address: TOKEN_ADDRESS, abi: erc20Abi, functionName: "balanceOf", args: [GAME_V1_ADDRESS] },
+        { address: TOKEN_ADDRESS, abi: erc20Abi, functionName: "balanceOf", args: [GAME_ADDRESS] },
+      ],
+    });
     const day = Number(dayRaw);
 
-    const potToday = await publicClient.readContract({ ...game, functionName: "pot", args: [dayRaw] });
+    // 2) ¿Qué días están cerrados? Se pregunta a los dos contratos por cada
+    //    día pasado; un día puede estar cerrado en uno y no en el otro.
+    //    Un multicall por contrato: `multicall` exige un solo ABI por lote.
+    const past: bigint[] = [];
+    for (let d = FIRST_DAY; d < day; d++) past.push(BigInt(d));
 
-    // Días anteriores al de hoy, hasta `lookback`. El día 0 no existe.
-    const past = Array.from({ length: Math.min(lookback, day) }, (_, i) => day - 1 - i)
-      .filter((d) => d > 0)
-      .map((d) => BigInt(d));
-    const rolled = await Promise.all(past.map((d) => publicClient.readContract({ ...game, functionName: "rolled", args: [d] })));
-    const closed = past.filter((_, i) => rolled[i]);
+    const [rolledV1, rolledV2] = await Promise.all([
+      publicClient.multicall({
+        allowFailure: false,
+        contracts: past.map((d) => ({ address: GAME_V1_ADDRESS, abi: gameV1Abi, functionName: "rolled", args: [d] }) as const),
+      }),
+      publicClient.multicall({
+        allowFailure: false,
+        contracts: past.map((d) => ({ address: GAME_ADDRESS, abi: gameAbi, functionName: "rolled", args: [d] }) as const),
+      }),
+    ]);
+    const closedV1 = past.filter((_, i) => rolledV1[i]);
+    const closedV2 = past.filter((_, i) => rolledV2[i]);
 
-    // prize(día, nivel) para cada nivel de cada día cerrado.
-    const prizes = await Promise.all(
-      closed.flatMap((d) =>
-        [0, 1, 2].map((lv) => publicClient.readContract({ ...game, functionName: "prize", args: [d, lv] })),
-      ),
-    );
-    const prizesPaid = prizes.reduce((acc, p) => acc + Number(formatUnits(p, TOKEN_DECIMALS)), 0);
+    // 3) Premios de cada día cerrado. En el v1 el ganador se lleva pot(día);
+    //    en el v2 hay un premio por nivel.
+    const [potToday, potsV1, prizesV2] = await Promise.all([
+      publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "pot", args: [dayRaw] }),
+      publicClient.multicall({
+        allowFailure: false,
+        contracts: closedV1.map((d) => ({ address: GAME_V1_ADDRESS, abi: gameV1Abi, functionName: "pot", args: [d] }) as const),
+      }),
+      publicClient.multicall({
+        allowFailure: false,
+        contracts: closedV2.flatMap((d) =>
+          [0, 1, 2].map((lv) => ({ address: GAME_ADDRESS, abi: gameAbi, functionName: "prize", args: [d, lv] }) as const),
+        ),
+      }),
+    ]);
+
+    // Se suma en bigint y se formatea una sola vez: sumar floats arrastra error.
+    const prizesPaid = [...potsV1, ...prizesV2].reduce((acc, p) => acc + p, BigInt(0));
+
+    // Días cerrados distintos entre ambos contratos (no se cuenta dos veces).
+    const daysClosed = new Set([...closedV1, ...closedV2].map(Number)).size;
+
+    const protocolFees = accruedV1 + accruedV2;
+    const playerFunds = balV1 + balV2 - protocolFees;
+    const usdt = (v: bigint) => Number(formatUnits(v, TOKEN_DECIMALS));
 
     return {
       day,
-      potToday: Number(formatUnits(potToday, TOKEN_DECIMALS)),
-      prizesPaid,
-      daysClosed: closed.length,
-      locked: Number(formatUnits(locked, TOKEN_DECIMALS)),
+      potToday: usdt(potToday),
+      prizesPaid: usdt(prizesPaid),
+      daysClosed,
+      playerFunds: usdt(playerFunds),
+      protocolFees: usdt(protocolFees),
     };
   } catch (err) {
     console.error("[stats] no se pudieron leer los datos del contrato:", err);

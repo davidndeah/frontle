@@ -35,17 +35,17 @@ export default function Stats() {
           </p>
           <p>
             Frontle <b className="text-white">nunca custodia tus fondos</b>: los pagos van directo de tu wallet al
-            contrato inteligente.
+            contrato inteligente. La comisión se contabiliza aparte y no toca el premio.
           </p>
         </section>
 
         <section className="panel p-4 flex flex-col gap-2 text-sm">
-          <h2 className="font-display text-lg font-bold text-white">El contrato</h2>
+          <h2 className="font-display text-lg font-bold text-white">Los contratos</h2>
           <Row label="Red">
             {CONTRACT_INFO.chainName} (id {CONTRACT_INFO.chainId})
           </Row>
           <Row label="Moneda">{CONTRACT_INFO.token}</Row>
-          <Row label="Dirección">
+          <Row label="En uso (v2 · premio por nivel)">
             <a
               href={CONTRACT_INFO.explorer}
               target="_blank"
@@ -55,8 +55,19 @@ export default function Stats() {
               {CONTRACT_INFO.address}
             </a>
           </Row>
+          <Row label="Histórico (v1 · ganador único)">
+            <a
+              href={CONTRACT_INFO.explorerV1}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#c4b5fd] underline font-mono text-xs break-all"
+            >
+              {CONTRACT_INFO.addressV1}
+            </a>
+          </Row>
           <p className="text-[11px] text-neutral-400 mt-1">
-            Contrato verificado y código abierto en{" "}
+            El v1 ya no recibe pagos; sus premios están todos reclamados. Las cifras de arriba suman los dos. Ambos
+            están verificados y el código es abierto en{" "}
             <a
               href="https://github.com/davidndeah/frontle"
               target="_blank"

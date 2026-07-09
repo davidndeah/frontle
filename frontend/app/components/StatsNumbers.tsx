@@ -19,14 +19,18 @@ export default function StatsNumbers() {
     <>
       <section className="grid grid-cols-2 gap-3">
         <Stat label="Premio de hoy" value={stats && usdt(stats.potToday)} failed={failed} />
-        <Stat label="Fondos en el contrato" value={stats && usdt(stats.locked)} failed={failed} />
+        <Stat label="Fondos de los jugadores" value={stats && usdt(stats.playerFunds)} failed={failed} />
         <Stat label="Premios repartidos" value={stats && usdt(stats.prizesPaid)} failed={failed} />
         <Stat label="Días cerrados" value={stats && String(stats.daysClosed)} failed={failed} />
       </section>
 
       {stats && (
-        <p className="text-[11px] text-neutral-500 text-center -mt-1">
-          Premios y días cerrados cuentan los últimos 14 días. Día actual: #{stats.day} (UTC).
+        <p className="text-[11px] text-neutral-500 text-center -mt-1 leading-relaxed">
+          Histórico completo desde el 17 de junio de 2026, sumando los contratos v1 y v2. Día actual: #{stats.day}{" "}
+          (UTC).
+          <br />
+          Comisión de plataforma acumulada, aparte de los fondos de los jugadores:{" "}
+          <b className="text-neutral-400">{usdt(stats.protocolFees)}</b>.
         </p>
       )}
     </>
