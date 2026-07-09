@@ -62,3 +62,4 @@ Thumbs.db
 .agents/
 .claude/
 skills-lock.json
+frontend/public/flags/_missing.json
