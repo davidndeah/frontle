@@ -265,6 +265,33 @@ export async function getCommunityStats(): Promise<CommunityStats | null> {
   }
 }
 
+// Top de países de los últimos 30 días (vista `top_countries_30d`).
+// El código ISO viene de la IP; nunca se guardó la IP en sí.
+export interface CountryStat {
+  code: string; // ISO alpha-2
+  plays: number;
+  players: number;
+}
+
+export async function getTopCountries(limit = 6): Promise<CountryStat[]> {
+  if (!useSupabase) return [];
+  try {
+    // El orden se pide explícito: el ORDER BY de la vista no sobrevive al limit.
+    const r = await fetch(`${SUPA_URL}/rest/v1/top_countries_30d?select=*&order=plays.desc&limit=${limit}`, {
+      headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` },
+    });
+    const j = await r.json();
+    if (!Array.isArray(j)) return [];
+    return j.map((x: { country_code: string; plays: number; players: number }) => ({
+      code: String(x.country_code || "").toUpperCase(),
+      plays: Number(x.plays ?? 0),
+      players: Number(x.players ?? 0),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export function formatTime(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
