@@ -1066,19 +1066,31 @@ export default function Frontle() {
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && (
           <>
+            {/* Bordy presenta el tutorial (mascota real, no un emoji genérico) */}
+            <section className="panel p-5 flex flex-col items-center gap-3 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/bordy-m2.webp" alt="Bordy" className="w-28 h-32 object-contain bordy-float-sm drop-shadow-xl" />
+              <h2 className="font-display text-xl font-bold text-white leading-tight">{tr.tabs.aprender}</h2>
+              <p className="text-xs text-neutral-300 max-w-[16rem]">{tr.learnBubbles[0]}</p>
+              <button
+                onClick={() => setOverlay("full")}
+                className="w-full rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25"
+              >
+                ✨ {tr.fullTutorial}
+              </button>
+            </section>
+            {/* Bordy explica paso a paso: burbujas con su avatar */}
             <div className="flex flex-col gap-3">
               {tr.learnBubbles.map((txt, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#160833] border border-[#b79ced]/40 flex items-center justify-center text-lg flex-none">🤖</div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/bordy-m2.webp" alt="" className="w-10 h-12 object-contain flex-none drop-shadow" />
                   <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
                 </div>
               ))}
             </div>
-            <button onClick={() => setTab("jugar")} className="rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
+            <button onClick={() => setTab("jugar")} className="rounded-2xl border border-[#b79ced]/40 text-white font-semibold px-6 py-3 active:scale-95 transition">
               ▶ {tr.play}
-            </button>
-            <button disabled className="rounded-2xl border border-[#b79ced]/30 text-neutral-300 px-6 py-3 opacity-60">
-              🎲 {tr.practiceSoon}
             </button>
           </>
         )}
