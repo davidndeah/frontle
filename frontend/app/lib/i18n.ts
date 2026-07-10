@@ -187,6 +187,9 @@ type Dict = {
   deposit: string;
   addressCopied: string;
   language: string;
+  audio: string;
+  music: string;
+  effects: string;
   legalTerms: string;
   legalPrivacy: string;
   legalSupport: string;
@@ -341,6 +344,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Depositar",
     addressCopied: "¡Dirección copiada!",
     language: "Idioma",
+    audio: "Audio",
+    music: "Música",
+    effects: "Efectos",
     legalTerms: "Términos",
     legalPrivacy: "Privacidad",
     legalSupport: "Soporte",
@@ -513,6 +519,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Deposit",
     addressCopied: "Address copied!",
     language: "Language",
+    audio: "Audio",
+    music: "Music",
+    effects: "Effects",
     legalTerms: "Terms",
     legalPrivacy: "Privacy",
     legalSupport: "Support",
@@ -685,6 +694,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Depositar",
     addressCopied: "Endereço copiado!",
     language: "Idioma",
+    audio: "Áudio",
+    music: "Música",
+    effects: "Efeitos",
     legalTerms: "Termos",
     legalPrivacy: "Privacidade",
     legalSupport: "Suporte",
@@ -857,6 +869,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Déposer",
     addressCopied: "Adresse copiée !",
     language: "Langue",
+    audio: "Audio",
+    music: "Musique",
+    effects: "Effets",
     legalTerms: "Conditions",
     legalPrivacy: "Confidentialité",
     legalSupport: "Support",

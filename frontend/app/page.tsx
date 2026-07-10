@@ -30,7 +30,8 @@ import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDay
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
-import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
+import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
+import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
@@ -83,6 +84,9 @@ export default function Frontle() {
   // Arranca en el default global (inglés) para que el primer render (SSR +
   // hidratación) sea consistente; el idioma real se resuelve en un efecto.
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // Estado de audio (música de fondo + efectos), reflejo de localStorage.
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [sfxMuted, setSfxMuted] = useState(false);
   // Nivel activo (fácil/medio/difícil). Cada nivel es un reto y ranking aparte.
   const [level, setLevel] = useState<Difficulty>("easy");
   const [state, setState] = useState<PlayState>(() => ({
@@ -247,6 +251,29 @@ export default function Frontle() {
     setLocale(l);
     saveLocale(l);
   }, []);
+
+  // Audio: reflejar el mute persistido y arrancar la música al primer gesto
+  // del usuario (los navegadores bloquean el autoplay hasta que hay interacción).
+  useEffect(() => {
+    setMusicMuted(isMusicMuted());
+    setSfxMuted(isSfxMuted());
+    const kick = () => {
+      startMusic();
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+    };
+    window.addEventListener("pointerdown", kick);
+    window.addEventListener("keydown", kick);
+    return () => {
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+      stopMusic();
+    };
+  }, []);
+
+  // Toggles de audio para los botones de mute.
+  const onToggleMusic = useCallback(() => setMusicMuted(toggleMusic()), []);
+  const onToggleSfx = useCallback(() => setSfxMuted(toggleSfx()), []);
   useEffect(() => {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
@@ -641,6 +668,13 @@ export default function Frontle() {
             🏆 {fmt(pot)}
           </span>
         )}
+        <button
+          onClick={onToggleMusic}
+          aria-label={musicMuted ? "Activar música" : "Silenciar música"}
+          className="rounded-full bg-white/5 border border-[#b79ced]/25 w-8 h-8 flex items-center justify-center text-sm active:scale-90 transition"
+        >
+          {musicMuted ? "🔇" : "🎵"}
+        </button>
         <LanguageSelect locale={locale} onChange={changeLocale} compact />
         <button
           onClick={() => setWalletOpen(true)}
@@ -1006,6 +1040,14 @@ export default function Frontle() {
                 <span>🌐</span>{tr.language}
               </span>
               <LanguageSelect locale={locale} onChange={changeLocale} />
+            </section>
+            {/* Ajustes de audio: música de fondo y efectos, mute independiente */}
+            <section className="panel p-4 flex flex-col gap-3">
+              <span className="text-sm text-neutral-100 flex items-center gap-2">
+                <span>🔊</span>{tr.audio}
+              </span>
+              <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
+              <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
             </section>
             {/* Enlaces exigidos por el listado de MiniPay, alcanzables desde
                 dentro de la app. Soporte va al correo: el DM de X no cuenta
@@ -1431,6 +1473,26 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
           <option key={l} value={l}>{LOCALE_LABELS[l]}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// Interruptor de audio (música / efectos) estilo switch, con estado on/off.
+function AudioToggle({ label, icon, on, onToggle }: { label: string; icon: string; on: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-neutral-200 flex items-center gap-2">
+        <span>{icon}</span>{label}
+      </span>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        className={`relative w-12 h-7 rounded-full border transition ${on ? "bg-[#fcff52]/80 border-[#fcff52]" : "bg-[#160833] border-[#b79ced]/30"}`}
+      >
+        <span className={`absolute top-1 w-5 h-5 rounded-full transition-all ${on ? "left-6 bg-[#1c0b3e]" : "left-1 bg-neutral-400"}`} />
+      </button>
     </div>
   );
 }
