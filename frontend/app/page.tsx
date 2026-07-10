@@ -33,7 +33,8 @@ import Coachmarks from "./components/Coachmarks";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
 import { REGIONS, REGION_IDS } from "./lib/regions";
-import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
+import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
+import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
@@ -86,6 +87,9 @@ export default function Frontle() {
   // Arranca en el default global (inglés) para que el primer render (SSR +
   // hidratación) sea consistente; el idioma real se resuelve en un efecto.
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // Estado de audio (música de fondo + efectos), reflejo de localStorage.
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [sfxMuted, setSfxMuted] = useState(false);
   // Nivel activo (fácil/medio/difícil). Cada nivel es un reto y ranking aparte.
   const [level, setLevel] = useState<Difficulty>("easy");
   const [state, setState] = useState<PlayState>(() => ({
@@ -254,6 +258,29 @@ export default function Frontle() {
     setLocale(l);
     saveLocale(l);
   }, []);
+
+  // Audio: reflejar el mute persistido y arrancar la música al primer gesto
+  // del usuario (los navegadores bloquean el autoplay hasta que hay interacción).
+  useEffect(() => {
+    setMusicMuted(isMusicMuted());
+    setSfxMuted(isSfxMuted());
+    const kick = () => {
+      startMusic();
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+    };
+    window.addEventListener("pointerdown", kick);
+    window.addEventListener("keydown", kick);
+    return () => {
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+      stopMusic();
+    };
+  }, []);
+
+  // Toggles de audio para los botones de mute.
+  const onToggleMusic = useCallback(() => setMusicMuted(toggleMusic()), []);
+  const onToggleSfx = useCallback(() => setSfxMuted(toggleSfx()), []);
   useEffect(() => {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
@@ -648,6 +675,13 @@ export default function Frontle() {
             🏆 {fmt(pot)}
           </span>
         )}
+        <button
+          onClick={onToggleMusic}
+          aria-label={musicMuted ? "Activar música" : "Silenciar música"}
+          className="rounded-full bg-white/5 border border-[#b79ced]/25 w-8 h-8 flex items-center justify-center text-sm active:scale-90 transition"
+        >
+          {musicMuted ? "🔇" : "🎵"}
+        </button>
         <LanguageSelect locale={locale} onChange={changeLocale} compact />
         <button
           onClick={() => setWalletOpen(true)}
@@ -1059,6 +1093,14 @@ export default function Frontle() {
               </span>
               <LanguageSelect locale={locale} onChange={changeLocale} />
             </section>
+            {/* Ajustes de audio: música de fondo y efectos, mute independiente */}
+            <section className="panel p-4 flex flex-col gap-3">
+              <span className="text-sm text-neutral-100 flex items-center gap-2">
+                <span>🔊</span>{tr.audio}
+              </span>
+              <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
+              <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
+            </section>
             {/* Enlaces exigidos por el listado de MiniPay, alcanzables desde
                 dentro de la app. Soporte va al correo: el DM de X no cuenta
                 como canal válido. */}
@@ -1076,19 +1118,31 @@ export default function Frontle() {
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && (
           <>
+            {/* Bordy presenta el tutorial (mascota real, no un emoji genérico) */}
+            <section className="panel p-5 flex flex-col items-center gap-3 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/bordy-m2.webp" alt="Bordy" className="w-28 h-32 object-contain bordy-float-sm drop-shadow-xl" />
+              <h2 className="font-display text-xl font-bold text-white leading-tight">{tr.tabs.aprender}</h2>
+              <p className="text-xs text-neutral-300 max-w-[16rem]">{tr.learnBubbles[0]}</p>
+              <button
+                onClick={() => setOverlay("full")}
+                className="w-full rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25"
+              >
+                ✨ {tr.fullTutorial}
+              </button>
+            </section>
+            {/* Bordy explica paso a paso: burbujas con su avatar */}
             <div className="flex flex-col gap-3">
               {tr.learnBubbles.map((txt, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#160833] border border-[#b79ced]/40 flex items-center justify-center text-lg flex-none">🤖</div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/bordy-m2.webp" alt="" className="w-10 h-12 object-contain flex-none drop-shadow" />
                   <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
                 </div>
               ))}
             </div>
-            <button onClick={() => setTab("jugar")} className="rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
+            <button onClick={() => setTab("jugar")} className="rounded-2xl border border-[#b79ced]/40 text-white font-semibold px-6 py-3 active:scale-95 transition">
               ▶ {tr.play}
-            </button>
-            <button disabled className="rounded-2xl border border-[#b79ced]/30 text-neutral-300 px-6 py-3 opacity-60">
-              🎲 {tr.practiceSoon}
             </button>
           </>
         )}
@@ -1483,6 +1537,26 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
           <option key={l} value={l}>{LOCALE_LABELS[l]}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// Interruptor de audio (música / efectos) estilo switch, con estado on/off.
+function AudioToggle({ label, icon, on, onToggle }: { label: string; icon: string; on: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-neutral-200 flex items-center gap-2">
+        <span>{icon}</span>{label}
+      </span>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        className={`relative w-12 h-7 rounded-full border transition ${on ? "bg-[#fcff52]/80 border-[#fcff52]" : "bg-[#160833] border-[#b79ced]/30"}`}
+      >
+        <span className={`absolute top-1 w-5 h-5 rounded-full transition-all ${on ? "left-6 bg-[#1c0b3e]" : "left-1 bg-neutral-400"}`} />
+      </button>
     </div>
   );
 }
