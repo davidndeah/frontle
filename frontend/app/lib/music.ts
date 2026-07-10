@@ -53,7 +53,7 @@ function ac(): AudioContext | null {
       master.gain.value = 0.0; // arranca en silencio; sube al iniciar
       const lp = ctx.createBiquadFilter();
       lp.type = "lowpass";
-      lp.frequency.value = 1400;
+      lp.frequency.value = 2200;
       master.connect(lp).connect(ctx.destination);
     }
     return ctx;
@@ -84,11 +84,11 @@ function scheduleStep(a: AudioContext, s: number, t: number) {
   // Pad: al inicio de cada compás, acorde sostenido y muy suave.
   if (beat === 0) {
     const barDur = STEP * STEPS_PER_BAR;
-    chord.forEach((f, i) => voice(a, f, t, barDur * 0.98, i === 0 ? 0.05 : 0.03, "sine"));
+    chord.forEach((f, i) => voice(a, f, t, barDur * 0.98, i === 0 ? 0.09 : 0.06, "sine"));
   }
   // Arpegio: una nota por corchea, subiendo y con octava ocasional.
   const arpNote = chord[beat % chord.length] * (beat >= 4 ? 2 : 1);
-  voice(a, arpNote, t, STEP * 1.4, 0.028, "triangle");
+  voice(a, arpNote, t, STEP * 1.4, 0.05, "triangle");
 }
 
 function loop() {
@@ -112,7 +112,7 @@ export function startMusic(): void {
   nextTime = a.currentTime + 0.15;
   master!.gain.cancelScheduledValues(a.currentTime);
   master!.gain.setValueAtTime(0.0001, a.currentTime);
-  master!.gain.exponentialRampToValueAtTime(0.16, a.currentTime + 2.5); // fade-in
+  master!.gain.exponentialRampToValueAtTime(0.38, a.currentTime + 2.5); // fade-in
   timer = setInterval(loop, 25);
 }
 
