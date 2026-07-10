@@ -1485,7 +1485,7 @@ function RankingCard({
             <tr className="text-[10px] uppercase text-neutral-400">
               <th className="text-left font-medium py-1 w-7">#</th>
               <th className="text-left font-medium py-1 w-6"></th>
-              <th className="text-left font-medium py-1">ID</th>
+              <th className="text-left font-medium py-1">{tr.colPlayer}</th>
               <th className="text-right font-medium py-1">{tr.colRoute}</th>
               <th className="text-right font-medium py-1">{tr.colTime}</th>
             </tr>
@@ -1500,8 +1500,18 @@ function RankingCard({
                 >
                   <td className="py-1.5">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
                   <td className="py-1.5"><Flag code={r.countryCode} size={20} /></td>
+                  {/* El nombre manda. Quien jugó antes de que existiera el
+                      perfil no tiene ninguno: se le identifica con la etiqueta
+                      genérica y la dirección truncada, que MiniPay solo admite
+                      como pista secundaria, nunca como identidad principal. */}
                   <td className="py-1.5 text-xs">
-                    {r.name ? <span className="font-semibold">{r.name}</span> : <span className="font-mono">{shortId(r.playerId)}</span>}
+                    {r.name ? (
+                      <span className="font-semibold">{r.name}</span>
+                    ) : (
+                      <span className="text-neutral-300">
+                        {tr.anonPlayer} <span className="font-mono text-neutral-400">{shortId(r.playerId)}</span>
+                      </span>
+                    )}
                     {mine ? " 👈" : ""}
                   </td>
                   <td className="py-1.5 text-right tabular-nums">{r.countries}</td>
@@ -1513,9 +1523,9 @@ function RankingCard({
         </table>
       )}
       <p className="text-[11px] text-neutral-400 mt-2 text-center">
-        {/* El nombre manda; la dirección truncada solo si aún no hay nombre.
-            MiniPay no admite un 0x… como identidad principal. */}
-        {myId ? `${alias || shortId(myId)} · ` : ""}{best !== null ? `${tr.bestToday(best)} · ` : ""}{tr.rankingNote}
+        {/* Mismo criterio que la tabla: nombre, o etiqueta + dirección. */}
+        {myId ? `${alias || `${tr.anonPlayer} ${shortId(myId)}`} · ` : ""}
+        {best !== null ? `${tr.bestToday(best)} · ` : ""}{tr.rankingNote}
       </p>
     </section>
   );

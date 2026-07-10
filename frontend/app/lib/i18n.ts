@@ -180,8 +180,12 @@ type Dict = {
   play: string;
   timerHint: string;
   timeLabel: string;
+  colPlayer: string;
   colRoute: string;
   colTime: string;
+  // Etiqueta para quien jugó antes de que existiera el nombre de perfil.
+  // Se muestra junto a la dirección truncada: "Jugador 0df8…a1c3".
+  anonPlayer: string;
   rankingEmpty: string;
   feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
   stats: {
@@ -335,6 +339,8 @@ const STRINGS: Record<Locale, Dict> = {
     play: "▶ Jugar",
     timerHint: "El cronómetro arranca al pulsar Jugar",
     timeLabel: "Tiempo",
+    colPlayer: "Jugador",
+    anonPlayer: "Jugador",
     colRoute: "Ruta",
     colTime: "Tiempo",
     rankingEmpty: "Aún nadie ha resuelto el reto de hoy. ¡Sé el primero!",
@@ -498,6 +504,8 @@ const STRINGS: Record<Locale, Dict> = {
     play: "▶ Play",
     timerHint: "The timer starts when you press Play",
     timeLabel: "Time",
+    colPlayer: "Player",
+    anonPlayer: "Player",
     colRoute: "Route",
     colTime: "Time",
     rankingEmpty: "Nobody has solved today's challenge yet. Be the first!",
@@ -661,6 +669,8 @@ const STRINGS: Record<Locale, Dict> = {
     play: "▶ Jogar",
     timerHint: "O cronômetro começa ao tocar em Jogar",
     timeLabel: "Tempo",
+    colPlayer: "Jogador",
+    anonPlayer: "Jogador",
     colRoute: "Rota",
     colTime: "Tempo",
     rankingEmpty: "Ninguém resolveu o desafio de hoje ainda. Seja o primeiro!",
@@ -824,6 +834,8 @@ const STRINGS: Record<Locale, Dict> = {
     play: "▶ Jouer",
     timerHint: "Le chrono démarre quand vous appuyez sur Jouer",
     timeLabel: "Temps",
+    colPlayer: "Joueur",
+    anonPlayer: "Joueur",
     colRoute: "Itinéraire",
     colTime: "Temps",
     rankingEmpty: "Personne n'a encore résolu le défi du jour. Soyez le premier !",
