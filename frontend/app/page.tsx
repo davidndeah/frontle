@@ -22,7 +22,7 @@ import {
   t,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, type ScoreEntry } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
@@ -39,7 +39,9 @@ import {
   getClaimablePrizes,
   claimPrize,
   getWalletBalances,
+  getLastCycleWinners,
   type ClaimablePrize,
+  type LastCycle,
   type PayResult,
 } from "./lib/payments";
 import { PRIVY_ENABLED } from "./lib/privy";
@@ -128,6 +130,11 @@ export default function Frontle() {
 
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
+  // Ganadores del último día cerrado + sus nombres de perfil, para el Ranking.
+  const [cycle, setCycle] = useState<LastCycle | null>(null);
+  const [winnerNames, setWinnerNames] = useState<Record<string, string>>({});
+  // `${día}-${nivel}` recién reclamado: dispara la animación de celebración.
+  const [justClaimed, setJustClaimed] = useState<string | null>(null);
   const [claimingKey, setClaimingKey] = useState<string | null>(null);
   // Bono de bienvenida recién otorgado (monto en USDT) → aviso de Bordy.
   const [bonus, setBonus] = useState<string | null>(null);
@@ -388,13 +395,29 @@ export default function Frontle() {
     if (myId) loadPrizes(myId);
   }, [myId, loadPrizes]);
 
+  // Ganadores del último día CERRADO (tab Ranking). El contrato es la fuente de
+  // verdad, así que también dice si cada premio ya se reclamó.
+  const loadCycle = useCallback(async () => {
+    const c = await getLastCycleWinners();
+    setCycle(c);
+    if (c) setWinnerNames(await getNamesFor(c.winners.map((w) => w.winner)));
+  }, []);
+
+  useEffect(() => { loadCycle(); }, [loadCycle]);
+
   async function handleClaim(day: number, lv: Difficulty) {
     setClaimingKey(`${day}-${lv}`);
     const ok = await claimPrize(day, lv);
     setClaimingKey(null);
     if (ok) {
       setMessage({ text: tr.prizeClaimedMsg, ok: true });
-      await loadPrizes(myId); // refresca: el (día,nivel) reclamado desaparece
+      sfxWin();
+      // Celebración: dura lo que la animación (1s) y se limpia sola.
+      setJustClaimed(`${day}-${lv}`);
+      setTimeout(() => setJustClaimed(null), 1200);
+      // Se refrescan las DOS vistas: el premio desaparece del Perfil y la fila
+      // del ciclo pasa a "Reclamado" (el contrato ya devuelve claimed=true).
+      await Promise.all([loadPrizes(myId), loadCycle()]);
     } else {
       setMessage({ text: tr.prizeClaimError, ok: false });
     }
@@ -886,6 +909,18 @@ export default function Frontle() {
             {/* Selector de nivel: cada nivel tiene su ranking */}
             <LevelSelect tr={tr} level={level} onChange={setLevel} />
             <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
+            {/* Ganadores del ciclo cerrado: el ganador reclama desde aquí */}
+            <WinnersCard
+              tr={tr}
+              cycle={cycle}
+              names={winnerNames}
+              myId={myId}
+              claimingKey={claimingKey}
+              justClaimed={justClaimed}
+              onClaim={handleClaim}
+              panel={panel}
+              fmt={fmt}
+            />
             <p className="text-center text-[11px] text-neutral-400">{tr.nextChallenge(countdown)}</p>
           </>
         )}
@@ -1413,6 +1448,110 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
       <Flag code={code} size={30} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
+  );
+}
+
+// Ganadores del último día cerrado, un renglón por nivel.
+// Solo el ganador ve el botón, y solo mientras el CONTRATO diga que no ha
+// reclamado: `claimed` es la fuente de verdad, no un estado local. Tras
+// reclamar se recarga el ciclo y el botón queda deshabilitado.
+function WinnersCard({
+  tr,
+  cycle,
+  names,
+  myId,
+  claimingKey,
+  justClaimed,
+  onClaim,
+  panel,
+  fmt,
+}: {
+  tr: ReturnType<typeof t>;
+  cycle: LastCycle | null;
+  names: Record<string, string>;
+  myId: string;
+  claimingKey: string | null;
+  justClaimed: string | null;
+  onClaim: (day: number, level: Difficulty) => void;
+  panel: string;
+  fmt: (usdt: number) => string;
+}) {
+  if (!cycle) {
+    return (
+      <section className={`${panel} p-3`}>
+        <p className="text-[10px] uppercase tracking-widest text-amber-300 mb-1 text-center">{tr.winnersTitle}</p>
+        <p className="text-sm text-neutral-300 text-center py-2">{tr.winnersEmpty}</p>
+      </section>
+    );
+  }
+
+  const me = myId.toLowerCase();
+
+  return (
+    <section className={`${panel} p-3`}>
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <p className="text-[10px] uppercase tracking-widest text-amber-300">{tr.winnersTitle}</p>
+        <span className="text-[10px] text-neutral-400 tabular-nums">{tr.winnersDay(cycle.day)}</span>
+      </div>
+
+      <ul className="flex flex-col gap-2">
+        {cycle.winners.map((w) => {
+          const key = `${cycle.day}-${w.level}`;
+          const mine = !!w.winner && w.winner === me;
+          const celebrating = justClaimed === key;
+          const label = w.winner
+            ? names[w.winner] || `${tr.anonPlayer} ${shortId(w.winner)}`
+            : tr.noWinner;
+
+          return (
+            <li
+              key={key}
+              className={`relative overflow-hidden flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
+                mine ? "border-amber-400/50 bg-amber-400/10" : "border-white/10 bg-white/[0.03]"
+              } ${celebrating ? "claim-flash" : ""}`}
+            >
+              {celebrating && (
+                <>
+                  {["-18px", "0px", "16px", "30px"].map((dx, i) => (
+                    <span
+                      key={dx}
+                      className="claim-spark right-6 bottom-2 text-sm"
+                      style={{ ["--dx" as string]: dx, animationDelay: `${i * 70}ms` }}
+                      aria-hidden="true"
+                    >
+                      ✨
+                    </span>
+                  ))}
+                </>
+              )}
+
+              <div className="flex flex-col min-w-0">
+                <span className="text-[10px] uppercase tracking-wider text-neutral-400">{tr.levels[w.level]}</span>
+                <span className={`text-sm truncate ${mine ? "text-amber-100 font-semibold" : "text-neutral-200"}`}>
+                  {label} {mine && w.winner ? "👈" : ""}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-sm tabular-nums ${w.winner ? "text-amber-300" : "text-neutral-500"}`}>
+                  {fmt(w.amount)}
+                </span>
+
+                {mine && (
+                  <button
+                    onClick={() => onClaim(cycle.day, w.level)}
+                    disabled={w.claimed || claimingKey !== null}
+                    className="rounded-lg border border-amber-400/60 bg-amber-400/20 px-3 py-1.5 text-xs font-medium text-amber-100 transition active:scale-95 hover:bg-amber-400/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  >
+                    {w.claimed ? `✓ ${tr.prizeClaimedLabel}` : claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
+                  </button>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

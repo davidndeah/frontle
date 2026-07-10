@@ -324,6 +324,31 @@ export async function getTopCountries(limit = 6): Promise<CountryStat[]> {
   }
 }
 
+// Nombres de perfil de un puñado de direcciones (los ganadores del ciclo).
+// Devuelve un mapa dirección→nombre; las que no tengan nombre no aparecen.
+// `player_id` es la dirección de la wallet en minúsculas.
+export async function getNamesFor(addresses: string[]): Promise<Record<string, string>> {
+  const ids = addresses.filter(Boolean).map((a) => a.toLowerCase());
+  if (!useSupabase || ids.length === 0) return {};
+  try {
+    const list = ids.map((a) => `"${a}"`).join(",");
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/scores?player_id=in.(${list})&name=not.is.null&select=player_id,name`,
+      { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
+    );
+    const j = await r.json();
+    if (!Array.isArray(j)) return {};
+    const out: Record<string, string> = {};
+    for (const row of j as { player_id: string; name: string }[]) {
+      const id = String(row.player_id || "").toLowerCase();
+      if (id && row.name && !out[id]) out[id] = row.name;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
 export function formatTime(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;

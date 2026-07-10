@@ -402,6 +402,74 @@ export async function getPublicStats(): Promise<PublicStats | null> {
   }
 }
 
+// --- Ganadores del ciclo anterior --------------------------------------
+// Para el tab Ranking: quién ganó cada nivel del último día cerrado, cuánto,
+// y si ya lo reclamó. Solo lectura: no necesita wallet.
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+export interface DayWinner {
+  level: Difficulty;
+  winner: string; // "" si ese nivel no tuvo ganador
+  amount: number; // USDT
+  claimed: boolean;
+}
+
+export interface LastCycle {
+  day: number;
+  winners: DayWinner[];
+}
+
+// Busca hacia atrás el último día CERRADO. No se asume `currentDay - 1`: si el
+// cron de cierre se retrasa, ese día aún no está `rolled` y la sección saldría
+// vacía sin que nada esté roto.
+export async function getLastCycleWinners(lookback = 7): Promise<LastCycle | null> {
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const game = { address: GAME_ADDRESS, abi: gameAbi } as const;
+
+    const today = Number(await publicClient.readContract({ ...game, functionName: "currentDay" }));
+    const candidates: bigint[] = [];
+    for (let d = today - 1; d >= Math.max(FIRST_DAY, today - lookback); d--) candidates.push(BigInt(d));
+    if (candidates.length === 0) return null;
+
+    const rolled = await publicClient.multicall({
+      allowFailure: false,
+      contracts: candidates.map((d) => ({ ...game, functionName: "rolled", args: [d] }) as const),
+    });
+    const idx = rolled.findIndex(Boolean);
+    if (idx === -1) return null;
+    const day = candidates[idx];
+
+    const levels: Difficulty[] = ["easy", "medium", "hard"];
+    const reads = await publicClient.multicall({
+      allowFailure: false,
+      contracts: levels.flatMap((lv) => [
+        { ...game, functionName: "winnerOf", args: [day, LEVEL_INDEX[lv]] } as const,
+        { ...game, functionName: "prize", args: [day, LEVEL_INDEX[lv]] } as const,
+        { ...game, functionName: "claimed", args: [day, LEVEL_INDEX[lv]] } as const,
+      ]),
+    });
+
+    const winners: DayWinner[] = levels.map((level, i) => {
+      const winner = reads[i * 3] as string;
+      const amount = reads[i * 3 + 1] as bigint;
+      const claimed = reads[i * 3 + 2] as boolean;
+      return {
+        level,
+        winner: winner.toLowerCase() === ZERO_ADDRESS ? "" : winner.toLowerCase(),
+        amount: Number(formatUnits(amount, TOKEN_DECIMALS)),
+        claimed,
+      };
+    });
+
+    return { day: Number(day), winners };
+  } catch (err) {
+    console.error("[premios] no se pudieron leer los ganadores del ciclo:", err);
+    return null;
+  }
+}
+
 // --- Premios: (día, nivel) reclamables y reclamo ------------------------
 // El contrato es la fuente de verdad. Recibe los (día, nivel) candidatos (de la
 // tabla `winners` de Supabase) y deja SOLO los que la wallet puede cobrar ahora:

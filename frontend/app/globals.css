@@ -166,6 +166,31 @@ body {
   filter: blur(34px);
 }
 
+/* Premio reclamado: la fila destella en oro y suelta chispas hacia arriba */
+@keyframes claim-flash {
+  0% { background-color: rgba(252, 255, 82, 0.35); transform: scale(1); }
+  35% { transform: scale(1.03); }
+  100% { background-color: rgba(252, 255, 82, 0.06); transform: scale(1); }
+}
+.claim-flash { animation: claim-flash 1s ease-out both; }
+
+@keyframes claim-spark {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), -34px) scale(1.15); }
+}
+.claim-spark {
+  position: absolute;
+  pointer-events: none;
+  animation: claim-spark 1s ease-out both;
+}
+
+/* Quien pide menos movimiento recibe el destello, pero no las chispas. */
+@media (prefers-reduced-motion: reduce) {
+  .claim-flash { animation-duration: 0.01ms; }
+  .claim-spark { display: none; }
+}
+
 /* Texto con gradiente prisma */
 .prism-text {
   background: linear-gradient(

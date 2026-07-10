@@ -177,6 +177,12 @@ type Dict = {
   prizeClaiming: string;
   prizeClaimedMsg: string;
   prizeClaimError: string;
+  // Ganadores del último día cerrado (tab Ranking)
+  winnersTitle: string;
+  winnersDay: (day: number) => string;
+  winnersEmpty: string;
+  noWinner: string;
+  prizeClaimedLabel: string;
   play: string;
   timerHint: string;
   timeLabel: string;
@@ -336,6 +342,11 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Reclamando…",
     prizeClaimedMsg: "¡Premio reclamado! 🎉",
     prizeClaimError: "No se pudo reclamar. Intenta de nuevo.",
+    winnersTitle: "Ganadores del ciclo anterior",
+    winnersDay: (d) => `día #${d}`,
+    winnersEmpty: "Todavía no se ha cerrado ningún ciclo.",
+    noWinner: "Sin ganador",
+    prizeClaimedLabel: "Reclamado",
     play: "▶ Jugar",
     timerHint: "El cronómetro arranca al pulsar Jugar",
     timeLabel: "Tiempo",
@@ -501,6 +512,11 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Claiming…",
     prizeClaimedMsg: "Prize claimed! 🎉",
     prizeClaimError: "Couldn't claim. Try again.",
+    winnersTitle: "Last cycle winners",
+    winnersDay: (d) => `day #${d}`,
+    winnersEmpty: "No cycle has closed yet.",
+    noWinner: "No winner",
+    prizeClaimedLabel: "Claimed",
     play: "▶ Play",
     timerHint: "The timer starts when you press Play",
     timeLabel: "Time",
@@ -666,6 +682,11 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Resgatando…",
     prizeClaimedMsg: "Prêmio resgatado! 🎉",
     prizeClaimError: "Não foi possível resgatar. Tente novamente.",
+    winnersTitle: "Vencedores do ciclo anterior",
+    winnersDay: (d) => `dia #${d}`,
+    winnersEmpty: "Nenhum ciclo foi encerrado ainda.",
+    noWinner: "Sem vencedor",
+    prizeClaimedLabel: "Resgatado",
     play: "▶ Jogar",
     timerHint: "O cronômetro começa ao tocar em Jogar",
     timeLabel: "Tempo",
@@ -831,6 +852,11 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Réclamation…",
     prizeClaimedMsg: "Prix réclamé ! 🎉",
     prizeClaimError: "Échec de la réclamation. Réessayez.",
+    winnersTitle: "Gagnants du cycle précédent",
+    winnersDay: (d) => `jour n°${d}`,
+    winnersEmpty: "Aucun cycle n'est encore clôturé.",
+    noWinner: "Pas de gagnant",
+    prizeClaimedLabel: "Réclamé",
     play: "▶ Jouer",
     timerHint: "Le chrono démarre quand vous appuyez sur Jouer",
     timeLabel: "Temps",
