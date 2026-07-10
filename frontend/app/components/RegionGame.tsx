@@ -180,7 +180,9 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
       {/* volver */}
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
         <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
-        <span className="font-display font-semibold">{def.flag} {def.title}</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/flags/national/${regionId}.png`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
+        <span className="font-display font-semibold">{def.title}</span>
       </button>
 
       {/* reto */}

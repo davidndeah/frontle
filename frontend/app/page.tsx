@@ -31,6 +31,7 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import RegionGame from "./components/RegionGame";
+import RegionMapPreview from "./components/RegionMapPreview";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
@@ -154,6 +155,8 @@ export default function Frontle() {
   const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
   // Modo Regiones activo (id de región: "co", "us"…) — null = modo mundial
   const [regionMode, setRegionMode] = useState<string | null>(null);
+  // País elegido en el desplegable del selector de Regiones (antes de jugar).
+  const [regionPick, setRegionPick] = useState<string>(REGION_IDS[0]);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
   const [alias, setAliasState] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -704,7 +707,7 @@ export default function Frontle() {
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
-            {/* Modo Regiones: conecta departamentos/estados (gratis) */}
+            {/* Modo Regiones: elige país en el desplegable, ve su mapa y juega */}
             <div className="panel p-4 flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🗺️</span>
@@ -714,19 +717,35 @@ export default function Frontle() {
                 </span>
                 <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">nuevo</span>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {REGION_IDS.map((rid) => (
-                  <button
-                    key={rid}
-                    onClick={() => setRegionMode(rid)}
-                    className="flex items-center gap-2 rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 px-3 py-2.5 active:scale-95 transition"
-                  >
-                    <span className="text-2xl">{REGIONS[rid].flag}</span>
-                    <span className="font-display font-semibold text-white text-sm">{REGIONS[rid].title}</span>
-                  </button>
-                ))}
+              {/* Desplegable de país */}
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/flags/national/${regionPick}.png`}
+                  alt=""
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-6 h-4 object-cover rounded-sm border border-white/20"
+                />
+                <select
+                  value={regionPick}
+                  onChange={(e) => setRegionPick(e.target.value)}
+                  aria-label="País"
+                  className="w-full appearance-none rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-[#fcff52]/50"
+                >
+                  {REGION_IDS.map((rid) => (
+                    <option key={rid} value={rid}>{REGIONS[rid].title}</option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 text-xs">▾</span>
               </div>
-              <p className="text-[10px] text-neutral-400 text-center">🇳🇬 🇬🇭 🇦🇷 🇧🇷 más países muy pronto…</p>
+              {/* Mapa del país elegido */}
+              <RegionMapPreview regionId={regionPick} loadingLabel={tr.loadingMap} />
+              <button
+                onClick={() => setRegionMode(regionPick)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#fcff52] text-[#1c0b3e] font-display font-black py-2.5 active:scale-95 transition"
+              >
+                ▶ Jugar {REGIONS[regionPick].title}
+              </button>
+              <p className="text-[10px] text-neutral-400 text-center">Nigeria · Ghana · Argentina · Brasil muy pronto…</p>
             </div>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
