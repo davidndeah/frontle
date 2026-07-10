@@ -13,10 +13,45 @@ import { normalize, resolveCountry, type GuessReason } from "./game";
 export type Locale = "es" | "en" | "fr" | "pt";
 export const LOCALES: Locale[] = ["es", "en", "fr", "pt"];
 
+// Nombres nativos para el selector manual de idioma.
+export const LOCALE_LABELS: Record<Locale, string> = {
+  es: "Español",
+  en: "English",
+  fr: "Français",
+  pt: "Português",
+};
+
+// Idioma por defecto: inglés. Frontle es un producto global (MiniPay),
+// así que sin señales del navegador el fallback es inglés, no español.
+export const DEFAULT_LOCALE: Locale = "en";
+const LOCALE_STORAGE_KEY = "frontle-locale";
+
+// Preferencia manual guardada (o null si no hay / no es válida).
+export function savedLocale(): Locale | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    const v = localStorage.getItem(LOCALE_STORAGE_KEY);
+    return v && (LOCALES as string[]).includes(v) ? (v as Locale) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Persiste la elección manual de idioma.
+export function saveLocale(locale: Locale): void {
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+  } catch {}
+}
+
 export function detectLocale(): Locale {
-  if (typeof navigator === "undefined") return "es";
-  const lang = (navigator.language || "es").slice(0, 2).toLowerCase();
-  return (LOCALES as string[]).includes(lang) ? (lang as Locale) : "en";
+  // 1) La preferencia manual del usuario manda por encima de todo.
+  const saved = savedLocale();
+  if (saved) return saved;
+  // 2) Idioma del navegador; en SSR (sin navigator) o si no lo soportamos, inglés.
+  if (typeof navigator === "undefined") return DEFAULT_LOCALE;
+  const lang = (navigator.language || DEFAULT_LOCALE).slice(0, 2).toLowerCase();
+  return (LOCALES as string[]).includes(lang) ? (lang as Locale) : DEFAULT_LOCALE;
 }
 
 // --- Nombres de país localizados ---
@@ -151,6 +186,7 @@ type Dict = {
   walletBalanceTitle: string;
   deposit: string;
   addressCopied: string;
+  language: string;
   legalTerms: string;
   legalPrivacy: string;
   legalSupport: string;
@@ -304,6 +340,7 @@ const STRINGS: Record<Locale, Dict> = {
     walletBalanceTitle: "Saldo de tu wallet",
     deposit: "Depositar",
     addressCopied: "¡Dirección copiada!",
+    language: "Idioma",
     legalTerms: "Términos",
     legalPrivacy: "Privacidad",
     legalSupport: "Soporte",
@@ -475,6 +512,7 @@ const STRINGS: Record<Locale, Dict> = {
     walletBalanceTitle: "Your wallet balance",
     deposit: "Deposit",
     addressCopied: "Address copied!",
+    language: "Language",
     legalTerms: "Terms",
     legalPrivacy: "Privacy",
     legalSupport: "Support",
@@ -646,6 +684,7 @@ const STRINGS: Record<Locale, Dict> = {
     walletBalanceTitle: "Saldo da sua carteira",
     deposit: "Depositar",
     addressCopied: "Endereço copiado!",
+    language: "Idioma",
     legalTerms: "Termos",
     legalPrivacy: "Privacidade",
     legalSupport: "Suporte",
@@ -817,6 +856,7 @@ const STRINGS: Record<Locale, Dict> = {
     walletBalanceTitle: "Solde de votre portefeuille",
     deposit: "Déposer",
     addressCopied: "Adresse copiée !",
+    language: "Langue",
     legalTerms: "Conditions",
     legalPrivacy: "Confidentialité",
     legalSupport: "Support",
