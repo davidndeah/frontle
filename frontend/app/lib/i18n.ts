@@ -183,6 +183,8 @@ type Dict = {
   winnersEmpty: string;
   noWinner: string;
   prizeClaimedLabel: string;
+  // El reclamo vive solo en Perfil; desde el Ranking se enlaza allí.
+  claimInProfile: string;
   play: string;
   timerHint: string;
   timeLabel: string;
@@ -347,6 +349,7 @@ const STRINGS: Record<Locale, Dict> = {
     winnersEmpty: "Todavía no se ha cerrado ningún ciclo.",
     noWinner: "Sin ganador",
     prizeClaimedLabel: "Reclamado",
+    claimInProfile: "Reclamar en Perfil →",
     play: "▶ Jugar",
     timerHint: "El cronómetro arranca al pulsar Jugar",
     timeLabel: "Tiempo",
@@ -517,6 +520,7 @@ const STRINGS: Record<Locale, Dict> = {
     winnersEmpty: "No cycle has closed yet.",
     noWinner: "No winner",
     prizeClaimedLabel: "Claimed",
+    claimInProfile: "Claim in Profile →",
     play: "▶ Play",
     timerHint: "The timer starts when you press Play",
     timeLabel: "Time",
@@ -687,6 +691,7 @@ const STRINGS: Record<Locale, Dict> = {
     winnersEmpty: "Nenhum ciclo foi encerrado ainda.",
     noWinner: "Sem vencedor",
     prizeClaimedLabel: "Resgatado",
+    claimInProfile: "Resgatar no Perfil →",
     play: "▶ Jogar",
     timerHint: "O cronômetro começa ao tocar em Jogar",
     timeLabel: "Tempo",
@@ -857,6 +862,7 @@ const STRINGS: Record<Locale, Dict> = {
     winnersEmpty: "Aucun cycle n'est encore clôturé.",
     noWinner: "Pas de gagnant",
     prizeClaimedLabel: "Réclamé",
+    claimInProfile: "Réclamer dans Profil →",
     play: "▶ Jouer",
     timerHint: "Le chrono démarre quand vous appuyez sur Jouer",
     timeLabel: "Temps",
