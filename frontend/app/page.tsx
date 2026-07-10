@@ -16,10 +16,14 @@ import {
 } from "./lib/game";
 import {
   detectLocale,
+  saveLocale,
   countryName,
   resolveLocalized,
   suggestLocalized,
   t,
+  LOCALES,
+  LOCALE_LABELS,
+  DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, type ScoreEntry } from "./lib/ranking";
@@ -76,7 +80,9 @@ function Flag({ code, size = 32 }: { code: string; size?: number }) {
 }
 
 export default function Frontle() {
-  const [locale, setLocale] = useState<Locale>("es");
+  // Arranca en el default global (inglés) para que el primer render (SSR +
+  // hidratación) sea consistente; el idioma real se resuelve en un efecto.
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   // Nivel activo (fácil/medio/difícil). Cada nivel es un reto y ranking aparte.
   const [level, setLevel] = useState<Difficulty>("easy");
   const [state, setState] = useState<PlayState>(() => ({
@@ -236,6 +242,11 @@ export default function Frontle() {
   }, []);
 
   useEffect(() => setLocale(detectLocale()), []);
+  // Cambio manual de idioma: aplica y persiste la preferencia del usuario.
+  const changeLocale = useCallback((l: Locale) => {
+    setLocale(l);
+    saveLocale(l);
+  }, []);
   useEffect(() => {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
@@ -630,6 +641,7 @@ export default function Frontle() {
             🏆 {fmt(pot)}
           </span>
         )}
+        <LanguageSelect locale={locale} onChange={changeLocale} compact />
         <button
           onClick={() => setWalletOpen(true)}
           className="rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
@@ -988,6 +1000,13 @@ export default function Frontle() {
             {prizes.length > 0 && (
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
+            {/* Ajuste de idioma (además del selector rápido del header) */}
+            <section className="panel p-4 flex items-center justify-between gap-3">
+              <span className="text-sm text-neutral-100 flex items-center gap-2">
+                <span>🌐</span>{tr.language}
+              </span>
+              <LanguageSelect locale={locale} onChange={changeLocale} />
+            </section>
             {/* Enlaces exigidos por el listado de MiniPay, alcanzables desde
                 dentro de la app. Soporte va al correo: el DM de X no cuenta
                 como canal válido. */}
@@ -1388,6 +1407,31 @@ function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; 
         <option value="COPM">COPm</option>
       </select>
     </label>
+  );
+}
+
+// Selector de idioma. `compact` = versión de header (solo el globo 🌐);
+// sin `compact` = versión con etiqueta para el tab Perfil. Los 4 idiomas
+// (es/en/fr/pt) ya están traducidos en STRINGS.
+function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChange: (l: Locale) => void; compact?: boolean }) {
+  return (
+    <div className="relative inline-flex items-center">
+      <span className="pointer-events-none absolute left-2 text-xs">🌐</span>
+      <select
+        value={locale}
+        onChange={(e) => onChange(e.target.value as Locale)}
+        aria-label="Language"
+        className={
+          compact
+            ? "appearance-none rounded-full bg-white/5 border border-[#b79ced]/25 pl-6 pr-2 py-1 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50 active:scale-95 transition"
+            : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
+        }
+      >
+        {LOCALES.map((l) => (
+          <option key={l} value={l}>{LOCALE_LABELS[l]}</option>
+        ))}
+      </select>
+    </div>
   );
 }
 
