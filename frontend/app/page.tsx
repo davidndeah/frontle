@@ -23,6 +23,8 @@ import {
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, type ScoreEntry } from "./lib/ranking";
 import Coachmarks from "./components/Coachmarks";
+import RegionGame from "./components/RegionGame";
+import { REGIONS, REGION_IDS } from "./lib/regions";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
@@ -116,6 +118,8 @@ export default function Frontle() {
   const [walletOpen, setWalletOpen] = useState(false);
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
   const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
+  // Modo Regiones activo (id de región: "co", "us"…) — null = modo mundial
+  const [regionMode, setRegionMode] = useState<string | null>(null);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
   const [alias, setAliasState] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -573,7 +577,12 @@ export default function Frontle() {
 
       {/* Contenido del tab activo */}
       <div className="relative z-10 w-full max-w-md flex flex-col gap-4 px-4 pt-[70px] pb-24">
-        {tab === "jugar" && (
+        {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
+        {tab === "jugar" && regionMode && (
+          <RegionGame regionId={regionMode} onExit={() => setRegionMode(null)} />
+        )}
+
+        {tab === "jugar" && !regionMode && (
           <>
         {/* Título + gamificación (sin hero gigante; Bordy vive en la esquina) */}
         {!started && (
@@ -616,10 +625,34 @@ export default function Frontle() {
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
+            {/* Modo Regiones: conecta departamentos/estados (gratis) */}
+            <div className="panel p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🗺️</span>
+                <span className="flex-1">
+                  <span className="font-display font-bold text-white text-lg block leading-tight">Regiones</span>
+                  <span className="text-xs text-neutral-300">conecta departamentos y estados · gratis</span>
+                </span>
+                <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">nuevo</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {REGION_IDS.map((rid) => (
+                  <button
+                    key={rid}
+                    onClick={() => setRegionMode(rid)}
+                    className="flex items-center gap-2 rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 px-3 py-2.5 active:scale-95 transition"
+                  >
+                    <span className="text-2xl">{REGIONS[rid].flag}</span>
+                    <span className="font-display font-semibold text-white text-sm">{REGIONS[rid].title}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-neutral-400 text-center">🇳🇬 🇬🇭 🇦🇷 🇧🇷 más países muy pronto…</p>
+            </div>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">Nuevos modos</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">Más modos</span>
                 <span className="text-xs text-neutral-300">práctica, duelos y más…</span>
               </span>
               <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">coming soon</span>
