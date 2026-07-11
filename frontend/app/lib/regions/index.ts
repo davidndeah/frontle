@@ -9,6 +9,7 @@ import { USA } from "./usa";
 import { ARGENTINA } from "./ar";
 import { NIGERIA } from "./ng";
 import { BRASIL } from "./br";
+import { GHANA } from "./gh";
 
 export type { RegionDef, RegionEntity } from "./types";
 
@@ -18,6 +19,7 @@ export const REGIONS: Record<string, RegionDef> = {
   ar: ARGENTINA,
   ng: NIGERIA,
   br: BRASIL,
+  gh: GHANA,
 };
 export const REGION_IDS = Object.keys(REGIONS) as (keyof typeof REGIONS)[];
 

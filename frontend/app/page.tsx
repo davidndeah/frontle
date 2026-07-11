@@ -792,7 +792,7 @@ export default function Frontle() {
               >
                 ▶ Jugar {REGIONS[regionPick].title}
               </button>
-              <p className="text-[10px] text-neutral-400 text-center">Nigeria · Ghana · Argentina · Brasil muy pronto…</p>
+              <p className="text-[10px] text-neutral-400 text-center">más países muy pronto…</p>
             </div>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
