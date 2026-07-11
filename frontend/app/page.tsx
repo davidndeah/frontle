@@ -749,8 +749,8 @@ export default function Frontle() {
             >
               <span className="text-3xl">🌍</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">Reto diario</span>
-                <span className="text-xs text-neutral-300">3 niveles · premio real del pot 🏆</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
+                <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
@@ -759,10 +759,10 @@ export default function Frontle() {
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🗺️</span>
                 <span className="flex-1">
-                  <span className="font-display font-bold text-white text-lg block leading-tight">Regiones</span>
-                  <span className="text-xs text-neutral-300">conecta departamentos y estados · gratis</span>
+                  <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.regionsTitle}</span>
+                  <span className="text-xs text-neutral-300">{tr.modes.regionsSub}</span>
                 </span>
-                <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">nuevo</span>
+                <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
               </div>
               {/* Desplegable de país */}
               <div className="relative">
@@ -775,7 +775,7 @@ export default function Frontle() {
                 <select
                   value={regionPick}
                   onChange={(e) => setRegionPick(e.target.value)}
-                  aria-label="País"
+                  aria-label={tr.a11y.country}
                   className="w-full appearance-none rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-[#fcff52]/50"
                 >
                   {REGION_IDS.map((rid) => (
@@ -790,15 +790,15 @@ export default function Frontle() {
                 onClick={() => setRegionMode(regionPick)}
                 className="flex items-center justify-center gap-2 rounded-xl bg-[#fcff52] text-[#1c0b3e] font-display font-black py-2.5 active:scale-95 transition"
               >
-                ▶ Jugar {REGIONS[regionPick].title}
+                ▶ {tr.modes.play(REGIONS[regionPick].title)}
               </button>
-              <p className="text-[10px] text-neutral-400 text-center">más países muy pronto…</p>
+              <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
             </div>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">Más modos</span>
-                <span className="text-xs text-neutral-300">práctica, duelos y más…</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.moreModesTitle}</span>
+                <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
               </span>
               <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">coming soon</span>
             </div>
@@ -1463,8 +1463,8 @@ function NamePrompt({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
           <div>
-            <h3 className="font-display font-bold text-white text-lg leading-tight">¡Elige tu nombre!</h3>
-            <p className="text-xs text-neutral-300">Así apareces en el ranking (en vez de tu wallet).</p>
+            <h3 className="font-display font-bold text-white text-lg leading-tight">{tr.name.title}</h3>
+            <p className="text-xs text-neutral-300">{tr.name.sub}</p>
           </div>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">

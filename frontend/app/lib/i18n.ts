@@ -212,6 +212,16 @@ type Dict = {
     used: (n: number) => string;
     bestToday: (n: number, noun: string) => string;
   };
+  // Selector de modos (paso "modes" del tab Jugar)
+  modes: {
+    dailyTitle: string; dailySub: string;
+    regionsTitle: string; regionsSub: string; new: string;
+    play: (title: string) => string; moreCountries: string;
+    moreModesTitle: string; moreModesSub: string;
+  };
+  a11y: { country: string };
+  // Prompt de alias al registrarse
+  name: { title: string; sub: string };
   tutorialSteps: string[];
   tutNext: string;
   tutPlay: string;
@@ -389,6 +399,14 @@ const STRINGS: Record<Locale, Dict> = {
       used: (n) => `Usados: ${n}`,
       bestToday: (n, noun) => `Tu mejor hoy: ${n} ${noun}`,
     },
+    modes: {
+      dailyTitle: "Reto diario", dailySub: "3 niveles · premio real del pot 🏆",
+      regionsTitle: "Regiones", regionsSub: "conecta departamentos y estados · gratis", new: "nuevo",
+      play: (t) => `Jugar ${t}`, moreCountries: "más países muy pronto…",
+      moreModesTitle: "Más modos", moreModesSub: "práctica, duelos y más…",
+    },
+    a11y: { country: "País" },
+    name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet)." },
     tutorialSteps: [
       "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
       "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
@@ -580,6 +598,14 @@ const STRINGS: Record<Locale, Dict> = {
       used: (n) => `Used: ${n}`,
       bestToday: (n, noun) => `Your best today: ${n} ${noun}`,
     },
+    modes: {
+      dailyTitle: "Daily challenge", dailySub: "3 levels · real prize from the pot 🏆",
+      regionsTitle: "Regions", regionsSub: "connect departments and states · free", new: "new",
+      play: (t) => `Play ${t}`, moreCountries: "more countries coming soon…",
+      moreModesTitle: "More modes", moreModesSub: "practice, duels and more…",
+    },
+    a11y: { country: "Country" },
+    name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet)." },
     tutorialSteps: [
       "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
       "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
@@ -771,6 +797,14 @@ const STRINGS: Record<Locale, Dict> = {
       used: (n) => `Usados: ${n}`,
       bestToday: (n, noun) => `Sua melhor hoje: ${n} ${noun}`,
     },
+    modes: {
+      dailyTitle: "Desafio diário", dailySub: "3 níveis · prêmio real do pot 🏆",
+      regionsTitle: "Regiões", regionsSub: "conecte departamentos e estados · grátis", new: "novo",
+      play: (t) => `Jogar ${t}`, moreCountries: "mais países em breve…",
+      moreModesTitle: "Mais modos", moreModesSub: "prática, duelos e mais…",
+    },
+    a11y: { country: "País" },
+    name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira)." },
     tutorialSteps: [
       "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
       "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
@@ -962,6 +996,14 @@ const STRINGS: Record<Locale, Dict> = {
       used: (n) => `Utilisés : ${n}`,
       bestToday: (n, noun) => `Votre meilleur aujourd'hui : ${n} ${noun}`,
     },
+    modes: {
+      dailyTitle: "Défi quotidien", dailySub: "3 niveaux · vrai prix de la cagnotte 🏆",
+      regionsTitle: "Régions", regionsSub: "reliez départements et états · gratuit", new: "nouveau",
+      play: (t) => `Jouer ${t}`, moreCountries: "plus de pays bientôt…",
+      moreModesTitle: "Plus de modes", moreModesSub: "entraînement, duels et plus…",
+    },
+    a11y: { country: "Pays" },
+    name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille)." },
     tutorialSteps: [
       "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
       "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",
