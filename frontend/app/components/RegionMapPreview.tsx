@@ -8,7 +8,7 @@
 // ============================================================
 
 import { useEffect, useMemo, useState } from "react";
-import { geoEqualEarth, geoPath } from "d3-geo";
+import { geoMercator, geoPath } from "d3-geo";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 
 type NamedFeature = Feature<Geometry, { name: string; code: string }>;
@@ -43,7 +43,9 @@ export default function RegionMapPreview({
   const paths = useMemo(() => {
     if (!features || features.length === 0) return null;
     const fc: FeatureCollection = { type: "FeatureCollection", features };
-    const projection = geoEqualEarth().fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
+    // geoMercator (conforme) preserva la forma de cada país; geoEqualEarth es
+    // global y deforma una sola región. fitExtent centra y escala al recuadro.
+    const projection = geoMercator().fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
     const pathGen = geoPath(projection);
     return features.map((f, i) => ({ d: pathGen(f) ?? "", key: f.properties?.name ?? "f" + i }));
   }, [features]);

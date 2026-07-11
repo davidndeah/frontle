@@ -9,7 +9,7 @@
 // ============================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { geoEqualEarth, geoPath, geoGraticule } from "d3-geo";
+import { geoMercator, geoPath, geoGraticule } from "d3-geo";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 import type { Status } from "../lib/game";
 
@@ -82,7 +82,7 @@ export default function RegionMap({
     if (fitFeatures.length === 0) return { graticule: "", outlines: [], silhouettes: [], known: [] };
 
     const fc: FeatureCollection = { type: "FeatureCollection", features: fitFeatures };
-    const projection = geoEqualEarth().fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
+    const projection = geoMercator().fitExtent([[PAD, PAD], [W - PAD, H - PAD]], fc as never);
     const pathGen = geoPath(projection);
 
     return {
