@@ -63,3 +63,4 @@ Thumbs.db
 .claude/
 skills-lock.json
 frontend/public/flags/_missing.json
+frontend/_ne_admin1.geojson

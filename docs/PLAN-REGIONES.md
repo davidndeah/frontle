@@ -44,9 +44,15 @@ barato, ideal para Fable.
 
 ## 3. Paso 0 — Generador consolidado `gen-region.mjs` (modelo actual)
 
-Crear `frontend/gen-region.mjs` que, dado un `id` de país en su config, haga **todo**:
+> **NOTA (ya construido y validado):** `gen-region.mjs` ya existe y se validó de
+> punta a punta con **Argentina**. La fuente de datos es **Natural Earth 1:10m
+> admin_1** (no geoBoundaries: éste tiene huecos — p.ej. le falta Entre Ríos en
+> Argentina). NE se descarga una vez y se cachea en `_ne_admin1.geojson`
+> (gitignored). El filtro por país es `properties.adm0_a3 === iso3`.
 
-1. **Descarga** el GeoJSON ADM1 (geoBoundaries) del país.
+`frontend/gen-region.mjs`, dado un `id` de país en su config, hace **todo**:
+
+1. **Descarga** el GeoJSON ADM1 (Natural Earth 10m, cacheado) y filtra por país.
 2. **Deriva la adyacencia** desde la geometría:
    - Convertir el FeatureCollection a TopoJSON con `topojson-server` → `topology()` (construye arcos compartidos).
    - `topojson-client` → `neighbors(geometrías)` devuelve, por índice, las subdivisiones que comparten arco = vecinas. (Cae a heurística de vértices compartidos con tolerancia si hiciera falta.)
