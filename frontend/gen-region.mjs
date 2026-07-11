@@ -29,7 +29,8 @@ async function loadNaturalEarth() {
 const CONFIG = {
   ar: { iso3: "ARG", qid: "Q414",  iso2: "ar", title: "Argentina", exportName: "ARGENTINA", entityNoun: "provincias", lang: "es" },
   ng: { iso3: "NGA", qid: "Q1033", iso2: "ng", title: "Nigeria",   exportName: "NIGERIA",   entityNoun: "estados",     lang: "en" },
-  gh: { iso3: "GHA", qid: "Q117",  iso2: "gh", title: "Ghana",     exportName: "GHANA",     entityNoun: "regiones",    lang: "en" },
+  // Ghana: NE trae las 10 regiones pre-2019; geoBoundaries sí tiene las 16 actuales.
+  gh: { iso3: "GHA", qid: "Q117",  iso2: "gh", title: "Ghana",     exportName: "GHANA",     entityNoun: "regiones",    lang: "en", source: "gb" },
   br: { iso3: "BRA", qid: "Q155",  iso2: "br", title: "Brasil",    exportName: "BRASIL",    entityNoun: "estados",     lang: "pt" },
 };
 
@@ -129,14 +130,24 @@ async function build(id) {
   if (!cfg) throw new Error(`país sin config: ${id}. Añádelo a CONFIG.`);
   console.log(`\n=== ${cfg.title} (${id}) ===`);
 
-  // 1. GeoJSON ADM1 desde Natural Earth (filtrado por país)
-  const ne = await loadNaturalEarth();
-  const items = ne.features
-    .filter((f) => f.properties?.adm0_a3 === cfg.iso3)
-    .map((f) => ({ name: String(f.properties?.name ?? "").trim(), geometry: f.geometry }))
-    .filter((it) => it.name);
+  // 1. GeoJSON ADM1: Natural Earth por defecto; source:"gb" usa geoBoundaries
+  // (mejor para países cuya división cambió hace poco, p.ej. Ghana 2019).
+  let items;
+  if (cfg.source === "gb") {
+    const meta = await (await fetch(`https://www.geoboundaries.org/api/current/gbOpen/${cfg.iso3}/ADM1/`)).json();
+    const geo = await (await fetch(meta.simplifiedGeometryGeoJSON ?? meta.gjDownloadURL)).json();
+    items = geo.features
+      .map((f) => ({ name: String(f.properties?.shapeName ?? "").replace(/\s+Region$/i, "").trim(), geometry: f.geometry }))
+      .filter((it) => it.name);
+  } else {
+    const ne = await loadNaturalEarth();
+    items = ne.features
+      .filter((f) => f.properties?.adm0_a3 === cfg.iso3)
+      .map((f) => ({ name: String(f.properties?.name ?? "").trim(), geometry: f.geometry }))
+      .filter((it) => it.name);
+  }
   console.log(`subdivisiones: ${items.length}`);
-  if (items.length === 0) throw new Error(`Natural Earth no trae adm0_a3=${cfg.iso3}. Revisa el iso3.`);
+  if (items.length === 0) throw new Error(`la fuente no trae subdivisiones para ${cfg.iso3}.`);
 
   // 2. Adyacencia
   const nbrsArr = deriveNeighbors(items);
