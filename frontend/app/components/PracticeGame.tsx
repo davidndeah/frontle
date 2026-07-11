@@ -1,0 +1,263 @@
+"use client";
+
+// ============================================================
+//  PracticeGame — modo práctica (pestaña Aprender).
+//  Juego mundial infinito, SIN premios ni pot: retos aleatorios uno
+//  tras otro. Ayuda a aprender: contornos de TODOS los países visibles
+//  y pistas GRATIS y progresivas (silueta → inicial → nombre). No hay
+//  cronómetro competitivo ni ranking; es puro entrenamiento.
+// ============================================================
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  randomChallenge,
+  tryGuess,
+  nextHintCountry,
+  type PlayState,
+  type Status,
+} from "../lib/game";
+import { getCountry } from "../lib/countries";
+import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from "../lib/i18n";
+import { formatTime } from "../lib/ranking";
+import WorldMap from "./WorldMap";
+import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+
+// Bandera de país (SVG de flagcdn), igual que el juego principal.
+function CFlag({ name, size = 28 }: { name: string; size?: number }) {
+  const c = getCountry(name);
+  if (!c) return null;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={`https://flagcdn.com/${c.code.toLowerCase()}.svg`} alt="" style={{ width: size, height: "auto", borderRadius: 3 }} />;
+}
+
+const CHIP: Record<Status, string> = {
+  start: "border-cyan-400/50 text-cyan-100",
+  end: "border-fuchsia-400/50 text-fuchsia-100",
+  green: "border-emerald-400/50 text-emerald-100",
+  yellow: "border-yellow-400/50 text-yellow-100",
+  red: "border-rose-400/50 text-rose-100",
+};
+
+export default function PracticeGame({ locale, onExit }: { locale: Locale; onExit: () => void }) {
+  const tr = t(locale);
+  const [state, setState] = useState<PlayState | null>(null);
+  const [input, setInput] = useState("");
+  const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const [hintLevel, setHintLevel] = useState(0); // 0 nada · 1 silueta+inicial · 2 nombre
+  const [round, setRound] = useState(0);
+  const startRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reto aleatorio nuevo (arranca en cliente para no romper la hidratación).
+  function newRound() {
+    setState({ challenge: randomChallenge("easy"), chain: [], solved: false });
+    setInput("");
+    setMessage(null);
+    setSuggestions([]);
+    setHintLevel(0);
+    startRef.current = Date.now();
+    setElapsedMs(0);
+    setRound((r) => r + 1);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }
+  useEffect(() => {
+    newRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
+  }, [input, locale]);
+
+  useEffect(() => {
+    if (!state || state.solved) return;
+    const id = setInterval(() => setElapsedMs(Date.now() - startRef.current), 250);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.solved, round]);
+
+  const statusByCountry = useMemo(() => {
+    if (!state) return {} as Record<string, Status>;
+    const m: Record<string, Status> = { [state.challenge.start]: "start", [state.challenge.end]: "end" };
+    for (const c of state.chain) m[c.country] = c.quality;
+    return m;
+  }, [state]);
+
+  const hintCountry = useMemo(() => (state && hintLevel > 0 ? nextHintCountry(state) : null), [state, hintLevel]);
+
+  function submit(value: string) {
+    if (!state || state.solved) return;
+    const canonical = resolveLocalized(value);
+    const res = tryGuess(state, value, canonical);
+    const localized = res.country ? countryName(res.country, locale) : "";
+    setMessage({
+      text: tr.feedback(res.reason, {
+        country: localized,
+        end: countryName(state.challenge.end, locale),
+        quality: res.quality,
+        input: res.input,
+      }),
+      ok: res.ok,
+    });
+    if (!res.ok) sfxInvalid();
+    else if (res.solved) sfxWin();
+    else if (res.quality === "green") sfxGood();
+    else if (res.quality === "yellow") sfxLateral();
+    else if (res.quality === "red") sfxFar();
+
+    if (res.ok && res.country && res.quality) {
+      const chain = [...state.chain, { country: res.country, quality: res.quality }];
+      const solved = res.solved;
+      setState({ ...state, chain, solved });
+      setHintLevel(0);
+      if (solved) setElapsedMs(Date.now() - startRef.current);
+    }
+    setInput("");
+    setSuggestions([]);
+    inputRef.current?.focus();
+  }
+
+  if (!state) {
+    return <div className="py-10 text-center text-neutral-300 text-sm">{tr.loadingMap}</div>;
+  }
+
+  const { challenge } = state;
+  const guessCount = state.chain.length;
+  const optimal = challenge.optimal;
+  const stars = guessCount <= optimal ? 3 : guessCount <= optimal + 1 ? 2 : 1;
+
+  // Texto de la pista (gratis): nivel 1 = inicial, nivel 2 = nombre completo.
+  const hintText = hintCountry
+    ? hintLevel >= 2
+      ? countryName(hintCountry, locale)
+      : `${tr.hintInitial}: «${countryName(hintCountry, locale).charAt(0)}»`
+    : null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* volver */}
+      <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+        <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
+        <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+      </button>
+
+      {/* reto */}
+      <section className="panel p-4">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
+          {tr.practiceFree}
+        </p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex-1 flex flex-col items-center text-center">
+            <CFlag name={challenge.start} size={40} />
+            <div className="text-sm font-semibold mt-1 text-cyan-300">{countryName(challenge.start, locale)}</div>
+          </div>
+          <div className="text-2xl text-neutral-400">→</div>
+          <div className="flex-1 flex flex-col items-center text-center">
+            <CFlag name={challenge.end} size={40} />
+            <div className="text-sm font-semibold mt-1 text-fuchsia-300">{countryName(challenge.end, locale)}</div>
+          </div>
+        </div>
+        <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(optimal)}</p>
+      </section>
+
+      {!state.solved && (
+        <p className="text-center -my-1">
+          <span className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
+            🕒 {formatTime(elapsedMs)}
+          </span>
+        </p>
+      )}
+
+      {/* mapa con TODOS los contornos visibles (para aprender) */}
+      <WorldMap
+        statusByCountry={statusByCountry}
+        loadingLabel={tr.loadingMap}
+        silhouettes={hintCountry ? [hintCountry] : []}
+        showAllOutlines
+        resetKey={`${challenge.start}->${challenge.end}`}
+      />
+
+      {/* chips de la ruta */}
+      <section className="flex flex-wrap justify-center gap-2">
+        <PChip name={countryName(challenge.start, locale)} raw={challenge.start} kind="start" />
+        {state.chain.map((c) => (
+          <PChip key={c.country} name={countryName(c.country, locale)} raw={c.country} kind={c.quality} />
+        ))}
+        <PChip name={countryName(challenge.end, locale)} raw={challenge.end} kind="end" />
+      </section>
+
+      {state.solved ? (
+        <section className="panel p-5 text-center">
+          <div className="text-2xl font-black prism-text">{stars === 3 ? tr.winPerfect : tr.winNormal}</div>
+          <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
+          <p className="text-neutral-200 mt-2">{tr.winText(guessCount, optimal, stars === 3)}</p>
+          <div className="flex flex-col gap-2 mt-4">
+            <button onClick={newRound} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
+              🔄 {tr.practiceNextRound}
+            </button>
+            <button onClick={onExit} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
+              {tr.practiceExit}
+            </button>
+          </div>
+        </section>
+      ) : (
+        <section className="relative flex flex-col gap-3">
+          <form onSubmit={(e) => { e.preventDefault(); if (input.trim()) submit(input); }} className="flex gap-2">
+            <input
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={tr.placeholder}
+              autoComplete="off"
+              className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
+            />
+            <button type="submit" className="rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e] active:scale-95 transition">OK</button>
+          </form>
+
+          {suggestions.length > 0 && (
+            <ul className="absolute z-20 top-14 w-full rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 overflow-hidden shadow-2xl">
+              {suggestions.map((s) => (
+                <li key={s}>
+                  <button type="button" onClick={() => submit(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
+                    <CFlag name={s} size={22} />
+                    <span>{s}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {message && (
+            <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
+          )}
+
+          {hintText && (
+            <p className="text-center text-sm text-[#fcff52]">💡 {hintText}</p>
+          )}
+
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => setHintLevel((h) => Math.min(2, h + 1))}
+              disabled={hintLevel >= 2}
+              className="rounded-lg border border-[#b79ced]/30 px-4 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+            >
+              💡 {tr.practiceHint}
+            </button>
+            <span className="text-xs text-neutral-400">{tr.used(guessCount)}</span>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function PChip({ name, raw, kind }: { name: string; raw: string; kind: Status }) {
+  return (
+    <div className={`flex flex-col items-center justify-center rounded-xl border bg-[#1c0b3e]/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${CHIP[kind]}`}>
+      <CFlag name={raw} size={26} />
+      <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
+    </div>
+  );
+}

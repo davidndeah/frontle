@@ -195,6 +195,11 @@ type Dict = {
   legalSupport: string;
   learnBubbles: string[];
   practiceSoon: string;
+  practiceMode: string;
+  practiceFree: string;
+  practiceHint: string;
+  practiceNextRound: string;
+  practiceExit: string;
   tutorialSteps: string[];
   tutNext: string;
   tutPlay: string;
@@ -356,6 +361,11 @@ const STRINGS: Record<Locale, Dict> = {
       "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
     ],
     practiceSoon: "Modo práctica (próximamente)",
+    practiceMode: "Modo práctica",
+    practiceFree: "Práctica libre · sin premios",
+    practiceHint: "Pista (gratis)",
+    practiceNextRound: "Otra ronda",
+    practiceExit: "Salir de práctica",
     tutorialSteps: [
       "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
       "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
@@ -531,6 +541,11 @@ const STRINGS: Record<Locale, Dict> = {
       "Fewer countries and less time = higher rank. The day's best takes the pot 🏆. Your first try is free.",
     ],
     practiceSoon: "Practice mode (coming soon)",
+    practiceMode: "Practice mode",
+    practiceFree: "Free practice · no prizes",
+    practiceHint: "Hint (free)",
+    practiceNextRound: "Another round",
+    practiceExit: "Exit practice",
     tutorialSteps: [
       "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
       "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
@@ -706,6 +721,11 @@ const STRINGS: Record<Locale, Dict> = {
       "Menos países e menos tempo = melhor posição. O melhor do dia leva o pot 🏆. A primeira tentativa é grátis.",
     ],
     practiceSoon: "Modo prática (em breve)",
+    practiceMode: "Modo prática",
+    practiceFree: "Prática livre · sem prêmios",
+    practiceHint: "Dica (grátis)",
+    practiceNextRound: "Outra rodada",
+    practiceExit: "Sair da prática",
     tutorialSteps: [
       "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
       "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
@@ -881,6 +901,11 @@ const STRINGS: Record<Locale, Dict> = {
       "Moins de pays et moins de temps = meilleur classement. Le meilleur du jour remporte le pot 🏆. Le premier essai est gratuit.",
     ],
     practiceSoon: "Mode entraînement (bientôt)",
+    practiceMode: "Mode entraînement",
+    practiceFree: "Entraînement libre · sans prix",
+    practiceHint: "Indice (gratuit)",
+    practiceNextRound: "Autre manche",
+    practiceExit: "Quitter l'entraînement",
     tutorialSteps: [
       "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
       "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",
