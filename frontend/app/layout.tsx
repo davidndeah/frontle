@@ -22,7 +22,7 @@ const fredoka = Fredoka({
 export const metadata: Metadata = {
   title: "Frontle — Connect countries through borders",
   description:
-    "Juego de geografía diario: llega de un país a otro listando los que comparten frontera. Construido para MiniPay sobre Celo.",
+    "Daily geography game: get from one country to another by listing the ones that share a border. Built for MiniPay on Celo.",
   // Verificación de propiedad del proyecto en Talent App (Proof of Ship)
   other: {
     "talentapp:project_verification":
@@ -47,7 +47,9 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      // Default global (inglés); page.tsx ajusta document.documentElement.lang
+      // al idioma real detectado/elegido, sin romper la hidratación del SSR.
+      lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
     >
       {/* Sin Providers: el PrivyProvider ya no envuelve la app. Vive dentro de

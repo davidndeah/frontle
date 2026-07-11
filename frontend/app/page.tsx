@@ -256,6 +256,9 @@ export default function Frontle() {
   }, []);
 
   useEffect(() => setLocale(detectLocale()), []);
+  // Refleja el idioma real en <html lang> (SEO, lectores de pantalla, y evita
+  // que el navegador ofrezca "traducir del español" a quien ya lo ve en inglés).
+  useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   // Cambio manual de idioma: aplica y persiste la preferencia del usuario.
   const changeLocale = useCallback((l: Locale) => {
     setLocale(l);
