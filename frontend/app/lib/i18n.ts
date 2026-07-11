@@ -154,6 +154,19 @@ type Dict = {
   payNoFunds: (amount: string) => string;
   payNoGas: string;
   footer: string;
+  // Home: hero, strip de gamificación y tarjetas de modo.
+  heroTitle: string;
+  heroTitleAccent: string;
+  streak: string;
+  xpLevel: (n: number) => string;
+  modeDaily: string;
+  modeDailySub: string;
+  modeSoon: string;
+  modeSoonSub: string;
+  backModes: string;
+  signIn: string;
+  walletTitle: string;
+  walletConnectedAs: string;
   hintsTitle: string;
   hintInitial: string;
   hintSilhouetteNext: string;
@@ -308,6 +321,18 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu wallet para continuar.`,
     payNoGas: "Tu wallet no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
+    heroTitle: "Conecta el",
+    heroTitleAccent: "mundo",
+    streak: "racha",
+    xpLevel: (n) => `⚡ Nivel ${n}`,
+    modeDaily: "Reto diario",
+    modeDailySub: "3 niveles · premio real del pot 🏆",
+    modeSoon: "Nuevos modos",
+    modeSoonSub: "práctica, duelos y más…",
+    backModes: "Modos",
+    signIn: "👤 Entrar",
+    walletTitle: "💰 Tu wallet",
+    walletConnectedAs: "Conectado como",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
     hintSilhouetteNext: "Silueta del siguiente país",
@@ -480,6 +505,18 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Insufficient balance: this purchase costs ${a}. Top up your wallet to continue.`,
     payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
     footer: "Frontle · A daily geography game · Made in Colombia",
+    heroTitle: "Connect the",
+    heroTitleAccent: "world",
+    streak: "streak",
+    xpLevel: (n) => `⚡ Level ${n}`,
+    modeDaily: "Daily challenge",
+    modeDailySub: "3 levels · real prize from the pot 🏆",
+    modeSoon: "New modes",
+    modeSoonSub: "practice, duels and more…",
+    backModes: "Modes",
+    signIn: "👤 Sign in",
+    walletTitle: "💰 Your wallet",
+    walletConnectedAs: "Signed in as",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
     hintSilhouetteNext: "Next country's silhouette",
@@ -652,6 +689,18 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Saldo insuficiente: esta compra custa ${a}. Recarregue sua carteira para continuar.`,
     payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
     footer: "Frontle · Um jogo diário de geografia · Feito na Colômbia",
+    heroTitle: "Conecte o",
+    heroTitleAccent: "mundo",
+    streak: "sequência",
+    xpLevel: (n) => `⚡ Nível ${n}`,
+    modeDaily: "Desafio diário",
+    modeDailySub: "3 níveis · prêmio real do pote 🏆",
+    modeSoon: "Novos modos",
+    modeSoonSub: "prática, duelos e mais…",
+    backModes: "Modos",
+    signIn: "👤 Entrar",
+    walletTitle: "💰 Sua carteira",
+    walletConnectedAs: "Conectado como",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
     hintSilhouetteNext: "Silhueta do próximo país",
@@ -824,6 +873,18 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Solde insuffisant : cet achat coûte ${a}. Rechargez votre portefeuille pour continuer.`,
     payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
     footer: "Frontle · Un jeu de géographie quotidien · Fait en Colombie",
+    heroTitle: "Connecte le",
+    heroTitleAccent: "monde",
+    streak: "série",
+    xpLevel: (n) => `⚡ Niveau ${n}`,
+    modeDaily: "Défi quotidien",
+    modeDailySub: "3 niveaux · vrai prix du pot 🏆",
+    modeSoon: "Nouveaux modes",
+    modeSoonSub: "entraînement, duels et plus…",
+    backModes: "Modes",
+    signIn: "👤 Se connecter",
+    walletTitle: "💰 Ton wallet",
+    walletConnectedAs: "Connecté en tant que",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
     hintSilhouetteNext: "Silhouette du pays suivant",
