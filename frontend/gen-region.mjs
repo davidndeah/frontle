@@ -11,7 +11,7 @@
 //  Los outputs van commiteados; el runtime no depende de CDNs.
 // ============================================================
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from "fs";
-import { geoArea } from "d3-geo";
+import { geoArea, geoMercator, geoPath } from "d3-geo";
 
 // Fuente: Natural Earth 1:10m admin_1 (completa y correcta; geoBoundaries
 // tiene huecos p.ej. le falta Entre Ríos en Argentina). Se cachea local.
@@ -194,6 +194,16 @@ export const ${cfg.exportName}: RegionDef = {
   writeFileSync(`public/maps/${id}.json`, mapJson, "utf-8");
   console.log(`public/maps/${id}.json (${Math.round(mapJson.length / 1024)}KB) ✓`);
 
+  // 5b. Chequeo de render: misma proyección que RegionMapPreview; ningún
+  // path puede salir vacío (detecta winding/geometría rota sin navegador).
+  {
+    const fc = { type: "FeatureCollection", features: feats };
+    const proj = geoMercator().fitExtent([[14, 14], [346, 206]], fc);
+    const pg = geoPath(proj);
+    const empty = feats.filter((f) => !pg(f)).map((f) => f.properties.name);
+    console.log(empty.length ? `⚠ paths vacíos al proyectar: ${empty.join(", ")}` : "render check (Mercator) ✓");
+  }
+
   // 6. Bandera nacional (flagcdn)
   mkdirSync("public/flags/national", { recursive: true });
   const natRes = await fetchRetry(`https://flagcdn.com/w160/${cfg.iso2}.png`);
@@ -217,8 +227,25 @@ export const ${cfg.exportName}: RegionDef = {
   process.stdout.write("\n");
   console.log(`banderas subdivisiones: ${got}/${kept.length} (las que faltan caen a marcador de 2 letras)`);
 
-  console.log(`\n✔ ${cfg.title} listo. Registrar en app/lib/regions/index.ts: import { ${cfg.exportName} } from "./${id}"; y añadir ${id}: ${cfg.exportName} a REGIONS.`);
+  // 8. Auto-registro en index.ts (idempotente)
+  registerRegion(id, cfg.exportName);
+
+  console.log(`\n✔ ${cfg.title} listo (datos + mapa + banderas + registro).`);
   if (!connected) console.log("⚠ Grafo NO conexo: ajustar PREC/SHARE o revisar a mano antes de usar.");
+}
+
+// Inserta el import y la entrada en REGIONS de index.ts si no existen ya.
+function registerRegion(id, exportName) {
+  const path = "app/lib/regions/index.ts";
+  let src = readFileSync(path, "utf-8");
+  if (src.includes(`from "./${id}"`)) { console.log("index.ts: ya estaba registrado"); return; }
+  const imports = [...src.matchAll(/^import \{ \w+ \} from "\.\/\w+";\r?$/gm)];
+  const last = imports[imports.length - 1];
+  const cut = last.index + last[0].length;
+  src = src.slice(0, cut) + `\nimport { ${exportName} } from "./${id}";` + src.slice(cut);
+  src = src.replace(/(export const REGIONS: Record<string, RegionDef> = \{[^}]*)\}/, `$1  ${id}: ${exportName},\n}`);
+  writeFileSync(path, src, "utf-8");
+  console.log("index.ts: registrado ✓");
 }
 
 const id = process.argv[2];
