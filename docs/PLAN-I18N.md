@@ -77,8 +77,10 @@ en el idioma equivocado. La Parte 3 (guard) ataca (a) y (b).
 ### F6d — `layout.tsx` `lang` dinámico
 - Como el idioma se resuelve en cliente, poner `lang="en"` (default global) fijo, **o** mejor: un pequeño componente cliente que setee `document.documentElement.lang` al detectar/cambiar locale. MVP: `lang="en"`.
 
-### F6e — Páginas legales (gated por decisión de David)
-- Opción mínima: traducir `terms`/`privacy` a **inglés** (default) y enlazar. Opción completa: localizarlas a los 4 idiomas con un bloque `legal.*`. **Requiere decisión** (esfuerzo/mantenimiento).
+### F6e — Páginas legales localizadas a los 4 idiomas  ✅ DECIDIDO
+- `terms/page.tsx` y `privacy/page.tsx` pasan a componentes cliente que leen `detectLocale()` y muestran el texto según el idioma (bloque `legal.terms[]` / `legal.privacy[]` en `i18n.ts`, o un objeto por locale dentro de la propia página).
+- Mantener el enlace "← Volver" y "Última actualización" también localizados.
+- Es la tarea de más volumen de traducción (texto legal largo × 4). Sugerencia: traducir con el método de 1 pasada (Parte 4) partiendo del español actual.
 
 ---
 
@@ -131,3 +133,148 @@ Esto convierte "no dejes nada hardcodeado" en algo **verificable automáticament
 6) F6e legales (decisión de David)
 7) idiomas nuevos: sw, id (receta Parte 4)
 ```
+
+---
+
+## APÉNDICE — Cadenas nuevas ya traducidas (para F6a–F6c, listas para pegar)
+
+> Opus dejó las traducciones hechas. Fable solo añade estas claves al `Dict` y
+> pega los valores en cada bloque de idioma. `tsc` confirmará que no falta ninguna.
+
+### Tipos a añadir al `Dict`
+```ts
+region: {
+  challengeOfDay: string;
+  timerStarts: string;
+  chooseOtherMode: string;
+  modeFooter: (title: string) => string;
+  placeholder: (noun: string) => string;
+  optimalRoute: (n: number, noun: string) => string;
+  winText: (guesses: number, optimal: number, perfect: boolean, noun: string) => string;
+};
+modes: {
+  dailyTitle: string; dailySub: string;
+  regionsTitle: string; regionsSub: string; new: string;
+  play: (title: string) => string; moreCountries: string;
+  moreModesTitle: string; moreModesSub: string;
+};
+a11y: { country: string };
+subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
+```
+**RegionGame reutiliza** (no crear): `tr.feedback`, `tr.winPerfect`, `tr.winNormal`, `tr.share`, `tr.copied`, `tr.timeLabel`, `tr.practiceHint` ("Pista (gratis)").
+
+### ES
+```ts
+region: {
+  challengeOfDay: "Reto del día",
+  timerStarts: "El cronómetro arranca al pulsar Jugar",
+  chooseOtherMode: "Elegir otro modo",
+  modeFooter: (t) => `Modo ${t} · gratis · vuelve mañana para un nuevo reto`,
+  placeholder: (n) => `Escribe un ${n}…`,
+  optimalRoute: (n, noun) => `Ruta óptima: ${n} ${noun}`,
+  winText: (g, o, p, noun) => p ? `Conectaste con ${g} ${noun} — la ruta óptima.` : `Conectaste con ${g} ${noun} (la óptima era ${o}).`,
+},
+modes: {
+  dailyTitle: "Reto diario", dailySub: "3 niveles · premio real del pot 🏆",
+  regionsTitle: "Regiones", regionsSub: "conecta departamentos y estados · gratis", new: "nuevo",
+  play: (t) => `Jugar ${t}`, moreCountries: "más países muy pronto…",
+  moreModesTitle: "Más modos", moreModesSub: "práctica, duelos y más…",
+},
+a11y: { country: "País" },
+subdivisionNoun: {
+  department: { one: "departamento", many: "departamentos" },
+  state: { one: "estado", many: "estados" },
+  province: { one: "provincia", many: "provincias" },
+  region: { one: "región", many: "regiones" },
+},
+```
+
+### EN
+```ts
+region: {
+  challengeOfDay: "Daily challenge",
+  timerStarts: "The timer starts when you tap Play",
+  chooseOtherMode: "Choose another mode",
+  modeFooter: (t) => `${t} mode · free · come back tomorrow for a new challenge`,
+  placeholder: (n) => `Type a ${n}…`,
+  optimalRoute: (n, noun) => `Best route: ${n} ${noun}`,
+  winText: (g, o, p, noun) => p ? `Connected with ${g} ${noun} — the best route.` : `Connected with ${g} ${noun} (the best was ${o}).`,
+},
+modes: {
+  dailyTitle: "Daily challenge", dailySub: "3 levels · real prize from the pot 🏆",
+  regionsTitle: "Regions", regionsSub: "connect departments and states · free", new: "new",
+  play: (t) => `Play ${t}`, moreCountries: "more countries coming soon…",
+  moreModesTitle: "More modes", moreModesSub: "practice, duels and more…",
+},
+a11y: { country: "Country" },
+subdivisionNoun: {
+  department: { one: "department", many: "departments" },
+  state: { one: "state", many: "states" },
+  province: { one: "province", many: "provinces" },
+  region: { one: "region", many: "regions" },
+},
+```
+
+### PT
+```ts
+region: {
+  challengeOfDay: "Desafio do dia",
+  timerStarts: "O cronômetro começa ao tocar em Jogar",
+  chooseOtherMode: "Escolher outro modo",
+  modeFooter: (t) => `Modo ${t} · grátis · volte amanhã para um novo desafio`,
+  placeholder: (n) => `Digite um ${n}…`,
+  optimalRoute: (n, noun) => `Rota ótima: ${n} ${noun}`,
+  winText: (g, o, p, noun) => p ? `Você conectou com ${g} ${noun} — a rota ótima.` : `Você conectou com ${g} ${noun} (a ótima era ${o}).`,
+},
+modes: {
+  dailyTitle: "Desafio diário", dailySub: "3 níveis · prêmio real do pot 🏆",
+  regionsTitle: "Regiões", regionsSub: "conecte departamentos e estados · grátis", new: "novo",
+  play: (t) => `Jogar ${t}`, moreCountries: "mais países em breve…",
+  moreModesTitle: "Mais modos", moreModesSub: "prática, duelos e mais…",
+},
+a11y: { country: "País" },
+subdivisionNoun: {
+  department: { one: "departamento", many: "departamentos" },
+  state: { one: "estado", many: "estados" },
+  province: { one: "província", many: "províncias" },
+  region: { one: "região", many: "regiões" },
+},
+```
+
+### FR
+```ts
+region: {
+  challengeOfDay: "Défi du jour",
+  timerStarts: "Le chrono démarre en appuyant sur Jouer",
+  chooseOtherMode: "Choisir un autre mode",
+  modeFooter: (t) => `Mode ${t} · gratuit · reviens demain pour un nouveau défi`,
+  placeholder: (n) => `Entrez un ${n}…`,
+  optimalRoute: (n, noun) => `Route optimale : ${n} ${noun}`,
+  winText: (g, o, p, noun) => p ? `Vous avez relié avec ${g} ${noun} — la route optimale.` : `Vous avez relié avec ${g} ${noun} (l'optimale était ${o}).`,
+},
+modes: {
+  dailyTitle: "Défi quotidien", dailySub: "3 niveaux · vrai prix de la cagnotte 🏆",
+  regionsTitle: "Régions", regionsSub: "reliez départements et états · gratuit", new: "nouveau",
+  play: (t) => `Jouer ${t}`, moreCountries: "plus de pays bientôt…",
+  moreModesTitle: "Plus de modes", moreModesSub: "entraînement, duels et plus…",
+},
+a11y: { country: "Pays" },
+subdivisionNoun: {
+  department: { one: "département", many: "départements" },
+  state: { one: "état", many: "états" },
+  province: { one: "province", many: "provinces" },
+  region: { one: "région", many: "régions" },
+},
+```
+
+### F6c — mapeo `nounKey` por región (reemplaza `entityNoun`)
+| Región | nounKey |
+|--------|---------|
+| Colombia (`co`) | `department` |
+| USA (`us`) | `state` |
+| Argentina (`ar`) | `province` |
+| Brasil (`br`) | `state` |
+| Ghana (`gh`) | `region` |
+| **Nigeria (`ng`)** | **`state`** ← arregla el "estados" en español |
+
+En `RegionGame`: `const noun = tr.subdivisionNoun[def.nounKey]` → usar `noun.many` (plural) y `noun.one` (placeholder). En `gen-region.mjs` `CONFIG`: cambiar `entityNoun: "…"` por `nounKey: "state" | …` y emitir `nounKey` en el `.ts` generado.
