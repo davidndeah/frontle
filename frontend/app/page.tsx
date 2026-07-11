@@ -644,9 +644,9 @@ export default function Frontle() {
         <LanguageSelect locale={locale} onChange={changeLocale} compact />
         <button
           onClick={() => setWalletOpen(true)}
-          className="rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
+          className="shrink-0 max-w-[96px] truncate rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
         >
-          {alias || (myId ? shortId(myId) : "👤 Entrar")}
+          {alias || (myId ? shortId(myId) : tr.signIn)}
         </button>
       </header>
 
@@ -658,19 +658,19 @@ export default function Frontle() {
         {!started && (
           <div className="flex flex-col items-center gap-2 pt-2">
             <h2 className="font-display text-2xl font-bold text-white text-center leading-tight">
-              Conecta el <span className="text-[#fcff52]">mundo</span>
+              {tr.heroTitle} <span className="text-[#fcff52]">{tr.heroTitleAccent}</span>
             </h2>
             {/* Strip de gamificación: racha + nivel (XP) */}
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl">🔥</span>
                 <span className="font-display font-bold text-white text-lg leading-none">{daysPlayed}</span>
-                <span className="text-[11px] text-neutral-400">racha</span>
+                <span className="text-[11px] text-neutral-400">{tr.streak}</span>
               </div>
               <div className="w-px h-7 bg-white/10" />
               <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-semibold text-[#c4b5fd]">⚡ Nivel {xpLevel}</span>
+                  <span className="font-semibold text-[#c4b5fd]">{tr.xpLevel(xpLevel)}</span>
                   <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -690,16 +690,16 @@ export default function Frontle() {
             >
               <span className="text-3xl">🌍</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">Reto diario</span>
-                <span className="text-xs text-neutral-300">3 niveles · premio real del pot 🏆</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modeDaily}</span>
+                <span className="text-xs text-neutral-300">{tr.modeDailySub}</span>
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">Nuevos modos</span>
-                <span className="text-xs text-neutral-300">práctica, duelos y más…</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modeSoon}</span>
+                <span className="text-xs text-neutral-300">{tr.modeSoonSub}</span>
               </span>
               <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">coming soon</span>
             </div>
@@ -709,7 +709,7 @@ export default function Frontle() {
         {/* ---- 2) dificultad ---- */}
         {!started && jugarStep === "level" && (
           <div className="flex flex-col gap-3">
-            <BackRow onClick={() => setJugarStep("modes")} label="Modos" />
+            <BackRow onClick={() => setJugarStep("modes")} label={tr.backModes} />
             <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
           </div>
         )}
@@ -1274,10 +1274,10 @@ function WalletSheet({
       <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
       <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-3">💰 Tu wallet</h3>
+        <h3 className="text-white font-bold text-base mb-3">{tr.walletTitle}</h3>
         {myId ? (
           <div className="panel p-4">
-            <div className="text-[11px] text-neutral-400">Conectado como</div>
+            <div className="text-[11px] text-neutral-400">{tr.walletConnectedAs}</div>
             {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
                 forma truncada, que MiniPay solo admite como pista secundaria. */}
             <div className="text-white text-sm mt-0.5 break-all">
@@ -1427,8 +1427,11 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
             : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
         }
       >
+        {/* En compacto solo el código (EN, ES…): el nombre completo hacía que la
+            cabecera midiera 390px y el chip de perfil se saliera del viewport de
+            360px, el mínimo que exige MiniPay. */}
         {LOCALES.map((l) => (
-          <option key={l} value={l}>{LOCALE_LABELS[l]}</option>
+          <option key={l} value={l}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
         ))}
       </select>
     </div>
