@@ -32,6 +32,7 @@ import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
+import PracticeGame from "./components/PracticeGame";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
@@ -161,6 +162,8 @@ export default function Frontle() {
   const [regionMode, setRegionMode] = useState<string | null>(null);
   // País elegido en el desplegable del selector de Regiones (antes de jugar).
   const [regionPick, setRegionPick] = useState<string>(REGION_IDS[0]);
+  // Modo práctica activo (dentro de la pestaña Aprender).
+  const [practiceOn, setPracticeOn] = useState(false);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
   const [alias, setAliasState] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -667,11 +670,11 @@ export default function Frontle() {
       )}
 
       {/* Header fijo: logo + chip de pot + chip de wallet */}
-      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-2 px-4 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
+      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1.5 px-3 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
         <span className="font-display text-xl font-bold tracking-tight prism-text">FRONTLE</span>
         <div className="flex-1" />
         {pot !== null && (
-          <span className="rounded-full bg-amber-400/15 border border-amber-300/40 px-3 py-1 text-xs font-bold text-amber-300 whitespace-nowrap">
+          <span className="rounded-full bg-amber-400/15 border border-amber-300/40 px-2 py-1 text-[11px] font-bold text-amber-300 whitespace-nowrap">
             🏆 {fmt(pot)}
           </span>
         )}
@@ -680,14 +683,14 @@ export default function Frontle() {
           <button
             onClick={onToggleMusic}
             aria-label={musicMuted ? "Activar música" : "Silenciar música"}
-            className="w-7 h-8 flex items-center justify-center text-sm active:scale-90 transition"
+            className="w-6 h-8 flex items-center justify-center text-sm active:scale-90 transition"
           >
             {musicMuted ? "🔇" : "🎵"}
           </button>
           <button
             onClick={onToggleSfx}
             aria-label={sfxMuted ? "Activar efectos" : "Silenciar efectos"}
-            className="w-7 h-8 flex items-center justify-center text-sm border-l border-[#b79ced]/20 active:scale-90 transition"
+            className="w-6 h-8 flex items-center justify-center text-sm border-l border-[#b79ced]/20 active:scale-90 transition"
           >
             {sfxMuted ? "🔕" : "🔊"}
           </button>
@@ -695,7 +698,7 @@ export default function Frontle() {
         <LanguageSelect locale={locale} onChange={changeLocale} compact />
         <button
           onClick={() => setWalletOpen(true)}
-          className="rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
+          className="rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 py-1 text-xs font-semibold text-white active:scale-95 transition whitespace-nowrap"
         >
           {alias || (myId ? shortId(myId) : "👤 Entrar")}
         </button>
@@ -1126,7 +1129,11 @@ export default function Frontle() {
         )}
 
         {/* ---------- TAB APRENDER ---------- */}
-        {tab === "aprender" && (
+        {tab === "aprender" && practiceOn && (
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} />
+        )}
+
+        {tab === "aprender" && !practiceOn && (
           <>
             {/* Bordy presenta el tutorial (mascota real, no un emoji genérico) */}
             <section className="panel p-5 flex flex-col items-center gap-3 text-center">
@@ -1141,6 +1148,18 @@ export default function Frontle() {
                 ✨ {tr.fullTutorial}
               </button>
             </section>
+            {/* Modo práctica: juego infinito, sin premios, con pistas gratis */}
+            <button
+              onClick={() => setPracticeOn(true)}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition border border-[#22c55e]/30"
+            >
+              <span className="text-3xl">🎓</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.practiceMode}</span>
+                <span className="text-xs text-neutral-300">{tr.practiceFree}</span>
+              </span>
+              <span className="text-[#fcff52] text-2xl">→</span>
+            </button>
             {/* Bordy explica paso a paso: burbujas con su avatar */}
             <div className="flex flex-col gap-3">
               {tr.learnBubbles.map((txt, i) => (
@@ -1544,7 +1563,7 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
         }
       >
         {LOCALES.map((l) => (
-          <option key={l} value={l}>{LOCALE_LABELS[l]}</option>
+          <option key={l} value={l}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
         ))}
       </select>
     </div>
