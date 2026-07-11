@@ -222,6 +222,8 @@ type Dict = {
   a11y: { country: string };
   // Prompt de alias al registrarse
   name: { title: string; sub: string };
+  // Sustantivo localizado por tipo de subdivisión (singular/plural)
+  subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
   tutorialSteps: string[];
   tutNext: string;
   tutPlay: string;
@@ -407,6 +409,12 @@ const STRINGS: Record<Locale, Dict> = {
     },
     a11y: { country: "País" },
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet)." },
+    subdivisionNoun: {
+      department: { one: "departamento", many: "departamentos" },
+      state: { one: "estado", many: "estados" },
+      province: { one: "provincia", many: "provincias" },
+      region: { one: "región", many: "regiones" },
+    },
     tutorialSteps: [
       "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
       "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
@@ -606,6 +614,12 @@ const STRINGS: Record<Locale, Dict> = {
     },
     a11y: { country: "Country" },
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet)." },
+    subdivisionNoun: {
+      department: { one: "department", many: "departments" },
+      state: { one: "state", many: "states" },
+      province: { one: "province", many: "provinces" },
+      region: { one: "region", many: "regions" },
+    },
     tutorialSteps: [
       "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
       "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
@@ -805,6 +819,12 @@ const STRINGS: Record<Locale, Dict> = {
     },
     a11y: { country: "País" },
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira)." },
+    subdivisionNoun: {
+      department: { one: "departamento", many: "departamentos" },
+      state: { one: "estado", many: "estados" },
+      province: { one: "província", many: "províncias" },
+      region: { one: "região", many: "regiões" },
+    },
     tutorialSteps: [
       "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
       "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
@@ -1004,6 +1024,12 @@ const STRINGS: Record<Locale, Dict> = {
     },
     a11y: { country: "Pays" },
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille)." },
+    subdivisionNoun: {
+      department: { one: "département", many: "départements" },
+      state: { one: "état", many: "états" },
+      province: { one: "province", many: "provinces" },
+      region: { one: "région", many: "régions" },
+    },
     tutorialSteps: [
       "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
       "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",

@@ -28,6 +28,6 @@ export const GHANA: RegionDef = {
   id: "gh",
   title: "Ghana",
   flag: "🇬🇭",
-  entityNoun: "regiones",
+  nounKey: "region",
   entities: E,
 };

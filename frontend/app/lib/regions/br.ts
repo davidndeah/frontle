@@ -39,6 +39,6 @@ export const BRASIL: RegionDef = {
   id: "br",
   title: "Brasil",
   flag: "🇧🇷",
-  entityNoun: "estados",
+  nounKey: "state",
   entities: E,
 };

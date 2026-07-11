@@ -65,6 +65,6 @@ export const USA: RegionDef = {
   id: "us",
   title: "United States",
   flag: "🇺🇸",
-  entityNoun: "states",
+  nounKey: "state",
   entities: E,
 };

@@ -15,6 +15,9 @@ export interface RegionEntity {
   neighbors: string[];
 }
 
+/** Tipo de subdivisión; el sustantivo visible sale de i18n (subdivisionNoun). */
+export type NounKey = "department" | "state" | "province" | "region";
+
 export interface RegionDef {
   /** Id corto y estable (viaja al ranking): "co", "us"… */
   id: string;
@@ -22,8 +25,8 @@ export interface RegionDef {
   title: string;
   /** Emoji de la bandera del país. */
   flag: string;
-  /** Sustantivo de las subdivisiones ("departamentos", "states"). */
-  entityNoun: string;
+  /** Tipo de subdivisión (se localiza vía i18n, no va hardcodeado). */
+  nounKey: NounKey;
   /** Entidades jugables (solo las que tienen frontera terrestre). */
   entities: RegionEntity[];
 }

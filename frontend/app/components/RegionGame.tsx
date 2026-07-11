@@ -57,8 +57,9 @@ const CHIP: Record<Status, string> = {
 export default function RegionGame({ regionId, locale, onExit }: { regionId: string; locale: Locale; onExit: () => void }) {
   const def = REGIONS[regionId];
   const tr = t(locale);
-  // Sustantivo de las subdivisiones (plural); F6c lo pasa por i18n.
-  const noun = def.entityNoun;
+  // Sustantivo localizado de las subdivisiones (departamento/state/província…)
+  const nounForms = t(locale).subdivisionNoun[def.nounKey];
+  const noun = nounForms.many;
   const graph = regionGraph(regionId);
   const day = dateSeed();
   const storeKey = `frontle-region-${day}-${regionId}`;
@@ -241,7 +242,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={tr.region.placeholder(noun.replace(/s$/, ""))}
+                  placeholder={tr.region.placeholder(nounForms.one)}
                   autoComplete="off"
                   className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
                 />

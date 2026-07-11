@@ -53,6 +53,6 @@ export const COLOMBIA: RegionDef = {
   id: "co",
   title: "Colombia",
   flag: "🇨🇴",
-  entityNoun: "departamentos",
+  nounKey: "department",
   entities: E,
 };

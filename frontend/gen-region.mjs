@@ -27,11 +27,11 @@ async function loadNaturalEarth() {
 
 // --- Config por país. iso3=geoBoundaries · qid=Wikidata · iso2=flagcdn --------
 const CONFIG = {
-  ar: { iso3: "ARG", qid: "Q414",  iso2: "ar", title: "Argentina", exportName: "ARGENTINA", entityNoun: "provincias", lang: "es" },
-  ng: { iso3: "NGA", qid: "Q1033", iso2: "ng", title: "Nigeria",   exportName: "NIGERIA",   entityNoun: "estados",     lang: "en" },
+  ar: { iso3: "ARG", qid: "Q414",  iso2: "ar", title: "Argentina", exportName: "ARGENTINA", nounKey: "province",   lang: "es" },
+  ng: { iso3: "NGA", qid: "Q1033", iso2: "ng", title: "Nigeria",   exportName: "NIGERIA",   nounKey: "state",      lang: "en" },
   // Ghana: NE trae las 10 regiones pre-2019; geoBoundaries sí tiene las 16 actuales.
-  gh: { iso3: "GHA", qid: "Q117",  iso2: "gh", title: "Ghana",     exportName: "GHANA",     entityNoun: "regiones",    lang: "en", source: "gb" },
-  br: { iso3: "BRA", qid: "Q155",  iso2: "br", title: "Brasil",    exportName: "BRASIL",    entityNoun: "estados",     lang: "pt" },
+  gh: { iso3: "GHA", qid: "Q117",  iso2: "gh", title: "Ghana",     exportName: "GHANA",     nounKey: "region",     lang: "en", source: "gb" },
+  br: { iso3: "BRA", qid: "Q155",  iso2: "br", title: "Brasil",    exportName: "BRASIL",    nounKey: "state",      lang: "pt" },
 };
 
 // Precisión/umbral de la derivación de adyacencia (tuneable):
@@ -174,7 +174,7 @@ async function build(id) {
   }).join("\n");
   const ts = `// ============================================================
 //  Frontle — Región: ${cfg.title} ${flagEmoji(cfg.iso2)}
-//  ${kept.length} ${cfg.entityNoun}. Adyacencia derivada de la geometría
+//  ${kept.length} subdivisiones (${cfg.nounKey}). Adyacencia derivada de la geometría
 //  (Natural Earth 10m admin_1) por gen-region.mjs. Revisar bordes dudosos a mano.
 // ============================================================
 import type { RegionDef, RegionEntity } from "./types";
@@ -187,7 +187,7 @@ export const ${cfg.exportName}: RegionDef = {
   id: ${JSON.stringify(id)},
   title: ${JSON.stringify(cfg.title)},
   flag: ${JSON.stringify(flagEmoji(cfg.iso2))},
-  entityNoun: ${JSON.stringify(cfg.entityNoun)},
+  nounKey: ${JSON.stringify(cfg.nounKey)},
   entities: E,
 };
 `;

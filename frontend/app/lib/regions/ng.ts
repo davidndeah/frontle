@@ -49,6 +49,6 @@ export const NIGERIA: RegionDef = {
   id: "ng",
   title: "Nigeria",
   flag: "🇳🇬",
-  entityNoun: "estados",
+  nounKey: "state",
   entities: E,
 };

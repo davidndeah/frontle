@@ -35,6 +35,6 @@ export const ARGENTINA: RegionDef = {
   id: "ar",
   title: "Argentina",
   flag: "🇦🇷",
-  entityNoun: "provincias",
+  nounKey: "province",
   entities: E,
 };
