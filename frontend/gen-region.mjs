@@ -164,7 +164,7 @@ async function build(id) {
   const ts = `// ============================================================
 //  Frontle — Región: ${cfg.title} ${flagEmoji(cfg.iso2)}
 //  ${kept.length} ${cfg.entityNoun}. Adyacencia derivada de la geometría
-//  (geoBoundaries ADM1) por gen-region.mjs. Revisar bordes dudosos a mano.
+//  (Natural Earth 10m admin_1) por gen-region.mjs. Revisar bordes dudosos a mano.
 // ============================================================
 import type { RegionDef, RegionEntity } from "./types";
 

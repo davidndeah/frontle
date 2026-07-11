@@ -1,7 +1,7 @@
 // ============================================================
 //  Frontle — Región: Argentina 🇦🇷
 //  23 provincias. Adyacencia derivada de la geometría
-//  (geoBoundaries ADM1) por gen-region.mjs. Revisar bordes dudosos a mano.
+//  (Natural Earth 10m admin_1) por gen-region.mjs. Revisar bordes dudosos a mano.
 // ============================================================
 import type { RegionDef, RegionEntity } from "./types";
 
