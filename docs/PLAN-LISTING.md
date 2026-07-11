@@ -18,11 +18,16 @@
 
 | Pri | Tarea | Impacto en listing | Dueño |
 |-----|-------|--------------------|-------|
-| **P0** | Llevar la rama a **producción** (las 6 regiones = lo que MiniPay pidió) | El reviewer juzga la app en vivo; hoy no ve nada de esto | Fable (F1) |
-| **P1** | **Catálogo MiniApp**: manifest, icono, screenshots, categoría + QA en device | Es el trámite concreto de listar | Fable (F2) + David (device) |
-| **P2** | **Copy audit** plain-language (network fee, deposit, sin jerga) | MiniPay es estricto con el wording | Fable (F3) |
-| **P3** | **Score card compartible** (loop de crecimiento Wordle) | No es requisito, pero es el gap nº1 del benchmark y sube el PMF que MiniPay valora | Fable (F4) |
+| **P0** | Llevar la rama a **producción** (las 6 regiones = lo que MiniPay pidió) | El reviewer juzga la app en vivo | **David revisa** (`docs/REVIEW-MERGE.md`) → luego Fable/merge |
+| **P2** | **Copy audit** plain-language (network fee, deposit, sin jerga) | MiniPay es estricto con el wording | Fable (F3) — **listo para arrancar** |
 | **P4** | Ranking regional + robustez de dinero + npm | Retención/robustez/PoS | Santiago (S1–S4) |
+| **P1** | **Catálogo MiniApp**: manifest + **icono/screenshots/OG** | Trámite de listar | **David vía Lovable/skills** (diseño) → Fable solo cablea el manifest cuando haya assets |
+| **P3** | **Score card compartible** | Loop de crecimiento | **Diseño: David (Lovable)**; implementación Canvas: Fable cuando el diseño esté |
+
+> **Ajuste (según David):** el trabajo de **diseño** (icono, screenshots, OG, estética
+> del score card) lo hace David probando **skills + Lovable**, no es prioridad de Fable.
+> F1 está **gated por la revisión manual** de David — ver `docs/REVIEW-MERGE.md`.
+> Por eso el foco inmediato de Fable es **F3 (copy audit)**, que no depende de diseño ni de la revisión.
 
 ---
 
