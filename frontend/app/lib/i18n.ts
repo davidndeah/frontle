@@ -200,6 +200,18 @@ type Dict = {
   practiceHint: string;
   practiceNextRound: string;
   practiceExit: string;
+  // Modo Regiones (marco del juego; los nombres de subdivisiones van en idioma local)
+  region: {
+    challengeOfDay: string;
+    timerStarts: string;
+    chooseOtherMode: string;
+    modeFooter: (title: string) => string;
+    placeholder: (noun: string) => string;
+    optimalRoute: (n: number, noun: string) => string;
+    winText: (guesses: number, optimal: number, perfect: boolean, noun: string) => string;
+    used: (n: number) => string;
+    bestToday: (n: number, noun: string) => string;
+  };
   tutorialSteps: string[];
   tutNext: string;
   tutPlay: string;
@@ -366,6 +378,17 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Pista (gratis)",
     practiceNextRound: "Otra ronda",
     practiceExit: "Salir de práctica",
+    region: {
+      challengeOfDay: "Reto del día",
+      timerStarts: "El cronómetro arranca al pulsar Jugar",
+      chooseOtherMode: "Elegir otro modo",
+      modeFooter: (t) => `Modo ${t} · gratis · vuelve mañana para un nuevo reto`,
+      placeholder: (n) => `Escribe un ${n}…`,
+      optimalRoute: (n, noun) => `Ruta óptima: ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Conectaste con ${g} ${noun} — la ruta óptima.` : `Conectaste con ${g} ${noun} (la óptima era ${o}).`,
+      used: (n) => `Usados: ${n}`,
+      bestToday: (n, noun) => `Tu mejor hoy: ${n} ${noun}`,
+    },
     tutorialSteps: [
       "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
       "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
@@ -546,6 +569,17 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Hint (free)",
     practiceNextRound: "Another round",
     practiceExit: "Exit practice",
+    region: {
+      challengeOfDay: "Daily challenge",
+      timerStarts: "The timer starts when you tap Play",
+      chooseOtherMode: "Choose another mode",
+      modeFooter: (t) => `${t} mode · free · come back tomorrow for a new challenge`,
+      placeholder: (n) => `Type a ${n}…`,
+      optimalRoute: (n, noun) => `Best route: ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Connected with ${g} ${noun} — the best route.` : `Connected with ${g} ${noun} (the best was ${o}).`,
+      used: (n) => `Used: ${n}`,
+      bestToday: (n, noun) => `Your best today: ${n} ${noun}`,
+    },
     tutorialSteps: [
       "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
       "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
@@ -726,6 +760,17 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Dica (grátis)",
     practiceNextRound: "Outra rodada",
     practiceExit: "Sair da prática",
+    region: {
+      challengeOfDay: "Desafio do dia",
+      timerStarts: "O cronômetro começa ao tocar em Jogar",
+      chooseOtherMode: "Escolher outro modo",
+      modeFooter: (t) => `Modo ${t} · grátis · volte amanhã para um novo desafio`,
+      placeholder: (n) => `Digite um ${n}…`,
+      optimalRoute: (n, noun) => `Rota ótima: ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Você conectou com ${g} ${noun} — a rota ótima.` : `Você conectou com ${g} ${noun} (a ótima era ${o}).`,
+      used: (n) => `Usados: ${n}`,
+      bestToday: (n, noun) => `Sua melhor hoje: ${n} ${noun}`,
+    },
     tutorialSteps: [
       "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
       "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
@@ -906,6 +951,17 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Indice (gratuit)",
     practiceNextRound: "Autre manche",
     practiceExit: "Quitter l'entraînement",
+    region: {
+      challengeOfDay: "Défi du jour",
+      timerStarts: "Le chrono démarre en appuyant sur Jouer",
+      chooseOtherMode: "Choisir un autre mode",
+      modeFooter: (t) => `Mode ${t} · gratuit · reviens demain pour un nouveau défi`,
+      placeholder: (n) => `Entrez un ${n}…`,
+      optimalRoute: (n, noun) => `Route optimale : ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Vous avez relié avec ${g} ${noun} — la route optimale.` : `Vous avez relié avec ${g} ${noun} (l'optimale était ${o}).`,
+      used: (n) => `Utilisés : ${n}`,
+      bestToday: (n, noun) => `Votre meilleur aujourd'hui : ${n} ${noun}`,
+    },
     tutorialSteps: [
       "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
       "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",

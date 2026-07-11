@@ -18,6 +18,7 @@ import {
   type RegionPlayState,
 } from "../lib/regionGame";
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
+import { t, type Locale } from "../lib/i18n";
 import RegionMap from "./RegionMap";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 
@@ -53,8 +54,11 @@ const CHIP: Record<Status, string> = {
   red: "border-rose-400/50 text-rose-100",
 };
 
-export default function RegionGame({ regionId, onExit }: { regionId: string; onExit: () => void }) {
+export default function RegionGame({ regionId, locale, onExit }: { regionId: string; locale: Locale; onExit: () => void }) {
   const def = REGIONS[regionId];
+  const tr = t(locale);
+  // Sustantivo de las subdivisiones (plural); F6c lo pasa por i18n.
+  const noun = def.entityNoun;
   const graph = regionGraph(regionId);
   const day = dateSeed();
   const storeKey = `frontle-region-${day}-${regionId}`;
@@ -132,16 +136,13 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
     if (state.solved || !started) return;
     const canonical = resolveRegionEntity(regionId, value);
     const res = tryRegionGuess(state, value, canonical);
-    const noun = def.entityNoun;
     setMessage({
-      text:
-        res.reason === "unknown" ? `No reconozco "${res.input}".`
-        : res.reason === "revealed" ? `${res.entity} ya está en el mapa.`
-        : res.reason === "duplicate" ? `${res.entity} ya está en tu ruta.`
-        : res.reason === "not_adjacent" ? `${res.entity} no limita con ningún ${noun.replace(/s$/, "")} revelado.`
-        : res.quality === "green" ? `${res.entity} ✓`
-        : res.quality === "yellow" ? `${res.entity} — vas de lado`
-        : `${res.entity} — te alejaste`,
+      text: tr.feedback(res.reason, {
+        country: res.entity,
+        end: challenge.end,
+        quality: res.quality,
+        input: res.input,
+      }),
       ok: res.ok,
     });
     if (!res.ok) sfxInvalid();
@@ -188,7 +189,7 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
       {/* reto */}
       <section className="panel p-4">
         <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
-          Reto del día · {def.entityNoun}
+          {tr.region.challengeOfDay} · {noun}
         </p>
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 flex flex-col items-center text-center">
@@ -202,7 +203,7 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
           </div>
         </div>
         <p className="text-center text-xs text-neutral-300 mt-3">
-          {started ? `Ruta óptima: ${challenge.optimal} ${def.entityNoun}` : "El cronómetro arranca al pulsar Jugar"}
+          {started ? tr.region.optimalRoute(challenge.optimal, noun) : tr.region.timerStarts}
         </p>
       </section>
 
@@ -217,7 +218,7 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
           <RegionMap
             regionId={regionId}
             statusByEntity={statusByEntity}
-            loadingLabel="Cargando mapa…"
+            loadingLabel={tr.loadingMap}
             silhouettes={hintEntity ? [hintEntity] : []}
             resetKey={`${challenge.start}->${challenge.end}`}
           />
@@ -232,7 +233,7 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
           </section>
 
           {state.solved ? (
-            <RegionWin regionId={regionId} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} chain={[challenge.start, ...state.chain.map((c) => c.entity), challenge.end]} />
+            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} chain={[challenge.start, ...state.chain.map((c) => c.entity), challenge.end]} />
           ) : (
             <section className="relative flex flex-col gap-3">
               <form onSubmit={(e) => { e.preventDefault(); if (input.trim()) submit(input); }} className="flex gap-2">
@@ -240,7 +241,7 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={`Escribe un ${def.entityNoun.replace(/s$/, "")}…`}
+                  placeholder={tr.region.placeholder(noun.replace(/s$/, ""))}
                   autoComplete="off"
                   className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
                 />
@@ -270,17 +271,17 @@ export default function RegionGame({ regionId, onExit }: { regionId: string; onE
                   disabled={showHint}
                   className="rounded-lg border border-[#b79ced]/30 px-4 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
                 >
-                  💡 Pista (gratis)
+                  💡 {tr.practiceHint}
                 </button>
-                <span className="text-xs text-neutral-400">Usados: {guessCount}</span>
+                <span className="text-xs text-neutral-400">{tr.region.used(guessCount)}</span>
               </div>
             </section>
           )}
         </>
       ) : (
         <div className="w-full flex flex-col items-center gap-2 py-2">
-          <button onClick={start} className="btn-3d font-display font-bold text-2xl px-12 py-4">▶ Jugar</button>
-          {best !== null && <p className="text-xs text-neutral-400">Tu mejor hoy: {best} {def.entityNoun}</p>}
+          <button onClick={start} className="btn-3d font-display font-bold text-2xl px-12 py-4">{tr.play}</button>
+          {best !== null && <p className="text-xs text-neutral-400">{tr.region.bestToday(best, noun)}</p>}
         </div>
       )}
     </div>
@@ -297,38 +298,38 @@ function RChip({ regionId, name, code, kind }: { regionId: string; name: string;
 }
 
 function RegionWin({
-  regionId, guesses, optimal, timeMs, onExit, def, chain,
+  tr, noun, guesses, optimal, timeMs, onExit, def, chain,
 }: {
-  regionId: string; guesses: number; optimal: number; timeMs: number; onExit: () => void;
-  def: { flag: string; title: string; entityNoun: string }; chain: string[];
+  tr: ReturnType<typeof t>; noun: string; guesses: number; optimal: number; timeMs: number; onExit: () => void;
+  def: { flag: string; title: string }; chain: string[];
 }) {
   const [copied, setCopied] = useState(false);
   const perfect = guesses <= optimal;
   const stars = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
 
   function share() {
-    const text = `🌍 Frontle ${def.flag} ${def.title}\n${chain[0]} → ${chain[chain.length - 1]}\n${"⭐".repeat(stars)} · ${guesses} ${def.entityNoun} · ⏱️ ${formatTime(timeMs)}\nfrontle.vercel.app`;
+    const text = `🌍 Frontle ${def.flag} ${def.title}\n${chain[0]} → ${chain[chain.length - 1]}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ⏱️ ${formatTime(timeMs)}\nfrontle.vercel.app`;
     if (navigator.share) navigator.share({ text }).catch(() => {});
     else { navigator.clipboard?.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }
   }
 
   return (
     <section className="panel p-5 text-center">
-      <div className="text-3xl font-black prism-text">{perfect ? "¡Ruta perfecta! 🏆" : "¡Lo lograste! 🎉"}</div>
+      <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
       <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
       <p className="text-neutral-200 mt-2">
-        {perfect ? `Conectaste con ${guesses} ${def.entityNoun} — la ruta óptima.` : `Conectaste con ${guesses} ${def.entityNoun} (la óptima era ${optimal}).`}
+        {tr.region.winText(guesses, optimal, perfect, noun)}
       </p>
-      <p className="text-neutral-300 mt-1 font-mono">⏱️ Tiempo: {formatTime(timeMs)}</p>
+      <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
       <div className="flex flex-col gap-2 mt-4">
         <button onClick={share} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
-          {copied ? "¡Copiado!" : "Compartir resultado"}
+          {copied ? tr.copied : tr.share}
         </button>
         <button onClick={onExit} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
-          Elegir otro modo
+          {tr.region.chooseOtherMode}
         </button>
       </div>
-      <p className="text-[11px] text-neutral-500 mt-3">Modo {def.title} · gratis · vuelve mañana para un nuevo reto</p>
+      <p className="text-[11px] text-neutral-500 mt-3">{tr.region.modeFooter(def.title)}</p>
     </section>
   );
 }
