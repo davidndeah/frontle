@@ -120,7 +120,7 @@ export function startMusic(): void {
   nextTime = a.currentTime + 0.15;
   master!.gain.cancelScheduledValues(a.currentTime);
   master!.gain.setValueAtTime(0.0001, a.currentTime);
-  master!.gain.exponentialRampToValueAtTime(0.9, a.currentTime + 2.2); // fade-in (el compresor evita clipping)
+  master!.gain.exponentialRampToValueAtTime(0.63, a.currentTime + 2.2); // fade-in (−30% respecto a 0.9; el compresor evita clipping)
   timer = setInterval(loop, 25);
 }
 
