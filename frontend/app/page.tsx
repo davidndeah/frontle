@@ -1136,7 +1136,18 @@ export default function Frontle() {
               <a href="/privacy" className="underline">{tr.legalPrivacy}</a>
               <a href="/stats" className="underline">{tr.stats.title}</a>
               <a href={SUPPORT_MAILTO} className="underline">{tr.legalSupport}</a>
-              <a href={SUPPORT_X_URL} target="_blank" rel="noopener noreferrer" className="underline">𝕏</a>
+            </div>
+            {/* Redes sociales (separadas de los enlaces legales) */}
+            <div className="flex justify-center">
+              <a
+                href={SUPPORT_X_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X"
+                className="w-9 h-9 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center text-base text-white active:scale-90 transition"
+              >
+                𝕏
+              </a>
             </div>
             <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
           </>
@@ -1174,18 +1185,17 @@ export default function Frontle() {
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
-            {/* Bordy explica paso a paso: burbujas con su avatar */}
-            <div className="flex flex-col gap-3">
-              {tr.learnBubbles.map((txt, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/bordy-m2.webp" alt="" className="w-10 h-12 object-contain flex-none drop-shadow" />
-                  <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => setTab("jugar")} className="rounded-2xl border border-[#b79ced]/40 text-white font-semibold px-6 py-3 active:scale-95 transition">
-              ▶ {tr.play}
+            {/* Ir a jugar: misma estética de tarjeta que "Modo práctica" */}
+            <button
+              onClick={() => setTab("jugar")}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+            >
+              <span className="text-3xl">🌍</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
+                <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
+              </span>
+              <span className="text-[#fcff52] text-2xl">→</span>
             </button>
           </>
         )}
