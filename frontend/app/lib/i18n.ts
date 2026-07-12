@@ -228,6 +228,10 @@ type Dict = {
     winText: (guesses: number, optimal: number, perfect: boolean, noun: string) => string;
     used: (n: number) => string;
     bestToday: (n: number, noun: string) => string;
+    hintInitial: (noun: string) => string;
+    hintSilNext: (noun: string) => string;
+    hintSilAll: (nounMany: string) => string;
+    hintNextInitial: (letter: string, noun: string) => string;
   };
   // Selector de modos (paso "modes" del tab Jugar)
   modes: {
@@ -429,6 +433,10 @@ const STRINGS: Record<Locale, Dict> = {
       winText: (g, o, p, noun) => p ? `Conectaste con ${g} ${noun} — la ruta óptima.` : `Conectaste con ${g} ${noun} (la óptima era ${o}).`,
       used: (n) => `Usados: ${n}`,
       bestToday: (n, noun) => `Tu mejor hoy: ${n} ${noun}`,
+      hintInitial: (noun) => `Inicial del siguiente ${noun}`,
+      hintSilNext: (noun) => `Silueta del siguiente ${noun}`,
+      hintSilAll: (nm) => `Silueta de todos los ${nm}`,
+      hintNextInitial: (l, noun) => `El siguiente ${noun} empieza por «${l}»`,
     },
     modes: {
       dailyTitle: "Reto diario", dailySub: "3 niveles · premio real del pot 🏆",
@@ -642,6 +650,10 @@ const STRINGS: Record<Locale, Dict> = {
       winText: (g, o, p, noun) => p ? `Connected with ${g} ${noun} — the best route.` : `Connected with ${g} ${noun} (the best was ${o}).`,
       used: (n) => `Used: ${n}`,
       bestToday: (n, noun) => `Your best today: ${n} ${noun}`,
+      hintInitial: (noun) => `Next ${noun}'s initial`,
+      hintSilNext: (noun) => `Next ${noun}'s silhouette`,
+      hintSilAll: (nm) => `All ${nm}' silhouettes`,
+      hintNextInitial: (l, noun) => `The next ${noun} starts with “${l}”`,
     },
     modes: {
       dailyTitle: "Daily challenge", dailySub: "3 levels · real prize from the pot 🏆",
@@ -855,6 +867,10 @@ const STRINGS: Record<Locale, Dict> = {
       winText: (g, o, p, noun) => p ? `Você conectou com ${g} ${noun} — a rota ótima.` : `Você conectou com ${g} ${noun} (a ótima era ${o}).`,
       used: (n) => `Usados: ${n}`,
       bestToday: (n, noun) => `Sua melhor hoje: ${n} ${noun}`,
+      hintInitial: (noun) => `Inicial do próximo ${noun}`,
+      hintSilNext: (noun) => `Silhueta do próximo ${noun}`,
+      hintSilAll: (nm) => `Silhueta de todos os ${nm}`,
+      hintNextInitial: (l, noun) => `O próximo ${noun} começa com “${l}”`,
     },
     modes: {
       dailyTitle: "Desafio diário", dailySub: "3 níveis · prêmio real do pot 🏆",
@@ -1068,6 +1084,10 @@ const STRINGS: Record<Locale, Dict> = {
       winText: (g, o, p, noun) => p ? `Vous avez relié avec ${g} ${noun} — la route optimale.` : `Vous avez relié avec ${g} ${noun} (l'optimale était ${o}).`,
       used: (n) => `Utilisés : ${n}`,
       bestToday: (n, noun) => `Votre meilleur aujourd'hui : ${n} ${noun}`,
+      hintInitial: (noun) => `Initiale du prochain ${noun}`,
+      hintSilNext: (noun) => `Silhouette du prochain ${noun}`,
+      hintSilAll: (nm) => `Silhouette de tous les ${nm}`,
+      hintNextInitial: (l, noun) => `Le prochain ${noun} commence par « ${l} »`,
     },
     modes: {
       dailyTitle: "Défi quotidien", dailySub: "3 niveaux · vrai prix de la cagnotte 🏆",
