@@ -219,7 +219,15 @@ type Dict = {
     play: (title: string) => string; moreCountries: string;
     moreModesTitle: string; moreModesSub: string;
   };
-  a11y: { country: string };
+  a11y: {
+    country: string;
+    sound: string;
+    music: (muted: boolean) => string;
+    effects: (muted: boolean) => string;
+    zoomIn: string;
+    zoomOut: string;
+    recenter: string;
+  };
   // Prompt de alias al registrarse
   name: { title: string; sub: string };
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
@@ -407,7 +415,12 @@ const STRINGS: Record<Locale, Dict> = {
       play: (t) => `Jugar ${t}`, moreCountries: "más países muy pronto…",
       moreModesTitle: "Más modos", moreModesSub: "práctica, duelos y más…",
     },
-    a11y: { country: "País" },
+    a11y: {
+      country: "País", sound: "sonido",
+      music: (m) => m ? "Activar música" : "Silenciar música",
+      effects: (m) => m ? "Activar efectos" : "Silenciar efectos",
+      zoomIn: "Acercar", zoomOut: "Alejar", recenter: "Reencuadrar",
+    },
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet)." },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
@@ -612,7 +625,12 @@ const STRINGS: Record<Locale, Dict> = {
       play: (t) => `Play ${t}`, moreCountries: "more countries coming soon…",
       moreModesTitle: "More modes", moreModesSub: "practice, duels and more…",
     },
-    a11y: { country: "Country" },
+    a11y: {
+      country: "Country", sound: "sound",
+      music: (m) => m ? "Enable music" : "Mute music",
+      effects: (m) => m ? "Enable effects" : "Mute effects",
+      zoomIn: "Zoom in", zoomOut: "Zoom out", recenter: "Recenter",
+    },
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet)." },
     subdivisionNoun: {
       department: { one: "department", many: "departments" },
@@ -817,7 +835,12 @@ const STRINGS: Record<Locale, Dict> = {
       play: (t) => `Jogar ${t}`, moreCountries: "mais países em breve…",
       moreModesTitle: "Mais modos", moreModesSub: "prática, duelos e mais…",
     },
-    a11y: { country: "País" },
+    a11y: {
+      country: "País", sound: "som",
+      music: (m) => m ? "Ativar música" : "Silenciar música",
+      effects: (m) => m ? "Ativar efeitos" : "Silenciar efeitos",
+      zoomIn: "Aproximar", zoomOut: "Afastar", recenter: "Reenquadrar",
+    },
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira)." },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
@@ -1022,7 +1045,12 @@ const STRINGS: Record<Locale, Dict> = {
       play: (t) => `Jouer ${t}`, moreCountries: "plus de pays bientôt…",
       moreModesTitle: "Plus de modes", moreModesSub: "entraînement, duels et plus…",
     },
-    a11y: { country: "Pays" },
+    a11y: {
+      country: "Pays", sound: "son",
+      music: (m) => m ? "Activer la musique" : "Couper la musique",
+      effects: (m) => m ? "Activer les effets" : "Couper les effets",
+      zoomIn: "Zoom avant", zoomOut: "Zoom arrière", recenter: "Recadrer",
+    },
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille)." },
     subdivisionNoun: {
       department: { one: "département", many: "départements" },

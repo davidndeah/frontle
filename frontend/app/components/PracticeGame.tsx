@@ -177,6 +177,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
         silhouettes={hintCountry ? [hintCountry] : []}
         showAllOutlines
         resetKey={`${challenge.start}->${challenge.end}`}
+        controls={tr.a11y}
       />
 
       {/* chips de la ruta */}

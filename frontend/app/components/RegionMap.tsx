@@ -28,7 +28,10 @@ interface Props {
   silhouettes?: string[];
   showAllOutlines?: boolean;
   resetKey?: string;
+  controls?: { zoomIn: string; zoomOut: string; recenter: string };
 }
+
+const EN_CONTROLS = { zoomIn: "Zoom in", zoomOut: "Zoom out", recenter: "Recenter" };
 
 type NamedFeature = Feature<Geometry, { name: string; code: string }>;
 
@@ -43,6 +46,7 @@ export default function RegionMap({
   silhouettes = [],
   showAllOutlines = false,
   resetKey = "",
+  controls = EN_CONTROLS,
 }: Props) {
   const [features, setFeatures] = useState<NamedFeature[] | null>(null);
   const [view, setView] = useState({ k: 1, x: 0, y: 0 });
@@ -170,9 +174,9 @@ export default function RegionMap({
             </g>
           </svg>
           <div className="absolute top-2 right-2 flex flex-col gap-1">
-            <button className={btn} onClick={() => zoomAt(1.4, W / 2, H / 2)} aria-label="Acercar">+</button>
-            <button className={btn} onClick={() => zoomAt(1 / 1.4, W / 2, H / 2)} aria-label="Alejar">−</button>
-            <button className={btn} onClick={() => setView({ k: 1, x: 0, y: 0 })} aria-label="Reencuadrar">⌖</button>
+            <button className={btn} onClick={() => zoomAt(1.4, W / 2, H / 2)} aria-label={controls.zoomIn}>+</button>
+            <button className={btn} onClick={() => zoomAt(1 / 1.4, W / 2, H / 2)} aria-label={controls.zoomOut}>−</button>
+            <button className={btn} onClick={() => setView({ k: 1, x: 0, y: 0 })} aria-label={controls.recenter}>⌖</button>
           </div>
         </>
       )}

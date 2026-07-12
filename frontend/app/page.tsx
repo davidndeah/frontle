@@ -685,14 +685,14 @@ export default function Frontle() {
         <div className="flex items-center rounded-full bg-white/5 border border-[#b79ced]/25 overflow-hidden">
           <button
             onClick={onToggleMusic}
-            aria-label={musicMuted ? "Activar música" : "Silenciar música"}
+            aria-label={tr.a11y.music(musicMuted)}
             className="w-6 h-8 flex items-center justify-center text-sm active:scale-90 transition"
           >
             {musicMuted ? "🔇" : "🎵"}
           </button>
           <button
             onClick={onToggleSfx}
-            aria-label={sfxMuted ? "Activar efectos" : "Silenciar efectos"}
+            aria-label={tr.a11y.effects(sfxMuted)}
             className="w-6 h-8 flex items-center justify-center text-sm border-l border-[#b79ced]/20 active:scale-90 transition"
           >
             {sfxMuted ? "🔕" : "🔊"}
@@ -874,6 +874,7 @@ export default function Frontle() {
             silhouettes={coaching ? [] : silhouettes}
             showAllOutlines={!coaching && showAllSil}
             resetKey={`${challenge.start}->${challenge.end}`}
+            controls={tr.a11y}
           />
         ) : jugarStep === "reto" ? (
           <div className="w-full flex flex-col items-center justify-center gap-3 py-2">

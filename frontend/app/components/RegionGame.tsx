@@ -220,6 +220,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
             regionId={regionId}
             statusByEntity={statusByEntity}
             loadingLabel={tr.loadingMap}
+            controls={tr.a11y}
             silhouettes={hintEntity ? [hintEntity] : []}
             resetKey={`${challenge.start}->${challenge.end}`}
           />
