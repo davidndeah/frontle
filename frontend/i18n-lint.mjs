@@ -44,10 +44,15 @@ const findings = [];
 for (const file of walk("app")) {
   const src = stripComments(readFileSync(file, "utf-8"));
 
-  // A) Texto JSX con acentos (quitando {expresiones})
+  // A) Texto JSX (quitando {expresiones}): con acentos SIEMPRE es sospechoso;
+  // sin acentos también, si parece prosa (solo letras/puntuación, sin signos
+  // de código) — así se cazan hardcodeos tipo "racha" o "Conecta el mundo".
+  const CODECHARS = /[;={}()[\]`/\|_<>$*+#@~^%&]/;
   for (const m of src.matchAll(/>([^<>{}]*)</g)) {
     const text = m[1].replace(/&[a-z]+;/gi, " ").trim();
-    if (text && ACCENT.test(text) && words(text).length)
+    if (!text || !words(text).length) continue;
+    const prose = !CODECHARS.test(text) && /[\p{L}]{3,}/u.test(text);
+    if (ACCENT.test(text) || prose)
       findings.push({ file, line: lineOf(src, m.index), kind: "jsx-text", text });
   }
   // B) Props con literal directo

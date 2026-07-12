@@ -17,6 +17,8 @@ import {
 import {
   detectLocale,
   saveLocale,
+  savedLocale,
+  localeForCountry,
   countryName,
   resolveLocalized,
   suggestLocalized,
@@ -296,7 +298,17 @@ export default function Frontle() {
   // inyectado y el SDK sería más de un megabyte de código muerto.
   const privyActive = PRIVY_ENABLED && mpChecked && !inMiniPay;
   useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
-  useEffect(() => { getIpCountry().then(setIpCountry); }, []);
+  useEffect(() => {
+    getIpCountry().then((cc) => {
+      setIpCountry(cc);
+      // Idioma por REGIÓN: el país de conexión decide el idioma cuando el
+      // usuario no eligió uno a mano (orden: manual → geo → navegador → en).
+      if (!savedLocale()) {
+        const geo = localeForCountry(cc);
+        if (geo) setLocale(geo);
+      }
+    });
+  }, []);
 
   // Cargar el nivel (y reaccionar al cambio de nivel/día): reto de ese nivel,
   // su partida guardada, su mejor marca y su ranking. Cada nivel es un juego
@@ -720,19 +732,19 @@ export default function Frontle() {
         {!started && (
           <div className="flex flex-col items-center gap-2 pt-2">
             <h2 className="font-display text-2xl font-bold text-white text-center leading-tight">
-              Conecta el <span className="text-[#fcff52]">mundo</span>
+              {tr.home.titlePre} <span className="text-[#fcff52]">{tr.home.titleWord}</span>
             </h2>
             {/* Strip de gamificación: racha + nivel (XP) */}
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl">🔥</span>
                 <span className="font-display font-bold text-white text-lg leading-none">{daysPlayed}</span>
-                <span className="text-[11px] text-neutral-400">racha</span>
+                <span className="text-[11px] text-neutral-400">{tr.home.streak}</span>
               </div>
               <div className="w-px h-7 bg-white/10" />
               <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-semibold text-[#c4b5fd]">⚡ Nivel {xpLevel}</span>
+                  <span className="font-semibold text-[#c4b5fd]">{tr.home.level(xpLevel)}</span>
                   <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -803,7 +815,7 @@ export default function Frontle() {
                 <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.moreModesTitle}</span>
                 <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
               </span>
-              <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">coming soon</span>
+              <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">{tr.comingSoon}</span>
             </div>
           </div>
         )}
@@ -1411,10 +1423,10 @@ function WalletSheet({
       <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
       <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-3">💰 Tu wallet</h3>
+        <h3 className="text-white font-bold text-base mb-3">{tr.walletSheet.title}</h3>
         {myId ? (
           <div className="panel p-4">
-            <div className="text-[11px] text-neutral-400">Conectado como</div>
+            <div className="text-[11px] text-neutral-400">{tr.walletSheet.connectedAs}</div>
             {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
                 forma truncada, que MiniPay solo admite como pista secundaria. */}
             <div className="text-white text-sm mt-0.5 break-all">
@@ -1479,11 +1491,11 @@ function NamePrompt({
             className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
           />
           <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
-            Guardar
+            {tr.name.save}
           </button>
         </form>
         <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
-          Usar mi wallet
+          {tr.name.skip}
         </button>
       </div>
     </>
@@ -1564,8 +1576,10 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
             : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
         }
       >
+        {/* Colores explícitos en cada option: el popup nativo hereda fondo
+            claro en algunos navegadores y el texto blanco quedaba ilegible. */}
         {LOCALES.map((l) => (
-          <option key={l} value={l}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
+          <option key={l} value={l} style={{ background: "#1c0b3e", color: "#fff" }}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
         ))}
       </select>
     </div>
