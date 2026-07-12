@@ -22,16 +22,25 @@ import { t, type Locale } from "../lib/i18n";
 import RegionMap from "./RegionMap";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 
-// Bandera de una subdivisión (PNG local; cae a marcador si falta)
+// Bandera de una subdivisión (PNG local; cae a marcador si falta).
+// FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
+// oficial — el marcador debe verse INTENCIONAL: misma proporción 3:2 que
+// una bandera, gradiente del tema y el código como monograma.
 function EntityFlag({ regionId, code, size = 28 }: { regionId: string; code: string; size?: number }) {
   const [ok, setOk] = useState(true);
   if (!ok || !code) {
     return (
       <span
-        className="inline-flex items-center justify-center rounded bg-[#160833] border border-[#b79ced]/40 text-[10px] font-bold text-[#c4b5fd]"
-        style={{ width: size, height: size * 0.7 }}
+        className="inline-flex items-center justify-center rounded-[3px] border border-[#b79ced]/40 font-display font-bold text-[#e9d5ff] uppercase"
+        style={{
+          width: size,
+          height: Math.round(size * (2 / 3)),
+          fontSize: Math.max(9, size * 0.3),
+          background: "linear-gradient(135deg, #2a1650 0%, #160833 100%)",
+          letterSpacing: "0.05em",
+        }}
       >
-        {code?.slice(0, 2).toUpperCase()}
+        {code?.slice(0, 3)}
       </span>
     );
   }
