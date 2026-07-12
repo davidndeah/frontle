@@ -50,7 +50,6 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   const [level, setLevel] = useState<Difficulty>("easy");
   const [showInitial, setShowInitial] = useState(false);
   const [showNextSil, setShowNextSil] = useState(false);
-  const [showAllSil, setShowAllSil] = useState(false);
   const [round, setRound] = useState(0);
   const startRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +62,6 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
     setSuggestions([]);
     setShowInitial(false);
     setShowNextSil(false);
-    setShowAllSil(false);
     startRef.current = Date.now();
     setElapsedMs(0);
     setRound((r) => r + 1);
@@ -189,7 +187,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
         statusByCountry={statusByCountry}
         loadingLabel={tr.loadingMap}
         silhouettes={showNextSil && hintCountry ? [hintCountry] : []}
-        showAllOutlines={showAllSil}
+        showAllOutlines
         resetKey={`${challenge.start}->${challenge.end}`}
         controls={tr.a11y}
       />
@@ -256,7 +254,6 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
           <div className="flex flex-wrap items-center justify-center gap-2">
             <PHintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.hintInitial}`} />
             <PHintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext}`} />
-            <PHintBtn onClick={() => setShowAllSil(true)} active={showAllSil} label={`🗺️ ${tr.hintSilhouetteAll}`} />
           </div>
           <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.used(guessCount)}</p>
         </section>
