@@ -197,14 +197,46 @@ export function tryRegionGuess(
   return { ok: true, solved, reason: "ok", entity, quality, input: rawInput };
 }
 
-// --- Pista gratuita del modo regional (siguiente intermedio óptimo) ---
+// Componente conexo de `seed` dentro de `known` (BFS restringido a conocidos).
+function regionKnownComponent(regionId: string, seed: string, known: Set<string>): Set<string> {
+  const { neighbors } = regionGraph(regionId);
+  const comp = new Set<string>([seed]);
+  const q = [seed];
+  while (q.length) {
+    const cur = q.shift()!;
+    for (const nb of neighbors[cur] ?? []) {
+      if (known.has(nb) && !comp.has(nb)) { comp.add(nb); q.push(nb); }
+    }
+  }
+  return comp;
+}
+
+// --- Pista gratuita del modo regional — ADAPTATIVA al progreso (BUG-1):
+// espejo de nextHintCountry: camino más corto desde el componente conectado
+// al origen hasta el del destino; sugiere el primer desconocido de ese camino.
 export function nextRegionHint(state: RegionPlayState): string | null {
   const { regionId, start, end } = state.challenge;
-  const path = regionShortestPath(regionId, start, end);
-  if (!path) return null;
+  const { neighbors } = regionGraph(regionId);
   const known = regionKnownSet(state);
-  for (const e of path) {
-    if (e !== start && e !== end && !known.has(e)) return e;
+  const compStart = regionKnownComponent(regionId, start, known);
+  if (compStart.has(end)) return null;
+  const compEnd = regionKnownComponent(regionId, end, known);
+
+  const prev: Record<string, string | null> = {};
+  const queue: string[] = [];
+  for (const e of compStart) { prev[e] = null; queue.push(e); }
+  let goal: string | null = null;
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (compEnd.has(cur)) { goal = cur; break; }
+    for (const nb of neighbors[cur] ?? []) {
+      if (!(nb in prev)) { prev[nb] = cur; queue.push(nb); }
+    }
   }
+  if (!goal) return null;
+
+  const path: string[] = [];
+  for (let node: string | null = goal; node !== null; node = prev[node]) path.unshift(node);
+  for (const e of path) if (!known.has(e)) return e;
   return null;
 }

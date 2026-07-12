@@ -30,8 +30,8 @@ const RAW: Omit<Country, "code">[] = [
   { name: "Colombia", flag: "🇨🇴", neighbors: ["Venezuela", "Brazil", "Peru", "Ecuador", "Panama"] },
   { name: "Venezuela", flag: "🇻🇪", neighbors: ["Colombia", "Brazil", "Guyana"] },
   { name: "Guyana", flag: "🇬🇾", neighbors: ["Venezuela", "Brazil", "Suriname"] },
-  { name: "Suriname", flag: "🇸🇷", neighbors: ["Guyana", "Brazil"] },
-  { name: "Brazil", flag: "🇧🇷", neighbors: ["Venezuela", "Guyana", "Suriname", "Colombia", "Peru", "Bolivia", "Paraguay", "Argentina", "Uruguay"] },
+  { name: "Suriname", flag: "🇸🇷", neighbors: ["Guyana", "Brazil", "France"] },
+  { name: "Brazil", flag: "🇧🇷", neighbors: ["Venezuela", "Guyana", "Suriname", "France", "Colombia", "Peru", "Bolivia", "Paraguay", "Argentina", "Uruguay"] },
   { name: "Ecuador", flag: "🇪🇨", neighbors: ["Colombia", "Peru"] },
   { name: "Peru", flag: "🇵🇪", neighbors: ["Ecuador", "Colombia", "Brazil", "Bolivia", "Chile"] },
   { name: "Bolivia", flag: "🇧🇴", neighbors: ["Peru", "Brazil", "Paraguay", "Argentina", "Chile"] },
@@ -54,8 +54,12 @@ const RAW: Omit<Country, "code">[] = [
 
   // ---------------- Europa Occidental ----------------
   { name: "Portugal", flag: "🇵🇹", neighbors: ["Spain"] },
-  { name: "Spain", flag: "🇪🇸", neighbors: ["Portugal", "France", "Andorra"] },
-  { name: "France", flag: "🇫🇷", neighbors: ["Spain", "Andorra", "Belgium", "Luxembourg", "Germany", "Switzerland", "Italy", "Monaco"] },
+  // Fronteras vía territorios que el MAPA pinta como el país (BUG-1):
+  //  España↔Marruecos (Ceuta/Melilla) · Francia↔Brasil/Surinam (Guayana Francesa).
+  //  Sin estas aristas, el jugador ve la conexión en el mapa pero la victoria
+  //  no dispara (el BFS no la recorre). Travle también las cuenta.
+  { name: "Spain", flag: "🇪🇸", neighbors: ["Portugal", "France", "Andorra", "Morocco"] },
+  { name: "France", flag: "🇫🇷", neighbors: ["Spain", "Andorra", "Belgium", "Luxembourg", "Germany", "Switzerland", "Italy", "Monaco", "Brazil", "Suriname"] },
   { name: "Andorra", flag: "🇦🇩", neighbors: ["Spain", "France"] },
   { name: "Monaco", flag: "🇲🇨", neighbors: ["France"] },
   { name: "Belgium", flag: "🇧🇪", neighbors: ["France", "Netherlands", "Germany", "Luxembourg"] },
@@ -151,7 +155,7 @@ const RAW: Omit<Country, "code">[] = [
   { name: "Libya", flag: "🇱🇾", neighbors: ["Tunisia", "Algeria", "Niger", "Chad", "Sudan", "Egypt"] },
   { name: "Tunisia", flag: "🇹🇳", neighbors: ["Algeria", "Libya"] },
   { name: "Algeria", flag: "🇩🇿", neighbors: ["Morocco", "Tunisia", "Libya", "Niger", "Mali", "Mauritania", "Western Sahara"] },
-  { name: "Morocco", flag: "🇲🇦", neighbors: ["Algeria", "Western Sahara"] },
+  { name: "Morocco", flag: "🇲🇦", neighbors: ["Algeria", "Western Sahara", "Spain"] },
   { name: "Western Sahara", flag: "🇪🇭", neighbors: ["Morocco", "Algeria", "Mauritania"] },
   { name: "Mauritania", flag: "🇲🇷", neighbors: ["Western Sahara", "Algeria", "Mali", "Senegal"] },
 
