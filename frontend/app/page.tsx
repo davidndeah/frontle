@@ -806,7 +806,7 @@ export default function Frontle() {
                   className="w-full appearance-none rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-[#fcff52]/50"
                 >
                   {REGION_IDS.map((rid) => (
-                    <option key={rid} value={rid}>{REGIONS[rid].title}</option>
+                    <option key={rid} value={rid} style={{ background: "#1c0b3e", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
                   ))}
                 </select>
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 text-xs">▾</span>
