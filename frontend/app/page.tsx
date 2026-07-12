@@ -164,6 +164,9 @@ export default function Frontle() {
   const [regionMode, setRegionMode] = useState<string | null>(null);
   // País elegido en el desplegable del selector de Regiones (antes de jugar).
   const [regionPick, setRegionPick] = useState<string>(REGION_IDS[0]);
+  // UX-4: tarjetas de modo colapsadas; al tocar una se despliega su selector
+  // (nivel para el reto diario, país+mapa para regiones) y se cierra la otra.
+  const [modeOpen, setModeOpen] = useState<"daily" | "regions" | null>(null);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
@@ -758,27 +761,36 @@ export default function Frontle() {
         {/* ---- Flujo pre-juego: 1) modos ---- */}
         {!started && jugarStep === "modes" && (
           <div className="flex flex-col gap-3">
-            <button
-              onClick={() => setJugarStep("level")}
-              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
-            >
-              <span className="text-3xl">🌍</span>
-              <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
-                <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
-              </span>
-              <span className="text-[#fcff52] text-2xl">→</span>
-            </button>
-            {/* Modo Regiones: elige país en el desplegable, ve su mapa y juega */}
             <div className="panel p-4 flex flex-col gap-3">
-              <div className="flex items-center gap-3">
+              <button
+                onClick={() => setModeOpen(modeOpen === "daily" ? null : "daily")}
+                className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
+              >
+                <span className="text-3xl">🌍</span>
+                <span className="flex-1">
+                  <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
+                  <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
+                </span>
+                <span className="text-[#fcff52] text-2xl">{modeOpen === "daily" ? "▾" : "→"}</span>
+              </button>
+              {modeOpen === "daily" && (
+                <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
+              )}
+            </div>
+            {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa */}
+            <div className="panel p-4 flex flex-col gap-3">
+              <button
+                onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
+                className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
+              >
                 <span className="text-3xl">🗺️</span>
                 <span className="flex-1">
                   <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.regionsTitle}</span>
                   <span className="text-xs text-neutral-300">{tr.modes.regionsSub}</span>
                 </span>
                 <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
-              </div>
+              </button>
+              {modeOpen === "regions" && (<>
               {/* Desplegable de país */}
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -808,6 +820,7 @@ export default function Frontle() {
                 ▶ {tr.modes.play(REGIONS[regionPick].title)}
               </button>
               <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
+              </>)}
             </div>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
