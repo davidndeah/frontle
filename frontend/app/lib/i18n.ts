@@ -54,6 +54,23 @@ export function detectLocale(): Locale {
   return (LOCALES as string[]).includes(lang) ? (lang as Locale) : DEFAULT_LOCALE;
 }
 
+// --- Idioma por REGIÓN de conexión (petición de David) ---
+// El país (vía IP, ya disponible por getIpCountry) decide el idioma cuando el
+// usuario no eligió uno manualmente. Orden final: manual → geo → navegador → en.
+const ES_COUNTRIES = "AR BO CL CO CR CU DO EC ES GQ GT HN MX NI PA PE PY SV UY VE".split(" ");
+const PT_COUNTRIES = "AO BR CV GW MZ PT ST TL".split(" ");
+const FR_COUNTRIES = "BF BJ CD CF CG CI CM FR GA GN HT KM MC MG ML NE SN TD TG".split(" ");
+const COUNTRY_LOCALE: Record<string, Locale> = Object.fromEntries([
+  ...ES_COUNTRIES.map((c) => [c, "es"]),
+  ...PT_COUNTRIES.map((c) => [c, "pt"]),
+  ...FR_COUNTRIES.map((c) => [c, "fr"]),
+]) as Record<string, Locale>;
+
+// Idioma sugerido para un código de país ISO2 (null si no mapeamos → inglés/navegador).
+export function localeForCountry(iso2: string): Locale | null {
+  return COUNTRY_LOCALE[iso2?.toUpperCase?.() ?? ""] ?? null;
+}
+
 // --- Nombres de país localizados ---
 const dnCache: Partial<Record<Locale, Intl.DisplayNames>> = {};
 function displayNames(locale: Locale): Intl.DisplayNames | null {
@@ -229,7 +246,11 @@ type Dict = {
     recenter: string;
   };
   // Prompt de alias al registrarse
-  name: { title: string; sub: string };
+  name: { title: string; sub: string; save: string; skip: string };
+  // Cabecera del home (título + strip de gamificación)
+  home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
+  walletSheet: { title: string; connectedAs: string };
+  comingSoon: string;
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
   subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
   tutorialSteps: string[];
@@ -421,7 +442,10 @@ const STRINGS: Record<Locale, Dict> = {
       effects: (m) => m ? "Activar efectos" : "Silenciar efectos",
       zoomIn: "Acercar", zoomOut: "Alejar", recenter: "Reencuadrar",
     },
-    name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet)." },
+    name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
+    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como" },
+    comingSoon: "coming soon",
+    home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -631,7 +655,10 @@ const STRINGS: Record<Locale, Dict> = {
       effects: (m) => m ? "Enable effects" : "Mute effects",
       zoomIn: "Zoom in", zoomOut: "Zoom out", recenter: "Recenter",
     },
-    name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet)." },
+    name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
+    walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as" },
+    comingSoon: "coming soon",
+    home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
     subdivisionNoun: {
       department: { one: "department", many: "departments" },
       state: { one: "state", many: "states" },
@@ -841,7 +868,10 @@ const STRINGS: Record<Locale, Dict> = {
       effects: (m) => m ? "Ativar efeitos" : "Silenciar efeitos",
       zoomIn: "Aproximar", zoomOut: "Afastar", recenter: "Reenquadrar",
     },
-    name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira)." },
+    name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
+    walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como" },
+    comingSoon: "em breve",
+    home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -1051,7 +1081,10 @@ const STRINGS: Record<Locale, Dict> = {
       effects: (m) => m ? "Activer les effets" : "Couper les effets",
       zoomIn: "Zoom avant", zoomOut: "Zoom arrière", recenter: "Recadrer",
     },
-    name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille)." },
+    name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
+    walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que" },
+    comingSoon: "bientôt",
+    home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
     subdivisionNoun: {
       department: { one: "département", many: "départements" },
       state: { one: "état", many: "états" },

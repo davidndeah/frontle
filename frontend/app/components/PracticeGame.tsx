@@ -223,7 +223,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
                 <li key={s}>
                   <button type="button" onClick={() => submit(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
                     <CFlag name={s} size={22} />
-                    <span>{s}</span>
+                    <span>{countryName(s, locale)}</span>
                   </button>
                 </li>
               ))}
