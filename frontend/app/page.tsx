@@ -1198,15 +1198,15 @@ export default function Frontle() {
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
-            {/* Ir a jugar: misma estética de tarjeta que "Modo práctica" */}
+            {/* Ir a jugar: lleva al tab Jugar para elegir modo */}
             <button
               onClick={() => setTab("jugar")}
               className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
             >
               <span className="text-3xl">🌍</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
-                <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.tabs.jugar}</span>
+                <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
