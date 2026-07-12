@@ -75,7 +75,10 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [started, setStarted] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [showHint, setShowHint] = useState(false);
+  // Las 3 pistas del reto diario, gratis en regiones (UX-6):
+  const [showInitial, setShowInitial] = useState(false);
+  const [showNextSil, setShowNextSil] = useState(false);
+  const [showAllSil, setShowAllSil] = useState(false);
   const [best, setBest] = useState<number | null>(null);
   const startRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -131,7 +134,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
     return m;
   }, [challenge, state.chain]);
 
-  const hintEntity = useMemo(() => (showHint ? nextRegionHint(state) : null), [showHint, state]);
+  const hintEntity = useMemo(() => (showInitial || showNextSil ? nextRegionHint(state) : null), [showInitial, showNextSil, state]);
 
   function submit(value: string) {
     if (state.solved || !started) return;
@@ -156,7 +159,8 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
       const chain = [...state.chain, { entity: res.entity, quality: res.quality }];
       const solved = res.solved;
       setState((p) => ({ ...p, chain, solved }));
-      setShowHint(false);
+      setShowInitial(false);
+      setShowNextSil(false);
       const finalMs = solved ? Date.now() - startRef.current : undefined;
       save({ started: true, solved, chain, finalMs });
       if (solved) {
@@ -221,7 +225,8 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
             statusByEntity={statusByEntity}
             loadingLabel={tr.loadingMap}
             controls={tr.a11y}
-            silhouettes={hintEntity ? [hintEntity] : []}
+            silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
+            showAllOutlines={showAllSil}
             resetKey={`${challenge.start}->${challenge.end}`}
           />
 
@@ -267,16 +272,15 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
                 <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
               )}
 
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setShowHint(true)}
-                  disabled={showHint}
-                  className="rounded-lg border border-[#b79ced]/30 px-4 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
-                >
-                  💡 {tr.practiceHint}
-                </button>
-                <span className="text-xs text-neutral-400">{tr.region.used(guessCount)}</span>
+              {showInitial && hintEntity && (
+                <p className="text-center text-sm text-[#fcff52]">💡 {tr.hintNextInitial(hintEntity.charAt(0))}</p>
+              )}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <HintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.hintInitial}`} />
+                <HintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext}`} />
+                <HintBtn onClick={() => setShowAllSil(true)} active={showAllSil} label={`🗺️ ${tr.hintSilhouetteAll}`} />
               </div>
+              <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.region.used(guessCount)}</p>
             </section>
           )}
         </>
@@ -333,5 +337,18 @@ function RegionWin({
       </div>
       <p className="text-[11px] text-neutral-500 mt-3">{tr.region.modeFooter(def.title)}</p>
     </section>
+  );
+}
+
+// Botón de pista (gratis) — mismo trío que el reto diario.
+function HintBtn({ onClick, active, label }: { onClick: () => void; active: boolean; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={active}
+      className="rounded-lg border border-[#b79ced]/30 px-3 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+    >
+      {label} {active ? "✓" : ""}
+    </button>
   );
 }

@@ -15,6 +15,7 @@ import {
   nextHintCountry,
   type PlayState,
   type Status,
+  type Difficulty,
 } from "../lib/game";
 import { getCountry } from "../lib/countries";
 import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from "../lib/i18n";
@@ -45,18 +46,24 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [elapsedMs, setElapsedMs] = useState(0);
-  const [hintLevel, setHintLevel] = useState(0); // 0 nada · 1 silueta+inicial · 2 nombre
+  // Dificultad elegible (UX-5) + las 3 pistas del reto diario, gratis:
+  const [level, setLevel] = useState<Difficulty>("easy");
+  const [showInitial, setShowInitial] = useState(false);
+  const [showNextSil, setShowNextSil] = useState(false);
+  const [showAllSil, setShowAllSil] = useState(false);
   const [round, setRound] = useState(0);
   const startRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reto aleatorio nuevo (arranca en cliente para no romper la hidratación).
-  function newRound() {
-    setState({ challenge: randomChallenge("easy"), chain: [], solved: false });
+  function newRound(lv: Difficulty = level) {
+    setState({ challenge: randomChallenge(lv), chain: [], solved: false });
     setInput("");
     setMessage(null);
     setSuggestions([]);
-    setHintLevel(0);
+    setShowInitial(false);
+    setShowNextSil(false);
+    setShowAllSil(false);
     startRef.current = Date.now();
     setElapsedMs(0);
     setRound((r) => r + 1);
@@ -85,7 +92,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
     return m;
   }, [state]);
 
-  const hintCountry = useMemo(() => (state && hintLevel > 0 ? nextHintCountry(state) : null), [state, hintLevel]);
+  const hintCountry = useMemo(() => (state && (showInitial || showNextSil) ? nextHintCountry(state) : null), [state, showInitial, showNextSil]);
 
   function submit(value: string) {
     if (!state || state.solved) return;
@@ -111,7 +118,8 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       const chain = [...state.chain, { country: res.country, quality: res.quality }];
       const solved = res.solved;
       setState({ ...state, chain, solved });
-      setHintLevel(0);
+      setShowInitial(false);
+      setShowNextSil(false);
       if (solved) setElapsedMs(Date.now() - startRef.current);
     }
     setInput("");
@@ -128,12 +136,6 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   const optimal = challenge.optimal;
   const stars = guessCount <= optimal ? 3 : guessCount <= optimal + 1 ? 2 : 1;
 
-  // Texto de la pista (gratis): nivel 1 = inicial, nivel 2 = nombre completo.
-  const hintText = hintCountry
-    ? hintLevel >= 2
-      ? countryName(hintCountry, locale)
-      : `${tr.hintInitial}: «${countryName(hintCountry, locale).charAt(0)}»`
-    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -160,6 +162,18 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
           </div>
         </div>
         <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(optimal)}</p>
+        {/* Dificultad: cambiarla arranca una ronda nueva de ese nivel */}
+        <div className="flex justify-center gap-2 mt-3">
+          {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
+            <button
+              key={lv}
+              onClick={() => { setLevel(lv); newRound(lv); }}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold active:scale-95 transition ${level === lv ? "border-[#fcff52]/70 text-[#fcff52] bg-[#fcff52]/10" : "border-[#b79ced]/30 text-white hover:bg-white/10"}`}
+            >
+              {tr.levels[lv]}
+            </button>
+          ))}
+        </div>
       </section>
 
       {!state.solved && (
@@ -174,8 +188,8 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       <WorldMap
         statusByCountry={statusByCountry}
         loadingLabel={tr.loadingMap}
-        silhouettes={hintCountry ? [hintCountry] : []}
-        showAllOutlines
+        silhouettes={showNextSil && hintCountry ? [hintCountry] : []}
+        showAllOutlines={showAllSil}
         resetKey={`${challenge.start}->${challenge.end}`}
         controls={tr.a11y}
       />
@@ -195,7 +209,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
           <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
           <p className="text-neutral-200 mt-2">{tr.winText(guessCount, optimal, stars === 3)}</p>
           <div className="flex flex-col gap-2 mt-4">
-            <button onClick={newRound} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
+            <button onClick={() => newRound()} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
               🔄 {tr.practiceNextRound}
             </button>
             <button onClick={onExit} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
@@ -234,20 +248,17 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
             <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
           )}
 
-          {hintText && (
-            <p className="text-center text-sm text-[#fcff52]">💡 {hintText}</p>
+          {showInitial && hintCountry && (
+            <p className="text-center text-sm text-[#fcff52]">💡 {tr.hintNextInitial(countryName(hintCountry, locale).charAt(0))}</p>
           )}
 
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => setHintLevel((h) => Math.min(2, h + 1))}
-              disabled={hintLevel >= 2}
-              className="rounded-lg border border-[#b79ced]/30 px-4 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
-            >
-              💡 {tr.practiceHint}
-            </button>
-            <span className="text-xs text-neutral-400">{tr.used(guessCount)}</span>
+          {/* Las 3 pistas del reto diario, gratis (UX-5) */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <PHintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.hintInitial}`} />
+            <PHintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext}`} />
+            <PHintBtn onClick={() => setShowAllSil(true)} active={showAllSil} label={`🗺️ ${tr.hintSilhouetteAll}`} />
           </div>
+          <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.used(guessCount)}</p>
         </section>
       )}
     </div>
@@ -260,5 +271,18 @@ function PChip({ name, raw, kind }: { name: string; raw: string; kind: Status })
       <CFlag name={raw} size={26} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
+  );
+}
+
+// Botón de pista (gratis) — mismo trío que el reto diario.
+function PHintBtn({ onClick, active, label }: { onClick: () => void; active: boolean; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={active}
+      className="rounded-lg border border-[#b79ced]/30 px-3 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+    >
+      {label} {active ? "✓" : ""}
+    </button>
   );
 }

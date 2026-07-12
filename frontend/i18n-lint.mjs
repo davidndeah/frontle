@@ -32,10 +32,13 @@ function walk(dir) {
   return out;
 }
 function stripComments(src) {
+  // Primero los comentarios de línea (los de línea completa incluidos),
+  // luego los de bloque; el orden inverso dejaba escapar `// …` cuando el
+  // texto capturado >…< cruzaba varias líneas.
   return src
+    .split("\n").map((l) => l.replace(/^\s*\/\/.*/, "").replace(/([^:"'])\/\/.*/, "$1")).join("\n")
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n").map((l) => l.replace(/(^|[^:])\/\/.*$/, "$1")).join("\n");
+    .replace(/\/\*[\s\S]*?\*\//g, "");
 }
 const lineOf = (src, idx) => src.slice(0, idx).split("\n").length;
 const words = (s) => (s.match(/[\p{L}]{2,}/gu) || []).filter((w) => !ALLOW.has(w.toLowerCase()));
