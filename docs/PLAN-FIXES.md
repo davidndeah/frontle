@@ -9,36 +9,38 @@
 
 ## P0 — Correctness del juego (lo más grave)
 
-### BUG-1 · Se marcan verdes de más y la victoria no dispara aunque "conectes"
-**Síntoma:** (a) óptima = 2 pero salen 3 en verde; (b) conectas los dos objetivos, todo verde, pero el juego no termina y la pista te manda por otra ruta más larga.
-**Causa raíz (los dos son el mismo bug):** `countryQuality(c, start, end)` en `app/lib/game.ts:284` marca verde si `d(start,c)+d(c,end) ≤ d(start,end)`, es decir si `c` está sobre **alguna** ruta óptima **global** desde el origen. Eso **no mira la conexión real del jugador**. Por eso:
-- Con varias rutas óptimas puedes juntar más verdes que el óptimo (cada uno "bueno" por separado).
-- Esos verdes **no son adyacentes entre sí** → no hay camino real de fronteras → `connectsThroughKnown` (que sí exige camino real, `game.ts:327`) devuelve false → no hay victoria, y la pista (`nextHintCountry`, ruta fija) te reencamina.
-**La victoria en sí es correcta** y ya acepta **cualquier** ruta (incluidas varias óptimas) — el problema es que el semáforo engaña sobre la conectividad.
-**Fix (world + regions; `game.ts` y `regionGame.ts` son espejos):**
-1. Cambiar la semántica de verde a **relativa al progreso conectado**, no al origen abstracto:
-   - Antes de la jugada, calcular el componente conexo de `start` dentro de `known` (BFS por known) y también el de `end`. La "brecha" = distancia mínima (por países desconocidos) entre ambos componentes.
-   - Un intento válido es **verde** si **reduce esa brecha** (acerca de verdad los dos componentes / los une). **Amarillo** si es válido pero no reduce la brecha (lateral). **Rojo** si aumenta el desvío.
-   - Así, cuando los verdes cierran la brecha, `connectsThroughKnown` da victoria en el mismo intento — el verde y la victoria quedan alineados.
-2. **Pista adaptativa:** `nextHintCountry` debe calcular la ruta más corta **desde el frontier conectado actual del jugador** hasta `end` (por países desconocidos) y sugerir el siguiente de **esa** ruta — no una `shortestPath(start,end)` fija. Igual en `nextRegionHint`.
-3. Tests: añadir casos en un reto con **múltiples rutas óptimas** y confirmar: (i) nunca hay más verdes que pasos usados en una ruta conexa; (ii) al conectar por cualquier ruta, `solved=true`; (iii) la pista apunta al siguiente país que realmente cierra la brecha.
-**Verificación:** reproducir el caso de la imagen (Colombia, óptima 2) y un reto mundial donde start/end estén a distancia ≥3; jugar una ruta conexa y confirmar victoria inmediata.
-**Nota:** es un cambio de mecánica delicado — hacer primero la función de calidad relativa con tests unitarios en `game.ts`, luego portar a `regionGame.ts`.
+### BUG-1 · Conectas origen y destino (todo verde y óptimo) pero el juego NO termina
+**Síntoma real (corregido por David):** logró una ruta conexa origen→destino, **todos los países elegidos en verde y óptimos**, pero la victoria **no disparó**; solo terminó al rehacer la ruta "con los países de al lado" a los que había elegido.
+**Diagnóstico (causa más probable): faltan aristas de frontera reales en el grafo de adyacencia.** La victoria (`connectsThroughKnown`, `game.ts:327`) exige un camino de fronteras que **exista en los datos**. Si dos países que en la realidad SÍ limitan no tienen la arista en nuestro grafo, la ruta del jugador "se ve conectada" pero el BFS no la recorre → no hay victoria; la ruta paralela (cuyas aristas sí existen) sí gana. Los países pueden salir verdes igual porque `countryQuality` mide sobre el **mismo grafo incompleto**.
+- **Mundo** (`app/lib/countries.ts`): grafo de vecinos hecho a mano → propenso a fronteras faltantes.
+- **Regiones** (`gen-region.mjs`): adyacencia derivada por geometría con umbral `SHARE = 2` puntos → **puede descartar fronteras muy cortas** (misma clase de bug).
+**Fix:**
+1. **Harness de reproducción:** un pequeño script/test que, dado `challenge` + la cadena del jugador, imprima los componentes conexos de `known` y qué arista falta para unir origen y destino. Sirve para confirmar el caso exacto (David puede recrearlo o pasar el reto).
+2. **Auditar y completar la adyacencia:**
+   - **Mundo:** derivar la adyacencia de países desde un GeoJSON mundial (Natural Earth countries) con la MISMA técnica de fronteras compartidas de `gen-region.mjs`; **diff** contra `COUNTRIES`; revisar candidatos (filtrar falsos positivos marítimos) y **añadir las fronteras terrestres reales que falten**.
+   - **Regiones:** bajar/ajustar el umbral `SHARE` (o añadir un segundo criterio de "casi se tocan") en `gen-region.mjs` para no perder fronteras cortas; **regenerar** los 6 países y revisar que ninguna subdivisión quede peor conectada.
+3. **Pista adaptativa (relacionado):** `nextHintCountry`/`nextRegionHint` hoy siguen una `shortestPath(start,end)` FIJA; si el jugador ya avanzó por otra ruta válida, la pista lo manda por la suya. Debe calcular la ruta más corta **desde el frontier conectado actual** del jugador hasta `end`.
+4. Tests con un reto de **múltiples rutas óptimas**: al conectar por CUALQUIER ruta, `solved=true` en ese mismo intento.
+**Verificación:** recrear el reto que falló (o uno equivalente con una frontera corta) y confirmar victoria al conectar. `game.ts` y `regionGame.ts` son espejos: arreglar y testear en `game.ts`, luego portar.
+**Secundario (cosmético):** que salgan "3 verdes para óptima 2" es esperable cuando hay varias rutas óptimas (cada país está en una); no es el bug principal. Si molesta, se puede hacer el verde relativo al progreso, pero primero resolver la adyacencia.
 
 ---
 
 ## P1 — Acceso al juego
 
-### FIX-2 · Permitir jugar sin wallet/correo (registro solo para ranking y premios)
-**Síntoma:** hoy no se puede jugar sin conectar wallet o correo.
-**Dónde:** `app/page.tsx` ~línea 889 (`hasWallet || privyActive ? … : …`) bloquea el juego cuando no hay `myId`. El gate mezcla "jugar" con "estar registrado".
-**Fix:** separar ambos conceptos. Cualquiera puede **jugar el reto** (world, regiones, práctica) sin identidad. La identidad (wallet/correo) se pide **solo** al: (a) enviar marca al ranking, (b) comprar pistas/reintentos de pago, (c) reclamar premios. Mostrar un CTA suave "Conéctate para entrar al ranking y premios" tras ganar, no antes de jugar.
-**Investigar antes:** confirmar con David/Santiago si el gate fue intencional (¿Santiago?) — `git log --oneline -- app/page.tsx | head` y `git blame` sobre esa zona. No romper el flujo de pago on-chain.
-**Verificación:** en incógnito sin wallet, jugar y ganar un reto; el ranking pide identidad solo al final.
+### FIX-2 · Jugar sin correo ni wallet — cualquiera con el link juega  🔴 (objetivo claro, implementar)
+**Objetivo (David, sin ambigüedad):** **cualquier persona con el link puede jugar** el reto (mundo, regiones, práctica) **sin correo ni wallet**. La identidad (correo/wallet) **solo** es obligatoria para: **entrar al ranking** y **recibir premios** (y para comprar pistas/reintentos de pago). No es una decisión a confirmar — hay que implementarlo así.
+**Dónde:** `app/page.tsx` ~línea 889 bloquea el juego cuando no hay `myId` (mezcla "jugar" con "estar registrado").
+**Fix:**
+- Quitar el gate de identidad del **flujo de juego**: sin `myId` se puede iniciar y jugar el reto normalmente (incluida la 1ª jugada gratis).
+- Pedir identidad **solo** en el borde de: (a) al querer aparecer en el **ranking** (tras ganar → CTA "Conéctate para entrar al ranking y premios"), (b) comprar pistas/reintentos **de pago**, (c) reclamar premios.
+- No romper el flujo on-chain existente (pagos/reclamos siguen requiriendo wallet, como ya es).
+**Contexto:** ver si el gate lo introdujo alguien a propósito (`git blame` en esa zona) solo para no repetir la causa; pero el resultado deseado es guest play. (Santiago puede confirmarlo, no bloquea la implementación.)
+**Verificación:** en incógnito sin wallet ni correo → jugar y ganar un reto completo; el CTA de ranking/premios aparece solo al final.
 
-### CHECK-3 · Login por correo no funciona (wallet sí)  ·  **necesita David/Santiago**
+### CHECK-3 · Login por correo no funciona (wallet sí)  ·  **PENDIENTE — David revisará Privy luego**
 **Síntoma:** el correo (Privy) no loguea; wallet sí.
-**Acción:** revisar el estado del servicio de Privy: (a) dashboard de Privy (¿app caída / límites / dominio no autorizado?), (b) que el `NEXT_PUBLIC_PRIVY_APP_ID` y los allowed origins incluyan la URL del preview y producción, (c) consola del navegador al intentar el login por correo (errores de Privy). No es código de juego; es config/servicio. Documentar hallazgo antes de tocar nada.
+**Estado:** en pausa hasta que David pueda revisar el dashboard de Privy. Cuando lo haga, chequear: (a) app caída / límites / dominio no autorizado, (b) `NEXT_PUBLIC_PRIVY_APP_ID` + allowed origins incluyen preview y producción, (c) errores de Privy en consola al intentar el login por correo. Es config/servicio, no código de juego. **No lo tome Fable por ahora.**
 
 ---
 
@@ -120,13 +122,15 @@ No se puede probar la rama en MiniPay (pide acceso a Vercel). Requiere el merge 
 ---
 
 ## Resumen de dueños
-- **Fable:** BUG-1, FIX-2 (tras confirmar), UX-4..8, I18N-9..12, FLAGS-13, CHECK-14 (repro).
-- **David:** CHECK-3 (Privy), INFRA-16 (merge), decisión de FLAGS-13 (todo-marcador vs buscar banderas).
-- **Santiago:** confirmar si FIX-2 (gate sin-wallet) fue suyo; apoyo en CHECK-3 si es config.
+- **Fable:** BUG-1, FIX-2 (implementar guest play), UX-4..8, I18N-9..12, FLAGS-13 (marcador limpio), CHECK-14 (repro).
+- **David (pendiente):** CHECK-3 (Privy — en pausa), INFRA-16 (merge), decisión FLAGS-13 (¿buscar banderas alternativas para ng/gh?).
+- **Santiago:** solo si FLAGS/adyacencia mundial requiere apoyo; opcional confirmar origen del gate de FIX-2.
 
-## Orden sugerido
-1. **BUG-1** (juego roto, lo más visible y dañino).
-2. **FIX-2** (que cualquiera pueda jugar — clave para adopción/listing).
+## Orden sugerido para Fable
+1. **BUG-1** (juego roto — repro + auditar adyacencia).
+2. **FIX-2** (jugar sin registro — clave para adopción/listing).
 3. **I18N-9..12** (rápidas, quitan bugs de idioma visibles).
-4. **UX-4..8** (pulido de modos y práctica).
-5. **FLAGS-13**, **CHECK-14/3** (según decisión de David).
+4. **UX-4..8** (modos con desplegable, práctica con dificultad + 3 pistas, Aprender, soporte).
+5. **FLAGS-13** (marcador limpio) · **CHECK-14** (repro móvil).
+
+> CHECK-3 (Privy) queda fuera del alcance de Fable hasta que David lo revise.
