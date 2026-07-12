@@ -282,12 +282,12 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
               )}
 
               {showInitial && hintEntity && (
-                <p className="text-center text-sm text-[#fcff52]">💡 {tr.hintNextInitial(hintEntity.charAt(0))}</p>
+                <p className="text-center text-sm text-[#fcff52]">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one)}</p>
               )}
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <HintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.hintInitial}`} />
-                <HintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext}`} />
-                <HintBtn onClick={() => setShowAllSil(true)} active={showAllSil} label={`🗺️ ${tr.hintSilhouetteAll}`} />
+                <HintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)}`} />
+                <HintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)}`} />
+                <HintBtn onClick={() => setShowAllSil(true)} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)}`} />
               </div>
               <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.region.used(guessCount)}</p>
             </section>
