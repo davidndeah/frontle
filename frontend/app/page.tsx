@@ -878,37 +878,35 @@ export default function Frontle() {
           />
         ) : jugarStep === "reto" ? (
           <div className="w-full flex flex-col items-center justify-center gap-3 py-2">
-            {myId ? (
-              // Con identidad (MiniPay auto-conecta, o wallet/correo conectados) → a jugar.
-              <button
-                onClick={openPregame}
-                className="btn-3d font-display font-bold text-2xl px-12 py-4"
-              >
-                {tr.play}
-              </button>
-            ) : hasWallet || privyActive ? (
-              // Fuera de MiniPay hay que autenticarse (wallet o correo) para poder jugar.
+            {/* FIX-2 (guest play): cualquiera con el link puede JUGAR sin
+                identidad. Wallet/correo solo se piden para ranking, premios
+                y compras — la WinCard ya muestra ese CTA tras ganar. */}
+            <button
+              onClick={openPregame}
+              className="btn-3d font-display font-bold text-2xl px-12 py-4"
+            >
+              {tr.play}
+            </button>
+            {!myId && (hasWallet || privyActive) && (
               <div className="flex flex-col items-center gap-2">
-                <p className="text-sm font-semibold text-white text-center">{tr.connectToPlay}</p>
-                {hasWallet && (
-                  <button
-                    onClick={connectForRanking}
-                    className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-8 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
-                  >
-                    {tr.connectWallet}
-                  </button>
-                )}
-                {privyActive && (
-                  <EmailLoginButton
-                    label={tr.emailLogin}
-                    className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-8 py-3 font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
-                  />
-                )}
-                <p className="text-[11px] text-emerald-300/80">{tr.connectBenefit}</p>
+                <p className="text-[11px] text-neutral-300 text-center">{tr.connectBenefit}</p>
+                <div className="flex items-center gap-2">
+                  {hasWallet && (
+                    <button
+                      onClick={connectForRanking}
+                      className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+                    >
+                      {tr.connectWallet}
+                    </button>
+                  )}
+                  {privyActive && (
+                    <EmailLoginButton
+                      label={tr.emailLogin}
+                      className="rounded-xl border border-sky-300/50 bg-sky-400/10 px-4 py-2 text-xs font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
+                    />
+                  )}
+                </div>
               </div>
-            ) : (
-              // Ni wallet inyectada ni correo → sugerir abrir en MiniPay.
-              <p className="text-[12px] text-amber-300/90 text-center max-w-xs">{tr.openInMiniPay}</p>
             )}
           </div>
         ) : null}
