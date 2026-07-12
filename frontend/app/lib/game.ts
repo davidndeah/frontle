@@ -374,15 +374,49 @@ export function tryGuess(state: PlayState, rawInput: string, country: string | n
 }
 
 // --- Pistas ---
-// Próximo país sugerido: el primer intermedio sin revelar sobre una ruta óptima.
+// Componente conexo de `seed` dentro de `known` (BFS restringido a conocidos).
+function knownComponent(seed: string, known: Set<string>): Set<string> {
+  const comp = new Set<string>([seed]);
+  const q = [seed];
+  while (q.length) {
+    const cur = q.shift()!;
+    for (const nb of COUNTRIES[cur]?.neighbors ?? []) {
+      if (known.has(nb) && !comp.has(nb)) { comp.add(nb); q.push(nb); }
+    }
+  }
+  return comp;
+}
+
+// Próximo país sugerido — ADAPTATIVO al progreso del jugador (BUG-1):
+// en vez de seguir una ruta fija start→end, busca el camino más corto desde
+// el componente ya conectado al origen hasta el componente del destino, y
+// sugiere el primer país DESCONOCIDO de ese camino. Así la pista continúa
+// la ruta que el jugador eligió en lugar de reencaminarlo por otra.
 export function nextHintCountry(state: PlayState): string | null {
   const { start, end } = state.challenge;
-  const path = shortestPath(start, end);
-  if (!path) return null;
   const known = knownSet(state);
-  for (const c of path) {
-    if (c !== start && c !== end && !known.has(c)) return c;
+  const compStart = knownComponent(start, known);
+  if (compStart.has(end)) return null; // ya está resuelto
+  const compEnd = knownComponent(end, known);
+
+  // BFS multi-fuente desde todo compStart hasta tocar compEnd.
+  const prev: Record<string, string | null> = {};
+  const queue: string[] = [];
+  for (const c of compStart) { prev[c] = null; queue.push(c); }
+  let goal: string | null = null;
+  while (queue.length) {
+    const cur = queue.shift()!;
+    if (compEnd.has(cur)) { goal = cur; break; }
+    for (const nb of COUNTRIES[cur]?.neighbors ?? []) {
+      if (!(nb in prev)) { prev[nb] = cur; queue.push(nb); }
+    }
   }
+  if (!goal) return null; // sin ruta (no debería pasar en el grafo conexo)
+
+  // Reconstruir el camino y devolver el primer país fuera de lo conocido.
+  const path: string[] = [];
+  for (let node: string | null = goal; node !== null; node = prev[node]) path.unshift(node);
+  for (const c of path) if (!known.has(c)) return c;
   return null;
 }
 

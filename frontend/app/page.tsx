@@ -17,6 +17,8 @@ import {
 import {
   detectLocale,
   saveLocale,
+  savedLocale,
+  localeForCountry,
   countryName,
   resolveLocalized,
   suggestLocalized,
@@ -30,7 +32,12 @@ import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDay
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
-import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint } from "./lib/sfx";
+import RegionGame from "./components/RegionGame";
+import RegionMapPreview from "./components/RegionMapPreview";
+import PracticeGame from "./components/PracticeGame";
+import { REGIONS, REGION_IDS } from "./lib/regions";
+import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
+import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
@@ -83,6 +90,9 @@ export default function Frontle() {
   // Arranca en el default global (inglés) para que el primer render (SSR +
   // hidratación) sea consistente; el idioma real se resuelve en un efecto.
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // Estado de audio (música de fondo + efectos), reflejo de localStorage.
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [sfxMuted, setSfxMuted] = useState(false);
   // Nivel activo (fácil/medio/difícil). Cada nivel es un reto y ranking aparte.
   const [level, setLevel] = useState<Difficulty>("easy");
   const [state, setState] = useState<PlayState>(() => ({
@@ -150,6 +160,15 @@ export default function Frontle() {
   const [walletOpen, setWalletOpen] = useState(false);
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
   const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
+  // Modo Regiones activo (id de región: "co", "us"…) — null = modo mundial
+  const [regionMode, setRegionMode] = useState<string | null>(null);
+  // País elegido en el desplegable del selector de Regiones (antes de jugar).
+  const [regionPick, setRegionPick] = useState<string>(REGION_IDS[0]);
+  // UX-4: tarjetas de modo colapsadas; al tocar una se despliega su selector
+  // (nivel para el reto diario, país+mapa para regiones) y se cierra la otra.
+  const [modeOpen, setModeOpen] = useState<"daily" | "regions" | null>(null);
+  // Modo práctica activo (dentro de la pestaña Aprender).
+  const [practiceOn, setPracticeOn] = useState(false);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
   const [alias, setAliasState] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -242,11 +261,37 @@ export default function Frontle() {
   }, []);
 
   useEffect(() => setLocale(detectLocale()), []);
+  // Refleja el idioma real en <html lang> (SEO, lectores de pantalla, y evita
+  // que el navegador ofrezca "traducir del español" a quien ya lo ve en inglés).
+  useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   // Cambio manual de idioma: aplica y persiste la preferencia del usuario.
   const changeLocale = useCallback((l: Locale) => {
     setLocale(l);
     saveLocale(l);
   }, []);
+
+  // Audio: reflejar el mute persistido y arrancar la música al primer gesto
+  // del usuario (los navegadores bloquean el autoplay hasta que hay interacción).
+  useEffect(() => {
+    setMusicMuted(isMusicMuted());
+    setSfxMuted(isSfxMuted());
+    const kick = () => {
+      startMusic();
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+    };
+    window.addEventListener("pointerdown", kick);
+    window.addEventListener("keydown", kick);
+    return () => {
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+      stopMusic();
+    };
+  }, []);
+
+  // Toggles de audio para los botones de mute.
+  const onToggleMusic = useCallback(() => setMusicMuted(toggleMusic()), []);
+  const onToggleSfx = useCallback(() => setSfxMuted(toggleSfx()), []);
   useEffect(() => {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
@@ -256,7 +301,17 @@ export default function Frontle() {
   // inyectado y el SDK sería más de un megabyte de código muerto.
   const privyActive = PRIVY_ENABLED && mpChecked && !inMiniPay;
   useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
-  useEffect(() => { getIpCountry().then(setIpCountry); }, []);
+  useEffect(() => {
+    getIpCountry().then((cc) => {
+      setIpCountry(cc);
+      // Idioma por REGIÓN: el país de conexión decide el idioma cuando el
+      // usuario no eligió uno a mano (orden: manual → geo → navegador → en).
+      if (!savedLocale()) {
+        const geo = localeForCountry(cc);
+        if (geo) setLocale(geo);
+      }
+    });
+  }, []);
 
   // Cargar el nivel (y reaccionar al cambio de nivel/día): reto de ese nivel,
   // su partida guardada, su mejor marca y su ranking. Cada nivel es un juego
@@ -633,44 +688,66 @@ export default function Frontle() {
       )}
 
       {/* Header fijo: logo + chip de pot + chip de wallet */}
-      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-2 px-4 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
+      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1.5 px-3 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
         <span className="font-display text-xl font-bold tracking-tight prism-text">FRONTLE</span>
         <div className="flex-1" />
         {pot !== null && (
-          <span className="rounded-full bg-amber-400/15 border border-amber-300/40 px-3 py-1 text-xs font-bold text-amber-300 whitespace-nowrap">
+          <span className="rounded-full bg-amber-400/15 border border-amber-300/40 px-2 py-1 text-[11px] font-bold text-amber-300 whitespace-nowrap">
             🏆 {fmt(pot)}
           </span>
         )}
+        {/* Audio: música + efectos, mute independiente */}
+        <div className="flex items-center rounded-full bg-white/5 border border-[#b79ced]/25 overflow-hidden">
+          <button
+            onClick={onToggleMusic}
+            aria-label={tr.a11y.music(musicMuted)}
+            className="w-6 h-8 flex items-center justify-center text-sm active:scale-90 transition"
+          >
+            {musicMuted ? "🔇" : "🎵"}
+          </button>
+          <button
+            onClick={onToggleSfx}
+            aria-label={tr.a11y.effects(sfxMuted)}
+            className="w-6 h-8 flex items-center justify-center text-sm border-l border-[#b79ced]/20 active:scale-90 transition"
+          >
+            {sfxMuted ? "🔕" : "🔊"}
+          </button>
+        </div>
         <LanguageSelect locale={locale} onChange={changeLocale} compact />
         <button
           onClick={() => setWalletOpen(true)}
-          className="shrink-0 max-w-[96px] truncate rounded-full bg-white/5 border border-[#b79ced]/25 px-3 py-1 text-xs font-semibold text-white active:scale-95 transition"
+          className="rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 py-1 text-xs font-semibold text-white active:scale-95 transition whitespace-nowrap"
         >
-          {alias || (myId ? shortId(myId) : tr.signIn)}
+          {alias || (myId ? shortId(myId) : "👤 Entrar")}
         </button>
       </header>
 
       {/* Contenido del tab activo */}
       <div className="app-content relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
-        {tab === "jugar" && (
+        {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
+        {tab === "jugar" && regionMode && (
+          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} />
+        )}
+
+        {tab === "jugar" && !regionMode && (
           <>
         {/* Título + gamificación (sin hero gigante; Bordy vive en la esquina) */}
         {!started && (
           <div className="flex flex-col items-center gap-2 pt-2">
             <h2 className="font-display text-2xl font-bold text-white text-center leading-tight">
-              {tr.heroTitle} <span className="text-[#fcff52]">{tr.heroTitleAccent}</span>
+              {tr.home.titlePre} <span className="text-[#fcff52]">{tr.home.titleWord}</span>
             </h2>
             {/* Strip de gamificación: racha + nivel (XP) */}
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl">🔥</span>
                 <span className="font-display font-bold text-white text-lg leading-none">{daysPlayed}</span>
-                <span className="text-[11px] text-neutral-400">{tr.streak}</span>
+                <span className="text-[11px] text-neutral-400">{tr.home.streak}</span>
               </div>
               <div className="w-px h-7 bg-white/10" />
               <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-semibold text-[#c4b5fd]">{tr.xpLevel(xpLevel)}</span>
+                  <span className="font-semibold text-[#c4b5fd]">{tr.home.level(xpLevel)}</span>
                   <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
@@ -684,24 +761,74 @@ export default function Frontle() {
         {/* ---- Flujo pre-juego: 1) modos ---- */}
         {!started && jugarStep === "modes" && (
           <div className="flex flex-col gap-3">
-            <button
-              onClick={() => setJugarStep("level")}
-              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
-            >
-              <span className="text-3xl">🌍</span>
-              <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modeDaily}</span>
-                <span className="text-xs text-neutral-300">{tr.modeDailySub}</span>
-              </span>
-              <span className="text-[#fcff52] text-2xl">→</span>
-            </button>
+            <div className="panel p-4 flex flex-col gap-3">
+              <button
+                onClick={() => setModeOpen(modeOpen === "daily" ? null : "daily")}
+                className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
+              >
+                <span className="text-3xl">🌍</span>
+                <span className="flex-1">
+                  <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
+                  <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
+                </span>
+                <span className="text-[#fcff52] text-2xl">{modeOpen === "daily" ? "▾" : "→"}</span>
+              </button>
+              {modeOpen === "daily" && (
+                <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
+              )}
+            </div>
+            {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa */}
+            <div className="panel p-4 flex flex-col gap-3">
+              <button
+                onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
+                className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
+              >
+                <span className="text-3xl">🗺️</span>
+                <span className="flex-1">
+                  <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.regionsTitle}</span>
+                  <span className="text-xs text-neutral-300">{tr.modes.regionsSub}</span>
+                </span>
+                <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
+              </button>
+              {modeOpen === "regions" && (<>
+              {/* Desplegable de país */}
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/flags/national/${regionPick}.png`}
+                  alt=""
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-6 h-4 object-cover rounded-sm border border-white/20"
+                />
+                <select
+                  value={regionPick}
+                  onChange={(e) => setRegionPick(e.target.value)}
+                  aria-label={tr.a11y.country}
+                  className="w-full appearance-none rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-[#fcff52]/50"
+                >
+                  {REGION_IDS.map((rid) => (
+                    <option key={rid} value={rid} style={{ background: "#1c0b3e", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 text-xs">▾</span>
+              </div>
+              {/* Mapa del país elegido */}
+              <RegionMapPreview regionId={regionPick} loadingLabel={tr.loadingMap} />
+              <button
+                onClick={() => setRegionMode(regionPick)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#fcff52] text-[#1c0b3e] font-display font-black py-2.5 active:scale-95 transition"
+              >
+                ▶ {tr.modes.play(REGIONS[regionPick].title)}
+              </button>
+              <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
+              </>)}
+            </div>
             <div className="panel p-4 flex items-center gap-3 opacity-50">
               <span className="text-3xl">🎲</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modeSoon}</span>
-                <span className="text-xs text-neutral-300">{tr.modeSoonSub}</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.moreModesTitle}</span>
+                <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
               </span>
-              <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">coming soon</span>
+              <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">{tr.comingSoon}</span>
             </div>
           </div>
         )}
@@ -709,7 +836,7 @@ export default function Frontle() {
         {/* ---- 2) dificultad ---- */}
         {!started && jugarStep === "level" && (
           <div className="flex flex-col gap-3">
-            <BackRow onClick={() => setJugarStep("modes")} label={tr.backModes} />
+            <BackRow onClick={() => setJugarStep("modes")} label="Modos" />
             <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
           </div>
         )}
@@ -772,40 +899,39 @@ export default function Frontle() {
             silhouettes={coaching ? [] : silhouettes}
             showAllOutlines={!coaching && showAllSil}
             resetKey={`${challenge.start}->${challenge.end}`}
+            controls={tr.a11y}
           />
         ) : jugarStep === "reto" ? (
           <div className="w-full flex flex-col items-center justify-center gap-3 py-2">
-            {myId ? (
-              // Con identidad (MiniPay auto-conecta, o wallet/correo conectados) → a jugar.
-              <button
-                onClick={openPregame}
-                className="btn-3d font-display font-bold text-2xl px-12 py-4"
-              >
-                {tr.play}
-              </button>
-            ) : hasWallet || privyActive ? (
-              // Fuera de MiniPay hay que autenticarse (wallet o correo) para poder jugar.
+            {/* FIX-2 (guest play): cualquiera con el link puede JUGAR sin
+                identidad. Wallet/correo solo se piden para ranking, premios
+                y compras — la WinCard ya muestra ese CTA tras ganar. */}
+            <button
+              onClick={openPregame}
+              className="btn-3d font-display font-bold text-2xl px-12 py-4"
+            >
+              {tr.play}
+            </button>
+            {!myId && (hasWallet || privyActive) && (
               <div className="flex flex-col items-center gap-2">
-                <p className="text-sm font-semibold text-white text-center">{tr.connectToPlay}</p>
-                {hasWallet && (
-                  <button
-                    onClick={connectForRanking}
-                    className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-8 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
-                  >
-                    {tr.connectWallet}
-                  </button>
-                )}
-                {privyActive && (
-                  <EmailLoginButton
-                    label={tr.emailLogin}
-                    className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-8 py-3 font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
-                  />
-                )}
-                <p className="text-[11px] text-emerald-300/80">{tr.connectBenefit}</p>
+                <p className="text-[11px] text-neutral-300 text-center">{tr.connectBenefit}</p>
+                <div className="flex items-center gap-2">
+                  {hasWallet && (
+                    <button
+                      onClick={connectForRanking}
+                      className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+                    >
+                      {tr.connectWallet}
+                    </button>
+                  )}
+                  {privyActive && (
+                    <EmailLoginButton
+                      label={tr.emailLogin}
+                      className="rounded-xl border border-sky-300/50 bg-sky-400/10 px-4 py-2 text-xs font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
+                    />
+                  )}
+                </div>
               </div>
-            ) : (
-              // Ni wallet inyectada ni correo → sugerir abrir en MiniPay.
-              <p className="text-[12px] text-amber-300/90 text-center max-w-xs">{tr.openInMiniPay}</p>
             )}
           </div>
         ) : null}
@@ -1007,6 +1133,14 @@ export default function Frontle() {
               </span>
               <LanguageSelect locale={locale} onChange={changeLocale} />
             </section>
+            {/* Ajustes de audio: música de fondo y efectos, mute independiente */}
+            <section className="panel p-4 flex flex-col gap-3">
+              <span className="text-sm text-neutral-100 flex items-center gap-2">
+                <span>🔊</span>{tr.audio}
+              </span>
+              <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
+              <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
+            </section>
             {/* Enlaces exigidos por el listado de MiniPay, alcanzables desde
                 dentro de la app. Soporte va al correo: el DM de X no cuenta
                 como canal válido. */}
@@ -1015,28 +1149,66 @@ export default function Frontle() {
               <a href="/privacy" className="underline">{tr.legalPrivacy}</a>
               <a href="/stats" className="underline">{tr.stats.title}</a>
               <a href={SUPPORT_MAILTO} className="underline">{tr.legalSupport}</a>
-              <a href={SUPPORT_X_URL} target="_blank" rel="noopener noreferrer" className="underline">𝕏</a>
+            </div>
+            {/* Redes sociales (separadas de los enlaces legales) */}
+            <div className="flex justify-center">
+              <a
+                href={SUPPORT_X_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="X"
+                className="w-9 h-9 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center text-base text-white active:scale-90 transition"
+              >
+                𝕏
+              </a>
             </div>
             <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
           </>
         )}
 
         {/* ---------- TAB APRENDER ---------- */}
-        {tab === "aprender" && (
+        {tab === "aprender" && practiceOn && (
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} />
+        )}
+
+        {tab === "aprender" && !practiceOn && (
           <>
-            <div className="flex flex-col gap-3">
-              {tr.learnBubbles.map((txt, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[#160833] border border-[#b79ced]/40 flex items-center justify-center text-lg flex-none">🤖</div>
-                  <div className="panel px-3 py-2 text-sm text-white">{txt}</div>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => setTab("jugar")} className="rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
-              ▶ {tr.play}
+            {/* Bordy presenta el tutorial (mascota real, no un emoji genérico) */}
+            <section className="panel p-5 flex flex-col items-center gap-3 text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/bordy-m2.webp" alt="Bordy" className="w-28 h-32 object-contain bordy-float-sm drop-shadow-xl" />
+              <h2 className="font-display text-xl font-bold text-white leading-tight">{tr.tabs.aprender}</h2>
+              <p className="text-xs text-neutral-300 max-w-[16rem]">{tr.learnBubbles[0]}</p>
+              <button
+                onClick={() => setOverlay("full")}
+                className="w-full rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25"
+              >
+                ✨ {tr.fullTutorial}
+              </button>
+            </section>
+            {/* Modo práctica: juego infinito, sin premios, con pistas gratis */}
+            <button
+              onClick={() => setPracticeOn(true)}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition border border-[#22c55e]/30"
+            >
+              <span className="text-3xl">🎓</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.practiceMode}</span>
+                <span className="text-xs text-neutral-300">{tr.practiceFree}</span>
+              </span>
+              <span className="text-[#fcff52] text-2xl">→</span>
             </button>
-            <button disabled className="rounded-2xl border border-[#b79ced]/30 text-neutral-300 px-6 py-3 opacity-60">
-              🎲 {tr.practiceSoon}
+            {/* Ir a jugar: lleva al tab Jugar para elegir modo */}
+            <button
+              onClick={() => setTab("jugar")}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+            >
+              <span className="text-3xl">🌍</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.tabs.jugar}</span>
+                <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
+              </span>
+              <span className="text-[#fcff52] text-2xl">→</span>
             </button>
           </>
         )}
@@ -1274,10 +1446,10 @@ function WalletSheet({
       <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
       <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-3">{tr.walletTitle}</h3>
+        <h3 className="text-white font-bold text-base mb-3">{tr.walletSheet.title}</h3>
         {myId ? (
           <div className="panel p-4">
-            <div className="text-[11px] text-neutral-400">{tr.walletConnectedAs}</div>
+            <div className="text-[11px] text-neutral-400">{tr.walletSheet.connectedAs}</div>
             {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
                 forma truncada, que MiniPay solo admite como pista secundaria. */}
             <div className="text-white text-sm mt-0.5 break-all">
@@ -1328,8 +1500,8 @@ function NamePrompt({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
           <div>
-            <h3 className="font-display font-bold text-white text-lg leading-tight">¡Elige tu nombre!</h3>
-            <p className="text-xs text-neutral-300">Así apareces en el ranking (en vez de tu wallet).</p>
+            <h3 className="font-display font-bold text-white text-lg leading-tight">{tr.name.title}</h3>
+            <p className="text-xs text-neutral-300">{tr.name.sub}</p>
           </div>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">
@@ -1342,11 +1514,11 @@ function NamePrompt({
             className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
           />
           <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
-            Guardar
+            {tr.name.save}
           </button>
         </form>
         <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
-          Usar mi wallet
+          {tr.name.skip}
         </button>
       </div>
     </>
@@ -1427,13 +1599,32 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
             : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
         }
       >
-        {/* En compacto solo el código (EN, ES…): el nombre completo hacía que la
-            cabecera midiera 390px y el chip de perfil se saliera del viewport de
-            360px, el mínimo que exige MiniPay. */}
+        {/* Colores explícitos en cada option: el popup nativo hereda fondo
+            claro en algunos navegadores y el texto blanco quedaba ilegible. */}
         {LOCALES.map((l) => (
-          <option key={l} value={l}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
+          <option key={l} value={l} style={{ background: "#1c0b3e", color: "#fff" }}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// Interruptor de audio (música / efectos) estilo switch, con estado on/off.
+function AudioToggle({ label, icon, on, onToggle }: { label: string; icon: string; on: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-sm text-neutral-200 flex items-center gap-2">
+        <span>{icon}</span>{label}
+      </span>
+      <button
+        onClick={onToggle}
+        role="switch"
+        aria-checked={on}
+        aria-label={label}
+        className={`relative w-12 h-7 rounded-full border transition ${on ? "bg-[#fcff52]/80 border-[#fcff52]" : "bg-[#160833] border-[#b79ced]/30"}`}
+      >
+        <span className={`absolute top-1 w-5 h-5 rounded-full transition-all ${on ? "left-6 bg-[#1c0b3e]" : "left-1 bg-neutral-400"}`} />
+      </button>
     </div>
   );
 }

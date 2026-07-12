@@ -14,8 +14,18 @@ function ac(): AudioContext | null {
     return null;
   }
 }
-function isMuted(): boolean {
+// Mute de EFECTOS (independiente de la música). Clave histórica "frontle-muted".
+export function isSfxMuted(): boolean {
   try { return localStorage.getItem("frontle-muted") === "1"; } catch { return false; }
+}
+// Alterna el mute de efectos y devuelve el nuevo estado.
+export function toggleSfx(): boolean {
+  const muted = !isSfxMuted();
+  try { localStorage.setItem("frontle-muted", muted ? "1" : "0"); } catch {}
+  return muted;
+}
+function isMuted(): boolean {
+  return isSfxMuted();
 }
 
 // Secuencia de notas (freq Hz, wave, dur s). Volumen suave.

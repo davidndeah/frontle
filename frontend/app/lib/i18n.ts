@@ -54,6 +54,23 @@ export function detectLocale(): Locale {
   return (LOCALES as string[]).includes(lang) ? (lang as Locale) : DEFAULT_LOCALE;
 }
 
+// --- Idioma por REGIÓN de conexión (petición de David) ---
+// El país (vía IP, ya disponible por getIpCountry) decide el idioma cuando el
+// usuario no eligió uno manualmente. Orden final: manual → geo → navegador → en.
+const ES_COUNTRIES = "AR BO CL CO CR CU DO EC ES GQ GT HN MX NI PA PE PY SV UY VE".split(" ");
+const PT_COUNTRIES = "AO BR CV GW MZ PT ST TL".split(" ");
+const FR_COUNTRIES = "BF BJ CD CF CG CI CM FR GA GN HT KM MC MG ML NE SN TD TG".split(" ");
+const COUNTRY_LOCALE: Record<string, Locale> = Object.fromEntries([
+  ...ES_COUNTRIES.map((c) => [c, "es"]),
+  ...PT_COUNTRIES.map((c) => [c, "pt"]),
+  ...FR_COUNTRIES.map((c) => [c, "fr"]),
+]) as Record<string, Locale>;
+
+// Idioma sugerido para un código de país ISO2 (null si no mapeamos → inglés/navegador).
+export function localeForCountry(iso2: string): Locale | null {
+  return COUNTRY_LOCALE[iso2?.toUpperCase?.() ?? ""] ?? null;
+}
+
 // --- Nombres de país localizados ---
 const dnCache: Partial<Record<Locale, Intl.DisplayNames>> = {};
 function displayNames(locale: Locale): Intl.DisplayNames | null {
@@ -154,19 +171,6 @@ type Dict = {
   payNoFunds: (amount: string) => string;
   payNoGas: string;
   footer: string;
-  // Home: hero, strip de gamificación y tarjetas de modo.
-  heroTitle: string;
-  heroTitleAccent: string;
-  streak: string;
-  xpLevel: (n: number) => string;
-  modeDaily: string;
-  modeDailySub: string;
-  modeSoon: string;
-  modeSoonSub: string;
-  backModes: string;
-  signIn: string;
-  walletTitle: string;
-  walletConnectedAs: string;
   hintsTitle: string;
   hintInitial: string;
   hintSilhouetteNext: string;
@@ -200,11 +204,59 @@ type Dict = {
   deposit: string;
   addressCopied: string;
   language: string;
+  audio: string;
+  music: string;
+  effects: string;
   legalTerms: string;
   legalPrivacy: string;
   legalSupport: string;
   learnBubbles: string[];
   practiceSoon: string;
+  practiceMode: string;
+  practiceFree: string;
+  practiceHint: string;
+  practiceNextRound: string;
+  practiceExit: string;
+  // Modo Regiones (marco del juego; los nombres de subdivisiones van en idioma local)
+  region: {
+    challengeOfDay: string;
+    timerStarts: string;
+    chooseOtherMode: string;
+    modeFooter: (title: string) => string;
+    placeholder: (noun: string) => string;
+    optimalRoute: (n: number, noun: string) => string;
+    winText: (guesses: number, optimal: number, perfect: boolean, noun: string) => string;
+    used: (n: number) => string;
+    bestToday: (n: number, noun: string) => string;
+    hintInitial: (noun: string) => string;
+    hintSilNext: (noun: string) => string;
+    hintSilAll: (nounMany: string) => string;
+    hintNextInitial: (letter: string, noun: string) => string;
+  };
+  // Selector de modos (paso "modes" del tab Jugar)
+  modes: {
+    dailyTitle: string; dailySub: string;
+    regionsTitle: string; regionsSub: string; new: string;
+    play: (title: string) => string; moreCountries: string;
+    moreModesTitle: string; moreModesSub: string;
+  };
+  a11y: {
+    country: string;
+    sound: string;
+    music: (muted: boolean) => string;
+    effects: (muted: boolean) => string;
+    zoomIn: string;
+    zoomOut: string;
+    recenter: string;
+  };
+  // Prompt de alias al registrarse
+  name: { title: string; sub: string; save: string; skip: string };
+  // Cabecera del home (título + strip de gamificación)
+  home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
+  walletSheet: { title: string; connectedAs: string };
+  comingSoon: string;
+  // Sustantivo localizado por tipo de subdivisión (singular/plural)
+  subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
   tutorialSteps: string[];
   tutNext: string;
   tutPlay: string;
@@ -321,18 +373,6 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu wallet para continuar.`,
     payNoGas: "Tu wallet no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
-    heroTitle: "Conecta el",
-    heroTitleAccent: "mundo",
-    streak: "racha",
-    xpLevel: (n) => `⚡ Nivel ${n}`,
-    modeDaily: "Reto diario",
-    modeDailySub: "3 niveles · premio real del pot 🏆",
-    modeSoon: "Nuevos modos",
-    modeSoonSub: "práctica, duelos y más…",
-    backModes: "Modos",
-    signIn: "👤 Entrar",
-    walletTitle: "💰 Tu wallet",
-    walletConnectedAs: "Conectado como",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
     hintSilhouetteNext: "Silueta del siguiente país",
@@ -366,6 +406,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Depositar",
     addressCopied: "¡Dirección copiada!",
     language: "Idioma",
+    audio: "Audio",
+    music: "Música",
+    effects: "Efectos",
     legalTerms: "Términos",
     legalPrivacy: "Privacidad",
     legalSupport: "Soporte",
@@ -375,6 +418,48 @@ const STRINGS: Record<Locale, Dict> = {
       "Menos países y menos tiempo = mejor puesto. El mejor del día se lleva el pot 🏆. El primer intento es gratis.",
     ],
     practiceSoon: "Modo práctica (próximamente)",
+    practiceMode: "Modo práctica",
+    practiceFree: "Práctica libre · sin premios",
+    practiceHint: "Pista (gratis)",
+    practiceNextRound: "Otra ronda",
+    practiceExit: "Salir de práctica",
+    region: {
+      challengeOfDay: "Reto del día",
+      timerStarts: "El cronómetro arranca al pulsar Jugar",
+      chooseOtherMode: "Elegir otro modo",
+      modeFooter: (t) => `Modo ${t} · gratis · vuelve mañana para un nuevo reto`,
+      placeholder: (n) => `Escribe un ${n}…`,
+      optimalRoute: (n, noun) => `Ruta óptima: ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Conectaste con ${g} ${noun} — la ruta óptima.` : `Conectaste con ${g} ${noun} (la óptima era ${o}).`,
+      used: (n) => `Usados: ${n}`,
+      bestToday: (n, noun) => `Tu mejor hoy: ${n} ${noun}`,
+      hintInitial: (noun) => `Inicial del siguiente ${noun}`,
+      hintSilNext: (noun) => `Silueta del siguiente ${noun}`,
+      hintSilAll: (nm) => `Silueta de todos los ${nm}`,
+      hintNextInitial: (l, noun) => `El siguiente ${noun} empieza por «${l}»`,
+    },
+    modes: {
+      dailyTitle: "Reto diario", dailySub: "3 niveles · premio real del pot 🏆",
+      regionsTitle: "Regiones", regionsSub: "conecta departamentos y estados · gratis", new: "nuevo",
+      play: (t) => `Jugar ${t}`, moreCountries: "más países muy pronto…",
+      moreModesTitle: "Más modos", moreModesSub: "práctica, duelos y más…",
+    },
+    a11y: {
+      country: "País", sound: "sonido",
+      music: (m) => m ? "Activar música" : "Silenciar música",
+      effects: (m) => m ? "Activar efectos" : "Silenciar efectos",
+      zoomIn: "Acercar", zoomOut: "Alejar", recenter: "Reencuadrar",
+    },
+    name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
+    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como" },
+    comingSoon: "coming soon",
+    home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
+    subdivisionNoun: {
+      department: { one: "departamento", many: "departamentos" },
+      state: { one: "estado", many: "estados" },
+      province: { one: "provincia", many: "provincias" },
+      region: { one: "región", many: "regiones" },
+    },
     tutorialSteps: [
       "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
       "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
@@ -399,7 +484,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Ranking diario",
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
-    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (liquidado on-chain).",
+    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (pago automático).",
     prizesTitle: "🏆 Tus premios",
     prizeRow: (amount) => `Ganaste ${amount}`,
     prizeClaim: "Reclamar",
@@ -445,9 +530,9 @@ const STRINGS: Record<Locale, Dict> = {
       retention: "Retención",
       retentionHint: "de cada cohorte que ya tuvo tiempo de volver",
       noCohort: "sin cohorte",
-      onchain: "On-chain",
+      onchain: "Actividad en la red",
       txTotal: "Transacciones",
-      onchainUsers: "Wallets únicas",
+      onchainUsers: "Jugadores únicos",
       failedRate: "Fallidas",
       byAction: "Por acción",
       partialData: "Cuenta las transacciones más recientes; el historial completo es mayor.",
@@ -504,19 +589,7 @@ const STRINGS: Record<Locale, Dict> = {
     payCancelled: "Payment cancelled.",
     payNoFunds: (a) => `Insufficient balance: this purchase costs ${a}. Top up your wallet to continue.`,
     payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
-    footer: "Frontle · A daily geography game · Made in Colombia",
-    heroTitle: "Connect the",
-    heroTitleAccent: "world",
-    streak: "streak",
-    xpLevel: (n) => `⚡ Level ${n}`,
-    modeDaily: "Daily challenge",
-    modeDailySub: "3 levels · real prize from the pot 🏆",
-    modeSoon: "New modes",
-    modeSoonSub: "practice, duels and more…",
-    backModes: "Modes",
-    signIn: "👤 Sign in",
-    walletTitle: "💰 Your wallet",
-    walletConnectedAs: "Signed in as",
+    footer: "Frontle · Daily geography game · Made in Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
     hintSilhouetteNext: "Next country's silhouette",
@@ -550,6 +623,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Deposit",
     addressCopied: "Address copied!",
     language: "Language",
+    audio: "Audio",
+    music: "Music",
+    effects: "Effects",
     legalTerms: "Terms",
     legalPrivacy: "Privacy",
     legalSupport: "Support",
@@ -559,6 +635,48 @@ const STRINGS: Record<Locale, Dict> = {
       "Fewer countries and less time = higher rank. The day's best takes the pot 🏆. Your first try is free.",
     ],
     practiceSoon: "Practice mode (coming soon)",
+    practiceMode: "Practice mode",
+    practiceFree: "Free practice · no prizes",
+    practiceHint: "Hint (free)",
+    practiceNextRound: "Another round",
+    practiceExit: "Exit practice",
+    region: {
+      challengeOfDay: "Daily challenge",
+      timerStarts: "The timer starts when you tap Play",
+      chooseOtherMode: "Choose another mode",
+      modeFooter: (t) => `${t} mode · free · come back tomorrow for a new challenge`,
+      placeholder: (n) => `Type a ${n}…`,
+      optimalRoute: (n, noun) => `Best route: ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Connected with ${g} ${noun} — the best route.` : `Connected with ${g} ${noun} (the best was ${o}).`,
+      used: (n) => `Used: ${n}`,
+      bestToday: (n, noun) => `Your best today: ${n} ${noun}`,
+      hintInitial: (noun) => `Next ${noun}'s initial`,
+      hintSilNext: (noun) => `Next ${noun}'s silhouette`,
+      hintSilAll: (nm) => `All ${nm}' silhouettes`,
+      hintNextInitial: (l, noun) => `The next ${noun} starts with “${l}”`,
+    },
+    modes: {
+      dailyTitle: "Daily challenge", dailySub: "3 levels · real prize from the pot 🏆",
+      regionsTitle: "Regions", regionsSub: "connect departments and states · free", new: "new",
+      play: (t) => `Play ${t}`, moreCountries: "more countries coming soon…",
+      moreModesTitle: "More modes", moreModesSub: "practice, duels and more…",
+    },
+    a11y: {
+      country: "Country", sound: "sound",
+      music: (m) => m ? "Enable music" : "Mute music",
+      effects: (m) => m ? "Enable effects" : "Mute effects",
+      zoomIn: "Zoom in", zoomOut: "Zoom out", recenter: "Recenter",
+    },
+    name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
+    walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as" },
+    comingSoon: "coming soon",
+    home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
+    subdivisionNoun: {
+      department: { one: "department", many: "departments" },
+      state: { one: "state", many: "states" },
+      province: { one: "province", many: "provinces" },
+      region: { one: "region", many: "regions" },
+    },
     tutorialSteps: [
       "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
       "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
@@ -583,7 +701,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Daily ranking",
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
-    rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (settled on-chain).",
+    rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (paid out automatically).",
     prizesTitle: "🏆 Your prizes",
     prizeRow: (amount) => `You won ${amount}`,
     prizeClaim: "Claim",
@@ -629,9 +747,9 @@ const STRINGS: Record<Locale, Dict> = {
       retention: "Retention",
       retentionHint: "of each cohort that has had time to come back",
       noCohort: "no cohort",
-      onchain: "On-chain",
+      onchain: "Network activity",
       txTotal: "Transactions",
-      onchainUsers: "Unique wallets",
+      onchainUsers: "Unique players",
       failedRate: "Failed",
       byAction: "By action",
       partialData: "Counts the most recent transactions; the full history is larger.",
@@ -688,19 +806,7 @@ const STRINGS: Record<Locale, Dict> = {
     payCancelled: "Pagamento cancelado.",
     payNoFunds: (a) => `Saldo insuficiente: esta compra custa ${a}. Recarregue sua carteira para continuar.`,
     payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
-    footer: "Frontle · Um jogo diário de geografia · Feito na Colômbia",
-    heroTitle: "Conecte o",
-    heroTitleAccent: "mundo",
-    streak: "sequência",
-    xpLevel: (n) => `⚡ Nível ${n}`,
-    modeDaily: "Desafio diário",
-    modeDailySub: "3 níveis · prêmio real do pote 🏆",
-    modeSoon: "Novos modos",
-    modeSoonSub: "prática, duelos e mais…",
-    backModes: "Modos",
-    signIn: "👤 Entrar",
-    walletTitle: "💰 Sua carteira",
-    walletConnectedAs: "Conectado como",
+    footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
     hintSilhouetteNext: "Silhueta do próximo país",
@@ -734,6 +840,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Depositar",
     addressCopied: "Endereço copiado!",
     language: "Idioma",
+    audio: "Áudio",
+    music: "Música",
+    effects: "Efeitos",
     legalTerms: "Termos",
     legalPrivacy: "Privacidade",
     legalSupport: "Suporte",
@@ -743,6 +852,48 @@ const STRINGS: Record<Locale, Dict> = {
       "Menos países e menos tempo = melhor posição. O melhor do dia leva o pot 🏆. A primeira tentativa é grátis.",
     ],
     practiceSoon: "Modo prática (em breve)",
+    practiceMode: "Modo prática",
+    practiceFree: "Prática livre · sem prêmios",
+    practiceHint: "Dica (grátis)",
+    practiceNextRound: "Outra rodada",
+    practiceExit: "Sair da prática",
+    region: {
+      challengeOfDay: "Desafio do dia",
+      timerStarts: "O cronômetro começa ao tocar em Jogar",
+      chooseOtherMode: "Escolher outro modo",
+      modeFooter: (t) => `Modo ${t} · grátis · volte amanhã para um novo desafio`,
+      placeholder: (n) => `Digite um ${n}…`,
+      optimalRoute: (n, noun) => `Rota ótima: ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Você conectou com ${g} ${noun} — a rota ótima.` : `Você conectou com ${g} ${noun} (a ótima era ${o}).`,
+      used: (n) => `Usados: ${n}`,
+      bestToday: (n, noun) => `Sua melhor hoje: ${n} ${noun}`,
+      hintInitial: (noun) => `Inicial do próximo ${noun}`,
+      hintSilNext: (noun) => `Silhueta do próximo ${noun}`,
+      hintSilAll: (nm) => `Silhueta de todos os ${nm}`,
+      hintNextInitial: (l, noun) => `O próximo ${noun} começa com “${l}”`,
+    },
+    modes: {
+      dailyTitle: "Desafio diário", dailySub: "3 níveis · prêmio real do pot 🏆",
+      regionsTitle: "Regiões", regionsSub: "conecte departamentos e estados · grátis", new: "novo",
+      play: (t) => `Jogar ${t}`, moreCountries: "mais países em breve…",
+      moreModesTitle: "Mais modos", moreModesSub: "prática, duelos e mais…",
+    },
+    a11y: {
+      country: "País", sound: "som",
+      music: (m) => m ? "Ativar música" : "Silenciar música",
+      effects: (m) => m ? "Ativar efeitos" : "Silenciar efeitos",
+      zoomIn: "Aproximar", zoomOut: "Afastar", recenter: "Reenquadrar",
+    },
+    name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
+    walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como" },
+    comingSoon: "em breve",
+    home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
+    subdivisionNoun: {
+      department: { one: "departamento", many: "departamentos" },
+      state: { one: "estado", many: "estados" },
+      province: { one: "província", many: "províncias" },
+      region: { one: "região", many: "regiões" },
+    },
     tutorialSteps: [
       "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
       "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
@@ -767,7 +918,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Ranking diário",
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
-    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (liquidado on-chain).",
+    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (pagamento automático).",
     prizesTitle: "🏆 Seus prêmios",
     prizeRow: (amount) => `Você ganhou ${amount}`,
     prizeClaim: "Resgatar",
@@ -813,9 +964,9 @@ const STRINGS: Record<Locale, Dict> = {
       retention: "Retenção",
       retentionHint: "de cada coorte que já teve tempo de voltar",
       noCohort: "sem coorte",
-      onchain: "On-chain",
+      onchain: "Atividade na rede",
       txTotal: "Transações",
-      onchainUsers: "Carteiras únicas",
+      onchainUsers: "Jogadores únicos",
       failedRate: "Falhas",
       byAction: "Por ação",
       partialData: "Conta as transações mais recentes; o histórico completo é maior.",
@@ -872,19 +1023,7 @@ const STRINGS: Record<Locale, Dict> = {
     payCancelled: "Paiement annulé.",
     payNoFunds: (a) => `Solde insuffisant : cet achat coûte ${a}. Rechargez votre portefeuille pour continuer.`,
     payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
-    footer: "Frontle · Un jeu de géographie quotidien · Fait en Colombie",
-    heroTitle: "Connecte le",
-    heroTitleAccent: "monde",
-    streak: "série",
-    xpLevel: (n) => `⚡ Niveau ${n}`,
-    modeDaily: "Défi quotidien",
-    modeDailySub: "3 niveaux · vrai prix du pot 🏆",
-    modeSoon: "Nouveaux modes",
-    modeSoonSub: "entraînement, duels et plus…",
-    backModes: "Modes",
-    signIn: "👤 Se connecter",
-    walletTitle: "💰 Ton wallet",
-    walletConnectedAs: "Connecté en tant que",
+    footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
     hintSilhouetteNext: "Silhouette du pays suivant",
@@ -918,6 +1057,9 @@ const STRINGS: Record<Locale, Dict> = {
     deposit: "Déposer",
     addressCopied: "Adresse copiée !",
     language: "Langue",
+    audio: "Audio",
+    music: "Musique",
+    effects: "Effets",
     legalTerms: "Conditions",
     legalPrivacy: "Confidentialité",
     legalSupport: "Support",
@@ -927,6 +1069,48 @@ const STRINGS: Record<Locale, Dict> = {
       "Moins de pays et moins de temps = meilleur classement. Le meilleur du jour remporte le pot 🏆. Le premier essai est gratuit.",
     ],
     practiceSoon: "Mode entraînement (bientôt)",
+    practiceMode: "Mode entraînement",
+    practiceFree: "Entraînement libre · sans prix",
+    practiceHint: "Indice (gratuit)",
+    practiceNextRound: "Autre manche",
+    practiceExit: "Quitter l'entraînement",
+    region: {
+      challengeOfDay: "Défi du jour",
+      timerStarts: "Le chrono démarre en appuyant sur Jouer",
+      chooseOtherMode: "Choisir un autre mode",
+      modeFooter: (t) => `Mode ${t} · gratuit · reviens demain pour un nouveau défi`,
+      placeholder: (n) => `Entrez un ${n}…`,
+      optimalRoute: (n, noun) => `Route optimale : ${n} ${noun}`,
+      winText: (g, o, p, noun) => p ? `Vous avez relié avec ${g} ${noun} — la route optimale.` : `Vous avez relié avec ${g} ${noun} (l'optimale était ${o}).`,
+      used: (n) => `Utilisés : ${n}`,
+      bestToday: (n, noun) => `Votre meilleur aujourd'hui : ${n} ${noun}`,
+      hintInitial: (noun) => `Initiale du prochain ${noun}`,
+      hintSilNext: (noun) => `Silhouette du prochain ${noun}`,
+      hintSilAll: (nm) => `Silhouette de tous les ${nm}`,
+      hintNextInitial: (l, noun) => `Le prochain ${noun} commence par « ${l} »`,
+    },
+    modes: {
+      dailyTitle: "Défi quotidien", dailySub: "3 niveaux · vrai prix de la cagnotte 🏆",
+      regionsTitle: "Régions", regionsSub: "reliez départements et états · gratuit", new: "nouveau",
+      play: (t) => `Jouer ${t}`, moreCountries: "plus de pays bientôt…",
+      moreModesTitle: "Plus de modes", moreModesSub: "entraînement, duels et plus…",
+    },
+    a11y: {
+      country: "Pays", sound: "son",
+      music: (m) => m ? "Activer la musique" : "Couper la musique",
+      effects: (m) => m ? "Activer les effets" : "Couper les effets",
+      zoomIn: "Zoom avant", zoomOut: "Zoom arrière", recenter: "Recadrer",
+    },
+    name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
+    walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que" },
+    comingSoon: "bientôt",
+    home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
+    subdivisionNoun: {
+      department: { one: "département", many: "départements" },
+      state: { one: "état", many: "états" },
+      province: { one: "province", many: "provinces" },
+      region: { one: "région", many: "régions" },
+    },
     tutorialSteps: [
       "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
       "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",
@@ -951,7 +1135,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingTitle: "Classement du jour",
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
-    rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (réglé on-chain).",
+    rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (paiement automatique).",
     prizesTitle: "🏆 Vos prix",
     prizeRow: (amount) => `Vous avez gagné ${amount}`,
     prizeClaim: "Réclamer",
@@ -997,9 +1181,9 @@ const STRINGS: Record<Locale, Dict> = {
       retention: "Rétention",
       retentionHint: "de chaque cohorte ayant eu le temps de revenir",
       noCohort: "pas de cohorte",
-      onchain: "On-chain",
+      onchain: "Activité réseau",
       txTotal: "Transactions",
-      onchainUsers: "Portefeuilles uniques",
+      onchainUsers: "Joueurs uniques",
       failedRate: "Échouées",
       byAction: "Par action",
       partialData: "Compte les transactions les plus récentes ; l'historique complet est plus grand.",

@@ -297,7 +297,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
         <div className="h-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-[#fcff52] transition-all duration-500"
           style={{ width: `${((step + (typing ? 0.4 : 1)) / STEPS.length) * 100}%` }} />
       </div>
-      <button onClick={toggle} aria-label="sonido"
+      <button onClick={toggle} aria-label={tr.a11y.sound}
         className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/5 border border-[#b79ced]/25 text-base active:scale-90 transition">
         {muted ? "🔇" : "🔊"}
       </button>
