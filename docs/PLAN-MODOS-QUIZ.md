@@ -125,7 +125,7 @@ Cada punto = su PR pequeño (rama corta → PR → merge), para mantener la mét
 
 ---
 
-## 9. Decisiones abiertas (para David)
-1. **Autoría de datos culturales:** ¿los genero yo (curados, tú revisas exactitud) o prefieres escribir tú los de los países que conoces bien y yo completo el resto?
-2. **Fase primero:** ¿arrancamos endless (jugable ya) y dejamos el diario/ranking para después? (recomendado)
-3. **Alcance inicial de contenido:** ¿~50 países famosos para la primera tanda, o una lista concreta tuya?
+## 9. Decisiones fijadas (David)
+1. **Datos culturales:** los **genero yo** (curados, hechos muy establecidos) y **David revisa la exactitud** antes de mergear. Primera tanda en `countryFacts.ts`.
+2. **Fase:** **endless primero** (jugable ya, con dificultad); diario + ranking + score card en fase 2.
+3. Alcance inicial: tanda de ~30 países famosos, ampliable por tandas.
