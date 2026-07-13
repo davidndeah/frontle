@@ -257,6 +257,21 @@ type Dict = {
   comingSoon: string;
   // Nombres de continente (pistas de los modos quiz)
   continents: Record<"AF" | "EU" | "AS" | "NA" | "SA" | "OC", string>;
+  // Modos quiz (Adivina la bandera / el contorno)
+  quiz: {
+    flagTitle: string; flagSub: string;
+    outlineTitle: string; outlineSub: string;
+    whichCountry: string;
+    hintBtn: string;
+    continentIn: (name: string) => string;
+    borders: (n: number) => string;
+    island: string;
+    initial: (letter: string) => string;
+    crossFlag: string; crossOutline: string;
+    tries: (n: number) => string;
+    wrong: string;
+    correct: (name: string) => string;
+  };
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
   subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
   tutorialSteps: string[];
@@ -455,6 +470,20 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
     walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como" },
     continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
+    quiz: {
+      flagTitle: "Adivina la bandera", flagSub: "¿de qué país es? · gratis",
+      outlineTitle: "Adivina el contorno", outlineSub: "reconoce el país por su forma · gratis",
+      whichCountry: "¿Qué país es?",
+      hintBtn: "Pista",
+      continentIn: (n) => `Está en ${n}`,
+      borders: (n) => `Limita con ${n} ${n === 1 ? "país" : "países"}`,
+      island: "No tiene fronteras terrestres",
+      initial: (l) => `Empieza por «${l}»`,
+      crossFlag: "Su bandera:", crossOutline: "Su contorno:",
+      tries: (n) => `Intentos: ${n}`,
+      wrong: "No es ese, ¡sigue intentando!",
+      correct: (n) => `¡Correcto! Era ${n} 🎉`,
+    },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
     subdivisionNoun: {
@@ -673,6 +702,20 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
     walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as" },
     continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
+    quiz: {
+      flagTitle: "Guess the flag", flagSub: "which country is it? · free",
+      outlineTitle: "Guess the outline", outlineSub: "recognize the country by its shape · free",
+      whichCountry: "Which country is it?",
+      hintBtn: "Hint",
+      continentIn: (n) => `It's in ${n}`,
+      borders: (n) => `Borders ${n} ${n === 1 ? "country" : "countries"}`,
+      island: "It has no land borders",
+      initial: (l) => `Starts with “${l}”`,
+      crossFlag: "Its flag:", crossOutline: "Its outline:",
+      tries: (n) => `Tries: ${n}`,
+      wrong: "Not that one, keep trying!",
+      correct: (n) => `Correct! It was ${n} 🎉`,
+    },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
     subdivisionNoun: {
@@ -891,6 +934,20 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
     walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como" },
     continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
+    quiz: {
+      flagTitle: "Adivinhe a bandeira", flagSub: "de que país é? · grátis",
+      outlineTitle: "Adivinhe o contorno", outlineSub: "reconheça o país pela forma · grátis",
+      whichCountry: "Que país é?",
+      hintBtn: "Dica",
+      continentIn: (n) => `Fica na ${n}`,
+      borders: (n) => `Faz fronteira com ${n} ${n === 1 ? "país" : "países"}`,
+      island: "Não tem fronteiras terrestres",
+      initial: (l) => `Começa com “${l}”`,
+      crossFlag: "Sua bandeira:", crossOutline: "Seu contorno:",
+      tries: (n) => `Tentativas: ${n}`,
+      wrong: "Não é esse, continue tentando!",
+      correct: (n) => `Correto! Era ${n} 🎉`,
+    },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
     subdivisionNoun: {
@@ -1109,6 +1166,20 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
     walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que" },
     continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
+    quiz: {
+      flagTitle: "Devine le drapeau", flagSub: "de quel pays est-il ? · gratuit",
+      outlineTitle: "Devine le contour", outlineSub: "reconnais le pays à sa forme · gratuit",
+      whichCountry: "Quel pays est-ce ?",
+      hintBtn: "Indice",
+      continentIn: (n) => `C'est en ${n}`,
+      borders: (n) => `Frontalier de ${n} pays`,
+      island: "Sans frontières terrestres",
+      initial: (l) => `Commence par « ${l} »`,
+      crossFlag: "Son drapeau :", crossOutline: "Son contour :",
+      tries: (n) => `Essais : ${n}`,
+      wrong: "Ce n'est pas ça, continue !",
+      correct: (n) => `Correct ! C'était ${n} 🎉`,
+    },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
     subdivisionNoun: {
