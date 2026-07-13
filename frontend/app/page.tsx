@@ -854,6 +854,18 @@ export default function Frontle() {
               </span>
               <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
             </button>
+            {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
+            <button
+              onClick={() => { setTab("aprender"); setPracticeOn(true); }}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+            >
+              <span className="text-3xl">🎓</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.practiceMode}</span>
+                <span className="text-xs text-neutral-300">{tr.practiceFree}</span>
+              </span>
+              <span className="text-[#fcff52] text-2xl">→</span>
+            </button>
           </div>
         )}
 
