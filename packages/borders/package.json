@@ -1,0 +1,34 @@
+{
+  "name": "@frontle/borders",
+  "version": "0.1.0",
+  "description": "Country land-border graph + shortest-path and deterministic daily-challenge engine. The pure geography engine behind Frontle.",
+  "keywords": ["geography", "countries", "borders", "graph", "bfs", "shortest-path", "wordle", "game", "celo", "frontle"],
+  "license": "MIT",
+  "author": "Frontle",
+  "homepage": "https://frontle.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davidndeah/frontle.git",
+    "directory": "packages/borders"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
