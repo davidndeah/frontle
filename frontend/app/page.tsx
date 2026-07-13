@@ -35,6 +35,8 @@ import Coachmarks from "./components/Coachmarks";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
 import PracticeGame from "./components/PracticeGame";
+import CountryQuizGame from "./components/CountryQuizGame";
+import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
@@ -167,6 +169,8 @@ export default function Frontle() {
   // UX-4: tarjetas de modo colapsadas; al tocar una se despliega su selector
   // (nivel para el reto diario, país+mapa para regiones) y se cierra la otra.
   const [modeOpen, setModeOpen] = useState<"daily" | "regions" | null>(null);
+  // Modos quiz: adivina la bandera / el contorno (null = ninguno activo).
+  const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
@@ -729,7 +733,12 @@ export default function Frontle() {
           <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} />
         )}
 
-        {tab === "jugar" && !regionMode && (
+        {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
+        {tab === "jugar" && !regionMode && quizMode && (
+          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} />
+        )}
+
+        {tab === "jugar" && !regionMode && !quizMode && (
           <>
         {/* Título + gamificación (sin hero gigante; Bordy vive en la esquina) */}
         {!started && (
@@ -822,14 +831,29 @@ export default function Frontle() {
               <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </>)}
             </div>
-            <div className="panel p-4 flex items-center gap-3 opacity-50">
-              <span className="text-3xl">🎲</span>
+            {/* Modos quiz: adivina la bandera / el contorno (gratis) */}
+            <button
+              onClick={() => setQuizMode("flag")}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+            >
+              <span className="text-3xl">🏳️</span>
               <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.moreModesTitle}</span>
-                <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.quiz.flagTitle}</span>
+                <span className="text-xs text-neutral-300">{tr.quiz.flagSub}</span>
               </span>
-              <span className="text-[9px] uppercase tracking-widest border border-[#b79ced]/40 rounded-full px-2 py-1 text-[#c4b5fd] whitespace-nowrap">{tr.comingSoon}</span>
-            </div>
+              <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
+            </button>
+            <button
+              onClick={() => setQuizMode("outline")}
+              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+            >
+              <span className="text-3xl">🗺️</span>
+              <span className="flex-1">
+                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.quiz.outlineTitle}</span>
+                <span className="text-xs text-neutral-300">{tr.quiz.outlineSub}</span>
+              </span>
+              <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
+            </button>
           </div>
         )}
 
