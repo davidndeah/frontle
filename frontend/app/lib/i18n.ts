@@ -255,6 +255,8 @@ type Dict = {
   home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
   walletSheet: { title: string; connectedAs: string };
   comingSoon: string;
+  // Nombres de continente (pistas de los modos quiz)
+  continents: Record<"AF" | "EU" | "AS" | "NA" | "SA" | "OC", string>;
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
   subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
   tutorialSteps: string[];
@@ -452,6 +454,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
     walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como" },
+    continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
     subdivisionNoun: {
@@ -669,6 +672,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
     walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as" },
+    continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
     subdivisionNoun: {
@@ -886,6 +890,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
     walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como" },
+    continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
     subdivisionNoun: {
@@ -1103,6 +1108,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
     walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que" },
+    continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
     subdivisionNoun: {
