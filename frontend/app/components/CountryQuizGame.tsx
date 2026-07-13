@@ -15,6 +15,7 @@ import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from 
 import { randomQuizCountry, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
+import ScoreCard from "./ScoreCard";
 
 function BigFlag({ name }: { name: string }) {
   const c = getCountry(name);
@@ -129,6 +130,21 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
           <div className="text-2xl font-black prism-text">{tr.winNormal}</div>
           <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
           <p className="text-neutral-200 mt-2">{tr.quiz.correct(countryName(country, locale))}</p>
+          <div className="mt-4">
+            <ScoreCard
+              data={{
+                modeLabel: mode === "flag" ? tr.quiz.flagTitle : tr.quiz.outlineTitle,
+                dateLabel: new Date().toLocaleDateString(locale),
+                stars,
+                stats: [tr.quiz.tries(tries)],
+              }}
+              shareText={`Frontle · ${mode === "flag" ? tr.quiz.flagTitle : tr.quiz.outlineTitle}
+${"⭐".repeat(stars)}
+frontle.vercel.app`}
+              label={tr.share}
+              copiedLabel={tr.copied}
+            />
+          </div>
           <div className="flex flex-col gap-2 mt-4">
             <button onClick={() => newRound()} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
               🔄 {tr.practiceNextRound}
