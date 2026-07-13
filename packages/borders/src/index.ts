@@ -10,7 +10,7 @@ export {
   areNeighbors,
   flagToCode,
   type Country,
-} from "./countries";
+} from "./countries.js";
 
 export {
   // grafo / rutas
@@ -43,4 +43,4 @@ export {
   type PlayState,
   type GuessReason,
   type GuessResult,
-} from "./game";
+} from "./game.js";

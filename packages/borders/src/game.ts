@@ -5,7 +5,7 @@
 //  - Normalización de nombres para el input del usuario
 // ============================================================
 
-import { COUNTRIES, COUNTRY_NAMES, getCountry, areNeighbors } from "./countries";
+import { COUNTRIES, COUNTRY_NAMES, getCountry, areNeighbors } from "./countries.js";
 
 export type Difficulty = "easy" | "medium" | "hard";
 export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
