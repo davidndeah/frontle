@@ -21,6 +21,7 @@ import { getCountry } from "../lib/countries";
 import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from "../lib/i18n";
 import { formatTime } from "../lib/ranking";
 import WorldMap from "./WorldMap";
+import ScoreCard from "./ScoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
@@ -204,8 +205,23 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       {state.solved ? (
         <section className="panel p-5 text-center">
           <div className="text-2xl font-black prism-text">{stars === 3 ? tr.winPerfect : tr.winNormal}</div>
-          <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
           <p className="text-neutral-200 mt-2">{tr.winText(guessCount, optimal, stars === 3)}</p>
+          <div className="mt-4">
+            <ScoreCard
+              data={{
+                modeLabel: tr.practiceMode,
+                dateLabel: new Date().toLocaleDateString(locale),
+                stars,
+                squares: ["start", ...state.chain.map((c) => c.quality), "end"],
+                stats: [tr.winText(guessCount, optimal, stars === 3), formatTime(elapsedMs)],
+              }}
+              shareText={`🌍 Frontle · ${tr.practiceMode}
+${"⭐".repeat(stars)}
+frontle.vercel.app`}
+              label={tr.share}
+              copiedLabel={tr.copied}
+            />
+          </div>
           <div className="flex flex-col gap-2 mt-4">
             <button onClick={() => newRound()} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
               🔄 {tr.practiceNextRound}

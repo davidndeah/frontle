@@ -32,6 +32,8 @@ import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDay
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
+import ScoreCard from "./components/ScoreCard";
+import type { Square } from "./lib/scoreCard";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
 import PracticeGame from "./components/PracticeGame";
@@ -1003,6 +1005,8 @@ export default function Frontle() {
                 optimal={challenge.optimal}
                 timeMs={elapsedMs}
                 chain={[challenge.start, ...state.chain.map((c) => c.country), challenge.end]}
+                squares={["start", ...state.chain.map((c) => c.quality), "end"]}
+                levelLabel={tr.levels[level]}
                 onRetry={retry}
                 retryPrice={PRICES.retry}
                 retryBusy={paying === "retry"}
@@ -1968,6 +1972,8 @@ function WinCard({
   optimal,
   timeMs,
   chain,
+  squares,
+  levelLabel,
   onRetry,
   retryPrice,
   retryBusy,
@@ -1985,6 +1991,8 @@ function WinCard({
   optimal: number;
   timeMs: number;
   chain: string[];
+  squares: Square[];
+  levelLabel: string;
   onRetry: () => void;
   retryPrice: number;
   retryBusy: boolean;
@@ -1997,31 +2005,31 @@ function WinCard({
   panel: string;
   fmt: (usdt: number) => string;
 }) {
-  const [copied, setCopied] = useState(false);
   const perfect = guesses <= optimal;
 
-  function share() {
-    const flags = chain.map((c) => getCountry(c)?.flag ?? "").join(" ");
-    const text = `🌍 Frontle\n${getCountry(chain[0])?.flag} → ${
-      getCountry(chain[chain.length - 1])?.flag
-    }\n${tr.winText(guesses, optimal, perfect)} · ⏱️ ${formatTime(timeMs)}\n${flags}\nfrontle.vercel.app`;
-    if (navigator.share) navigator.share({ text }).catch(() => {});
-    else {
-      navigator.clipboard?.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }
+  // Texto que acompaña a la imagen — spoiler-free (sin las banderas de la ruta).
+  const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
 
   return (
     <section className={`${panel} p-5 text-center`}>
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
+      <div className="mt-4">
+        <ScoreCard
+          data={{
+            modeLabel: `${tr.modes.dailyTitle} · ${levelLabel}`,
+            dateLabel: new Date().toLocaleDateString(),
+            stars: perfect ? 3 : guesses <= optimal + 1 ? 2 : 1,
+            squares,
+            stats: [tr.winText(guesses, optimal, perfect), formatTime(timeMs)],
+          }}
+          shareText={shareText}
+          label={tr.share}
+          copiedLabel={tr.copied}
+        />
+      </div>
       <div className="flex flex-col gap-2 mt-4">
-        <button onClick={share} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
-          {copied ? tr.copied : tr.share}
-        </button>
         {/* Siempre disponible: aun con marca perfecta se puede reintentar para mejorar el TIEMPO (desempate del ranking). */}
         <button
           onClick={onRetry}

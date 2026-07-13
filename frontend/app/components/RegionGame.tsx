@@ -20,6 +20,8 @@ import {
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
 import { t, type Locale } from "../lib/i18n";
 import RegionMap from "./RegionMap";
+import ScoreCard from "./ScoreCard";
+import type { Square } from "../lib/scoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
@@ -249,7 +251,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
           </section>
 
           {state.solved ? (
-            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} chain={[challenge.start, ...state.chain.map((c) => c.entity), challenge.end]} />
+            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} squares={["start", ...state.chain.map((c) => c.quality), "end"]} />
           ) : (
             <section className="relative flex flex-col gap-3">
               <form onSubmit={(e) => { e.preventDefault(); if (input.trim()) submit(input); }} className="flex gap-2">
@@ -313,37 +315,38 @@ function RChip({ regionId, name, code, kind }: { regionId: string; name: string;
 }
 
 function RegionWin({
-  tr, noun, guesses, optimal, timeMs, onExit, def, chain,
+  tr, noun, guesses, optimal, timeMs, onExit, def, squares,
 }: {
   tr: ReturnType<typeof t>; noun: string; guesses: number; optimal: number; timeMs: number; onExit: () => void;
-  def: { flag: string; title: string }; chain: string[];
+  def: { flag: string; title: string }; squares: Square[];
 }) {
-  const [copied, setCopied] = useState(false);
   const perfect = guesses <= optimal;
   const stars = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
-
-  function share() {
-    const text = `🌍 Frontle ${def.flag} ${def.title}\n${chain[0]} → ${chain[chain.length - 1]}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ⏱️ ${formatTime(timeMs)}\nfrontle.vercel.app`;
-    if (navigator.share) navigator.share({ text }).catch(() => {});
-    else { navigator.clipboard?.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-  }
+  const shareText = `🌍 Frontle ${def.flag} ${def.title}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
 
   return (
     <section className="panel p-5 text-center">
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
-      <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
       <p className="text-neutral-200 mt-2">
         {tr.region.winText(guesses, optimal, perfect, noun)}
       </p>
-      <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
-      <div className="flex flex-col gap-2 mt-4">
-        <button onClick={share} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
-          {copied ? tr.copied : tr.share}
-        </button>
-        <button onClick={onExit} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
-          {tr.region.chooseOtherMode}
-        </button>
+      <div className="mt-4">
+        <ScoreCard
+          data={{
+            modeLabel: `${tr.modes.regionsTitle} · ${def.title}`,
+            dateLabel: new Date().toLocaleDateString(),
+            stars,
+            squares,
+            stats: [`${guesses} ${noun}`, formatTime(timeMs)],
+          }}
+          shareText={shareText}
+          label={tr.share}
+          copiedLabel={tr.copied}
+        />
       </div>
+      <button onClick={onExit} className="mt-3 w-full rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
+        {tr.region.chooseOtherMode}
+      </button>
       <p className="text-[11px] text-neutral-500 mt-3">{tr.region.modeFooter(def.title)}</p>
     </section>
   );
