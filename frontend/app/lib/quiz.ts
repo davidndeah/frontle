@@ -19,6 +19,10 @@ export interface QuizHint {
   text?: string;
 }
 
+// Pistas culturales (countryFacts) desactivadas hasta que David revise su
+// exactitud (PR #22). Para activarlas: poner en true.
+const INCLUDE_FACTS = false;
+
 // País aleatorio del pool del nivel (excluye el anterior para no repetir).
 export function randomQuizCountry(level: Difficulty, exclude?: string): string {
   const pool = COUNTRY_NAMES.filter((n) => tierOf(n) === level && n !== exclude);
@@ -38,7 +42,7 @@ export function quizHints(
   }
 ): QuizHint[] {
   const hints: QuizHint[] = [];
-  const facts = factsFor(getCountry(country)?.code ?? "", locale);
+  const facts = INCLUDE_FACTS ? factsFor(getCountry(country)?.code ?? "", locale) : [];
 
   if (facts[0]) hints.push({ kind: "fact", text: facts[0] });
 

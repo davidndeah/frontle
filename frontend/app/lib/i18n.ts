@@ -472,7 +472,7 @@ const STRINGS: Record<Locale, Dict> = {
     continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
     quiz: {
       flagTitle: "Adivina la bandera", flagSub: "¿de qué país es? · gratis",
-      outlineTitle: "Adivina el contorno", outlineSub: "reconoce el país por su forma · gratis",
+      outlineTitle: "Adivina el país", outlineSub: "reconoce el país por su forma · gratis",
       whichCountry: "¿Qué país es?",
       hintBtn: "Pista",
       continentIn: (n) => `Está en ${n}`,
@@ -704,7 +704,7 @@ const STRINGS: Record<Locale, Dict> = {
     continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
     quiz: {
       flagTitle: "Guess the flag", flagSub: "which country is it? · free",
-      outlineTitle: "Guess the outline", outlineSub: "recognize the country by its shape · free",
+      outlineTitle: "Guess the country", outlineSub: "recognize the country by its shape · free",
       whichCountry: "Which country is it?",
       hintBtn: "Hint",
       continentIn: (n) => `It's in ${n}`,
@@ -936,7 +936,7 @@ const STRINGS: Record<Locale, Dict> = {
     continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
     quiz: {
       flagTitle: "Adivinhe a bandeira", flagSub: "de que país é? · grátis",
-      outlineTitle: "Adivinhe o contorno", outlineSub: "reconheça o país pela forma · grátis",
+      outlineTitle: "Adivinhe o país", outlineSub: "reconheça o país pela forma · grátis",
       whichCountry: "Que país é?",
       hintBtn: "Dica",
       continentIn: (n) => `Fica na ${n}`,
@@ -1168,7 +1168,7 @@ const STRINGS: Record<Locale, Dict> = {
     continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
     quiz: {
       flagTitle: "Devine le drapeau", flagSub: "de quel pays est-il ? · gratuit",
-      outlineTitle: "Devine le contour", outlineSub: "reconnais le pays à sa forme · gratuit",
+      outlineTitle: "Devine le pays", outlineSub: "reconnais le pays à sa forme · gratuit",
       whichCountry: "Quel pays est-ce ?",
       hintBtn: "Indice",
       continentIn: (n) => `C'est en ${n}`,
