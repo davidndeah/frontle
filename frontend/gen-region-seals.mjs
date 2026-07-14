@@ -5,6 +5,17 @@
 //  faltantes en public/flags/<id>/. Uso: node gen-region-seals.mjs ng gh
 // ============================================================
 import { readFileSync, writeFileSync, existsSync } from "fs";
+import sharp from "sharp";
+
+// MiniPay solo admite SVG o WebP; Wikidata sirve PNG. Los escudos son casi
+// fotos, así que suele ganar la versión con pérdida, pero probamos las dos.
+async function writeWebp(dest, buf) {
+  const [lossless, lossy] = await Promise.all([
+    sharp(buf).webp({ lossless: true, effort: 6 }).toBuffer(),
+    sharp(buf).webp({ quality: 90, effort: 6 }).toBuffer(),
+  ]);
+  writeFileSync(dest, lossless.length <= lossy.length ? lossless : lossy);
+}
 
 const QID = { ng: "Q1033", gh: "Q117" };
 const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -25,7 +36,7 @@ for (const id of process.argv.slice(2)) {
   if (!qid) { console.log(`sin QID para ${id}`); continue; }
   const ts = readFileSync(`app/lib/regions/${id}.ts`, "utf-8");
   const ents = [...ts.matchAll(/\{ name: "([^"]+)", code: "([^"]+)"/g)].map((m) => ({ name: m[1], code: m[2] }));
-  const missing = ents.filter((e) => !existsSync(`public/flags/${id}/${e.code}.png`));
+  const missing = ents.filter((e) => !existsSync(`public/flags/${id}/${e.code}.webp`));
   console.log(`\n=== ${id}: ${missing.length}/${ents.length} sin imagen ===`);
   // P94 = coat of arms image · P154 = logo image (fallback)
   const q = `SELECT ?itemLabel ?img WHERE { ?item wdt:P17 wd:${qid} ; wdt:P131 wd:${qid} .
@@ -44,7 +55,7 @@ for (const id of process.argv.slice(2)) {
     const res = await fetchRetry(row.img + sep + "width=120");
     if (res?.ok) {
       const buf = Buffer.from(await res.arrayBuffer());
-      if (buf.length > 200) { writeFileSync(`public/flags/${id}/${e.code}.png`, buf); got++; process.stdout.write("."); }
+      if (buf.length > 200) { await writeWebp(`public/flags/${id}/${e.code}.webp`, buf); got++; process.stdout.write("."); }
     }
     await new Promise((r2) => setTimeout(r2, 400));
   }

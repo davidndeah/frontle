@@ -6,7 +6,7 @@
 //   2. Matching del atlas 110m (modo "Adivina el país" / contorno).
 //   3. Cobertura de continents.ts (pista de continente del quiz).
 //   4. Intl.DisplayNames en los 4 idiomas (nombres y resolución).
-//   5. Banderas regionales locales (public/flags/<región>/<code>.png).
+//   5. Banderas regionales locales (public/flags/<región>/<code>.webp).
 //  Uso:  node scripts/check-visuals.mjs
 //  Sale con código 1 si hay hallazgos rojos (útil para CI).
 // ============================================================
@@ -169,13 +169,19 @@ function norm(s) {
     const ents = [...src.matchAll(/\{\s*name:\s*"([^"]+)",\s*code:\s*"([^"]+)"/g)].map((m) => ({ name: m[1], code: m[2] }));
     let missing = 0, tiny = 0;
     for (const e of ents) {
-      const p = join(ROOT, "public", "flags", id, `${e.code}.png`);
+      const p = join(ROOT, "public", "flags", id, `${e.code}.webp`);
       if (!existsSync(p)) { missing++; continue; }
-      if (statSync(p).size < 200) { tiny++; warn.push(`FLAG regional sospechosa (<200B): ${id}/${e.code}.png (${e.name})`); }
+      // No vale un umbral de bytes: una bandera plana en WebP baja de 70B y
+      // seguiría siendo válida. Lo que delata una descarga rota es que no
+      // empiece por la cabecera RIFF....WEBP.
+      const head = readFileSync(p).subarray(0, 12);
+      if (head.toString("ascii", 0, 4) !== "RIFF" || head.toString("ascii", 8, 12) !== "WEBP") {
+        tiny++; warn.push(`FLAG regional corrupta (no es WebP): ${id}/${e.code}.webp (${e.name})`);
+      }
     }
     // Faltantes: el marcador de respaldo los cubre (decisión FLAGS-13) → warn, no red.
-    if (missing > 0) warn.push(`FLAGS ${id}: ${missing}/${ents.length} sin PNG (usan marcador)`);
-    console.log(`región ${id}: ${ents.length} entidades, ${missing} sin PNG${tiny ? `, ${tiny} sospechosas` : ""}`);
+    if (missing > 0) warn.push(`FLAGS ${id}: ${missing}/${ents.length} sin imagen (usan marcador)`);
+    console.log(`región ${id}: ${ents.length} entidades, ${missing} sin imagen${tiny ? `, ${tiny} sospechosas` : ""}`);
   }
 }
 

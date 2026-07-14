@@ -1,8 +1,18 @@
 // Descarga las banderas de las subdivisiones (departamentos/estados) desde
-// Wikidata (propiedad P41 = flag image) y las guarda como PNG locales en
-// public/flags/<region>/<code>.png. Escalable a cualquier país (solo el
-// Q-id del "tipo de subdivisión"). Se corre una vez; los PNG van commiteados.
+// Wikidata (propiedad P41 = flag image) y las guarda como WebP locales en
+// public/flags/<region>/<code>.webp (MiniPay solo admite SVG o WebP; la fuente
+// sirve PNG). Escalable a cualquier país (solo el Q-id del "tipo de
+// subdivisión"). Se corre una vez; los WebP van commiteados.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import sharp from "sharp";
+
+async function writeWebp(dest, buf) {
+  const [lossless, lossy] = await Promise.all([
+    sharp(buf).webp({ lossless: true, effort: 6 }).toBuffer(),
+    sharp(buf).webp({ quality: 90, effort: 6 }).toBuffer(),
+  ]);
+  writeFileSync(dest, lossless.length <= lossy.length ? lossless : lossy);
+}
 
 async function fetchRetry(url, tries = 5) {
   for (let i = 0; i < tries; i++) {
@@ -75,14 +85,14 @@ async function build(regionId, countryQid, lang, tsPath, extras = {}) {
   for (const row of rows) {
     const c = row.__code ? wanted.find((w) => w.code === row.__code) : wantedByNorm.get(norm(row.label));
     if (!c || got.has(c.code)) continue;
-    const dest = `public/flags/${regionId}/${c.code}.png`;
+    const dest = `public/flags/${regionId}/${c.code}.webp`;
     if (existsSync(dest)) { got.add(c.code); continue; } // resume
     try {
       const res = await fetchRetry(pngUrl(row.flag, 120));
       if (!res || !res.ok) { console.log(`  [${regionId}] ${c.name}: HTTP ${res?.status ?? "err"}`); continue; }
       const buf = Buffer.from(await res.arrayBuffer());
       if (buf.length < 200) { console.log(`  [${regionId}] ${c.name}: archivo vacio`); continue; }
-      writeFileSync(dest, buf);
+      await writeWebp(dest, buf);
       got.add(c.code);
       process.stdout.write(".");
     } catch (e) {

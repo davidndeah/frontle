@@ -117,7 +117,7 @@ const DATA = {
 };
 
 // ---- 4. Bordy M2 (mascota oficial, PNG 3D renderizado con Three.js) ----
-const robotIMG = `<img src="bordy-m2.png" alt="Bordy" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 24px 32px rgba(0,0,0,0.45))">`;
+const robotIMG = `<img src="bordy-m2.webp" alt="Bordy" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 24px 32px rgba(0,0,0,0.45))">`;
 
 // ---- 5. HTML ----
 const html = `<!DOCTYPE html><html><head><meta charset="utf-8">

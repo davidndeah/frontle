@@ -803,7 +803,7 @@ export default function Frontle() {
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/flags/national/${regionPick}.png`}
+                  src={`/flags/national/${regionPick}.webp`}
                   alt=""
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-6 h-4 object-cover rounded-sm border border-white/20"
                 />
