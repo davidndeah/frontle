@@ -7,7 +7,7 @@
 export interface RegionEntity {
   /** Nombre canónico para mostrar (idioma local de la región). */
   name: string;
-  /** Slug estable: clave de banderas (/flags/<region>/<code>.png) y del mapa. */
+  /** Slug estable: clave de banderas (/flags/<region>/<code>.webp) y del mapa. */
   code: string;
   /** Formas alternativas aceptadas en el input (sin tildes ya lo cubre normalize). */
   aliases?: string[];

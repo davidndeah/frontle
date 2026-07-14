@@ -694,37 +694,34 @@ export default function Frontle() {
       )}
 
       {/* Header fijo: logo + chip de pot + chip de wallet */}
-      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1.5 px-3 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
-        <span className="font-display text-xl font-bold tracking-tight prism-text">FRONTLE</span>
+      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1 px-2.5 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
+        <span className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</span>
         <div className="flex-1" />
         {pot !== null && (
-          <span className="rounded-full bg-amber-400/15 border border-amber-300/40 px-2 py-1 text-[11px] font-bold text-amber-300 whitespace-nowrap">
+          <span className="shrink-0 rounded-full bg-amber-400/15 border border-amber-300/40 px-2 py-1 text-[11px] font-bold text-amber-300 whitespace-nowrap">
             🏆 {fmt(pot)}
           </span>
         )}
-        {/* Audio: música + efectos, mute independiente */}
-        <div className="flex items-center rounded-full bg-white/5 border border-[#b79ced]/25 overflow-hidden">
-          <button
-            onClick={onToggleMusic}
-            aria-label={tr.a11y.music(musicMuted)}
-            className="w-6 h-8 flex items-center justify-center text-sm active:scale-90 transition"
-          >
-            {musicMuted ? "🔇" : "🎵"}
-          </button>
-          <button
-            onClick={onToggleSfx}
-            aria-label={tr.a11y.effects(sfxMuted)}
-            className="w-6 h-8 flex items-center justify-center text-sm border-l border-[#b79ced]/20 active:scale-90 transition"
-          >
-            {sfxMuted ? "🔕" : "🔊"}
-          </button>
-        </div>
+        {/* Solo el mute de música: es lo que suena sin pedir permiso y hay que
+            poder callarlo al instante. Los efectos se silencian desde Perfil,
+            que ya tiene los dos interruptores. Dos botones aquí no caben en los
+            360px que exige MiniPay. */}
+        <button
+          onClick={onToggleMusic}
+          aria-label={tr.a11y.music(musicMuted)}
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 border border-[#b79ced]/25 text-sm active:scale-90 transition"
+        >
+          {musicMuted ? "🔇" : "🎵"}
+        </button>
         <LanguageSelect locale={locale} onChange={changeLocale} compact />
+        {/* A 360px (el mínimo de MiniPay) la cabecera va justa: el resto de piezas
+            son shrink-0 y es este chip el que cede, truncando el alias. Sin esto
+            el chip se salía del viewport y aplastaba los botones de audio. */}
         <button
           onClick={() => setWalletOpen(true)}
-          className="rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 py-1 text-xs font-semibold text-white active:scale-95 transition whitespace-nowrap"
+          className="min-w-0 truncate rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 py-1 text-xs font-semibold text-white active:scale-95 transition"
         >
-          {alias || (myId ? shortId(myId) : "👤 Entrar")}
+          {alias || (myId ? shortId(myId) : tr.walletSheet.signIn)}
         </button>
       </header>
 
@@ -806,7 +803,7 @@ export default function Frontle() {
               <div className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`/flags/national/${regionPick}.png`}
+                  src={`/flags/national/${regionPick}.webp`}
                   alt=""
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-6 h-4 object-cover rounded-sm border border-white/20"
                 />
@@ -1627,7 +1624,7 @@ function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; 
 // (es/en/fr/pt) ya están traducidos en STRINGS.
 function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChange: (l: Locale) => void; compact?: boolean }) {
   return (
-    <div className="relative inline-flex items-center">
+    <div className="relative inline-flex shrink-0 items-center">
       <span className="pointer-events-none absolute left-2 text-xs">🌐</span>
       <select
         value={locale}
@@ -1635,7 +1632,7 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
         aria-label="Language"
         className={
           compact
-            ? "appearance-none rounded-full bg-white/5 border border-[#b79ced]/25 pl-6 pr-2 py-1 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50 active:scale-95 transition"
+            ? "appearance-none rounded-full bg-white/5 border border-[#b79ced]/25 pl-5 pr-1.5 py-1 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50 active:scale-95 transition"
             : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
         }
       >
