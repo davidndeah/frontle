@@ -189,6 +189,16 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
   .claim-spark { display: none; }
+
+  /* Resto de animaciones ambientales: se detienen, no distraen. */
+  .bordy-float,
+  .bordy-float-sm,
+  .bordy-talk,
+  .halo,
+  .pop-in {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 /* Texto con gradiente prisma */
