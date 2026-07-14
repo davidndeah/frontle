@@ -26,14 +26,23 @@ function flagToCode(flag) {
     .join("");
 }
 
-// --- 1. países del grafo (countries.ts) ---
+// --- 1. países del grafo (countries.ts) + insulares (islands.ts) ---
 const countriesSrc = read("app/lib/countries.ts");
 const countryRe = /\{\s*name:\s*"([^"]+)",\s*flag:\s*"([^"]+)"/g;
 const countries = [];
 for (let m; (m = countryRe.exec(countriesSrc)); ) {
-  countries.push({ name: m[1], flag: m[2], code: flagToCode(m[2]) });
+  countries.push({ name: m[1], flag: m[2], code: flagToCode(m[2]), outline: true });
 }
 console.log(`Países del grafo: ${countries.length}`);
+
+const islandsSrc = read("app/lib/islands.ts");
+const islandRe = /\{\s*name:\s*"([^"]+)",\s*flag:\s*"([^"]+)",\s*tier:\s*"(\w+)",\s*outline:\s*(true|false)/g;
+let islandCount = 0;
+for (let m; (m = islandRe.exec(islandsSrc)); ) {
+  countries.push({ name: m[1], flag: m[2], code: flagToCode(m[2]), outline: m[4] === "true", island: true });
+  islandCount++;
+}
+console.log(`Países insulares (quiz): ${islandCount}`);
 
 const red = [];   // roto para el usuario
 const warn = [];  // sospechoso / degradado
@@ -117,7 +126,10 @@ function norm(s) {
     else if (direct) matched.add(direct);
   }
   for (const c of countries) {
-    if (!matched.has(c.name)) red.push(`ATLAS sin feature (contorno roto): ${c.name}`);
+    // Solo es rojo si el modo contorno lo usaría: islas con outline:false
+    // están excluidas del pool a propósito.
+    if (!matched.has(c.name) && c.outline) red.push(`ATLAS sin feature (contorno roto): ${c.name}`);
+    if (matched.has(c.name) && c.island && !c.outline) warn.push(`ATLAS sí trae ${c.name}: podría marcarse outline:true`);
   }
   console.log("atlas 110m (contorno): revisado");
 }
