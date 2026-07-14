@@ -53,6 +53,27 @@ function star(ctx: CanvasRenderingContext2D, cx: number, cy: number, R: number, 
   ctx.fill();
 }
 
+// Parte una frase en las líneas que quepan en `maxW`. Sin esto, fillText pinta
+// fuera del lienzo y el propio canvas lo recorta: en inglés "Connected with 2
+// countries — the optimal route" salía cortada por los dos lados, también en el
+// PNG que comparte el jugador.
+function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  if (ctx.measureText(text).width <= maxW) return [text];
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/)) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && ctx.measureText(next).width > maxW) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 // Dibuja la tarjeta en el canvas dado (lo redimensiona a 1080²).
 export function drawScoreCard(canvas: HTMLCanvasElement, d: ScoreCardData) {
   canvas.width = S;
@@ -74,10 +95,11 @@ export function drawScoreCard(canvas: HTMLCanvasElement, d: ScoreCardData) {
   ctx.font = "900 96px system-ui, sans-serif";
   ctx.fillText("FRONTLE", S / 2, 150);
 
-  // Modo + fecha
+  // Modo + fecha. "Regiones · Colombia" en francés se acerca al borde: el
+  // maxWidth lo condensa en vez de dejar que el lienzo lo corte.
   ctx.fillStyle = "#c4b5fd";
   ctx.font = "600 40px system-ui, sans-serif";
-  ctx.fillText(d.modeLabel, S / 2, 220);
+  ctx.fillText(d.modeLabel, S / 2, 220, S - 140);
   ctx.fillStyle = "#8b7bb8";
   ctx.font = "400 32px system-ui, sans-serif";
   ctx.fillText(d.dateLabel, S / 2, 268);
@@ -106,11 +128,17 @@ export function drawScoreCard(canvas: HTMLCanvasElement, d: ScoreCardData) {
     });
   }
 
-  // Métricas
+  // Métricas. Se parten en varias líneas si hacen falta y el bloque se centra
+  // en vertical, para no chocar ni con los cuadritos ni con el pie.
   ctx.fillStyle = "#ffffff";
   ctx.font = "700 52px system-ui, sans-serif";
-  const statsY = 860;
-  d.stats.forEach((line, i) => ctx.fillText(line, S / 2, statsY + i * 66));
+  const maxW = S - 140;
+  const lines = d.stats.flatMap((line) => wrap(ctx, line, maxW));
+  const lineH = 66;
+  const top = 880 - ((lines.length - 1) * lineH) / 2;
+  // El maxWidth de fillText es la última red: condensa una palabra suelta que
+  // sea más ancha que la tarjeta entera y que wrap() no puede partir.
+  lines.forEach((line, i) => ctx.fillText(line, S / 2, top + i * lineH, maxW));
 
   // Pie
   ctx.fillStyle = "#8b7bb8";
