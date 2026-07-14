@@ -7,6 +7,7 @@
 import { feature } from "topojson-client";
 import type { Feature, Geometry } from "geojson";
 import { COUNTRY_NAMES } from "./countries";
+import { ISLAND_NAMES } from "./islands";
 
 const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -61,11 +62,13 @@ const NE_ALIAS: Record<string, string> = {
   "brunei darussalam": "Brunei",
   "swaziland": "Eswatini",
   "eswatini": "Eswatini",
+  "solomon is": "Solomon Islands",
 };
 
 const NAME_INDEX: Record<string, string> = (() => {
   const idx: Record<string, string> = {};
   for (const n of COUNTRY_NAMES) idx[norm(n)] = n;
+  for (const n of ISLAND_NAMES) idx[norm(n)] = n; // insulares (modos quiz)
   for (const k in NE_ALIAS) idx[k] = NE_ALIAS[k];
   return idx;
 })();
