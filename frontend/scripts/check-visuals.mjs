@@ -104,11 +104,13 @@ function norm(s) {
     .trim();
 }
 {
-  // Los alias se leen del propio atlas.ts para no divergir.
+  // Los alias y exclusiones se leen del propio atlas.ts para no divergir.
   const atlasSrc = read("app/lib/atlas.ts");
   const aliasBlock = atlasSrc.match(/NE_ALIAS[^{]*\{([\s\S]*?)\n\};/)?.[1] ?? "";
   const alias = {};
   for (const m of aliasBlock.matchAll(/"([^"]+)":\s*"([^"]+)"/g)) alias[m[1]] = m[2];
+  const missingBlock = atlasSrc.match(/ATLAS_MISSING = new Set<string>\(\[([\s\S]*?)\]\)/)?.[1] ?? "";
+  const knownMissing = new Set([...missingBlock.matchAll(/"([^"]+)"/g)].map((m) => m[1]));
 
   const topo = await (await fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")).json();
   const neNames = topo.objects.countries.geometries.map((g) => String(g.properties?.name ?? ""));
@@ -127,9 +129,11 @@ function norm(s) {
   }
   for (const c of countries) {
     // Solo es rojo si el modo contorno lo usaría: islas con outline:false
-    // están excluidas del pool a propósito.
-    if (!matched.has(c.name) && c.outline) red.push(`ATLAS sin feature (contorno roto): ${c.name}`);
+    // y países en ATLAS_MISSING están excluidos del pool a propósito.
+    const expected = c.island ? c.outline : !knownMissing.has(c.name);
+    if (!matched.has(c.name) && expected) red.push(`ATLAS sin feature (contorno roto): ${c.name}`);
     if (matched.has(c.name) && c.island && !c.outline) warn.push(`ATLAS sí trae ${c.name}: podría marcarse outline:true`);
+    if (matched.has(c.name) && knownMissing.has(c.name)) warn.push(`ATLAS sí trae ${c.name}: sobra en ATLAS_MISSING`);
   }
   console.log("atlas 110m (contorno): revisado");
 }

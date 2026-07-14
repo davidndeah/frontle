@@ -10,6 +10,7 @@
 // ============================================================
 import { COUNTRY_NAMES, getCountry } from "./countries";
 import { ISLANDS, ISLAND_NAMES, getIsland } from "./islands";
+import { ATLAS_MISSING } from "./atlas";
 import { tierOf, normalize, type Difficulty } from "./game";
 import { countryName, makeLocalizedResolver, suggestLocalized, type Locale } from "./i18n";
 import { continentOf } from "./continents";
@@ -38,9 +39,12 @@ export function quizCountryInfo(name: string): { code: string; flag: string; bor
 }
 
 // Pool del nivel según el modo: bandera = grafo + islas; contorno = solo
-// los que tienen silueta en el atlas 110m.
+// los que tienen silueta en el atlas 110m (fuera microestados e islas
+// pequeñas — su ronda quedaría en "Cargando mapa…" para siempre).
 function poolFor(level: Difficulty, mode: QuizMode): string[] {
-  const graph = COUNTRY_NAMES.filter((n) => tierOf(n) === level);
+  const graph = COUNTRY_NAMES.filter(
+    (n) => tierOf(n) === level && (mode === "flag" || !ATLAS_MISSING.has(n))
+  );
   const islands = ISLANDS.filter((i) => i.tier === level && (mode === "flag" || i.outline)).map((i) => i.name);
   return [...graph, ...islands];
 }

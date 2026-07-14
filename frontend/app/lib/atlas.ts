@@ -63,7 +63,19 @@ const NE_ALIAS: Record<string, string> = {
   "swaziland": "Eswatini",
   "eswatini": "Eswatini",
   "solomon is": "Solomon Islands",
+  "eq guinea": "Equatorial Guinea",
 };
+
+// Países del grafo que el atlas 110m NO trae (demasiado pequeños a esa
+// resolución). El modo contorno debe excluirlos o su silueta jamás carga.
+// Verificado por scripts/check-visuals.mjs.
+export const ATLAS_MISSING = new Set<string>([
+  "Andorra",
+  "Monaco",
+  "San Marino",
+  "Vatican City",
+  "Liechtenstein",
+]);
 
 const NAME_INDEX: Record<string, string> = (() => {
   const idx: Record<string, string> = {};
