@@ -162,6 +162,7 @@ export default function Frontle() {
   // Navegación (app shell) + sheet de wallet
   const [tab, setTab] = useState<Tab>("jugar");
   const [walletOpen, setWalletOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
   const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
   // Modo Regiones activo (id de región: "co", "us"…) — null = modo mundial
@@ -702,24 +703,22 @@ export default function Frontle() {
             🏆 {fmt(pot)}
           </span>
         )}
-        {/* Solo el mute de música: es lo que suena sin pedir permiso y hay que
-            poder callarlo al instante. Los efectos se silencian desde Perfil,
-            que ya tiene los dos interruptores. Dos botones aquí no caben en los
-            360px que exige MiniPay. */}
+        {/* Un solo botón de ajustes agrupa idioma + audio (música y efectos):
+            a 360px no caben 3 controles sueltos de 44px, y así los efectos
+            (que solo vivían en Perfil) quedan también a un tap del header. */}
         <button
-          onClick={onToggleMusic}
-          aria-label={tr.a11y.music(musicMuted)}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 border border-[#b79ced]/25 text-sm active:scale-90 transition"
+          onClick={() => setSettingsOpen(true)}
+          aria-label={tr.a11y.settings}
+          className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-white/5 border border-[#b79ced]/25 text-base active:scale-90 transition"
         >
-          {musicMuted ? "🔇" : "🎵"}
+          ⚙️
         </button>
-        <LanguageSelect locale={locale} onChange={changeLocale} compact />
         {/* A 360px (el mínimo de MiniPay) la cabecera va justa: el resto de piezas
             son shrink-0 y es este chip el que cede, truncando el alias. Sin esto
-            el chip se salía del viewport y aplastaba los botones de audio. */}
+            el chip se salía del viewport y aplastaba el botón de ajustes. */}
         <button
           onClick={() => setWalletOpen(true)}
-          className="min-w-0 truncate rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 py-1 text-xs font-semibold text-white active:scale-95 transition"
+          className="min-w-0 min-h-11 truncate rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 text-xs font-semibold text-white active:scale-95 transition"
         >
           {alias || (myId ? shortId(myId) : tr.walletSheet.signIn)}
         </button>
@@ -1322,6 +1321,20 @@ export default function Frontle() {
         />
       )}
 
+      {/* Settings sheet: idioma + música + efectos, todo detrás del ⚙️ */}
+      {settingsOpen && (
+        <SettingsSheet
+          onClose={() => setSettingsOpen(false)}
+          locale={locale}
+          onChangeLocale={changeLocale}
+          musicMuted={musicMuted}
+          onToggleMusic={onToggleMusic}
+          sfxMuted={sfxMuted}
+          onToggleSfx={onToggleSfx}
+          tr={tr}
+        />
+      )}
+
       {/* Prompt de nombre al registrarse */}
       {nameModal && (
         <NamePrompt
@@ -1513,6 +1526,48 @@ function WalletSheet({
   );
 }
 
+// Sheet de ajustes: agrupa idioma + música + efectos detrás del ⚙️ del header
+// (a 360px no caben como controles sueltos; ver comentario en el header).
+function SettingsSheet({
+  onClose,
+  locale,
+  onChangeLocale,
+  musicMuted,
+  onToggleMusic,
+  sfxMuted,
+  onToggleSfx,
+  tr,
+}: {
+  onClose: () => void;
+  locale: Locale;
+  onChangeLocale: (l: Locale) => void;
+  musicMuted: boolean;
+  onToggleMusic: () => void;
+  sfxMuted: boolean;
+  onToggleSfx: () => void;
+  tr: ReturnType<typeof t>;
+}) {
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
+      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
+        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
+        <h3 className="text-white font-bold text-base mb-4">{tr.settingsSheet.title}</h3>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-neutral-200 flex items-center gap-2">
+              <span>🌐</span>{tr.settingsSheet.language}
+            </span>
+            <LanguageSelect locale={locale} onChange={onChangeLocale} />
+          </div>
+          <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
+          <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
+        </div>
+      </div>
+    </>
+  );
+}
+
 // Botón de "volver" del flujo pre-juego
 // Modal de elección de nombre al registrarse (pendiente i18n como los coachmarks)
 function NamePrompt({
@@ -1632,7 +1687,7 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
         aria-label="Language"
         className={
           compact
-            ? "appearance-none rounded-full bg-white/5 border border-[#b79ced]/25 pl-5 pr-1.5 py-1 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50 active:scale-95 transition"
+            ? "appearance-none h-11 rounded-full bg-white/5 border border-[#b79ced]/25 pl-5 pr-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50 active:scale-95 transition"
             : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
         }
       >
