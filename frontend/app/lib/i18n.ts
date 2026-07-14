@@ -8,6 +8,7 @@
 // ============================================================
 
 import { COUNTRY_NAMES, getCountry } from "./countries";
+import { getIsland } from "./islands";
 import { normalize, resolveCountry, type GuessReason } from "./game";
 
 export type Locale = "es" | "en" | "fr" | "pt";
@@ -85,7 +86,8 @@ function displayNames(locale: Locale): Intl.DisplayNames | null {
 }
 
 export function countryName(canonical: string, locale: Locale): string {
-  const c = getCountry(canonical);
+  // País del grafo o insular (modos quiz) — mismo criterio Intl para ambos.
+  const c = getCountry(canonical) ?? getIsland(canonical);
   if (!c) return canonical;
   const dn = displayNames(locale);
   if (!dn) return canonical;
@@ -119,27 +121,37 @@ export function codeToFlag(code: string): string {
 }
 
 // --- Resolución de input en cualquier idioma ---
-const LOCALIZED_INDEX: Record<string, string> = (() => {
+// Fábrica: índice normalizado (canónico + los 4 idiomas) sobre CUALQUIER
+// lista de nombres. El mundial usa la del grafo; los quiz, la extendida
+// con insulares (lib/quiz.ts) — sin tocar el comportamiento del mundial.
+export function makeLocalizedResolver(names: readonly string[]): (input: string) => string | null {
   const idx: Record<string, string> = {};
-  for (const canonical of COUNTRY_NAMES) {
+  for (const canonical of names) {
     idx[normalize(canonical)] = canonical;
     for (const loc of LOCALES) {
       idx[normalize(countryName(canonical, loc))] = canonical;
     }
   }
-  return idx;
-})();
-
-export function resolveLocalized(input: string): string | null {
-  return LOCALIZED_INDEX[normalize(input)] ?? resolveCountry(input);
+  return (input) => idx[normalize(input)] ?? null;
 }
 
-export function suggestLocalized(input: string, locale: Locale, limit = 6): string[] {
+const resolveGraphLocalized = makeLocalizedResolver(COUNTRY_NAMES);
+
+export function resolveLocalized(input: string): string | null {
+  return resolveGraphLocalized(input) ?? resolveCountry(input);
+}
+
+export function suggestLocalized(
+  input: string,
+  locale: Locale,
+  limit = 6,
+  names: readonly string[] = COUNTRY_NAMES
+): string[] {
   const q = normalize(input);
   if (!q) return [];
   const starts: string[] = [];
   const contains: string[] = [];
-  for (const canonical of COUNTRY_NAMES) {
+  for (const canonical of names) {
     const loc = normalize(countryName(canonical, locale));
     const canon = normalize(canonical);
     if (loc.startsWith(q) || canon.startsWith(q)) starts.push(canonical);
