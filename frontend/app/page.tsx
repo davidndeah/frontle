@@ -1198,7 +1198,9 @@ export default function Frontle() {
                 𝕏
               </a>
             </div>
-            <footer className="text-center text-[11px] text-neutral-500">{tr.footer}</footer>
+            {/* neutral-500 medía ~3.8:1 sobre el fondo violeta (falla AA 4.5:1
+                para texto normal). neutral-400 pasa con ~7:1. */}
+            <footer className="text-center text-[11px] text-neutral-400">{tr.footer}</footer>
           </>
         )}
 
@@ -1852,7 +1854,8 @@ function WinnersCard({
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                <span className={`text-sm tabular-nums ${w.winner ? "text-amber-300" : "text-neutral-500"}`}>
+                {/* neutral-500 falla AA (~3.8:1); neutral-400 pasa (~7:1). */}
+                <span className={`text-sm tabular-nums ${w.winner ? "text-amber-300" : "text-neutral-400"}`}>
                   {fmt(w.amount)}
                 </span>
 
