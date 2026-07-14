@@ -125,47 +125,6 @@ body {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* Glow de prisma: espectro azul→verde→blanco→naranja→rojo, grande y
-   vibrante, contenido en el centro con negro alrededor (estilo Vercel) */
-.prism-glow {
-  position: fixed;
-  left: 50%;
-  top: 58%;
-  width: 95vw;
-  height: 80vh;
-  transform: translate(-50%, -50%);
-  z-index: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    93deg,
-    #5b21b6 0%,
-    #7c3aed 18%,
-    #a855f7 34%,
-    #ffffff 52%,
-    #fcff52 72%,
-    #c084fc 88%,
-    #7c3aed 100%
-  );
-  -webkit-mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 5%, rgba(0, 0, 0, 0.6) 48%, transparent 78%);
-  mask-image: radial-gradient(ellipse 55% 55% at 50% 50%, #000 5%, rgba(0, 0, 0, 0.6) 48%, transparent 78%);
-  filter: blur(58px) saturate(1.35);
-  opacity: 0.8;
-}
-
-/* Núcleo blanco brillante (el apex del prisma) */
-.prism-core {
-  position: fixed;
-  left: 50%;
-  top: 58%;
-  width: 34vw;
-  height: 34vh;
-  transform: translate(-50%, -50%);
-  z-index: 0;
-  pointer-events: none;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(255, 255, 255, 0.45), transparent 72%);
-  filter: blur(34px);
-}
-
 /* Premio reclamado: la fila destella en oro y suelta chispas hacia arriba */
 @keyframes claim-flash {
   0% { background-color: rgba(252, 255, 82, 0.35); transform: scale(1); }
