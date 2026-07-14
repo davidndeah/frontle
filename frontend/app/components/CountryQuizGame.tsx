@@ -18,11 +18,24 @@ import ScoreCard from "./ScoreCard";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
+  // Si flagcdn no carga (red del usuario, CDN caído), cae al emoji en vez
+  // del icono de imagen rota — la ronda sigue siendo jugable.
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [name]);
   if (!c) return null;
   return (
     <div className="w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20 flex items-center justify-center py-6">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`https://flagcdn.com/${c.code.toLowerCase()}.svg`} alt="" className="w-[70%] max-w-[260px] rounded shadow-2xl" />
+      {failed ? (
+        <span className="text-[96px] leading-none drop-shadow-2xl" aria-hidden>{c.flag}</span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`https://flagcdn.com/${c.code.toLowerCase()}.svg`}
+          alt=""
+          onError={() => setFailed(true)}
+          className="w-[70%] max-w-[260px] rounded shadow-2xl"
+        />
+      )}
     </div>
   );
 }
