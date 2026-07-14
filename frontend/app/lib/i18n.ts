@@ -265,7 +265,8 @@ type Dict = {
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
   home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
-  walletSheet: { title: string; connectedAs: string };
+  // `signIn` es el chip del header cuando aún no hay wallet ni alias
+  walletSheet: { title: string; connectedAs: string; signIn: string };
   comingSoon: string;
   // Nombres de continente (pistas de los modos quiz)
   continents: Record<"AF" | "EU" | "AS" | "NA" | "SA" | "OC", string>;
@@ -480,7 +481,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Acercar", zoomOut: "Alejar", recenter: "Reencuadrar",
     },
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
-    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como" },
+    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar" },
     continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
     quiz: {
       flagTitle: "Adivina la bandera", flagSub: "¿de qué país es? · gratis",
@@ -712,7 +713,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Zoom in", zoomOut: "Zoom out", recenter: "Recenter",
     },
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
-    walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as" },
+    walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as", signIn: "👤 Sign in" },
     continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
     quiz: {
       flagTitle: "Guess the flag", flagSub: "which country is it? · free",
@@ -944,7 +945,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Aproximar", zoomOut: "Afastar", recenter: "Reenquadrar",
     },
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
-    walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como" },
+    walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como", signIn: "👤 Entrar" },
     continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
     quiz: {
       flagTitle: "Adivinhe a bandeira", flagSub: "de que país é? · grátis",
@@ -1176,7 +1177,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Zoom avant", zoomOut: "Zoom arrière", recenter: "Recadrer",
     },
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
-    walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que" },
+    walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que", signIn: "👤 Se connecter" },
     continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
     quiz: {
       flagTitle: "Devine le drapeau", flagSub: "de quel pays est-il ? · gratuit",
