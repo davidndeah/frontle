@@ -9,16 +9,15 @@
 // ============================================================
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getCountry } from "../lib/countries";
 import { type Difficulty } from "../lib/game";
-import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from "../lib/i18n";
-import { randomQuizCountry, quizHints, type QuizMode } from "../lib/quiz";
+import { countryName, t, type Locale } from "../lib/i18n";
+import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCountries, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
 import ScoreCard from "./ScoreCard";
 
 function BigFlag({ name }: { name: string }) {
-  const c = getCountry(name);
+  const c = quizCountryInfo(name);
   if (!c) return null;
   return (
     <div className="w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20 flex items-center justify-center py-6">
@@ -31,7 +30,7 @@ function BigFlag({ name }: { name: string }) {
 export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMode; locale: Locale; onExit: () => void }) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
-  const [country, setCountry] = useState<string>(() => randomQuizCountry("easy"));
+  const [country, setCountry] = useState<string>(() => randomQuizCountry("easy", undefined, mode));
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -52,11 +51,11 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
   );
 
   useEffect(() => {
-    setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
+    setSuggestions(input.length >= 2 ? suggestQuizCountries(input, locale) : []);
   }, [input, locale]);
 
   function newRound(lv: Difficulty = level) {
-    setCountry(randomQuizCountry(lv, country));
+    setCountry(randomQuizCountry(lv, country, mode));
     setInput("");
     setSuggestions([]);
     setMessage(null);
@@ -68,7 +67,7 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
 
   function submit(value: string) {
     if (solved) return;
-    const canonical = resolveLocalized(value);
+    const canonical = resolveQuizCountry(value);
     if (canonical === country) {
       setSolved(true);
       setMessage({ text: tr.quiz.correct(countryName(country, locale)), ok: true });
