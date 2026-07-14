@@ -12,6 +12,18 @@
 // ============================================================
 import { writeFileSync, readFileSync, mkdirSync, existsSync } from "fs";
 import { geoArea, geoMercator, geoPath } from "d3-geo";
+import sharp from "sharp";
+
+// MiniPay solo admite imágenes SVG o WebP, y las fuentes (flagcdn, Wikidata)
+// sirven PNG: convertimos al vuelo antes de escribir. Las banderas planas
+// comprimen mejor sin pérdida y los escudos con pérdida; probamos las dos.
+async function writeWebp(dest, buf) {
+  const [lossless, lossy] = await Promise.all([
+    sharp(buf).webp({ lossless: true, effort: 6 }).toBuffer(),
+    sharp(buf).webp({ quality: 90, effort: 6 }).toBuffer(),
+  ]);
+  writeFileSync(dest, lossless.length <= lossy.length ? lossless : lossy);
+}
 
 // Fuente: Natural Earth 1:10m admin_1 (completa y correcta; geoBoundaries
 // tiene huecos p.ej. le falta Entre Ríos en Argentina). Se cachea local.
@@ -218,7 +230,7 @@ export const ${cfg.exportName}: RegionDef = {
   // 6. Bandera nacional (flagcdn)
   mkdirSync("public/flags/national", { recursive: true });
   const natRes = await fetchRetry(`https://flagcdn.com/w160/${cfg.iso2}.png`);
-  if (natRes?.ok) { writeFileSync(`public/flags/national/${id}.png`, Buffer.from(await natRes.arrayBuffer())); console.log("bandera nacional ✓"); }
+  if (natRes?.ok) { await writeWebp(`public/flags/national/${id}.webp`, Buffer.from(await natRes.arrayBuffer())); console.log("bandera nacional ✓"); }
 
   // 7. Banderas de subdivisiones (Wikidata)
   mkdirSync(`public/flags/${id}`, { recursive: true });
@@ -228,11 +240,11 @@ export const ${cfg.exportName}: RegionDef = {
   for (const row of rows) {
     const it = byNorm.get(norm(row.label));
     if (!it) continue;
-    const dest = `public/flags/${id}/${codes[it.name]}.png`;
+    const dest = `public/flags/${id}/${codes[it.name]}.webp`;
     if (existsSync(dest)) { got++; continue; }
     const sep = row.flag.includes("?") ? "&" : "?";
     const res = await fetchRetry(row.flag + sep + "width=120");
-    if (res?.ok) { const buf = Buffer.from(await res.arrayBuffer()); if (buf.length > 200) { writeFileSync(dest, buf); got++; process.stdout.write("."); } }
+    if (res?.ok) { const buf = Buffer.from(await res.arrayBuffer()); if (buf.length > 200) { await writeWebp(dest, buf); got++; process.stdout.write("."); } }
     await new Promise((r) => setTimeout(r, 400));
   }
   process.stdout.write("\n");
