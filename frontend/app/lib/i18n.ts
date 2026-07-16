@@ -173,6 +173,7 @@ type Dict = {
   winPerfect: string;
   winNormal: string;
   winText: (guesses: number, optimal: number, perfect: boolean) => string;
+  starsLabel: (n: number) => string;
   share: string;
   copied: string;
   comeback: string;
@@ -396,6 +397,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "¡Lo lograste! 🎉",
     winText: (g, o, p) =>
       p ? `Conectaste con ${g} países — la ruta óptima.` : `Conectaste con ${g} países (la óptima era ${o}).`,
+    starsLabel: (n) => `${n} de 3 estrellas`,
     share: "Compartir resultado",
     copied: "¡Copiado!",
     comeback: "Vuelve mañana para el siguiente reto 🗓️",
@@ -629,6 +631,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "You did it! 🎉",
     winText: (g, o, p) =>
       p ? `Connected with ${g} countries — the optimal route.` : `Connected with ${g} countries (optimal was ${o}).`,
+    starsLabel: (n) => `${n} of 3 stars`,
     share: "Share result",
     copied: "Copied!",
     comeback: "Come back tomorrow for the next challenge 🗓️",
@@ -862,6 +865,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "Você conseguiu! 🎉",
     winText: (g, o, p) =>
       p ? `Conectou com ${g} países — a rota ótima.` : `Conectou com ${g} países (a ótima era ${o}).`,
+    starsLabel: (n) => `${n} de 3 estrelas`,
     share: "Compartilhar resultado",
     copied: "Copiado!",
     comeback: "Volte amanhã para o próximo desafio 🗓️",
@@ -1095,6 +1099,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "Réussi ! 🎉",
     winText: (g, o, p) =>
       p ? `Relié avec ${g} pays — la route optimale.` : `Relié avec ${g} pays (l'optimale était ${o}).`,
+    starsLabel: (n) => (n === 1 ? "1 étoile sur 3" : `${n} étoiles sur 3`),
     share: "Partager le résultat",
     copied: "Copié !",
     comeback: "Revenez demain pour le prochain défi 🗓️",
