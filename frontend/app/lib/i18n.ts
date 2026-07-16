@@ -265,7 +265,7 @@ type Dict = {
   // Prompt de alias al registrarse
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
-  home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
+  home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string; pendingToday: string };
   // `signIn` es el chip del header cuando aún no hay wallet ni alias
   walletSheet: { title: string; connectedAs: string; signIn: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
@@ -502,7 +502,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
     },
     comingSoon: "coming soon",
-    home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
+    home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, pendingToday: "Reto de hoy pendiente" },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -735,7 +735,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correct! It was ${n} 🎉`,
     },
     comingSoon: "coming soon",
-    home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
+    home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, pendingToday: "Today's challenge pending" },
     subdivisionNoun: {
       department: { one: "department", many: "departments" },
       state: { one: "state", many: "states" },
@@ -968,7 +968,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correto! Era ${n} 🎉`,
     },
     comingSoon: "em breve",
-    home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
+    home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, pendingToday: "Desafio de hoje pendente" },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -1201,7 +1201,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correct ! C'était ${n} 🎉`,
     },
     comingSoon: "bientôt",
-    home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
+    home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, pendingToday: "Défi du jour en attente" },
     subdivisionNoun: {
       department: { one: "département", many: "départements" },
       state: { one: "état", many: "états" },

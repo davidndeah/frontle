@@ -1285,7 +1285,7 @@ export default function Frontle() {
       )}
 
       {/* Bottom-nav */}
-      <TabBar tr={tr} tab={tab} onTab={setTab} />
+      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={daysPlayed} />
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
@@ -1444,7 +1444,19 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
-function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab: (t: Tab) => void }) {
+function TabBar({
+  tr,
+  tab,
+  onTab,
+  playPending,
+  streak,
+}: {
+  tr: ReturnType<typeof t>;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  playPending: boolean;
+  streak: number;
+}) {
   const items: { id: Tab; icon: string; label: string }[] = [
     { id: "jugar", icon: "🌍", label: tr.tabs.jugar },
     { id: "ranking", icon: "🏆", label: tr.tabs.ranking },
@@ -1466,6 +1478,17 @@ function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab:
             <span className={`text-xl ${on ? "" : "opacity-60 grayscale"}`}>{it.icon}</span>
             {it.label}
             {on && <span className="absolute bottom-1.5 w-8 h-0.5 rounded-full bg-[#fcff52]" />}
+            {it.id === "jugar" && playPending && (
+              <>
+                <span aria-hidden className="tab-dot" />
+                <span className="sr-only">{tr.home.pendingToday}</span>
+              </>
+            )}
+            {it.id === "perfil" && streak >= 2 && (
+              <span className="tab-streak" aria-label={`${streak} ${tr.home.streak}`}>
+                🔥{streak}
+              </span>
+            )}
           </button>
         );
       })}
