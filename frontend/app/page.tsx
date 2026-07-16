@@ -1445,6 +1445,11 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 
 // Bottom-nav de 4 tabs
 function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab: (t: Tab) => void }) {
+  // El pop solo se dispara al tocar un tab, no al cargar la página.
+  const booted = useRef(false);
+  useEffect(() => {
+    booted.current = true;
+  }, []);
   const items: { id: Tab; icon: string; label: string }[] = [
     { id: "jugar", icon: "🌍", label: tr.tabs.jugar },
     { id: "ranking", icon: "🏆", label: tr.tabs.ranking },
@@ -1459,13 +1464,20 @@ function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab:
           <button
             key={it.id}
             onClick={() => onTab(it.id)}
+            aria-current={on ? "page" : undefined}
             className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
               on ? "text-white" : "text-neutral-400"
             }`}
           >
-            <span className={`text-xl ${on ? "" : "opacity-60 grayscale"}`}>{it.icon}</span>
+            {on && <span aria-hidden className="tab-glow" />}
+            <span
+              className={`tab-icon relative text-xl ${
+                on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60 grayscale"
+              }`}
+            >
+              {it.icon}
+            </span>
             {it.label}
-            {on && <span className="absolute bottom-1.5 w-8 h-0.5 rounded-full bg-[#fcff52]" />}
           </button>
         );
       })}
