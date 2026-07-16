@@ -22,6 +22,7 @@ import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from 
 import { formatTime } from "../lib/ranking";
 import WorldMap from "./WorldMap";
 import ScoreCard from "./ScoreCard";
+import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
@@ -133,7 +134,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   const { challenge } = state;
   const guessCount = state.chain.length;
   const optimal = challenge.optimal;
-  const stars = guessCount <= optimal ? 3 : guessCount <= optimal + 1 ? 2 : 1;
+  const stars: 1 | 2 | 3 = guessCount <= optimal ? 3 : guessCount <= optimal + 1 ? 2 : 1;
 
 
   return (
@@ -205,6 +206,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       {state.solved ? (
         <section className="panel p-5 text-center">
           <div className="text-2xl font-black prism-text">{stars === 3 ? tr.winPerfect : tr.winNormal}</div>
+          <PrecisionStars count={stars} label={tr.starsLabel(stars)} />
           <p className="text-neutral-200 mt-2">{tr.winText(guessCount, optimal, stars === 3)}</p>
           <div className="mt-4">
             <ScoreCard

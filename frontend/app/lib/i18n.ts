@@ -173,6 +173,7 @@ type Dict = {
   winPerfect: string;
   winNormal: string;
   winText: (guesses: number, optimal: number, perfect: boolean) => string;
+  starsLabel: (n: number) => string;
   share: string;
   copied: string;
   comeback: string;
@@ -265,7 +266,7 @@ type Dict = {
   // Prompt de alias al registrarse
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
-  home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
+  home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string; milestone: (n: number) => string; pendingToday: string };
   // `signIn` es el chip del header cuando aún no hay wallet ni alias
   walletSheet: { title: string; connectedAs: string; signIn: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
@@ -396,6 +397,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "¡Lo lograste! 🎉",
     winText: (g, o, p) =>
       p ? `Conectaste con ${g} países — la ruta óptima.` : `Conectaste con ${g} países (la óptima era ${o}).`,
+    starsLabel: (n) => `${n} de 3 estrellas`,
     share: "Compartir resultado",
     copied: "¡Copiado!",
     comeback: "Vuelve mañana para el siguiente reto 🗓️",
@@ -502,7 +504,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
     },
     comingSoon: "coming soon",
-    home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
+    home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -629,6 +631,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "You did it! 🎉",
     winText: (g, o, p) =>
       p ? `Connected with ${g} countries — the optimal route.` : `Connected with ${g} countries (optimal was ${o}).`,
+    starsLabel: (n) => `${n} of 3 stars`,
     share: "Share result",
     copied: "Copied!",
     comeback: "Come back tomorrow for the next challenge 🗓️",
@@ -735,7 +738,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correct! It was ${n} 🎉`,
     },
     comingSoon: "coming soon",
-    home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
+    home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
     subdivisionNoun: {
       department: { one: "department", many: "departments" },
       state: { one: "state", many: "states" },
@@ -862,6 +865,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "Você conseguiu! 🎉",
     winText: (g, o, p) =>
       p ? `Conectou com ${g} países — a rota ótima.` : `Conectou com ${g} países (a ótima era ${o}).`,
+    starsLabel: (n) => `${n} de 3 estrelas`,
     share: "Compartilhar resultado",
     copied: "Copiado!",
     comeback: "Volte amanhã para o próximo desafio 🗓️",
@@ -968,7 +972,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correto! Era ${n} 🎉`,
     },
     comingSoon: "em breve",
-    home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
+    home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -1095,6 +1099,7 @@ const STRINGS: Record<Locale, Dict> = {
     winNormal: "Réussi ! 🎉",
     winText: (g, o, p) =>
       p ? `Relié avec ${g} pays — la route optimale.` : `Relié avec ${g} pays (l'optimale était ${o}).`,
+    starsLabel: (n) => (n === 1 ? "1 étoile sur 3" : `${n} étoiles sur 3`),
     share: "Partager le résultat",
     copied: "Copié !",
     comeback: "Revenez demain pour le prochain défi 🗓️",
@@ -1201,7 +1206,7 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correct ! C'était ${n} 🎉`,
     },
     comingSoon: "bientôt",
-    home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
+    home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
     subdivisionNoun: {
       department: { one: "département", many: "départements" },
       state: { one: "état", many: "états" },
