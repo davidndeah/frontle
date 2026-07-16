@@ -246,6 +246,15 @@ export default function Frontle() {
     return () => clearTimeout(id);
   }, [milestone]);
 
+  // Victoria recién ganada (GAM-4): habilita el confeti prisma de la win card
+  // solo en el momento de resolver, no al restaurar una partida resuelta.
+  const [justWon, setJustWon] = useState(false);
+  useEffect(() => {
+    if (!justWon) return;
+    const id = setTimeout(() => setJustWon(false), 2000);
+    return () => clearTimeout(id);
+  }, [justWon]);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
   const tr = t(locale);
@@ -577,6 +586,9 @@ export default function Frontle() {
       saveGame({ started: true, solved, chain: newChain, finalMs });
       if (solved) {
         setElapsedMs(finalMs!);
+        // El confeti solo acompaña la victoria recién ganada, no la pantalla
+        // resuelta al volver (restaurada o por cambio de tab).
+        setJustWon(true);
         const score = newChain.length;
         if (best === null || score < best) {
           setBest(score);
@@ -1018,6 +1030,7 @@ export default function Frontle() {
             {state.solved ? (
               <WinCard
                 tr={tr}
+                confetti={justWon}
                 guesses={guessCount}
                 optimal={challenge.optimal}
                 timeMs={elapsedMs}
@@ -2093,6 +2106,7 @@ function RankingCard({
 
 function WinCard({
   tr,
+  confetti,
   guesses,
   optimal,
   timeMs,
@@ -2112,6 +2126,7 @@ function WinCard({
   fmt,
 }: {
   tr: ReturnType<typeof t>;
+  confetti: boolean;
   guesses: number;
   optimal: number;
   timeMs: number;
@@ -2136,9 +2151,32 @@ function WinCard({
   // Texto que acompaña a la imagen — spoiler-free (sin las banderas de la ruta).
   const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
 
+  // Piezas de confeti del gradiente prisma: dispersión determinista por índice
+  // (nada aleatorio en render — consistencia SSR/cliente).
+  const PRISM = ["#c084fc", "#a855f7", "#ffffff", "#fcff52"];
+  const pieces = confetti && perfect ? Array.from({ length: 14 }, (_, i) => i) : [];
+
   return (
-    <section className={`${panel} p-5 text-center`}>
-      <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
+    <section className={`${panel} relative overflow-hidden p-5 text-center`}>
+      {pieces.length > 0 && (
+        <div aria-hidden className="absolute inset-0 pointer-events-none">
+          {pieces.map((i) => (
+            <span
+              key={i}
+              className="confetti-piece"
+              style={{
+                background: PRISM[i % PRISM.length],
+                left: `${8 + ((i * 37) % 84)}%`,
+                ["--dx" as string]: `${((i % 7) - 3) * 16}px`,
+                ["--rot" as string]: `${180 + ((i * 53) % 180)}deg`,
+                animationDelay: `${(i % 5) * 0.07}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {/* El prisma se reserva para la celebración: solo la ruta óptima lo luce. */}
+      <div className={`text-3xl font-black ${perfect ? "prism-text" : "text-white"}`}>{perfect ? tr.winPerfect : tr.winNormal}</div>
       <PrecisionStars count={stars} label={tr.starsLabel(stars)} />
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
