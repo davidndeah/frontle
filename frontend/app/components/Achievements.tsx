@@ -16,21 +16,14 @@ import {
   saveSeenAchievements,
   type AchievementId,
 } from "../lib/achievements";
-<<<<<<< HEAD
 import { getRemoteAchievements, pushAchievements } from "../lib/progress";
 import type { t } from "../lib/i18n";
 
 export default function Achievements({ tr, playerId }: { tr: ReturnType<typeof t>; playerId?: string }) {
-=======
-import type { t } from "../lib/i18n";
-
-export default function Achievements({ tr }: { tr: ReturnType<typeof t> }) {
->>>>>>> origin/main
   const [unlocked, setUnlocked] = useState<Record<AchievementId, boolean> | null>(null);
   const [fresh, setFresh] = useState<ReadonlySet<AchievementId>>(new Set());
 
   // El cómputo lee localStorage: solo en cliente, una vez por visita al perfil.
-<<<<<<< HEAD
   // Con wallet conectada se fusiona con Supabase (cross-device): lo remoto
   // desbloquea aunque este navegador no tenga esas partidas, y lo local nuevo
   // se registra. Sin backend (o sin conexión) todo degrada al dato local.
@@ -59,15 +52,6 @@ export default function Achievements({ tr }: { tr: ReturnType<typeof t> }) {
       alive = false;
     };
   }, [playerId]);
-=======
-  useEffect(() => {
-    const u = computeAchievements();
-    const seen = loadSeenAchievements();
-    setFresh(new Set(ACHIEVEMENT_IDS.filter((id) => u[id] && !seen.includes(id))));
-    setUnlocked(u);
-    saveSeenAchievements(ACHIEVEMENT_IDS.filter((id) => u[id]));
-  }, []);
->>>>>>> origin/main
 
   if (!unlocked) return null;
 
