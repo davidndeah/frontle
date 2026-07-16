@@ -33,6 +33,7 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import ScoreCard from "./components/ScoreCard";
+import PrecisionStars from "./components/PrecisionStars";
 import type { Square } from "./lib/scoreCard";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
@@ -2073,6 +2074,7 @@ function WinCard({
   fmt: (usdt: number) => string;
 }) {
   const perfect = guesses <= optimal;
+  const stars: 1 | 2 | 3 = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
 
   // Texto que acompaña a la imagen — spoiler-free (sin las banderas de la ruta).
   const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
@@ -2080,6 +2082,7 @@ function WinCard({
   return (
     <section className={`${panel} p-5 text-center`}>
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
+      <PrecisionStars count={stars} label={tr.starsLabel(stars)} />
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
       <div className="mt-4">
@@ -2087,7 +2090,7 @@ function WinCard({
           data={{
             modeLabel: `${tr.modes.dailyTitle} · ${levelLabel}`,
             dateLabel: new Date().toLocaleDateString(),
-            stars: perfect ? 3 : guesses <= optimal + 1 ? 2 : 1,
+            stars,
             squares,
             stats: [tr.winText(guesses, optimal, perfect), formatTime(timeMs)],
           }}
