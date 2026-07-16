@@ -33,6 +33,7 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import ScoreCard from "./components/ScoreCard";
+import NavIcon from "./components/NavIcons";
 import Achievements from "./components/Achievements";
 import PrecisionStars from "./components/PrecisionStars";
 import type { Square } from "./lib/scoreCard";
@@ -1512,11 +1513,11 @@ function TabBar({
   useEffect(() => {
     booted.current = true;
   }, []);
-  const items: { id: Tab; icon: string; label: string }[] = [
-    { id: "jugar", icon: "🌍", label: tr.tabs.jugar },
-    { id: "ranking", icon: "🏆", label: tr.tabs.ranking },
-    { id: "perfil", icon: "👤", label: tr.tabs.perfil },
-    { id: "aprender", icon: "❓", label: tr.tabs.aprender },
+  const items: { id: Tab; label: string }[] = [
+    { id: "jugar", label: tr.tabs.jugar },
+    { id: "ranking", label: tr.tabs.ranking },
+    { id: "perfil", label: tr.tabs.perfil },
+    { id: "aprender", label: tr.tabs.aprender },
   ];
   return (
     <nav className="app-nav fixed bottom-0 inset-x-0 z-30 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">
@@ -1533,11 +1534,11 @@ function TabBar({
           >
             {on && <span aria-hidden className="tab-glow" />}
             <span
-              className={`tab-icon relative text-xl ${
-                on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60 grayscale"
+              className={`tab-icon relative ${
+                on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60"
               }`}
             >
-              {it.icon}
+              <NavIcon name={it.id} />
             </span>
             {it.label}
             {it.id === "jugar" && playPending && (
