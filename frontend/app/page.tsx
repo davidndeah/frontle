@@ -33,6 +33,7 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import ScoreCard from "./components/ScoreCard";
+import Achievements from "./components/Achievements";
 import PrecisionStars from "./components/PrecisionStars";
 import type { Square } from "./lib/scoreCard";
 import RegionGame from "./components/RegionGame";
@@ -1193,6 +1194,7 @@ export default function Frontle() {
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
               <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
+            <Achievements tr={tr} />
             {prizes.length > 0 && (
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
