@@ -153,8 +153,6 @@ body {
 }
 .award-pop { animation: award-pop 0.5s ease-out both; }
 
-<<<<<<< HEAD
-=======
 /* Confeti prisma de la victoria (GAM-4): cae desde lo alto de la win card,
    solo en ruta óptima y solo en el momento de ganar. Extiende el lenguaje
    de claim-spark: piezas absolutas, transform/opacity, una sola pasada. */
@@ -282,7 +280,6 @@ body {
   animation: star-pop 0.3s ease-out both, star-prism-flash 0.5s ease-out 0.45s;
 }
 
->>>>>>> origin/main
 /* Quien pide menos movimiento recibe el destello, pero no las chispas. */
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
@@ -291,8 +288,6 @@ body {
   /* Logro nuevo: sin pop — el estado ya lo comunica el color y el candado. */
   .award-pop { animation: none; }
 
-<<<<<<< HEAD
-=======
   /* Victoria: sin partículas — el título ya celebra. */
   .confetti-piece { display: none; }
 
@@ -315,7 +310,6 @@ body {
   .star-pop,
   .star-prism { animation: none; }
 
->>>>>>> origin/main
   /* Resto de animaciones ambientales: se detienen, no distraen. */
   .bordy-float,
   .bordy-float-sm,
