@@ -153,6 +153,136 @@ body {
 }
 .award-pop { animation: award-pop 0.5s ease-out both; }
 
+<<<<<<< HEAD
+=======
+/* Confeti prisma de la victoria (GAM-4): cae desde lo alto de la win card,
+   solo en ruta óptima y solo en el momento de ganar. Extiende el lenguaje
+   de claim-spark: piezas absolutas, transform/opacity, una sola pasada. */
+@keyframes confetti-fall {
+  0% { opacity: 0; transform: translate(0, -10px) rotate(0deg) scale(0.6); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), 120px) rotate(var(--rot)) scale(1); }
+}
+.confetti-piece {
+  position: absolute;
+  top: 6%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  pointer-events: none;
+  animation: confetti-fall 1.1s ease-out both;
+}
+
+/* Transición de contenido entre tabs (TAB-2): fade + slide corto al entrar.
+   Solo transform/opacity — sin scale, para que no haya layout shift. */
+@keyframes tab-fade {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tab-fade { animation: tab-fade 0.2s ease-out both; }
+
+/* Hito de racha (GAM-2): el número del strip rebota al subir y la burbuja
+   de Bordy entra desde abajo, apoyada sobre la nav. */
+@keyframes streak-bump {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.streak-bump {
+  display: inline-block;
+  animation: streak-bump 0.3s ease-out;
+}
+@keyframes milestone-in {
+  0% { opacity: 0; transform: translateY(14px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.milestone-toast {
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  animation: milestone-in 0.3s ease-out both;
+}
+
+/* Badges del bottom-nav: dot pulsante de "reto pendiente" (Jugar) y
+   contador de racha (Perfil). Anclados al ícono, sin tapar el label. */
+@keyframes tab-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+.tab-dot {
+  position: absolute;
+  top: 9px;
+  left: calc(50% + 9px);
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #fcff52;
+  box-shadow: 0 0 6px rgba(252, 255, 82, 0.8);
+  animation: tab-dot-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+.tab-streak {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 4px);
+  padding: 1px 5px;
+  border-radius: 9999px;
+  background: #1c0b3e;
+  border: 1px solid rgba(252, 255, 82, 0.55);
+  color: #fcff52;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Tab activo del bottom-nav: rebote sutil al seleccionarlo y reposo elevado.
+   El subrayado plano se reemplaza por un glow dorado bajo el ícono. */
+@keyframes tab-pop {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-4px) scale(1.18); }
+  100% { transform: translateY(-2px) scale(1); }
+}
+.tab-icon {
+  transition: transform 0.15s ease-out;
+}
+.tab-icon-on {
+  transform: translateY(-2px);
+}
+.tab-pop {
+  animation: tab-pop 0.25s ease-out both;
+}
+.tab-glow {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 44px;
+  height: 32px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(252, 255, 82, 0.30), transparent);
+  pointer-events: none;
+}
+
+/* Estrellas por precisión de la win card: caen una a una (stagger con
+   animation-delay inline) y la tercera destella si la ruta es óptima. */
+@keyframes star-pop {
+  0% { opacity: 0; transform: translateY(-10px) scale(0.4); }
+  60% { opacity: 1; transform: translateY(0) scale(1.15); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.star-pop {
+  display: inline-block;
+  animation: star-pop 0.3s ease-out both;
+}
+@keyframes star-prism-flash {
+  0%, 100% { filter: none; }
+  50% { filter: drop-shadow(0 0 8px rgba(252, 255, 82, 0.9)) drop-shadow(0 0 16px rgba(168, 85, 247, 0.7)); }
+}
+.star-prism {
+  animation: star-pop 0.3s ease-out both, star-prism-flash 0.5s ease-out 0.45s;
+}
+
+>>>>>>> origin/main
 /* Quien pide menos movimiento recibe el destello, pero no las chispas. */
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
@@ -161,6 +291,31 @@ body {
   /* Logro nuevo: sin pop — el estado ya lo comunica el color y el candado. */
   .award-pop { animation: none; }
 
+<<<<<<< HEAD
+=======
+  /* Victoria: sin partículas — el título ya celebra. */
+  .confetti-piece { display: none; }
+
+  /* Cambio de tab: corte instantáneo, sin fade ni slide. */
+  .tab-fade { animation: none; }
+
+  /* Hito de racha: la burbuja aparece sin desplazamiento; el número no rebota. */
+  .streak-bump { animation: none; }
+  .milestone-toast { animation: none; }
+
+  /* Dot de reto pendiente: fijo, sin pulso. */
+  .tab-dot { animation: none; }
+
+  /* Tab activo: sin pop ni desplazamiento — solo cambia color/glow. */
+  .tab-pop { animation: none; }
+  .tab-icon { transition: none; }
+  .tab-icon-on { transform: none; }
+
+  /* Estrellas: sin caída ni destello — aparecen fijas. */
+  .star-pop,
+  .star-prism { animation: none; }
+
+>>>>>>> origin/main
   /* Resto de animaciones ambientales: se detienen, no distraen. */
   .bordy-float,
   .bordy-float-sm,
