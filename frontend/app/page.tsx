@@ -34,6 +34,7 @@ import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import ScoreCard from "./components/ScoreCard";
 import Achievements from "./components/Achievements";
+import { POINTS_PER_SOLVE } from "./lib/progress";
 import type { Square } from "./lib/scoreCard";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
@@ -2072,6 +2073,11 @@ function WinCard({
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
+      {/* Puntos Frontle (GAM-5): se ganan por resolver, aunque no ganes el
+          pot. El total vive en Perfil (vista player_progress). */}
+      <p className="pop-in mt-2 inline-block rounded-full border border-[#fcff52]/40 bg-[#fcff52]/10 px-3 py-1 text-xs font-semibold text-[#fcff52]">
+        ✨ {tr.points.earned(POINTS_PER_SOLVE)}
+      </p>
       <div className="mt-4">
         <ScoreCard
           data={{

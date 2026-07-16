@@ -16,12 +16,15 @@ import {
   saveSeenAchievements,
   type AchievementId,
 } from "../lib/achievements";
-import { getRemoteAchievements, pushAchievements } from "../lib/progress";
+import { getPlayerProgress, getRemoteAchievements, pushAchievements } from "../lib/progress";
 import type { t } from "../lib/i18n";
 
 export default function Achievements({ tr, playerId }: { tr: ReturnType<typeof t>; playerId?: string }) {
   const [unlocked, setUnlocked] = useState<Record<AchievementId, boolean> | null>(null);
   const [fresh, setFresh] = useState<ReadonlySet<AchievementId>>(new Set());
+  // Puntos Frontle (GAM-5): total del servidor (vista player_progress).
+  // null = sin backend o sin marcas — el chip simplemente no se muestra.
+  const [points, setPoints] = useState<number | null>(null);
 
   // El cómputo lee localStorage: solo en cliente, una vez por visita al perfil.
   // Con wallet conectada se fusiona con Supabase (cross-device): lo remoto
@@ -48,6 +51,9 @@ export default function Achievements({ tr, playerId }: { tr: ReturnType<typeof t
       const missing = ACHIEVEMENT_IDS.filter((id) => local[id] && !remote.includes(id));
       void pushAchievements(playerId, missing);
     });
+    void getPlayerProgress(playerId).then((p) => {
+      if (alive && p) setPoints(p.points);
+    });
     return () => {
       alive = false;
     };
@@ -57,9 +63,16 @@ export default function Achievements({ tr, playerId }: { tr: ReturnType<typeof t
 
   return (
     <section className="panel p-4">
-      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-3">
-        🎖️ {tr.achievements.title}
-      </p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] uppercase tracking-widest text-neutral-300">
+          🎖️ {tr.achievements.title}
+        </p>
+        {points !== null && points > 0 && (
+          <span className="rounded-full border border-[#fcff52]/40 bg-[#fcff52]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#fcff52]">
+            ✨ {tr.points.total(points)}
+          </span>
+        )}
+      </div>
       <ul className="grid grid-cols-3 gap-2">
         {ACHIEVEMENT_IDS.map((id) => {
           const on = unlocked[id];
