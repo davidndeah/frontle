@@ -33,7 +33,9 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import ScoreCard from "./components/ScoreCard";
+import NavIcon from "./components/NavIcons";
 import Achievements from "./components/Achievements";
+import PrecisionStars from "./components/PrecisionStars";
 import { POINTS_PER_SOLVE } from "./lib/progress";
 import type { Square } from "./lib/scoreCard";
 import RegionGame from "./components/RegionGame";
@@ -219,15 +221,42 @@ export default function Frontle() {
     setOverlay(hide ? "quick" : "full");
   }
   const [daysPlayed, setDaysPlayed] = useState(0);
+  // Hito de racha (GAM-2): celebra SOLO al llegar a 3 y 7 días, y solo cuando
+  // la racha sube dentro de la sesión (no en la carga inicial, que va de 0 al
+  // valor guardado; los cambios de tab tampoco disparan porque n no cambia).
+  const [milestone, setMilestone] = useState<number | null>(null);
+  const [streakBump, setStreakBump] = useState(false);
+  const prevDaysRef = useRef(0);
+  const daysReadyRef = useRef(false);
   useEffect(() => {
     try {
       let n = 0;
       for (let i = 0; i < localStorage.length; i++) {
         if (localStorage.key(i)?.startsWith("frontle-best-")) n++;
       }
+      if (daysReadyRef.current && n > prevDaysRef.current) {
+        setStreakBump(true);
+        if (n === 3 || n === 7) setMilestone(n);
+      }
+      prevDaysRef.current = n;
+      daysReadyRef.current = true;
       setDaysPlayed(n);
     } catch {}
   }, [best, tab]);
+  useEffect(() => {
+    if (milestone === null) return;
+    const id = setTimeout(() => setMilestone(null), 4500);
+    return () => clearTimeout(id);
+  }, [milestone]);
+
+  // Victoria recién ganada (GAM-4): habilita el confeti prisma de la win card
+  // solo en el momento de resolver, no al restaurar una partida resuelta.
+  const [justWon, setJustWon] = useState(false);
+  useEffect(() => {
+    if (!justWon) return;
+    const id = setTimeout(() => setJustWon(false), 2000);
+    return () => clearTimeout(id);
+  }, [justWon]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
@@ -560,6 +589,9 @@ export default function Frontle() {
       saveGame({ started: true, solved, chain: newChain, finalMs });
       if (solved) {
         setElapsedMs(finalMs!);
+        // El confeti solo acompaña la victoria recién ganada, no la pantalla
+        // resuelta al volver (restaurada o por cambio de tab).
+        setJustWon(true);
         const score = newChain.length;
         if (best === null || score < best) {
           setBest(score);
@@ -726,8 +758,10 @@ export default function Frontle() {
         </button>
       </header>
 
-      {/* Contenido del tab activo */}
-      <div className="app-content relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
+      {/* Contenido del tab activo. El key={tab} remonta el contenedor al
+          cambiar de tab para que el contenido entre con fade + slide corto
+          (los hijos ya se desmontan por el render condicional por tab). */}
+      <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "jugar" && regionMode && (
           <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} />
@@ -750,7 +784,7 @@ export default function Frontle() {
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl">🔥</span>
-                <span className="font-display font-bold text-white text-lg leading-none">{daysPlayed}</span>
+                <span key={daysPlayed} className={`font-display font-bold text-white text-lg leading-none${streakBump ? " streak-bump" : ""}`}>{daysPlayed}</span>
                 <span className="text-[11px] text-neutral-400">{tr.home.streak}</span>
               </div>
               <div className="w-px h-7 bg-white/10" />
@@ -999,6 +1033,7 @@ export default function Frontle() {
             {state.solved ? (
               <WinCard
                 tr={tr}
+                confetti={justWon}
                 guesses={guessCount}
                 optimal={challenge.optimal}
                 timeMs={elapsedMs}
@@ -1288,7 +1323,21 @@ export default function Frontle() {
       )}
 
       {/* Bottom-nav */}
-      <TabBar tr={tr} tab={tab} onTab={setTab} />
+      {/* Burbuja de hito de racha (GAM-2): aparece sobre la nav en el momento
+          real del hito (al resolver), se va sola o con un toque. */}
+      {milestone !== null && (
+        <div
+          role="status"
+          onClick={() => setMilestone(null)}
+          className="milestone-toast panel fixed inset-x-4 z-40 flex items-center gap-3 px-4 py-3 cursor-pointer"
+        >
+          <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain bordy-talk" />
+          <p className="flex-1 font-display font-bold text-lg leading-tight prism-text">
+            {tr.home.milestone(milestone)}
+          </p>
+        </div>
+      )}
+      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={daysPlayed} />
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
@@ -1447,12 +1496,29 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
-function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab: (t: Tab) => void }) {
-  const items: { id: Tab; icon: string; label: string }[] = [
-    { id: "jugar", icon: "🌍", label: tr.tabs.jugar },
-    { id: "ranking", icon: "🏆", label: tr.tabs.ranking },
-    { id: "perfil", icon: "👤", label: tr.tabs.perfil },
-    { id: "aprender", icon: "❓", label: tr.tabs.aprender },
+function TabBar({
+  tr,
+  tab,
+  onTab,
+  playPending,
+  streak,
+}: {
+  tr: ReturnType<typeof t>;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  playPending: boolean;
+  streak: number;
+}) {
+  // El pop solo se dispara al tocar un tab, no al cargar la página.
+  const booted = useRef(false);
+  useEffect(() => {
+    booted.current = true;
+  }, []);
+  const items: { id: Tab; label: string }[] = [
+    { id: "jugar", label: tr.tabs.jugar },
+    { id: "ranking", label: tr.tabs.ranking },
+    { id: "perfil", label: tr.tabs.perfil },
+    { id: "aprender", label: tr.tabs.aprender },
   ];
   return (
     <nav className="app-nav fixed bottom-0 inset-x-0 z-30 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">
@@ -1462,13 +1528,31 @@ function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab:
           <button
             key={it.id}
             onClick={() => onTab(it.id)}
+            aria-current={on ? "page" : undefined}
             className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
               on ? "text-white" : "text-neutral-400"
             }`}
           >
-            <span className={`text-xl ${on ? "" : "opacity-60 grayscale"}`}>{it.icon}</span>
+            {on && <span aria-hidden className="tab-glow" />}
+            <span
+              className={`tab-icon relative ${
+                on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60"
+              }`}
+            >
+              <NavIcon name={it.id} />
+            </span>
             {it.label}
-            {on && <span className="absolute bottom-1.5 w-8 h-0.5 rounded-full bg-[#fcff52]" />}
+            {it.id === "jugar" && playPending && (
+              <>
+                <span aria-hidden className="tab-dot" />
+                <span className="sr-only">{tr.home.pendingToday}</span>
+              </>
+            )}
+            {it.id === "perfil" && streak >= 2 && (
+              <span className="tab-streak" aria-label={`${streak} ${tr.home.streak}`}>
+                🔥{streak}
+              </span>
+            )}
           </button>
         );
       })}
@@ -2026,6 +2110,7 @@ function RankingCard({
 
 function WinCard({
   tr,
+  confetti,
   guesses,
   optimal,
   timeMs,
@@ -2045,6 +2130,7 @@ function WinCard({
   fmt,
 }: {
   tr: ReturnType<typeof t>;
+  confetti: boolean;
   guesses: number;
   optimal: number;
   timeMs: number;
@@ -2064,13 +2150,38 @@ function WinCard({
   fmt: (usdt: number) => string;
 }) {
   const perfect = guesses <= optimal;
+  const stars: 1 | 2 | 3 = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
 
   // Texto que acompaña a la imagen — spoiler-free (sin las banderas de la ruta).
   const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
 
+  // Piezas de confeti del gradiente prisma: dispersión determinista por índice
+  // (nada aleatorio en render — consistencia SSR/cliente).
+  const PRISM = ["#c084fc", "#a855f7", "#ffffff", "#fcff52"];
+  const pieces = confetti && perfect ? Array.from({ length: 14 }, (_, i) => i) : [];
+
   return (
-    <section className={`${panel} p-5 text-center`}>
-      <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
+    <section className={`${panel} relative overflow-hidden p-5 text-center`}>
+      {pieces.length > 0 && (
+        <div aria-hidden className="absolute inset-0 pointer-events-none">
+          {pieces.map((i) => (
+            <span
+              key={i}
+              className="confetti-piece"
+              style={{
+                background: PRISM[i % PRISM.length],
+                left: `${8 + ((i * 37) % 84)}%`,
+                ["--dx" as string]: `${((i % 7) - 3) * 16}px`,
+                ["--rot" as string]: `${180 + ((i * 53) % 180)}deg`,
+                animationDelay: `${(i % 5) * 0.07}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+      {/* El prisma se reserva para la celebración: solo la ruta óptima lo luce. */}
+      <div className={`text-3xl font-black ${perfect ? "prism-text" : "text-white"}`}>{perfect ? tr.winPerfect : tr.winNormal}</div>
+      <PrecisionStars count={stars} label={tr.starsLabel(stars)} />
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
       {/* Puntos Frontle (GAM-5): se ganan por resolver, aunque no ganes el
@@ -2083,7 +2194,7 @@ function WinCard({
           data={{
             modeLabel: `${tr.modes.dailyTitle} · ${levelLabel}`,
             dateLabel: new Date().toLocaleDateString(),
-            stars: perfect ? 3 : guesses <= optimal + 1 ? 2 : 1,
+            stars,
             squares,
             stats: [tr.winText(guesses, optimal, perfect), formatTime(timeMs)],
           }}
