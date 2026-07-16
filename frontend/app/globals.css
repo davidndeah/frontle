@@ -144,6 +144,40 @@ body {
   animation: claim-spark 1s ease-out both;
 }
 
+/* Badges del bottom-nav: dot pulsante de "reto pendiente" (Jugar) y
+   contador de racha (Perfil). Anclados al ícono, sin tapar el label. */
+@keyframes tab-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+.tab-dot {
+  position: absolute;
+  top: 9px;
+  left: calc(50% + 9px);
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: #fcff52;
+  box-shadow: 0 0 6px rgba(252, 255, 82, 0.8);
+  animation: tab-dot-pulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+.tab-streak {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 4px);
+  padding: 1px 5px;
+  border-radius: 9999px;
+  background: #1c0b3e;
+  border: 1px solid rgba(252, 255, 82, 0.55);
+  color: #fcff52;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* Tab activo del bottom-nav: rebote sutil al seleccionarlo y reposo elevado.
    El subrayado plano se reemplaza por un glow dorado bajo el ícono. */
 @keyframes tab-pop {
@@ -195,6 +229,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
   .claim-spark { display: none; }
+
+  /* Dot de reto pendiente: fijo, sin pulso. */
+  .tab-dot { animation: none; }
 
   /* Tab activo: sin pop ni desplazamiento — solo cambia color/glow. */
   .tab-pop { animation: none; }
