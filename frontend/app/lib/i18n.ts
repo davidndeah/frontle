@@ -266,6 +266,13 @@ type Dict = {
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
   home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string };
+  // Logros del perfil (GAM-3)
+  achievements: {
+    title: string;
+    unlockedLabel: string;
+    lockedLabel: string;
+    items: Record<"firstWin" | "optimalRoute" | "twoContinents" | "streak3" | "streak7" | "hardSolved", { title: string; desc: string }>;
+  };
   // `signIn` es el chip del header cuando aún no hay wallet ni alias
   walletSheet: { title: string; connectedAs: string; signIn: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
@@ -503,6 +510,19 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}` },
+    achievements: {
+      title: "Logros",
+      unlockedLabel: "desbloqueado",
+      lockedLabel: "bloqueado",
+      items: {
+        firstWin: { title: "Primera conexión", desc: "Resuelve tu primer reto" },
+        optimalRoute: { title: "Ruta óptima", desc: "Resuelve con la ruta mínima" },
+        twoContinents: { title: "Puente continental", desc: "Una ruta que toca 2 continentes" },
+        streak3: { title: "Racha de 3", desc: "Juega 3 días" },
+        streak7: { title: "Racha de 7", desc: "Juega 7 días" },
+        hardSolved: { title: "Nivel experto", desc: "Resuelve el nivel difícil" },
+      },
+    },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -736,6 +756,19 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}` },
+    achievements: {
+      title: "Achievements",
+      unlockedLabel: "unlocked",
+      lockedLabel: "locked",
+      items: {
+        firstWin: { title: "First connection", desc: "Solve your first challenge" },
+        optimalRoute: { title: "Optimal route", desc: "Solve with the shortest route" },
+        twoContinents: { title: "Continental bridge", desc: "A route touching 2 continents" },
+        streak3: { title: "3-day streak", desc: "Play 3 days" },
+        streak7: { title: "7-day streak", desc: "Play 7 days" },
+        hardSolved: { title: "Expert level", desc: "Solve the hard level" },
+      },
+    },
     subdivisionNoun: {
       department: { one: "department", many: "departments" },
       state: { one: "state", many: "states" },
@@ -969,6 +1002,19 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}` },
+    achievements: {
+      title: "Conquistas",
+      unlockedLabel: "desbloqueada",
+      lockedLabel: "bloqueada",
+      items: {
+        firstWin: { title: "Primeira conexão", desc: "Resolva seu primeiro desafio" },
+        optimalRoute: { title: "Rota ótima", desc: "Resolva com a rota mínima" },
+        twoContinents: { title: "Ponte continental", desc: "Uma rota que toca 2 continentes" },
+        streak3: { title: "Sequência de 3", desc: "Jogue 3 dias" },
+        streak7: { title: "Sequência de 7", desc: "Jogue 7 dias" },
+        hardSolved: { title: "Especialista", desc: "Resolva o nível difícil" },
+      },
+    },
     subdivisionNoun: {
       department: { one: "departamento", many: "departamentos" },
       state: { one: "estado", many: "estados" },
@@ -1202,6 +1248,19 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}` },
+    achievements: {
+      title: "Succès",
+      unlockedLabel: "débloqué",
+      lockedLabel: "verrouillé",
+      items: {
+        firstWin: { title: "Première connexion", desc: "Résous ton premier défi" },
+        optimalRoute: { title: "Route optimale", desc: "Résous avec la route minimale" },
+        twoContinents: { title: "Pont continental", desc: "Une route qui touche 2 continents" },
+        streak3: { title: "Série de 3", desc: "Joue 3 jours" },
+        streak7: { title: "Série de 7", desc: "Joue 7 jours" },
+        hardSolved: { title: "Niveau expert", desc: "Résous le niveau difficile" },
+      },
+    },
     subdivisionNoun: {
       department: { one: "département", many: "départements" },
       state: { one: "état", many: "états" },
