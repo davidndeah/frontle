@@ -144,6 +144,14 @@ body {
   animation: claim-spark 1s ease-out both;
 }
 
+/* Transición de contenido entre tabs (TAB-2): fade + slide corto al entrar.
+   Solo transform/opacity — sin scale, para que no haya layout shift. */
+@keyframes tab-fade {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tab-fade { animation: tab-fade 0.2s ease-out both; }
+
 /* Hito de racha (GAM-2): el número del strip rebota al subir y la burbuja
    de Bordy entra desde abajo, apoyada sobre la nav. */
 @keyframes streak-bump {
@@ -249,6 +257,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
   .claim-spark { display: none; }
+
+  /* Cambio de tab: corte instantáneo, sin fade ni slide. */
+  .tab-fade { animation: none; }
 
   /* Hito de racha: la burbuja aparece sin desplazamiento; el número no rebota. */
   .streak-bump { animation: none; }
