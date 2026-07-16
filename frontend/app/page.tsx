@@ -1160,7 +1160,7 @@ export default function Frontle() {
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
               <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
-            <Achievements tr={tr} />
+            <Achievements tr={tr} playerId={myId || undefined} />
             {prizes.length > 0 && (
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
