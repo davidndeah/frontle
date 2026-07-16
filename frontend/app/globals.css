@@ -144,6 +144,34 @@ body {
   animation: claim-spark 1s ease-out both;
 }
 
+/* Tab activo del bottom-nav: rebote sutil al seleccionarlo y reposo elevado.
+   El subrayado plano se reemplaza por un glow dorado bajo el ícono. */
+@keyframes tab-pop {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-4px) scale(1.18); }
+  100% { transform: translateY(-2px) scale(1); }
+}
+.tab-icon {
+  transition: transform 0.15s ease-out;
+}
+.tab-icon-on {
+  transform: translateY(-2px);
+}
+.tab-pop {
+  animation: tab-pop 0.25s ease-out both;
+}
+.tab-glow {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 44px;
+  height: 32px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(252, 255, 82, 0.30), transparent);
+  pointer-events: none;
+}
+
 /* Estrellas por precisión de la win card: caen una a una (stagger con
    animation-delay inline) y la tercera destella si la ruta es óptima. */
 @keyframes star-pop {
@@ -167,6 +195,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
   .claim-spark { display: none; }
+
+  /* Tab activo: sin pop ni desplazamiento — solo cambia color/glow. */
+  .tab-pop { animation: none; }
+  .tab-icon { transition: none; }
+  .tab-icon-on { transform: none; }
 
   /* Estrellas: sin caída ni destello — aparecen fijas. */
   .star-pop,
