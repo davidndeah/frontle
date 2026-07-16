@@ -33,6 +33,7 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import ScoreCard from "./components/ScoreCard";
+import PrecisionStars from "./components/PrecisionStars";
 import type { Square } from "./lib/scoreCard";
 import RegionGame from "./components/RegionGame";
 import RegionMapPreview from "./components/RegionMapPreview";
@@ -1317,7 +1318,7 @@ export default function Frontle() {
           </p>
         </div>
       )}
-      <TabBar tr={tr} tab={tab} onTab={setTab} />
+      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={daysPlayed} />
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
@@ -1476,7 +1477,24 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
-function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab: (t: Tab) => void }) {
+function TabBar({
+  tr,
+  tab,
+  onTab,
+  playPending,
+  streak,
+}: {
+  tr: ReturnType<typeof t>;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+  playPending: boolean;
+  streak: number;
+}) {
+  // El pop solo se dispara al tocar un tab, no al cargar la página.
+  const booted = useRef(false);
+  useEffect(() => {
+    booted.current = true;
+  }, []);
   const items: { id: Tab; icon: string; label: string }[] = [
     { id: "jugar", icon: "🌍", label: tr.tabs.jugar },
     { id: "ranking", icon: "🏆", label: tr.tabs.ranking },
@@ -1491,13 +1509,31 @@ function TabBar({ tr, tab, onTab }: { tr: ReturnType<typeof t>; tab: Tab; onTab:
           <button
             key={it.id}
             onClick={() => onTab(it.id)}
+            aria-current={on ? "page" : undefined}
             className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
               on ? "text-white" : "text-neutral-400"
             }`}
           >
-            <span className={`text-xl ${on ? "" : "opacity-60 grayscale"}`}>{it.icon}</span>
+            {on && <span aria-hidden className="tab-glow" />}
+            <span
+              className={`tab-icon relative text-xl ${
+                on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60 grayscale"
+              }`}
+            >
+              {it.icon}
+            </span>
             {it.label}
-            {on && <span className="absolute bottom-1.5 w-8 h-0.5 rounded-full bg-[#fcff52]" />}
+            {it.id === "jugar" && playPending && (
+              <>
+                <span aria-hidden className="tab-dot" />
+                <span className="sr-only">{tr.home.pendingToday}</span>
+              </>
+            )}
+            {it.id === "perfil" && streak >= 2 && (
+              <span className="tab-streak" aria-label={`${streak} ${tr.home.streak}`}>
+                🔥{streak}
+              </span>
+            )}
           </button>
         );
       })}
@@ -2093,6 +2129,7 @@ function WinCard({
   fmt: (usdt: number) => string;
 }) {
   const perfect = guesses <= optimal;
+  const stars: 1 | 2 | 3 = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
 
   // Texto que acompaña a la imagen — spoiler-free (sin las banderas de la ruta).
   const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
@@ -2100,6 +2137,7 @@ function WinCard({
   return (
     <section className={`${panel} p-5 text-center`}>
       <div className="text-3xl font-black prism-text">{perfect ? tr.winPerfect : tr.winNormal}</div>
+      <PrecisionStars count={stars} label={tr.starsLabel(stars)} />
       <p className="text-neutral-200 mt-2">{tr.winText(guesses, optimal, perfect)}</p>
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
       <div className="mt-4">
@@ -2107,7 +2145,7 @@ function WinCard({
           data={{
             modeLabel: `${tr.modes.dailyTitle} · ${levelLabel}`,
             dateLabel: new Date().toLocaleDateString(),
-            stars: perfect ? 3 : guesses <= optimal + 1 ? 2 : 1,
+            stars,
             squares,
             stats: [tr.winText(guesses, optimal, perfect), formatTime(timeMs)],
           }}
