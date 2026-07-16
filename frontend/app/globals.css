@@ -144,10 +144,34 @@ body {
   animation: claim-spark 1s ease-out both;
 }
 
+/* Hito de racha (GAM-2): el número del strip rebota al subir y la burbuja
+   de Bordy entra desde abajo, apoyada sobre la nav. */
+@keyframes streak-bump {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.streak-bump {
+  display: inline-block;
+  animation: streak-bump 0.3s ease-out;
+}
+@keyframes milestone-in {
+  0% { opacity: 0; transform: translateY(14px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.milestone-toast {
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  animation: milestone-in 0.3s ease-out both;
+}
+
 /* Quien pide menos movimiento recibe el destello, pero no las chispas. */
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
   .claim-spark { display: none; }
+
+  /* Hito de racha: la burbuja aparece sin desplazamiento; el número no rebota. */
+  .streak-bump { animation: none; }
+  .milestone-toast { animation: none; }
 
   /* Resto de animaciones ambientales: se detienen, no distraen. */
   .bordy-float,

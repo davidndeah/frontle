@@ -217,15 +217,33 @@ export default function Frontle() {
     setOverlay(hide ? "quick" : "full");
   }
   const [daysPlayed, setDaysPlayed] = useState(0);
+  // Hito de racha (GAM-2): celebra SOLO al llegar a 3 y 7 días, y solo cuando
+  // la racha sube dentro de la sesión (no en la carga inicial, que va de 0 al
+  // valor guardado; los cambios de tab tampoco disparan porque n no cambia).
+  const [milestone, setMilestone] = useState<number | null>(null);
+  const [streakBump, setStreakBump] = useState(false);
+  const prevDaysRef = useRef(0);
+  const daysReadyRef = useRef(false);
   useEffect(() => {
     try {
       let n = 0;
       for (let i = 0; i < localStorage.length; i++) {
         if (localStorage.key(i)?.startsWith("frontle-best-")) n++;
       }
+      if (daysReadyRef.current && n > prevDaysRef.current) {
+        setStreakBump(true);
+        if (n === 3 || n === 7) setMilestone(n);
+      }
+      prevDaysRef.current = n;
+      daysReadyRef.current = true;
       setDaysPlayed(n);
     } catch {}
   }, [best, tab]);
+  useEffect(() => {
+    if (milestone === null) return;
+    const id = setTimeout(() => setMilestone(null), 4500);
+    return () => clearTimeout(id);
+  }, [milestone]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
@@ -748,7 +766,7 @@ export default function Frontle() {
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl">🔥</span>
-                <span className="font-display font-bold text-white text-lg leading-none">{daysPlayed}</span>
+                <span key={daysPlayed} className={`font-display font-bold text-white text-lg leading-none${streakBump ? " streak-bump" : ""}`}>{daysPlayed}</span>
                 <span className="text-[11px] text-neutral-400">{tr.home.streak}</span>
               </div>
               <div className="w-px h-7 bg-white/10" />
@@ -1285,6 +1303,20 @@ export default function Frontle() {
       )}
 
       {/* Bottom-nav */}
+      {/* Burbuja de hito de racha (GAM-2): aparece sobre la nav en el momento
+          real del hito (al resolver), se va sola o con un toque. */}
+      {milestone !== null && (
+        <div
+          role="status"
+          onClick={() => setMilestone(null)}
+          className="milestone-toast panel fixed inset-x-4 z-40 flex items-center gap-3 px-4 py-3 cursor-pointer"
+        >
+          <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain bordy-talk" />
+          <p className="flex-1 font-display font-bold text-lg leading-tight prism-text">
+            {tr.home.milestone(milestone)}
+          </p>
+        </div>
+      )}
       <TabBar tr={tr} tab={tab} onTab={setTab} />
 
       {/* Overlays pre-juego */}
