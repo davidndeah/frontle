@@ -12,6 +12,10 @@
 import type { AchievementId } from "./achievements";
 import { ACHIEVEMENT_IDS } from "./achievements";
 
+// Puntos por (día, nivel) resuelto. Debe coincidir con la fórmula de la
+// vista `player_progress` (migración 0007): allí es `solves * 10`.
+export const POINTS_PER_SOLVE = 10;
+
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const useSupabase = Boolean(SUPA_URL && SUPA_KEY);

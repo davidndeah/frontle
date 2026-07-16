@@ -267,6 +267,8 @@ type Dict = {
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
   home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string; milestone: (n: number) => string; pendingToday: string };
+  // Puntos Frontle (GAM-5): recompensa por resolver aunque no ganes el pot
+  points: { earned: (n: number) => string; total: (n: number) => string };
   // Logros del perfil (GAM-3)
   achievements: {
     title: string;
@@ -512,6 +514,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
+    points: { earned: (n) => `+${n} puntos Frontle`, total: (n) => `${n} puntos` },
     achievements: {
       title: "Logros",
       unlockedLabel: "desbloqueado",
@@ -759,6 +762,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
+    points: { earned: (n) => `+${n} Frontle points`, total: (n) => `${n} points` },
     achievements: {
       title: "Achievements",
       unlockedLabel: "unlocked",
@@ -1006,6 +1010,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
+    points: { earned: (n) => `+${n} pontos Frontle`, total: (n) => `${n} pontos` },
     achievements: {
       title: "Conquistas",
       unlockedLabel: "desbloqueada",
@@ -1253,6 +1258,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
+    points: { earned: (n) => `+${n} points Frontle`, total: (n) => `${n} points` },
     achievements: {
       title: "Succès",
       unlockedLabel: "débloqué",
