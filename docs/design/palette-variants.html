@@ -12,12 +12,13 @@
     -webkit-font-smoothing: antialiased;
   }
   h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
-  .sub { color: #9a90b8; font-size: 13px; margin-bottom: 24px; max-width: 640px; line-height: 1.5; }
+  .sub { color: #9a90b8; font-size: 13px; margin-bottom: 24px; max-width: 680px; line-height: 1.5; }
   .row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 12px; width: 300px; }
 
   /* ---- Marco de teléfono ---- */
   .phone {
-    width: 300px; border-radius: 28px; overflow: hidden;
+    border-radius: 28px; overflow: hidden;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 24px 60px rgba(0,0,0,0.5);
     background: var(--bg);
@@ -26,8 +27,13 @@
   .dir-label { padding: 10px 14px 0; }
   .dir-name { font-size: 13px; font-weight: 800; color: var(--ink); }
   .dir-note { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .screen-tag {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); padding: 10px 14px 0;
+  }
 
   .screen { padding: 12px; min-height: 440px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+  .screen.short { min-height: 0; }
 
   /* header */
   .hd { display: flex; align-items: center; gap: 6px; }
@@ -89,6 +95,57 @@
   .swatches { display: flex; gap: 4px; padding: 8px 12px 12px; }
   .sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); }
 
+  /* ---- Perfil · logros (grid real de Achievements.tsx: GAM-3 + chip de puntos GAM-5) ---- */
+  .panel-hd { display: flex; align-items: center; justify-content: space-between; }
+  .panel-hd .lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+  .ach-panel { padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--brd); display: flex; flex-direction: column; gap: 10px; }
+  .ach-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; list-style: none; }
+  .ach { position: relative; border-radius: 12px; padding: 10px 4px; text-align: center; border: 1px solid; }
+  .ach .ico { font-size: 20px; }
+  .ach .name { font-size: 9px; font-weight: 600; margin-top: 4px; line-height: 1.2; }
+  .ach.on { border-color: var(--accent-brd); background: var(--accent-soft); }
+  .ach.on .name { color: var(--ink); }
+  .ach.on.fresh { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
+  .ach.off { border-color: rgba(255,255,255,0.10); background: rgba(255,255,255,0.05); }
+  .ach.off .ico { opacity: 0.4; filter: grayscale(1); }
+  .ach.off .name { color: var(--muted); }
+  .ach.off .lock { position: absolute; top: 4px; right: 6px; font-size: 9px; opacity: 0.7; }
+
+  /* ---- Victoria (win card real: confeti GAM-4 + estrellas + puntos GAM-5) ---- */
+  .win { position: relative; overflow: hidden; padding: 18px 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--brd); text-align: center; }
+  .win-title {
+    font-size: 21px; font-weight: 900; letter-spacing: -0.02em;
+    background: var(--prism); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .stars { font-size: 17px; letter-spacing: 2px; margin-top: 4px; }
+  .win-sub { font-size: 12px; color: var(--ink); margin-top: 6px; }
+  .win-time { font-size: 11px; color: var(--muted); font-family: Consolas, monospace; margin-top: 2px; }
+  .pts { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-brd); }
+  .win-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .btn-p { border-radius: 12px; padding: 10px; font-size: 12px; font-weight: 800; background: #fff; color: #14092e; }
+  .btn-s { border-radius: 12px; padding: 10px; font-size: 12px; font-weight: 700; color: var(--ink); border: 1px solid rgba(255,255,255,0.28); }
+  .btn-s .price { opacity: 0.65; font-weight: 500; }
+
+  /* confeti: muestra representativa (7 de las 14 piezas deterministas del
+     componente real); caída una sola pasada al cargar, como en producción */
+  @keyframes conf-fall {
+    0% { opacity: 0; transform: translate(0, -60px) rotate(0deg) scale(0.6); }
+    15% { opacity: 1; }
+    100% { opacity: 1; transform: translate(var(--dx), 0) rotate(var(--rot)) scale(1); }
+  }
+  .conf { position: absolute; top: var(--y, 12%); width: 9px; height: 9px; border-radius: 2px; pointer-events: none; animation: conf-fall 1.4s ease-out both; }
+  @media (prefers-reduced-motion: reduce) { .conf { animation: none; transform: translate(var(--dx), 0) rotate(var(--rot)); } }
+
+  /* ---- Veredicto por dirección: choque (o no) con los colores semánticos ---- */
+  .verdict { border-radius: 14px; padding: 10px 12px; font-size: 11px; line-height: 1.5; color: #cfc8e2; border: 1px solid; background: rgba(255,255,255,0.03); }
+  .verdict b { color: #fff; }
+  .verdict.ok { border-color: rgba(34,197,94,0.35); }
+  .verdict.warn { border-color: rgba(234,179,8,0.4); }
+  .verdict .tag { display: inline-block; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; margin-bottom: 5px; }
+  .verdict.ok .tag { color: #4ade80; border: 1px solid rgba(34,197,94,0.45); }
+  .verdict.warn .tag { color: #facc15; border: 1px solid rgba(234,179,8,0.5); }
+  .verdict .aa { display: block; margin-top: 5px; font-size: 10px; color: #9a90b8; font-family: Consolas, monospace; }
+
   /* ============ DIRECCIONES ============ */
 
   /* ACTUAL — Violeta Prisma */
@@ -98,6 +155,7 @@
     --accent: #fcff52; --accent-soft: rgba(252,255,82,0.15); --accent-brd: rgba(252,255,82,0.40);
     --good: #22c55e;
     --prism: linear-gradient(100deg,#c084fc,#a855f7,#ffffff,#fcff52);
+    --conf1: #c084fc; --conf2: #a855f7; --conf3: #ffffff; --conf4: #fcff52;
   }
   /* A — Arcade Neón */
   .arcade {
@@ -106,6 +164,7 @@
     --accent: #ffe74a; --accent-soft: rgba(255,231,74,0.18); --accent-brd: rgba(255,231,74,0.5);
     --good: #34e07a;
     --prism: linear-gradient(100deg,#ff3db4,#c084fc,#ffffff,#ffe74a);
+    --conf1: #ff3db4; --conf2: #c084fc; --conf3: #ffffff; --conf4: #ffe74a;
   }
   /* B — Violeta Premium */
   .premium {
@@ -114,6 +173,7 @@
     --accent: #d9b45a; --accent-soft: rgba(217,180,90,0.13); --accent-brd: rgba(217,180,90,0.35);
     --good: #4ea373;
     --prism: linear-gradient(100deg,#b7a3e0,#8f82c4,#ffffff,#d9b45a);
+    --conf1: #b7a3e0; --conf2: #8f82c4; --conf3: #ffffff; --conf4: #d9b45a;
   }
   /* C — Acento Coral */
   .coral {
@@ -122,19 +182,21 @@
     --accent: #ff6a3d; --accent-soft: rgba(255,106,61,0.15); --accent-brd: rgba(255,106,61,0.42);
     --good: #22c55e;
     --prism: linear-gradient(100deg,#c084fc,#a855f7,#ffffff,#ff6a3d);
+    --conf1: #c084fc; --conf2: #a855f7; --conf3: #ffffff; --conf4: #ff6a3d;
   }
 </style>
 </head>
 <body>
-  <h1>Frontle — Exploración de paleta · EXP-1</h1>
-  <p class="sub">3 direcciones que conservan el ADN "Violeta Prisma" pero exploran distinto rumbo,
-  junto a la paleta actual como referencia. Generadas con ui-ux-pro-max (base de 192 paletas) +
-  criterio de frontend-design. Ninguna está aplicada a producción — es para elegir.</p>
+  <h1>Frontle — Exploración de paleta · EXP-1 (v2)</h1>
+  <p class="sub">3 direcciones que conservan el ADN "Violeta Prisma" junto a la paleta actual. <b>v2:</b> cada
+  columna ahora incluye los componentes nuevos de gamificación (logros GAM-3 con candados y chip de puntos GAM-5;
+  win card con confeti prisma GAM-4) que no existían cuando se hizo el mockup original, más un veredicto de cómo
+  cada dirección convive con los colores semánticos del juego. Ninguna está aplicada a producción — es para elegir.</p>
 
   <div class="row">
-    <!-- ACTUAL -->
-    <div>
-      <div class="phone actual">
+    <!-- ================= ACTUAL ================= -->
+    <div class="col actual">
+      <div class="phone">
         <div class="dir-label"><div class="dir-name">Actual · Violeta Prisma</div><div class="dir-note">oro #fcff52 · lo que hay hoy</div></div>
         <div class="screen">
           <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
@@ -145,11 +207,56 @@
         </div>
         <div class="swatches"><span class="sw" style="background:#160833"></span><span class="sw" style="background:#6c2bd9"></span><span class="sw" style="background:#b79ced"></span><span class="sw" style="background:#fcff52"></span></div>
       </div>
+      <div class="phone">
+        <div class="screen-tag">Perfil · logros (GAM-3 + GAM-5)</div>
+        <div class="screen short">
+          <div class="ach-panel">
+            <div class="panel-hd"><span class="lbl">🎖️ Logros</span><span class="chip">✨ 120 pts</span></div>
+            <ul class="ach-grid">
+              <li class="ach on"><div class="ico">🎯</div><div class="name">Primer reto</div></li>
+              <li class="ach on fresh"><div class="ico">🏆</div><div class="name">Ruta óptima</div></li>
+              <li class="ach on"><div class="ico">🔥</div><div class="name">Racha ×3</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌉</div><div class="name">2 continentes</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌋</div><div class="name">Racha ×7</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🧠</div><div class="name">Nivel difícil</div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="screen-tag">Victoria · ruta óptima (GAM-4)</div>
+        <div class="screen short">
+          <div class="win">
+            <span class="conf" style="background:var(--conf1); left:10%; --y:26%; --dx:-18px; --rot:210deg;"></span>
+            <span class="conf" style="background:var(--conf2); left:24%; --y:9%; --dx:12px; --rot:300deg; animation-delay:.1s;"></span>
+            <span class="conf" style="background:var(--conf3); left:38%; --y:34%; --dx:-8px; --rot:250deg; animation-delay:.05s;"></span>
+            <span class="conf" style="background:var(--conf4); left:52%; --y:14%; --dx:20px; --rot:190deg; animation-delay:.15s;"></span>
+            <span class="conf" style="background:var(--conf1); left:66%; --y:30%; --dx:-14px; --rot:280deg; animation-delay:.2s;"></span>
+            <span class="conf" style="background:var(--conf4); left:80%; --y:7%; --dx:10px; --rot:230deg; animation-delay:.08s;"></span>
+            <span class="conf" style="background:var(--conf2); left:90%; --y:22%; --dx:-6px; --rot:320deg; animation-delay:.18s;"></span>
+            <div class="win-title">¡Ruta perfecta!</div>
+            <div class="stars">⭐⭐⭐</div>
+            <div class="win-sub">3 saltos · lo óptimo</div>
+            <div class="win-time">⏱️ 01:24</div>
+            <div><span class="pts">✨ +25 pts</span></div>
+            <div class="win-btns">
+              <div class="btn-p">📤 Compartir</div>
+              <div class="btn-s">Reintentar <span class="price">· $0.10</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict ok">
+        <span class="tag">✓ Coherente</span><br>
+        El dorado funcional de la gamificación (logros, puntos, glow del tab) <b>es</b> el acento de esta
+        dirección: todo lo nuevo cae en su sitio sin retrabajo. El confeti prisma usa la marca tal cual.
+        <span class="aa">AA ✓ 6/6 pares — peor caso: muted/surface 4.82:1</span>
+      </div>
     </div>
 
-    <!-- A ARCADE -->
-    <div>
-      <div class="phone arcade">
+    <!-- ================= A · ARCADE ================= -->
+    <div class="col arcade">
+      <div class="phone">
         <div class="dir-label"><div class="dir-name">A · Arcade Neón</div><div class="dir-note">más saturado, más energía</div></div>
         <div class="screen">
           <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
@@ -160,11 +267,57 @@
         </div>
         <div class="swatches"><span class="sw" style="background:#16003a"></span><span class="sw" style="background:#a855f7"></span><span class="sw" style="background:#ff3db4"></span><span class="sw" style="background:#ffe74a"></span></div>
       </div>
+      <div class="phone">
+        <div class="screen-tag">Perfil · logros (GAM-3 + GAM-5)</div>
+        <div class="screen short">
+          <div class="ach-panel">
+            <div class="panel-hd"><span class="lbl">🎖️ Logros</span><span class="chip">✨ 120 pts</span></div>
+            <ul class="ach-grid">
+              <li class="ach on"><div class="ico">🎯</div><div class="name">Primer reto</div></li>
+              <li class="ach on fresh"><div class="ico">🏆</div><div class="name">Ruta óptima</div></li>
+              <li class="ach on"><div class="ico">🔥</div><div class="name">Racha ×3</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌉</div><div class="name">2 continentes</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌋</div><div class="name">Racha ×7</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🧠</div><div class="name">Nivel difícil</div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="screen-tag">Victoria · ruta óptima (GAM-4)</div>
+        <div class="screen short">
+          <div class="win">
+            <span class="conf" style="background:var(--conf1); left:10%; --y:26%; --dx:-18px; --rot:210deg;"></span>
+            <span class="conf" style="background:var(--conf2); left:24%; --y:9%; --dx:12px; --rot:300deg; animation-delay:.1s;"></span>
+            <span class="conf" style="background:var(--conf3); left:38%; --y:34%; --dx:-8px; --rot:250deg; animation-delay:.05s;"></span>
+            <span class="conf" style="background:var(--conf4); left:52%; --y:14%; --dx:20px; --rot:190deg; animation-delay:.15s;"></span>
+            <span class="conf" style="background:var(--conf1); left:66%; --y:30%; --dx:-14px; --rot:280deg; animation-delay:.2s;"></span>
+            <span class="conf" style="background:var(--conf4); left:80%; --y:7%; --dx:10px; --rot:230deg; animation-delay:.08s;"></span>
+            <span class="conf" style="background:var(--conf2); left:90%; --y:22%; --dx:-6px; --rot:320deg; animation-delay:.18s;"></span>
+            <div class="win-title">¡Ruta perfecta!</div>
+            <div class="stars">⭐⭐⭐</div>
+            <div class="win-sub">3 saltos · lo óptimo</div>
+            <div class="win-time">⏱️ 01:24</div>
+            <div><span class="pts">✨ +25 pts</span></div>
+            <div class="win-btns">
+              <div class="btn-p">📤 Compartir</div>
+              <div class="btn-s">Reintentar <span class="price">· $0.10</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict ok">
+        <span class="tag">✓ Compatible</span><br>
+        Su amarillo #ffe74a es casi el oro de logro actual: la gamificación se integra sin fricción.
+        <b>Un matiz:</b> el magenta #ff3db4 del prisma es vecino del fucsia destino (<code>--end #e879f9</code>)
+        — en el confeti convive, pero no usarlo como acento dentro del mapa.
+        <span class="aa">AA ✓ 6/6 pares — peor caso: muted/surface 5.80:1</span>
+      </div>
     </div>
 
-    <!-- B PREMIUM -->
-    <div>
-      <div class="phone premium">
+    <!-- ================= B · PREMIUM ================= -->
+    <div class="col premium">
+      <div class="phone">
         <div class="dir-label"><div class="dir-name">B · Violeta Premium</div><div class="dir-note">sobrio, refinado, champagne</div></div>
         <div class="screen">
           <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
@@ -175,11 +328,58 @@
         </div>
         <div class="swatches"><span class="sw" style="background:#0d0820"></span><span class="sw" style="background:#3c306e"></span><span class="sw" style="background:#b7a3e0"></span><span class="sw" style="background:#d9b45a"></span></div>
       </div>
+      <div class="phone">
+        <div class="screen-tag">Perfil · logros (GAM-3 + GAM-5)</div>
+        <div class="screen short">
+          <div class="ach-panel">
+            <div class="panel-hd"><span class="lbl">🎖️ Logros</span><span class="chip">✨ 120 pts</span></div>
+            <ul class="ach-grid">
+              <li class="ach on"><div class="ico">🎯</div><div class="name">Primer reto</div></li>
+              <li class="ach on fresh"><div class="ico">🏆</div><div class="name">Ruta óptima</div></li>
+              <li class="ach on"><div class="ico">🔥</div><div class="name">Racha ×3</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌉</div><div class="name">2 continentes</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌋</div><div class="name">Racha ×7</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🧠</div><div class="name">Nivel difícil</div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="screen-tag">Victoria · ruta óptima (GAM-4)</div>
+        <div class="screen short">
+          <div class="win">
+            <span class="conf" style="background:var(--conf1); left:10%; --y:26%; --dx:-18px; --rot:210deg;"></span>
+            <span class="conf" style="background:var(--conf2); left:24%; --y:9%; --dx:12px; --rot:300deg; animation-delay:.1s;"></span>
+            <span class="conf" style="background:var(--conf3); left:38%; --y:34%; --dx:-8px; --rot:250deg; animation-delay:.05s;"></span>
+            <span class="conf" style="background:var(--conf4); left:52%; --y:14%; --dx:20px; --rot:190deg; animation-delay:.15s;"></span>
+            <span class="conf" style="background:var(--conf1); left:66%; --y:30%; --dx:-14px; --rot:280deg; animation-delay:.2s;"></span>
+            <span class="conf" style="background:var(--conf4); left:80%; --y:7%; --dx:10px; --rot:230deg; animation-delay:.08s;"></span>
+            <span class="conf" style="background:var(--conf2); left:90%; --y:22%; --dx:-6px; --rot:320deg; animation-delay:.18s;"></span>
+            <div class="win-title">¡Ruta perfecta!</div>
+            <div class="stars">⭐⭐⭐</div>
+            <div class="win-sub">3 saltos · lo óptimo</div>
+            <div class="win-time">⏱️ 01:24</div>
+            <div><span class="pts">✨ +25 pts</span></div>
+            <div class="win-btns">
+              <div class="btn-p">📤 Compartir</div>
+              <div class="btn-s">Reintentar <span class="price">· $0.10</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict warn">
+        <span class="tag">⚠ Choques semánticos</span><br>
+        <b>1)</b> El logro dorado deja de ser "oro Celo": en champagne la celebración baja de volumen (compárese
+        el confeti y el glow del logro nuevo con las otras columnas). <b>2)</b> Su verde desaturado
+        <code>#4ea373</code> debilita el <b>semáforo</b> — verde = ruta óptima es color funcional del juego, no
+        decoración. <b>3)</b> El prisma lavanda→champagne pierde el contraste interno que hace legible el confeti.
+        <span class="aa">AA ✗ 5/6 — muted #7d7699 sobre surface = 4.23:1 (falla texto normal; habría que aclararlo)</span>
+      </div>
     </div>
 
-    <!-- C CORAL -->
-    <div>
-      <div class="phone coral">
+    <!-- ================= C · CORAL ================= -->
+    <div class="col coral">
+      <div class="phone">
         <div class="dir-label"><div class="dir-name">C · Acento Coral</div><div class="dir-note">acento cálido #ff6a3d (sin oro)</div></div>
         <div class="screen">
           <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
@@ -189,6 +389,53 @@
           <div class="nav"><span class="tab on"><span class="i">🌍</span>Jugar</span><span class="tab"><span class="i">🏆</span>Ranking</span><span class="tab"><span class="i">👤</span>Perfil</span><span class="tab"><span class="i">❓</span>Aprender</span></div>
         </div>
         <div class="swatches"><span class="sw" style="background:#14092e"></span><span class="sw" style="background:#825adc"></span><span class="sw" style="background:#b79ced"></span><span class="sw" style="background:#ff6a3d"></span></div>
+      </div>
+      <div class="phone">
+        <div class="screen-tag">Perfil · logros (GAM-3 + GAM-5)</div>
+        <div class="screen short">
+          <div class="ach-panel">
+            <div class="panel-hd"><span class="lbl">🎖️ Logros</span><span class="chip">✨ 120 pts</span></div>
+            <ul class="ach-grid">
+              <li class="ach on"><div class="ico">🎯</div><div class="name">Primer reto</div></li>
+              <li class="ach on fresh"><div class="ico">🏆</div><div class="name">Ruta óptima</div></li>
+              <li class="ach on"><div class="ico">🔥</div><div class="name">Racha ×3</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌉</div><div class="name">2 continentes</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🌋</div><div class="name">Racha ×7</div></li>
+              <li class="ach off"><span class="lock">🔒</span><div class="ico">🧠</div><div class="name">Nivel difícil</div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="phone">
+        <div class="screen-tag">Victoria · ruta óptima (GAM-4)</div>
+        <div class="screen short">
+          <div class="win">
+            <span class="conf" style="background:var(--conf1); left:10%; --y:26%; --dx:-18px; --rot:210deg;"></span>
+            <span class="conf" style="background:var(--conf2); left:24%; --y:9%; --dx:12px; --rot:300deg; animation-delay:.1s;"></span>
+            <span class="conf" style="background:var(--conf3); left:38%; --y:34%; --dx:-8px; --rot:250deg; animation-delay:.05s;"></span>
+            <span class="conf" style="background:var(--conf4); left:52%; --y:14%; --dx:20px; --rot:190deg; animation-delay:.15s;"></span>
+            <span class="conf" style="background:var(--conf1); left:66%; --y:30%; --dx:-14px; --rot:280deg; animation-delay:.2s;"></span>
+            <span class="conf" style="background:var(--conf4); left:80%; --y:7%; --dx:10px; --rot:230deg; animation-delay:.08s;"></span>
+            <span class="conf" style="background:var(--conf2); left:90%; --y:22%; --dx:-6px; --rot:320deg; animation-delay:.18s;"></span>
+            <div class="win-title">¡Ruta perfecta!</div>
+            <div class="stars">⭐⭐⭐</div>
+            <div class="win-sub">3 saltos · lo óptimo</div>
+            <div class="win-time">⏱️ 01:24</div>
+            <div><span class="pts">✨ +25 pts</span></div>
+            <div class="win-btns">
+              <div class="btn-p">📤 Compartir</div>
+              <div class="btn-s">Reintentar <span class="price">· $0.10</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="verdict warn">
+        <span class="tag">⚠ Choque semántico</span><br>
+        El coral <code>#ff6a3d</code> es vecino del <b>rojo del semáforo</b> (<code>--far #ef4444</code>,
+        desvío grande): un logro o chip de puntos coral puede leerse como "error" en la misma pantalla donde el
+        rojo significa fallo. Y si se conservara el oro <code>#fcff52</code> para los logros, quedarían dos
+        acentos cálidos compitiendo. Es la dirección con más retrabajo semántico.
+        <span class="aa">AA ✗ 5/6 — muted #8a80a8 sobre surface = 4.32:1 (falla texto normal; habría que aclararlo)</span>
       </div>
     </div>
   </div>
