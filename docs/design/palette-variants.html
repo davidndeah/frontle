@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Exploración de paleta (EXP-1)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: #0a0714; color: #e9e4f5; padding: 24px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .sub { color: #9a90b8; font-size: 13px; margin-bottom: 24px; max-width: 640px; line-height: 1.5; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+
+  /* ---- Marco de teléfono ---- */
+  .phone {
+    width: 300px; border-radius: 28px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    background: var(--bg);
+    display: flex; flex-direction: column;
+  }
+  .dir-label { padding: 10px 14px 0; }
+  .dir-name { font-size: 13px; font-weight: 800; color: var(--ink); }
+  .dir-note { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .screen { padding: 12px; min-height: 440px; display: flex; flex-direction: column; gap: 12px; position: relative; }
+
+  /* header */
+  .hd { display: flex; align-items: center; gap: 6px; }
+  .wordmark {
+    font-weight: 900; font-size: 15px; letter-spacing: -0.02em;
+    background: var(--prism); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .spacer { flex: 1; }
+  .chip {
+    font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-brd);
+    white-space: nowrap;
+  }
+  .icobtn {
+    width: 30px; height: 30px; border-radius: 999px; display: grid; place-items: center;
+    background: rgba(255,255,255,0.05); border: 1px solid var(--brd); font-size: 13px;
+  }
+
+  /* streak strip */
+  .streak {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--brd);
+  }
+  .streak .flame { font-size: 15px; }
+  .streak .num { font-weight: 800; color: var(--ink); font-size: 14px; }
+  .streak .lbl { font-size: 10px; color: var(--muted); }
+  .bar { flex: 1; height: 5px; border-radius: 999px; background: rgba(255,255,255,0.10); overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 40%; background: var(--accent); }
+
+  /* mode cards */
+  .card {
+    padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--brd);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card .emoji { font-size: 22px; }
+  .card .t { font-weight: 700; font-size: 13px; color: var(--ink); }
+  .card .s { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .card .go { margin-left: auto; color: var(--accent); font-weight: 800; }
+  .badge-new {
+    margin-left: auto; font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+    color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 45%, transparent);
+  }
+
+  /* bottom nav */
+  .nav {
+    margin-top: auto; display: flex; padding: 8px 4px 6px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--brd);
+  }
+  .nav .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9px; color: var(--muted); position: relative; }
+  .nav .tab.on { color: var(--ink); }
+  .nav .tab .i { font-size: 17px; }
+  .nav .tab.on .i { filter: none; }
+  .nav .tab:not(.on) .i { filter: grayscale(1); opacity: 0.6; }
+  .nav .tab.on::after {
+    content: ""; position: absolute; bottom: -3px; width: 22px; height: 3px; border-radius: 999px;
+    background: var(--accent); box-shadow: 0 0 10px var(--accent);
+  }
+
+  .swatches { display: flex; gap: 4px; padding: 8px 12px 12px; }
+  .sw { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); }
+
+  /* ============ DIRECCIONES ============ */
+
+  /* ACTUAL — Violeta Prisma */
+  .actual {
+    --bg: #160833; --surface: linear-gradient(160deg, rgba(138,92,245,0.26), rgba(76,29,149,0.30));
+    --ink: #f3edff; --muted: #8791a8; --brd: rgba(183,156,237,0.28);
+    --accent: #fcff52; --accent-soft: rgba(252,255,82,0.15); --accent-brd: rgba(252,255,82,0.40);
+    --good: #22c55e;
+    --prism: linear-gradient(100deg,#c084fc,#a855f7,#ffffff,#fcff52);
+  }
+  /* A — Arcade Neón */
+  .arcade {
+    --bg: #16003a; --surface: linear-gradient(160deg, rgba(168,85,247,0.34), rgba(90,20,160,0.40));
+    --ink: #f8f2ff; --muted: #b39ddb; --brd: rgba(200,170,255,0.38);
+    --accent: #ffe74a; --accent-soft: rgba(255,231,74,0.18); --accent-brd: rgba(255,231,74,0.5);
+    --good: #34e07a;
+    --prism: linear-gradient(100deg,#ff3db4,#c084fc,#ffffff,#ffe74a);
+  }
+  /* B — Violeta Premium */
+  .premium {
+    --bg: #0d0820; --surface: linear-gradient(160deg, rgba(60,48,110,0.30), rgba(30,24,60,0.40));
+    --ink: #ece9f6; --muted: #7d7699; --brd: rgba(255,255,255,0.10);
+    --accent: #d9b45a; --accent-soft: rgba(217,180,90,0.13); --accent-brd: rgba(217,180,90,0.35);
+    --good: #4ea373;
+    --prism: linear-gradient(100deg,#b7a3e0,#8f82c4,#ffffff,#d9b45a);
+  }
+  /* C — Acento Coral */
+  .coral {
+    --bg: #14092e; --surface: linear-gradient(160deg, rgba(130,90,220,0.24), rgba(70,30,130,0.32));
+    --ink: #f2edfb; --muted: #8a80a8; --brd: rgba(183,156,237,0.26);
+    --accent: #ff6a3d; --accent-soft: rgba(255,106,61,0.15); --accent-brd: rgba(255,106,61,0.42);
+    --good: #22c55e;
+    --prism: linear-gradient(100deg,#c084fc,#a855f7,#ffffff,#ff6a3d);
+  }
+</style>
+</head>
+<body>
+  <h1>Frontle — Exploración de paleta · EXP-1</h1>
+  <p class="sub">3 direcciones que conservan el ADN "Violeta Prisma" pero exploran distinto rumbo,
+  junto a la paleta actual como referencia. Generadas con ui-ux-pro-max (base de 192 paletas) +
+  criterio de frontend-design. Ninguna está aplicada a producción — es para elegir.</p>
+
+  <div class="row">
+    <!-- ACTUAL -->
+    <div>
+      <div class="phone actual">
+        <div class="dir-label"><div class="dir-name">Actual · Violeta Prisma</div><div class="dir-note">oro #fcff52 · lo que hay hoy</div></div>
+        <div class="screen">
+          <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
+          <div class="streak"><span class="flame">🔥</span><span class="num">3</span><span class="lbl">racha</span><span class="bar"><i></i></span></div>
+          <div class="card"><span class="emoji">🌍</span><div><div class="t">Reto diario</div><div class="s">3 niveles · pot 🏆</div></div><span class="go">→</span></div>
+          <div class="card"><span class="emoji">🗺️</span><div><div class="t">Regiones</div><div class="s">gratis</div></div><span class="badge-new">NUEVO</span></div>
+          <div class="nav"><span class="tab on"><span class="i">🌍</span>Jugar</span><span class="tab"><span class="i">🏆</span>Ranking</span><span class="tab"><span class="i">👤</span>Perfil</span><span class="tab"><span class="i">❓</span>Aprender</span></div>
+        </div>
+        <div class="swatches"><span class="sw" style="background:#160833"></span><span class="sw" style="background:#6c2bd9"></span><span class="sw" style="background:#b79ced"></span><span class="sw" style="background:#fcff52"></span></div>
+      </div>
+    </div>
+
+    <!-- A ARCADE -->
+    <div>
+      <div class="phone arcade">
+        <div class="dir-label"><div class="dir-name">A · Arcade Neón</div><div class="dir-note">más saturado, más energía</div></div>
+        <div class="screen">
+          <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
+          <div class="streak"><span class="flame">🔥</span><span class="num">3</span><span class="lbl">racha</span><span class="bar"><i></i></span></div>
+          <div class="card"><span class="emoji">🌍</span><div><div class="t">Reto diario</div><div class="s">3 niveles · pot 🏆</div></div><span class="go">→</span></div>
+          <div class="card"><span class="emoji">🗺️</span><div><div class="t">Regiones</div><div class="s">gratis</div></div><span class="badge-new">NUEVO</span></div>
+          <div class="nav"><span class="tab on"><span class="i">🌍</span>Jugar</span><span class="tab"><span class="i">🏆</span>Ranking</span><span class="tab"><span class="i">👤</span>Perfil</span><span class="tab"><span class="i">❓</span>Aprender</span></div>
+        </div>
+        <div class="swatches"><span class="sw" style="background:#16003a"></span><span class="sw" style="background:#a855f7"></span><span class="sw" style="background:#ff3db4"></span><span class="sw" style="background:#ffe74a"></span></div>
+      </div>
+    </div>
+
+    <!-- B PREMIUM -->
+    <div>
+      <div class="phone premium">
+        <div class="dir-label"><div class="dir-name">B · Violeta Premium</div><div class="dir-note">sobrio, refinado, champagne</div></div>
+        <div class="screen">
+          <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
+          <div class="streak"><span class="flame">🔥</span><span class="num">3</span><span class="lbl">racha</span><span class="bar"><i></i></span></div>
+          <div class="card"><span class="emoji">🌍</span><div><div class="t">Reto diario</div><div class="s">3 niveles · pot 🏆</div></div><span class="go">→</span></div>
+          <div class="card"><span class="emoji">🗺️</span><div><div class="t">Regiones</div><div class="s">gratis</div></div><span class="badge-new">NUEVO</span></div>
+          <div class="nav"><span class="tab on"><span class="i">🌍</span>Jugar</span><span class="tab"><span class="i">🏆</span>Ranking</span><span class="tab"><span class="i">👤</span>Perfil</span><span class="tab"><span class="i">❓</span>Aprender</span></div>
+        </div>
+        <div class="swatches"><span class="sw" style="background:#0d0820"></span><span class="sw" style="background:#3c306e"></span><span class="sw" style="background:#b7a3e0"></span><span class="sw" style="background:#d9b45a"></span></div>
+      </div>
+    </div>
+
+    <!-- C CORAL -->
+    <div>
+      <div class="phone coral">
+        <div class="dir-label"><div class="dir-name">C · Acento Coral</div><div class="dir-note">acento cálido #ff6a3d (sin oro)</div></div>
+        <div class="screen">
+          <div class="hd"><span class="wordmark">FRONTLE</span><span class="spacer"></span><span class="chip">🏆 0.40</span><span class="icobtn">⚙️</span></div>
+          <div class="streak"><span class="flame">🔥</span><span class="num">3</span><span class="lbl">racha</span><span class="bar"><i></i></span></div>
+          <div class="card"><span class="emoji">🌍</span><div><div class="t">Reto diario</div><div class="s">3 niveles · pot 🏆</div></div><span class="go">→</span></div>
+          <div class="card"><span class="emoji">🗺️</span><div><div class="t">Regiones</div><div class="s">gratis</div></div><span class="badge-new">NUEVO</span></div>
+          <div class="nav"><span class="tab on"><span class="i">🌍</span>Jugar</span><span class="tab"><span class="i">🏆</span>Ranking</span><span class="tab"><span class="i">👤</span>Perfil</span><span class="tab"><span class="i">❓</span>Aprender</span></div>
+        </div>
+        <div class="swatches"><span class="sw" style="background:#14092e"></span><span class="sw" style="background:#825adc"></span><span class="sw" style="background:#b79ced"></span><span class="sw" style="background:#ff6a3d"></span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
