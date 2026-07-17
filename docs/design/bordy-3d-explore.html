@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Bordy 3D desde cero (EXP-2b)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%) fixed;
+    color: #f3edff; padding: 24px; -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; margin-bottom: 10px; }
+  .sub { color: #a99cc7; font-size: 13px; margin-bottom: 22px; max-width: 680px; line-height: 1.5; }
+  .sub b { color: #fff; }
+  code { font-family: Consolas, monospace; font-size: 0.92em; color: #d8ccf2; }
+
+  .panel {
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(138,92,245,0.26), rgba(76,29,149,0.30));
+    border: 1px solid rgba(183,156,237,0.28);
+    backdrop-filter: blur(12px);
+    padding: 18px;
+  }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: stretch; margin-bottom: 22px; }
+
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 340px; }
+  .stage .who { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; }
+  .stage .frame { width: 100%; height: 380px; display: grid; place-items: center; border-radius: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(183,156,237,0.2); overflow: hidden; position: relative; }
+  .stage img { width: 230px; height: 278px; object-fit: contain; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.45)); }
+  .stage canvas { display: block; }
+  .stage .cap { font-size: 11px; color: #a99cc7; text-align: center; line-height: 1.45; }
+
+  .exp-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 14px 0 4px; }
+  .exp-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    min-width: 96px; padding: 8px 10px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(183,156,237,0.28);
+    color: #f3edff; font: inherit; transition: transform 0.08s ease, background 0.15s ease;
+  }
+  .exp-btn:active { transform: scale(0.95); }
+  .exp-btn .e { font-size: 17px; }
+  .exp-btn .n { font-size: 11px; font-weight: 800; }
+  .exp-btn .u { font-size: 9px; color: #a99cc7; }
+  .exp-btn.on { background: rgba(252,255,82,0.12); border-color: rgba(252,255,82,0.45); }
+  .exp-btn.on .u { color: #fcff52; }
+  .exp-btn:focus-visible { outline: 2px solid #fcff52; outline-offset: 2px; }
+
+  .specs { max-width: 940px; }
+  .specs table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .specs th, .specs td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(183,156,237,0.18); vertical-align: top; line-height: 1.45; }
+  .specs th { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; }
+  .specs td:first-child { white-space: nowrap; font-weight: 700; }
+  .note { font-size: 11px; color: #a99cc7; line-height: 1.55; margin-top: 10px; max-width: 900px; }
+  .note b { color: #e9e2f8; }
+</style>
+</head>
+<body>
+  <h1>Bordy 3D desde cero · EXP-2b</h1>
+  <p class="sub">Modelo nuevo en Three.js a partir de las referencias de David (ver
+  <code>references/README.md</code>): <b>proporciones no uniformes y nada humanas</b> — una
+  cabeza-globo esférica que domina la silueta (guiño a la geografía de Frontle), cuerpo cápsula
+  pequeño, <b>brazos bendy de segmentos</b> como la referencia gris de modelado, y cara de vidrio
+  oscuro donde <b>solo viven los ojos</b> (sin boca, estilo K-VRC). La antena sigue siendo el LED
+  que habla el idioma del semáforo del juego. Exploración: no toca producción.</p>
+
+  <div class="row">
+    <div class="stage panel">
+      <span class="who">Actual · bordy-m2.webp (raster)</span>
+      <div class="frame"><img src="../../frontend/public/bordy-m2.webp" alt="Bordy actual (imagen raster)"></div>
+      <span class="cap">El Bordy vigente: render 3D estático. Una sola cara y una sola pose para
+      todos los momentos del juego.</span>
+    </div>
+
+    <div class="stage panel">
+      <span class="who">Propuesta · Bordy 3D en vivo (Three.js)</span>
+      <div class="frame" id="stage3d" role="img" aria-label="Bordy 3D, mascota de Frontle, expresión seleccionable"></div>
+      <div class="exp-btns" role="group" aria-label="Expresiones de Bordy">
+        <button class="exp-btn on" data-st="idle"><span class="e">🙂</span><span class="n">Idle</span><span class="u">hero · FAB · coach</span></button>
+        <button class="exp-btn" data-st="acierto"><span class="e">😄</span><span class="n">Acierto</span><span class="u">semáforo verde</span></button>
+        <button class="exp-btn" data-st="fallo"><span class="e">😵</span><span class="n">Fallo</span><span class="u">desvío grande</span></button>
+        <button class="exp-btn" data-st="racha"><span class="e">🎉</span><span class="n">Racha</span><span class="u">milestone-toast</span></button>
+        <button class="exp-btn" data-st="pensando"><span class="e">🤔</span><span class="n">Pensando</span><span class="u">comprar pista</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel specs">
+    <h2>Decisiones (diseño y rendimiento) — para la fase de integración</h2>
+    <table>
+      <tr><th>Tema</th><th>Decisión</th></tr>
+      <tr><td>Silueta</td><td>Cabeza-globo esférica ~2.3× el cuerpo (ref. 2 y 3: masas desproporcionadas, no humano). Meridianos sutiles en la esfera = guiño geográfico sin ser una Tierra literal.</td></tr>
+      <tr><td>Cara</td><td>Casquete de vidrio oscuro con solo ojos luminosos (sin boca). Toda la expresión = forma de ojos + pose + color del LED de la antena (semáforo del juego).</td></tr>
+      <tr><td>Brazos</td><td>Bendy: 6 esferas por brazo sobre una curva paramétrica (ángulo+curl). La pose se anima por parámetros con lerp → transiciones interrumpibles (se puede cambiar de expresión a mitad de animación sin saltos).</td></tr>
+      <tr><td>Polígonos</td><td>~14 k triángulos, ~40 draw calls. Esferas 48×32 solo en la cabeza; el resto 16×12. Apto para gama media/baja (MiniPay).</td></tr>
+      <tr><td>Texturas</td><td>Cero texturas externas; solo 1 canvas 256×256 procedural para la sombra de contacto. Materiales de color plano + emissive (bundle mínimo).</td></tr>
+      <tr><td>Loop</td><td><code>requestAnimationFrame</code> continuo con estado paramétrico (compatible con <code>frameloop</code> de react-three-fiber). Con <code>prefers-reduced-motion</code>: <b>sin loop</b> — render bajo demanda, un frame por cambio de expresión.</td></tr>
+      <tr><td>One-shots</td><td>Hop (acierto) y sacudida (fallo) son envolventes amortiguadas de &lt;0.7 s disparadas al entrar al estado, no keyframes que se reinician.</td></tr>
+    </table>
+    <p class="note"><b>Expresiones y su caso de uso real:</b> idle (hero/FAB/coachmarks, el
+    <code>bordy-float</code> de siempre) · acierto (semáforo verde, ruta óptima) · fallo (desvío
+    grande, <code>--far</code>) · racha (el <code>milestone-toast</code> de GAM-2) · pensando
+    (compra de pista). Abrir con <code>?st=racha</code> (u otro estado) selecciona la expresión
+    directo. <b>No reemplaza <code>bordy-m2.webp</code></b> — David decide si este Bordy pasa a la
+    app vía react-three-fiber.</p>
+  </div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const W = 336, H = 380;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- paleta (Violeta Prisma + oro Celo) ----------
+const C = {
+  headA: '#4b2ed6', headB: '#2a1a5e',      // violeta rico (dos tonos vía luz)
+  glass: '#08060f',                          // vidrio de la cara
+  bodyC: '#241552',                          // cuerpo más oscuro que la cabeza
+  lav:   '#b79ced',                          // orejas / detalles
+  gold:  '#fcff52',                          // núcleo de pecho, oro Celo
+  eye:   '#fff3c4',                          // ojos: marfil cálido (el color semántico vive en el LED)
+  led:   { idle: '#efe08a', acierto: '#22c55e', fallo: '#ef4444', racha: '#fcff52', pensando: '#22d3ee' },
+};
+
+// ---------- render base ----------
+const stage = document.getElementById('stage3d');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(W, H);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+stage.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(33, W / H, 0.1, 50);
+cam.position.set(2.3, 2.0, 6.1);
+cam.lookAt(0, 1.22, 0);
+
+scene.add(new THREE.AmbientLight('#8f92c0', 0.55));
+const key = new THREE.DirectionalLight('#fff2dd', 2.0); key.position.set(2.5, 4, 3); scene.add(key);
+const rimL = new THREE.DirectionalLight('#a855f7', 2.4); rimL.position.set(-4, 1.6, -2); scene.add(rimL);
+const rimR = new THREE.DirectionalLight('#fcff52', 1.7); rimR.position.set(4, 1.1, -2.5); scene.add(rimR);
+
+// sombra de contacto (única "textura": canvas procedural)
+function shadowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128, 128, 10, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(0,0,0,0.8)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+const shadow = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 3.4),
+  new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, depthWrite: false }));
+shadow.rotation.x = -Math.PI / 2; shadow.position.y = -0.52; scene.add(shadow);
+
+// ---------- materiales ----------
+const soft = (color, extra = {}) => new THREE.MeshPhysicalMaterial({
+  color, roughness: 0.3, metalness: 0.08, clearcoat: 1, clearcoatRoughness: 0.2, ...extra });
+const matHead = soft(C.headA);
+const matBody = soft(C.bodyC);
+const matGlass = soft(C.glass, { roughness: 0.12, clearcoatRoughness: 0.08 });
+const matLav = soft(C.lav);
+
+// ---------- rig ----------
+const rig = new THREE.Group(); scene.add(rig);
+
+// cuerpo pequeño (la cabeza domina: proporción no uniforme, ref. 2)
+const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.46, 0.3, 8, 20), matBody);
+body.position.y = 0.28; body.scale.set(1.08, 1, 0.92); rig.add(body);
+// núcleo de pecho dorado (ref. 1: un solo acento en el pecho)
+const coreRing = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 10, 24), matGlass);
+coreRing.position.set(0, 0.34, 0.44); rig.add(coreRing);
+const core = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12),
+  soft(C.gold, { emissive: C.gold, emissiveIntensity: 0.9 }));
+core.position.set(0, 0.34, 0.46); rig.add(core);
+// pies stub
+for (const s of [-1, 1]) {
+  const foot = new THREE.Mesh(new THREE.CapsuleGeometry(0.125, 0.08, 6, 14), matLav);
+  foot.position.set(0.24 * s, -0.32, 0.04); foot.scale.set(1.15, 0.72, 1.3); rig.add(foot);
+}
+
+// ---------- cabeza-globo ----------
+const headG = new THREE.Group(); headG.position.y = 1.62; rig.add(headG);
+const HEAD_R = 1.02;
+headG.add(new THREE.Mesh(new THREE.SphereGeometry(HEAD_R, 48, 32), matHead));
+// meridianos sutiles (guiño geográfico): tres aros finos apenas más oscuros
+const seamMat = soft('#3b23a8');
+for (const ry of [0.5, -0.5]) {
+  const seam = new THREE.Mesh(new THREE.TorusGeometry(HEAD_R + 0.002, 0.008, 6, 64), seamMat);
+  seam.rotation.y = ry; headG.add(seam);
+}
+const eq = new THREE.Mesh(new THREE.TorusGeometry(HEAD_R * 0.86, 0.008, 6, 64), seamMat);
+eq.rotation.x = Math.PI / 2; eq.position.y = -0.55; headG.add(eq);
+
+// cara: casquete de vidrio oscuro inset, con margen respecto al borde (ref. 3)
+const glass = new THREE.Mesh(
+  new THREE.SphereGeometry(HEAD_R + 0.025, 48, 24,
+    Math.PI / 2 - 0.60, 1.20,   // ancho (centrado en +Z)
+    Math.PI / 2 - 0.42, 0.86),  // alto
+  matGlass);
+headG.add(glass);
+
+// orejas-aleta lavanda
+for (const s of [-1, 1]) {
+  const ear = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), matLav);
+  ear.position.set(1.05 * s, 0.05, 0); ear.scale.set(0.34, 1.15, 0.8); headG.add(ear);
+}
+
+// antena: LED semáforo
+const stem = new THREE.Mesh(new THREE.CapsuleGeometry(0.028, 0.24, 6, 10), matLav);
+stem.position.y = HEAD_R + 0.14; headG.add(stem);
+const ledMat = new THREE.MeshStandardMaterial({ color: C.led.idle, emissive: C.led.idle, emissiveIntensity: 1.4 });
+const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 14), ledMat);
+bulb.position.y = HEAD_R + 0.33; headG.add(bulb);
+const haloMat = new THREE.MeshBasicMaterial({ color: C.led.idle, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending });
+const halo = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 12), haloMat);
+halo.position.copy(bulb.position); headG.add(halo);
+
+// ---------- ojos (sobre el vidrio, un set por expresión) ----------
+const FACE_R = HEAD_R + 0.07;
+function onFace(u, v, mesh) {
+  const z = Math.sqrt(Math.max(FACE_R * FACE_R - u * u - v * v, 0.01));
+  mesh.position.set(u, v, z);
+  mesh.lookAt(u * 2, v * 2, z * 2);
+  return mesh;
+}
+const eyeMat = () => new THREE.MeshBasicMaterial({ color: C.eye, transparent: true, opacity: 0 });
+const eyeSets = {};
+function makeSet(name, build) {
+  const g = new THREE.Group(); g.userData.o = 0; g.visible = false;
+  build(g); headG.add(g); eyeSets[name] = g;
+}
+const EY = 0.06; // altura base de los ojos en la cara
+makeSet('idle', (g) => {
+  for (const s of [-1, 1]) g.add(onFace(0.3 * s, EY, new THREE.Mesh(new THREE.CircleGeometry(0.19, 28), eyeMat())));
+});
+makeSet('acierto', (g) => {  // arcos felices ∩
+  for (const s of [-1, 1]) {
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.055, 8, 20, Math.PI), eyeMat());
+    g.add(onFace(0.3 * s, EY - 0.02, arc));
+  }
+});
+makeSet('fallo', (g) => {    // ojos X
+  for (const s of [-1, 1]) for (const r of [Math.PI / 4, -Math.PI / 4]) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.02), eyeMat());
+    onFace(0.3 * s, EY, bar); bar.rotateZ(r); g.add(bar);
+  }
+});
+makeSet('racha', (g) => {    // ojos estrella
+  const star = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 === 0 ? 0.23 : 0.1;
+    i === 0 ? star.moveTo(Math.cos(a) * r, Math.sin(a) * r) : star.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  const geo = new THREE.ShapeGeometry(star);
+  for (const s of [-1, 1]) g.add(onFace(0.3 * s, EY, new THREE.Mesh(geo, eyeMat())));
+});
+makeSet('pensando', (g) => { // pupilas asimétricas mirando arriba-lado
+  g.add(onFace(-0.26, EY + 0.14, new THREE.Mesh(new THREE.CircleGeometry(0.14, 24), eyeMat())));
+  g.add(onFace(0.36, EY + 0.17, new THREE.Mesh(new THREE.CircleGeometry(0.105, 24), eyeMat())));
+});
+
+// ---------- brazos bendy (ref. 2: tubo de segmentos) ----------
+const SEGS = 6, SEG_LEN = 0.15;
+function makeArm(side) {
+  const g = new THREE.Group(); rig.add(g);
+  const parts = [];
+  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), matLav);
+  g.add(shoulder);
+  for (let i = 0; i < SEGS; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.096, 14, 10), matHead);
+    g.add(m); parts.push(m);
+  }
+  const hand = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), matLav);
+  g.add(hand);
+  return { side, parts, hand, base: new THREE.Vector3(0.6 * side, 0.6, 0.07) };
+}
+const armL = makeArm(-1), armR = makeArm(1);
+function poseArm(arm, ang, curl, fz) {
+  const p = arm.base.clone();
+  arm.parts.forEach((m, i) => {
+    const th = -Math.PI / 2 + ang + curl * (i / SEGS);
+    p.x += SEG_LEN * Math.cos(th) * arm.side;
+    p.y += SEG_LEN * Math.sin(th);
+    p.z += fz * SEG_LEN * (i / SEGS) * 1.6;
+    m.position.copy(p);
+  });
+  arm.hand.position.copy(p).add(new THREE.Vector3(0, -0.02, fz * 0.12));
+  // el hombro queda fijo en la base
+  arm.parts[0].parent.children[0].position.copy(arm.base);
+}
+
+// ---------- chispas (racha) y puntos de pensamiento ----------
+const fxMat = (color) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
+const sparks = [[-1.5, 2.6, 0.3], [1.6, 2.9, 0.1], [1.9, 1.7, 0.4]].map((p, i) => {
+  const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.1), fxMat(C.gold));
+  m.position.set(...p); m.userData.ph = i * 2.1; scene.add(m); return m;
+});
+const dots = [[1.35, 2.55, 0.5, 0.05], [1.6, 2.85, 0.4, 0.07], [1.9, 3.15, 0.3, 0.09]].map((p, i) => {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(p[3], 10, 8), fxMat(C.lav));
+  m.position.set(p[0], p[1], p[2]); m.userData.ph = i * 0.55; scene.add(m); return m;
+});
+
+// ---------- máquina de estados paramétrica ----------
+// (una pose = números; el loop hace lerp → transiciones interrumpibles)
+const POSES = {
+  idle:     { bobA: 0.06, bobS: 1.0, tilt: 0,     aL: [0.14, 0.3, 0],  aR: [0.14, 0.3, 0],  eyes: 'idle',     fx: null },
+  acierto:  { bobA: 0.05, bobS: 1.2, tilt: 0,     aL: [1.25, 0.5, 0],  aR: [1.25, 0.5, 0],  eyes: 'acierto',  fx: null },
+  fallo:    { bobA: 0.02, bobS: 0.7, tilt: -0.14, aL: [0.04, 0.12, 0], aR: [0.04, 0.12, 0], eyes: 'fallo',    fx: null },
+  racha:    { bobA: 0.12, bobS: 2.3, tilt: 0.04,  aL: [2.35, 0.5, 0],  aR: [2.35, 0.5, 0],  eyes: 'racha',    fx: 'sparks' },
+  pensando: { bobA: 0.03, bobS: 0.5, tilt: 0.06,  aL: [0.28, 0.5, 0],  aR: [2.05, 1.65, 0.5], eyes: 'pensando', fx: 'dots' },
+};
+let state = 'idle', tEnter = performance.now();
+const cur = { bobA: 0.06, bobS: 1, tilt: 0, aL: [0.32, 0.55, 0], aR: [0.32, 0.55, 0] };
+const ledCur = new THREE.Color(C.led.idle);
+
+function setState(name) {
+  if (!POSES[name]) return;
+  state = name; tEnter = performance.now();
+  document.querySelectorAll('.exp-btn').forEach((b) => b.classList.toggle('on', b.dataset.st === name));
+  if (REDUCED) { snapTo(name); draw(performance.now()); }
+}
+function snapTo(name) {
+  const P = POSES[name];
+  Object.assign(cur, { bobA: P.bobA, bobS: P.bobS, tilt: P.tilt, aL: [...P.aL], aR: [...P.aR] });
+  ledCur.set(C.led[name]);
+  for (const k in eyeSets) eyeSets[k].userData.o = k === P.eyes ? 1 : 0;
+  sparks.forEach((m) => { m.material.opacity = P.fx === 'sparks' ? 0.85 : 0; });
+  dots.forEach((m) => { m.material.opacity = P.fx === 'dots' ? 0.8 : 0; });
+}
+
+const lerp = (a, b, k) => a + (b - a) * k;
+function draw(now) {
+  const P = POSES[state];
+  const t = now / 1000, te = (now - tEnter) / 1000;
+  const k = REDUCED ? 1 : 0.1;
+
+  cur.bobA = lerp(cur.bobA, P.bobA, k); cur.bobS = lerp(cur.bobS, P.bobS, k);
+  cur.tilt = lerp(cur.tilt, P.tilt, k);
+  for (let i = 0; i < 3; i++) { cur.aL[i] = lerp(cur.aL[i], P.aL[i], k); cur.aR[i] = lerp(cur.aR[i], P.aR[i], k); }
+  ledCur.lerp(new THREE.Color(C.led[state]), REDUCED ? 1 : 0.14);
+
+  // flote + one-shots amortiguados (hop de acierto, sacudida de fallo)
+  let y = REDUCED ? 0 : Math.sin(t * cur.bobS * 2.1) * cur.bobA;
+  let x = 0, rz = cur.tilt;
+  if (!REDUCED && state === 'acierto') y += 0.34 * Math.exp(-3.2 * te) * Math.abs(Math.sin(te * 7));
+  if (!REDUCED && state === 'fallo') { x = 0.05 * Math.exp(-5 * te) * Math.sin(te * 34); rz += 0.06 * Math.exp(-4 * te) * Math.sin(te * 30); }
+  rig.position.set(x, y, 0); rig.rotation.z = rz;
+  if (!REDUCED && state === 'pensando') rig.rotation.z = rz + Math.sin(t * 0.9) * 0.025;
+  shadow.scale.setScalar(1 - y * 0.18);
+
+  poseArm(armL, cur.aL[0], cur.aL[1], cur.aL[2]);
+  poseArm(armR, cur.aR[0], cur.aR[1], cur.aR[2]);
+
+  // LED (+ pulso en racha, parpadeo lento en pensando)
+  let glow = 1.05;
+  if (!REDUCED && state === 'racha') glow = 1.1 + 0.9 * (0.5 + 0.5 * Math.sin(t * 10));
+  if (!REDUCED && state === 'pensando') glow = 0.9 + 0.8 * (0.5 + 0.5 * Math.sin(t * 4.5));
+  ledMat.color.copy(ledCur); ledMat.emissive.copy(ledCur); ledMat.emissiveIntensity = glow;
+  haloMat.color.copy(ledCur); haloMat.opacity = 0.1 + glow * 0.1;
+
+  // crossfade de ojos
+  for (const k2 in eyeSets) {
+    const g = eyeSets[k2], target = k2 === P.eyes ? 1 : 0;
+    g.userData.o = REDUCED ? target : lerp(g.userData.o, target, 0.16);
+    g.visible = g.userData.o > 0.02;
+    if (g.visible) g.traverse((m) => { if (m.material) m.material.opacity = g.userData.o; });
+  }
+  // fx
+  sparks.forEach((m) => {
+    const on = P.fx === 'sparks';
+    const tw = REDUCED ? 0.85 : (0.5 + 0.5 * Math.sin(t * 5 + m.userData.ph));
+    m.material.opacity = lerp(m.material.opacity, on ? 0.9 * tw : 0, REDUCED ? 1 : 0.15);
+    if (!REDUCED) { m.rotation.y = t * 2 + m.userData.ph; m.scale.setScalar(0.8 + 0.35 * tw); }
+  });
+  dots.forEach((m) => {
+    const on = P.fx === 'dots';
+    const tw = REDUCED ? 0.8 : Math.max(0, Math.sin(t * 2.2 - m.userData.ph)) ** 2;
+    m.material.opacity = lerp(m.material.opacity, on ? 0.85 * tw : 0, REDUCED ? 1 : 0.12);
+  });
+
+  renderer.render(scene, cam);
+}
+
+// primer frame + loop (con reduced-motion: solo bajo demanda)
+snapTo('idle'); draw(performance.now());
+if (!REDUCED) (function loop(now) { draw(now); requestAnimationFrame(loop); })(performance.now());
+
+// botones + ?st=
+document.querySelectorAll('.exp-btn').forEach((b) => b.addEventListener('click', () => setState(b.dataset.st)));
+// ?st= es una entrada directa, no una transición: snap a la pose final
+const q = new URLSearchParams(location.search).get('st');
+if (q && POSES[q]) { setState(q); snapTo(q); draw(performance.now()); }
+window.__done = true;
+</script>
+</body>
+</html>
