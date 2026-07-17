@@ -100,14 +100,14 @@ export default function StatsView() {
                     <span className="font-display text-2xl font-bold text-white tabular-nums leading-none">
                       {pct(r.retained / r.cohort)}
                     </span>
-                    <span className="text-[10px] text-neutral-500 leading-tight tabular-nums">
+                    <span className="text-[10px] text-neutral-400 leading-tight tabular-nums">
                       {num(r.retained)}/{num(r.cohort)}
                     </span>
                   </>
                 ) : (
                   <>
                     <span className="font-display text-2xl font-bold text-neutral-600 leading-none">—</span>
-                    <span className="text-[10px] text-neutral-500 leading-tight">{tr.noCohort}</span>
+                    <span className="text-[10px] text-neutral-400 leading-tight">{tr.noCohort}</span>
                   </>
                 )}
               </div>
@@ -184,7 +184,7 @@ export default function StatsView() {
           </div>
 
           {activity.truncated && (
-            <p className="text-[10px] text-neutral-500 mt-1.5 px-0.5 leading-relaxed">{tr.partialData}</p>
+            <p className="text-[10px] text-neutral-400 mt-1.5 px-0.5 leading-relaxed">{tr.partialData}</p>
           )}
         </section>
       )}
@@ -254,7 +254,7 @@ export default function StatsView() {
         </div>
       </section>
 
-      <footer className="text-center text-[11px] text-neutral-500">
+      <footer className="text-center text-[11px] text-neutral-400">
         Frontle ·{" "}
         <a href="https://celo.org" className="underline" target="_blank" rel="noopener noreferrer">
           Celo
@@ -277,7 +277,7 @@ function SectionHead({ title, aside, bare = false }: { title: string; aside?: st
   return (
     <div className={`flex items-baseline justify-between gap-3 ${bare ? "" : "mb-2 px-0.5"}`}>
       <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">{title}</h2>
-      {aside && <span className="text-[10px] text-neutral-500 tabular-nums">{aside}</span>}
+      {aside && <span className="text-[10px] text-neutral-400 tabular-nums">{aside}</span>}
     </div>
   );
 }
@@ -328,7 +328,7 @@ function Stat({
       ) : (
         <span className="h-6 w-16 rounded bg-white/10 animate-pulse" />
       )}
-      {hint && <span className="text-[10px] text-neutral-500 leading-tight">{hint}</span>}
+      {hint && <span className="text-[10px] text-neutral-400 leading-tight">{hint}</span>}
     </div>
   );
 }

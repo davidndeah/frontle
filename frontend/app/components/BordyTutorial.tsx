@@ -202,7 +202,7 @@ function InputDemo({ text, locale, placeholder }: { text: string; locale: Locale
             <span className="inline-block w-[2px] h-3.5 bg-white ml-0.5 align-middle animate-pulse" />
           </>
         ) : (
-          <span className="text-neutral-500">{placeholder}</span>
+          <span className="text-neutral-400">{placeholder}</span>
         )}
       </div>
       {/* espacio RESERVADO para la sugerencia: aparece sin tapar a Bordy ni la burbuja */}
