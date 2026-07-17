@@ -27,10 +27,14 @@ Haiku/Sonnet, igual que en la ronda anterior.
 - **`frontend-design`** — para la personalidad del personaje (paso 2): qué hace que esto sea
   "Bordy" y no una mascota-robot genérica, siguiendo el ciclo brainstorm → explorar → criticarse
   que pide la skill. Es la que más importa acá.
-- **`ui-ux-pro-max`** — dos usos puntuales: (a) su base de paletas/color si hace falta resolver
-  algún acento que no venga definido por las fotos de referencia; (b) sus presets de motion (GSAP)
-  como referencia de *sensación* de easing/timing al animar las 5 expresiones, aunque la
-  implementación final sea con el loop de Three.js y no con GSAP.
+- **`ui-ux-pro-max`** — solo si hace falta resolver algún acento de color que las fotos de
+  referencia no definan (su base de 192 paletas); no usarla para motion, ver siguiente punto.
+- **`review-animations`** (Emil Kowalski) — usarla en el paso 6, antes de abrir el PR, para
+  criticar las transiciones de las 5 expresiones: motion justificado, easing de entrada/salida,
+  interrumpibilidad, asimetría entrar/salir, cohesión con la personalidad del personaje. Sus
+  reglas están escritas para CSS/JS (propiedades GPU-only, `prefers-reduced-motion`), no para
+  WebGL — aplicar los *principios* (por qué anima, qué tan rápido, si se puede interrumpir) al
+  loop de animación de Three.js, no buscar código CSS literal que no existe en este contexto.
 - **`impeccable`** — auditoría final antes de abrir el PR (ver paso 6 de la Tarea): equivalente de
   `prefers-reduced-motion` para WebGL (pausar el loop de render, no solo las transiciones CSS),
   contraste de la UI de comparación alrededor del canvas 3D. Mismo uso que se le dio en las 3
@@ -41,6 +45,8 @@ Haiku/Sonnet, igual que en la ronda anterior.
   solo declarar que funciona.
 
 No se necesita `design` (logo/CIP/banners) ni `dataviz` — no aplican a este tipo de asset.
+`superpowers` **no está instalada** en esta máquina (se corrigió una nota de memoria que decía lo
+contrario) — no invocarla.
 
 ---
 
@@ -100,9 +106,11 @@ haberlas visto.
    con el `bordy-m2.webp` actual — mismo patrón visual que ya se usó en `bordy-svg-explore.html`
    (que se puede mirar como referencia de estructura de comparación, aunque no de diseño del
    personaje).
-6. Antes de dar el PR por terminado: correr `impeccable` sobre el HTML (reduced-motion del loop
-   de render, contraste de la UI alrededor del canvas) y usar `verify` para exercitar los botones
-   de expresión en un navegador real — confirmar que cada click cambia el render, no solo asumirlo.
+6. Antes de dar el PR por terminado: invocar `review-animations` para criticar las transiciones
+   de las 5 expresiones (motion justificado, easing, interrumpibilidad, cohesión), correr
+   `impeccable` sobre el HTML (reduced-motion del loop de render, contraste de la UI alrededor del
+   canvas) y usar `verify` para exercitar los botones de expresión en un navegador real — confirmar
+   que cada click cambia el render, no solo asumirlo.
 
 ## Consideraciones de rendimiento (porque el destino final es producción)
 
