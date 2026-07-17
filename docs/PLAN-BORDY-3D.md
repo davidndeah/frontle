@@ -22,6 +22,28 @@ Haiku/Sonnet, igual que en la ronda anterior.
 
 ---
 
+## Skills a invocar (del listado instalado)
+
+- **`frontend-design`** — para la personalidad del personaje (paso 2): qué hace que esto sea
+  "Bordy" y no una mascota-robot genérica, siguiendo el ciclo brainstorm → explorar → criticarse
+  que pide la skill. Es la que más importa acá.
+- **`ui-ux-pro-max`** — dos usos puntuales: (a) su base de paletas/color si hace falta resolver
+  algún acento que no venga definido por las fotos de referencia; (b) sus presets de motion (GSAP)
+  como referencia de *sensación* de easing/timing al animar las 5 expresiones, aunque la
+  implementación final sea con el loop de Three.js y no con GSAP.
+- **`impeccable`** — auditoría final antes de abrir el PR (ver paso 6 de la Tarea): equivalente de
+  `prefers-reduced-motion` para WebGL (pausar el loop de render, no solo las transiciones CSS),
+  contraste de la UI de comparación alrededor del canvas 3D. Mismo uso que se le dio en las 3
+  auditorías de frontend previas de este repo.
+- **`verify`** — antes de dar el PR por terminado, exercitar el HTML de verdad en navegador (click
+  en cada botón de expresión, confirmar que el render de Three.js cambia) en vez de solo describir
+  el resultado. Es justo la lección de "qué falló la vez pasada": verificar contra lo real, no
+  solo declarar que funciona.
+
+No se necesita `design` (logo/CIP/banners) ni `dataviz` — no aplican a este tipo de asset.
+
+---
+
 ## Qué falló en el intento anterior (no repetir)
 
 El `bordy-svg-explore.html` (PR #62, cerrado) construyó a Bordy como SVG plano: formas
@@ -78,6 +100,9 @@ haberlas visto.
    con el `bordy-m2.webp` actual — mismo patrón visual que ya se usó en `bordy-svg-explore.html`
    (que se puede mirar como referencia de estructura de comparación, aunque no de diseño del
    personaje).
+6. Antes de dar el PR por terminado: correr `impeccable` sobre el HTML (reduced-motion del loop
+   de render, contraste de la UI alrededor del canvas) y usar `verify` para exercitar los botones
+   de expresión en un navegador real — confirmar que cada click cambia el render, no solo asumirlo.
 
 ## Consideraciones de rendimiento (porque el destino final es producción)
 
