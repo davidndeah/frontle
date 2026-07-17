@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Bordy en SVG animable (EXP-2)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%) fixed;
+    color: #f3edff; padding: 24px; -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; margin-bottom: 10px; }
+  .sub { color: #a99cc7; font-size: 13px; margin-bottom: 22px; max-width: 660px; line-height: 1.5; }
+  .sub b { color: #fff; }
+  code { font-family: Consolas, monospace; font-size: 0.92em; color: #d8ccf2; }
+
+  .panel {
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(138,92,245,0.26), rgba(76,29,149,0.30));
+    border: 1px solid rgba(183,156,237,0.28);
+    backdrop-filter: blur(12px);
+    padding: 18px;
+  }
+  .row { display: flex; gap: 18px; flex-wrap: wrap; align-items: stretch; margin-bottom: 22px; }
+
+  /* ---- comparación lado a lado ---- */
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 300px; }
+  .stage .who { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; }
+  .stage .frame { width: 100%; height: 320px; display: grid; place-items: center; border-radius: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(183,156,237,0.2); }
+  .stage img { width: 210px; height: 254px; object-fit: contain; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.45)); }
+  .stage .cap { font-size: 11px; color: #a99cc7; text-align: center; line-height: 1.45; }
+
+  /* ---- botonera de expresiones ---- */
+  .exp-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 14px 0 4px; }
+  .exp-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    min-width: 92px; padding: 8px 10px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(183,156,237,0.28);
+    color: #f3edff; font: inherit; transition: transform 0.08s ease, background 0.15s ease;
+  }
+  .exp-btn:active { transform: scale(0.95); }
+  .exp-btn .e { font-size: 17px; }
+  .exp-btn .n { font-size: 11px; font-weight: 800; }
+  .exp-btn .u { font-size: 9px; color: #a99cc7; }
+  .exp-btn.on { background: rgba(252,255,82,0.12); border-color: rgba(252,255,82,0.45); }
+  .exp-btn.on .u { color: #fcff52; }
+  .exp-btn:focus-visible { outline: 2px solid #fcff52; outline-offset: 2px; }
+
+  /* ================= BORDY SVG — estados ================= */
+  .bordy { width: 210px; height: 258px; --led: #efe98d; }
+  /* el LED habla el idioma del semáforo del juego */
+  .bordy.st-acierto  { --led: #22c55e; }
+  .bordy.st-fallo    { --led: #ef4444; }
+  .bordy.st-racha    { --led: #fcff52; }
+  .bordy.st-pensando { --led: #22d3ee; }
+  .bordy .led { fill: var(--led); transition: fill 0.25s ease; }
+  .bordy .led-glow { fill: var(--led); opacity: 0.35; transition: fill 0.25s ease; filter: blur(6px); }
+
+  /* partes intercambiables: cada estado enciende su set (crossfade + pop corto) */
+  .bordy .part { opacity: 0; transition: opacity 0.16s ease; }
+  .st-idle     .p-idle,
+  .st-acierto  .p-acierto,
+  .st-fallo    .p-fallo,
+  .st-racha    .p-racha,
+  .st-pensando .p-pensando { opacity: 1; }
+
+  /* brazos: reposo vs. celebración (transform-origin en el hombro) */
+  .bordy .arm { transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .bordy .arm-l { transform-origin: 57px 232px; }
+  .bordy .arm-r { transform-origin: 203px 232px; }
+  .st-racha .arm-l { transform: rotate(38deg); }
+  .st-racha .arm-r { transform: rotate(-38deg); }
+  .st-pensando .arm-r { transform: rotate(-24deg) translateY(-8px); }
+
+  /* cuerpo entero: la pose de cada estado */
+  .bordy .rig { transform-origin: 130px 200px; }
+
+  /* idle — el bordy-float de siempre (4.5s, la referencia de globals.css) */
+  @keyframes b-float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+  .st-idle .rig { animation: b-float 4.5s ease-in-out infinite; }
+
+  /* acierto — hop de alegría una vez + flote suave */
+  @keyframes b-hop {
+    0% { transform: translateY(0) scale(1, 1); }
+    30% { transform: translateY(-16px) scale(0.96, 1.06); }
+    55% { transform: translateY(0) scale(1.05, 0.94); }
+    75% { transform: translateY(-5px) scale(0.99, 1.01); }
+    100% { transform: translateY(0) scale(1, 1); }
+  }
+  .st-acierto .rig { animation: b-hop 0.7s cubic-bezier(0.34, 1.3, 0.64, 1) both, b-float 4.5s ease-in-out 0.7s infinite; }
+
+  /* fallo — sacudida corta y se queda ligeramente ladeado */
+  @keyframes b-shake {
+    0% { transform: translateX(0) rotate(0deg); }
+    20% { transform: translateX(-5px) rotate(-3deg); }
+    40% { transform: translateX(4px) rotate(2.5deg); }
+    60% { transform: translateX(-3px) rotate(-2deg); }
+    80% { transform: translateX(2px) rotate(1deg); }
+    100% { transform: translateX(0) rotate(-2.5deg); }
+  }
+  .st-fallo .rig { animation: b-shake 0.5s ease-out both; }
+
+  /* racha — squash & stretch continuo (la vara es bordy-talk: 0.5s scale ±1.2%);
+     aquí se exagera para celebración: ±5% + rebote, sigue leyéndose vivo, no roto */
+  @keyframes b-party {
+    0%, 100% { transform: translateY(0) scale(1, 1); }
+    30% { transform: translateY(-12px) scale(0.95, 1.05); }
+    50% { transform: translateY(0) scale(1.05, 0.94); }
+    70% { transform: translateY(-6px) scale(0.98, 1.02); }
+  }
+  .st-racha .rig { animation: b-party 0.9s ease-in-out infinite; }
+
+  /* pensando — balanceo lento, casi quieto */
+  @keyframes b-sway { 0%,100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg) translateY(-3px); } }
+  .st-pensando .rig { animation: b-sway 3s ease-in-out infinite; }
+
+  /* LED: pulso en racha, parpadeo en pensando */
+  @keyframes led-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+  .st-racha .led, .st-racha .led-glow { animation: led-pulse 0.6s ease-in-out infinite; }
+  .st-pensando .led, .st-pensando .led-glow { animation: led-pulse 1.4s ease-in-out infinite; }
+
+  /* chispas de la racha y puntos de pensamiento: aparecen escalonados */
+  @keyframes spark { 0%,100% { opacity: 0; transform: scale(0.5); } 40% { opacity: 1; transform: scale(1.15); } 70% { opacity: 0.7; } }
+  .st-racha .spark { animation: spark 1.1s ease-in-out infinite; }
+  .st-racha .spark:nth-of-type(2) { animation-delay: 0.25s; }
+  .st-racha .spark:nth-of-type(3) { animation-delay: 0.5s; }
+  @keyframes dotty { 0%,100% { opacity: 0.15; } 30% { opacity: 1; } }
+  .st-pensando .dot { animation: dotty 1.6s ease-in-out infinite; }
+  .st-pensando .dot:nth-of-type(2) { animation-delay: 0.3s; }
+  .st-pensando .dot:nth-of-type(3) { animation-delay: 0.6s; }
+
+  /* reduced-motion: cambio de expresión instantáneo, sin bucles; el estado lo
+     siguen comunicando la cara y el color del LED */
+  @media (prefers-reduced-motion: reduce) {
+    .bordy .part, .bordy .arm, .bordy .led, .bordy .led-glow { transition: none; }
+    .st-idle .rig, .st-acierto .rig, .st-fallo .rig, .st-racha .rig, .st-pensando .rig,
+    .st-racha .led, .st-racha .led-glow, .st-pensando .led, .st-pensando .led-glow,
+    .st-racha .spark, .st-pensando .dot { animation: none; }
+    .st-racha .spark, .st-pensando .dot { opacity: 0.9; }
+  }
+
+  /* ---- especificaciones ---- */
+  .specs { max-width: 900px; }
+  .specs table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .specs th, .specs td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(183,156,237,0.18); vertical-align: top; line-height: 1.45; }
+  .specs th { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; }
+  .specs td:first-child { white-space: nowrap; font-weight: 700; }
+  .note { font-size: 11px; color: #a99cc7; line-height: 1.5; margin-top: 10px; max-width: 860px; }
+</style>
+</head>
+<body>
+  <h1>Bordy en SVG animable · EXP-2</h1>
+  <p class="sub">El mismo Bordy del <code>bordy-m2.webp</code> (visor prisma, sonrisa violeta, antena, botón
+  dorado) reconstruido como vector con 5 expresiones, cada una atada a un momento real del juego.
+  <b>Signature:</b> la antena es un LED que habla el idioma del semáforo — el corazón de la mecánica de
+  Frontle. Exploración: no reemplaza al raster en producción; es para que David decida si conviven o si el
+  SVG lo releva.</p>
+
+  <div class="row">
+    <div class="stage panel">
+      <span class="who">Actual · bordy-m2.webp (raster)</span>
+      <div class="frame"><img src="../../frontend/public/bordy-m2.webp" alt="Bordy actual (imagen raster)"></div>
+      <span class="cap">Una sola cara para todo: el hito de racha, el tutorial y el fallo usan la misma sonrisa.
+      Animable solo como bloque (<code>bordy-float</code> / <code>bordy-talk</code>).</span>
+    </div>
+
+    <div class="stage panel">
+      <span class="who">Propuesta · SVG vectorial</span>
+      <div class="frame">
+        <!-- =============== BORDY =============== -->
+        <svg id="bordy" class="bordy st-idle" viewBox="0 0 260 320" role="img" aria-label="Bordy, mascota de Frontle, expresión seleccionable">
+          <defs>
+            <radialGradient id="gHead" cx="32%" cy="22%" r="95%">
+              <stop offset="0%" stop-color="#232b4d"/><stop offset="55%" stop-color="#12162e"/><stop offset="100%" stop-color="#0a0d1e"/>
+            </radialGradient>
+            <linearGradient id="gVisor" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#7fe9c3"/><stop offset="38%" stop-color="#cdeb8b"/><stop offset="66%" stop-color="#f6e37b"/><stop offset="100%" stop-color="#f4b9de"/>
+            </linearGradient>
+            <linearGradient id="gBtn" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f6f0a0"/><stop offset="100%" stop-color="#e3dc74"/>
+            </linearGradient>
+          </defs>
+
+          <ellipse cx="130" cy="308" rx="58" ry="8" fill="#000" opacity="0.45"/>
+
+          <g class="rig">
+            <!-- chispas (solo racha) -->
+            <g fill="#fcff52">
+              <path class="part p-racha spark" d="M40 84 l4 9 9 4 -9 4 -4 9 -4 -9 -9 -4 9 -4 z"/>
+              <path class="part p-racha spark" d="M218 70 l3.5 8 8 3.5 -8 3.5 -3.5 8 -3.5 -8 -8 -3.5 8 -3.5 z"/>
+              <path class="part p-racha spark" d="M232 150 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3 z"/>
+            </g>
+            <!-- puntos de pensamiento (solo pensando) -->
+            <g fill="#b79ced">
+              <circle class="part p-pensando dot" cx="206" cy="66" r="4"/>
+              <circle class="part p-pensando dot" cx="220" cy="52" r="5.5"/>
+              <circle class="part p-pensando dot" cx="237" cy="35" r="7"/>
+            </g>
+
+            <!-- antena: LED de estado (el semáforo del juego) -->
+            <circle class="led-glow" cx="130" cy="26" r="17"/>
+            <rect x="126.5" y="32" width="7" height="20" rx="3.5" fill="#1a2036"/>
+            <circle class="led" cx="130" cy="26" r="12.5"/>
+            <circle cx="125.5" cy="21.5" r="3.6" fill="#fff" opacity="0.6"/>
+
+            <!-- orejas -->
+            <rect x="12" y="128" width="26" height="52" rx="13" fill="#a494cf"/>
+            <rect x="222" y="128" width="26" height="52" rx="13" fill="#6d3fd4"/>
+
+            <!-- cabeza -->
+            <rect x="28" y="48" width="204" height="172" rx="82" fill="url(#gHead)"/>
+            <ellipse cx="78" cy="72" rx="26" ry="12" fill="#fff" opacity="0.10" transform="rotate(-18 78 72)"/>
+            <ellipse cx="196" cy="86" rx="12" ry="6" fill="#fcff52" opacity="0.18" transform="rotate(24 196 86)"/>
+
+            <!-- visor prisma -->
+            <rect x="50" y="90" width="160" height="76" rx="28" fill="url(#gVisor)"/>
+            <rect x="50" y="90" width="160" height="76" rx="28" fill="none" stroke="#ffffff" stroke-opacity="0.35" stroke-width="2"/>
+            <rect x="60" y="97" width="74" height="13" rx="6.5" fill="#fff" opacity="0.38"/>
+
+            <!-- ojos (dentro del visor), un set por expresión -->
+            <g fill="#0c1023" stroke="none">
+              <g class="part p-idle">
+                <circle cx="102" cy="129" r="11"/><circle cx="158" cy="129" r="11"/>
+              </g>
+              <g class="part p-acierto" fill="none" stroke="#0c1023" stroke-width="7.5" stroke-linecap="round">
+                <path d="M90 134 Q102 119 114 134"/><path d="M146 134 Q158 119 170 134"/>
+              </g>
+              <g class="part p-fallo" fill="none" stroke="#0c1023" stroke-width="7" stroke-linecap="round">
+                <path d="M93 121 L111 138 M111 121 L93 138"/><path d="M149 121 L167 138 M167 121 L149 138"/>
+              </g>
+              <g class="part p-racha">
+                <path d="M102 116 l4.2 9 9.8 1.2 -7.2 6.8 1.9 9.7 -8.7 -4.8 -8.7 4.8 1.9 -9.7 -7.2 -6.8 9.8 -1.2 z"/>
+                <path d="M158 116 l4.2 9 9.8 1.2 -7.2 6.8 1.9 9.7 -8.7 -4.8 -8.7 4.8 1.9 -9.7 -7.2 -6.8 9.8 -1.2 z"/>
+              </g>
+              <g class="part p-pensando">
+                <circle cx="108" cy="122" r="9"/><circle cx="164" cy="122" r="9"/>
+                <path d="M88 112 Q100 105 112 110" fill="none" stroke="#0c1023" stroke-width="4.5" stroke-linecap="round"/>
+              </g>
+            </g>
+
+            <!-- boca (violeta, bajo el visor), un set por expresión -->
+            <g fill="none" stroke="#8b5cf6" stroke-width="7" stroke-linecap="round">
+              <path class="part p-idle" d="M112 184 Q130 197 148 184"/>
+              <path class="part p-acierto" d="M105 180 Q130 205 155 180"/>
+              <path class="part p-fallo" d="M108 191 Q114 184 120 191 Q126 198 132 191 Q138 184 144 191 Q150 198 156 191" stroke-width="5.5"/>
+              <path class="part p-racha" d="M108 179 Q130 208 152 179 Z" fill="#8b5cf6" stroke-linejoin="round"/>
+              <path class="part p-pensando" d="M119 189 L143 186"/>
+            </g>
+
+            <!-- brazos -->
+            <g class="arm arm-l"><rect x="44" y="226" width="26" height="52" rx="13" fill="#a494cf"/></g>
+            <g class="arm arm-r"><rect x="190" y="226" width="26" height="52" rx="13" fill="#7b3ff2"/></g>
+
+            <!-- cuerpo -->
+            <rect x="76" y="210" width="108" height="88" rx="36" fill="url(#gHead)"/>
+            <ellipse cx="104" cy="226" rx="14" ry="6" fill="#fff" opacity="0.10" transform="rotate(-16 104 226)"/>
+            <circle cx="130" cy="252" r="20" fill="#05070f"/>
+            <circle cx="130" cy="252" r="12.5" fill="url(#gBtn)"/>
+            <circle cx="125.5" cy="247.5" r="3.4" fill="#fff" opacity="0.65"/>
+          </g>
+        </svg>
+      </div>
+      <div class="exp-btns" role="group" aria-label="Expresiones de Bordy">
+        <button class="exp-btn on" data-st="st-idle"><span class="e">🙂</span><span class="n">Idle</span><span class="u">hero · FAB · coach</span></button>
+        <button class="exp-btn" data-st="st-acierto"><span class="e">😄</span><span class="n">Acierto</span><span class="u">semáforo verde</span></button>
+        <button class="exp-btn" data-st="st-fallo"><span class="e">😵</span><span class="n">Fallo</span><span class="u">desvío grande</span></button>
+        <button class="exp-btn" data-st="st-racha"><span class="e">🎉</span><span class="n">Racha</span><span class="u">milestone-toast</span></button>
+        <button class="exp-btn" data-st="st-pensando"><span class="e">🤔</span><span class="n">Pensando</span><span class="u">comprar pista</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel specs">
+    <h2>Cada expresión sale de un uso real del código</h2>
+    <table>
+      <tr><th>Expresión</th><th>Dónde vive hoy</th><th>Qué cambia en el SVG</th></tr>
+      <tr><td>🙂 Idle</td><td>Hero de <code>page.tsx</code>, FAB flotante, <code>Coachmarks.tsx</code> — todos con <code>bordy-float</code>/<code>-sm</code></td><td>Cara base, LED amarillo, mismo flote 4.5s de <code>globals.css</code>.</td></tr>
+      <tr><td>😄 Acierto</td><td>Feedback del semáforo: país en la ruta óptima (<code>--good #22c55e</code>)</td><td>Ojos en arco + sonrisa grande, hop único de 0.7s, LED verde.</td></tr>
+      <tr><td>😵 Fallo</td><td>Desvío grande (<code>--far #ef4444</code>) — hoy Bordy ni se entera</td><td>Ojos X + boca ondulada, sacudida 0.5s que termina ladeado, LED rojo.</td></tr>
+      <tr><td>🎉 Racha</td><td><code>milestone-toast</code> de GAM-2 (<code>page.tsx:1332</code>) — hoy usa <code>bordy-talk</code> genérico</td><td>Ojos estrella + boca abierta, brazos arriba, squash&stretch ±5% (la vara <code>bordy-talk</code> es ±1.2%), LED oro pulsante + chispas.</td></tr>
+      <tr><td>🤔 Pensando</td><td>Compra de pista (hints sheet) — feedback de "estoy calculando"</td><td>Pupilas arriba + ceja, boca plana, balanceo lento, LED cyan parpadeante + puntos de pensamiento.</td></tr>
+    </table>
+    <p class="note"><b>Signature element:</b> la antena deja de ser adorno y se vuelve <b>LED de estado con los
+    colores del semáforo del juego</b> (amarillo neutro · verde acierto · rojo fallo · oro racha · cyan pensando)
+    — Bordy comunica el estado del juego incluso antes de leer el texto, y ningún otro mascota-bot lo tiene.
+    <b>Reduced-motion:</b> sin bucles ni sacudidas; el cambio de cara y el color del LED comunican solos.
+    <b>Peso:</b> el SVG completo pesa ~4&nbsp;KB frente a ~46&nbsp;KB del webp, escala nítido en cualquier
+    densidad y cada parte es animable por separado. Si David prefiere arte raster nuevo, eso es otro flujo
+    (generación de imagen), no este.</p>
+  </div>
+
+  <script>
+    const svg = document.getElementById("bordy");
+    const btns = [...document.querySelectorAll(".exp-btn")];
+    const setState = (st) => {
+      svg.classList.remove("st-idle","st-acierto","st-fallo","st-racha","st-pensando");
+      svg.classList.add(st);
+      for (const x of btns) x.classList.toggle("on", x.dataset.st === st);
+    };
+    for (const b of btns) b.addEventListener("click", () => setState(b.dataset.st));
+    // ?st=racha (o acierto/fallo/pensando) abre la página en esa expresión
+    const q = new URLSearchParams(location.search).get("st");
+    if (q && btns.some((b) => b.dataset.st === "st-" + q)) setState("st-" + q);
+  </script>
+</body>
+</html>
