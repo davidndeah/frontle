@@ -1,12 +1,18 @@
 # PLAN — Paleta (EXP-1) + Bordy en SVG (EXP-2)
 
 > Continuación de la Parte C de [[PLAN-TABS-GAMIFICACION]] (exploración, no producción).
-> Diseñado con Opus para **ejecución de Fable**. Aterrizado en `docs/design/DESIGN-SYSTEM.md`
-> y en lo ya explorado en `docs/design/palette-variants.html` y `docs/design/bordy-3d*.html`.
+> Diseñado con Opus para **ejecución de Fable** (modelo `claude-fable-5`). Aterrizado en
+> `docs/design/DESIGN-SYSTEM.md` y en lo ya explorado en `docs/design/palette-variants.html`
+> y `docs/design/bordy-3d*.html`.
 
 ---
 
-## ⚠️ Modelo a usar: **Opus**, no Sonnet ni Haiku
+## ⚠️ Modelo a usar: **Fable 5**, no Sonnet ni Haiku
+
+*(Corrección 2026-07-17: la versión anterior de este plan recomendaba Opus. Se verificó con
+fuentes actuales que **Fable 5 es el modelo más capaz de Anthropic hoy**, superior a Opus 4.8 —
+estado del arte en casi todos los benchmarks, incluyendo visión de alta fidelidad. Se corrige la
+recomendación.)*
 
 Este plan es **trabajo de juicio estético**, no ejecución mecánica de una spec. La tanda de
 gamificación (`PLAN-TABS-GAMIFICACION.md`, Partes A/B) tenía criterios de aceptación objetivos
@@ -15,14 +21,28 @@ para un modelo más barato/rápido, y salió muy bien así.
 
 **Esto es distinto:** elegir una identidad de marca (paleta) y diseñar la personalidad visual de
 un personaje (Bordy) son decisiones **subjetivas, difíciles de revertir baratas** (quedan en
-capturas del listing de MiniPay, en la memoria de marca de los usuarios) y que se benefician de
-más profundidad de razonamiento — la propia skill `frontend-design` pide explícitamente un ciclo
-de **brainstorm → explorar → planear → criticarse → construir → criticarse de nuevo** antes de
-escribir código. Un modelo más capaz autocritica mejor y evita el "look genérico de IA" con más
-consistencia. Por eso: **Opus para ambas tareas de este plan.**
+capturas del listing de MiniPay, en la memoria de marca de los usuarios). Fable 5 encaja
+específicamente bien aquí porque: (a) implementa diseños con alta fidelidad y **usa visión para
+verificar el resultado contra el objetivo** — relevante para comparar las 4 columnas de paleta o
+las 5 expresiones de Bordy contra la referencia; (b) es el mejor modelo de Anthropic para trabajo
+agéntico de largo horizonte, planeando por etapas y **delegando a subagentes** — que es justo lo
+que le pedimos abajo para las partes mecánicas. La propia skill `frontend-design` pide un ciclo de
+**brainstorm → explorar → planear → criticarse → construir → criticarse de nuevo**, y un modelo
+más capaz autocritica mejor y evita el "look genérico de IA" con más consistencia.
 
 (`ui-ux-pro-max` es solo una base de datos de consulta — el valor está en la síntesis y el
 criterio que se le aplica encima, que es justo donde el modelo importa.)
+
+## 🤖 Delegar tareas repetitivas a subagentes más baratos
+
+Fable 5 puede planear y delegar a subagentes (misma capacidad que usamos en esta sesión para
+transcribir videos en paralelo). Si durante la ejecución de este plan aparece una tarea **mecánica
+y repetitiva** que no necesita juicio estético — ej. generar las N variantes de un ícono SVG a
+partir de un patrón ya decidido, correr `npx skills find`/verificaciones de contraste en bucle,
+armar el HTML repetitivo de las columnas de comparación una vez que el diseño ya está decidido —
+delegarla a un **subagente con modelo Haiku o Sonnet** (según la complejidad) en vez de hacerla
+directamente. Ahorra tokens sin sacrificar calidad, porque la decisión de diseño (donde sí importa
+el modelo) la sigue tomando Fable 5, y el subagente solo ejecuta lo ya decidido.
 
 ---
 
