@@ -347,7 +347,7 @@ function RegionWin({
       <button onClick={onExit} className="mt-3 w-full rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
         {tr.region.chooseOtherMode}
       </button>
-      <p className="text-[11px] text-neutral-500 mt-3">{tr.region.modeFooter(def.title)}</p>
+      <p className="text-[11px] text-neutral-400 mt-3">{tr.region.modeFooter(def.title)}</p>
     </section>
   );
 }
