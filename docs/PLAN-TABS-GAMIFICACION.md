@@ -6,6 +6,34 @@
 > y `FRONTEND.md` (la investigación del top 10 de Proof of Ship) y en el
 > `docs/design/DESIGN-SYSTEM.md` (estética "Violeta Prisma").
 
+> ## ✅ ESTADO: Partes A y B completadas (2026-07-16)
+> Ejecutado por Santiago/Fable en 10 PRs, todo mergeado a `main`:
+> `TAB-1` [#45](https://github.com/davidndeah/frontle/pull/45) ·
+> `TAB-2` [#49](https://github.com/davidndeah/frontle/pull/49) ·
+> `TAB-3` [#47](https://github.com/davidndeah/frontle/pull/47) ·
+> `TAB-4` [#56](https://github.com/davidndeah/frontle/pull/56) ·
+> `GAM-1` [#46](https://github.com/davidndeah/frontle/pull/46) ·
+> `GAM-2` [#48](https://github.com/davidndeah/frontle/pull/48) ·
+> `GAM-3` [#51](https://github.com/davidndeah/frontle/pull/51) ·
+> `GAM-4` [#50](https://github.com/davidndeah/frontle/pull/50) ·
+> `GAM-5` [#55](https://github.com/davidndeah/frontle/pull/55) + [#57](https://github.com/davidndeah/frontle/pull/57)
+> (incluyó la persistencia Supabase que estaba marcada 🔶 bloqueada — Santiago la destrabó).
+> Auditado con `impeccable` post-merge (2026-07-16): sin hallazgos bloqueantes — a11y, performance,
+> theming y anti-patrones limpios. Único detalle cosmético (no bloqueante): el keyframe de
+> `streak-bump` tiene overshoot de escala, técnicamente roza la regla "no bounce" del skill, pero
+> es un patrón de feedback de logro legítimo (mismo criterio que Chesscito en el benchmark). No tocar.
+>
+> **Solo queda la Parte C** (exploración de paleta + Bordy), ahora en su propio plan dedicado
+> para Fable: [[PLAN-PALETA-BORDY]] (`docs/PLAN-PALETA-BORDY.md`).
+>
+> **Siguiente tanda sugerida** (de `docs/benchmark/FRONTEND.md`, tiers 🟡/🟢, sin ejecutar):
+> - VS screen al iniciar el reto (banderas grandes, 1.5s) — anticipación estilo Action Order
+> - Personalización de Bordy (patrón fox-customizer de Zorrito) — depende de que exista Bordy SVG (EXP-2) primero
+> - Pasada de "lenguaje llano" sobre todo el copy (auditar contra las reglas MiniPay)
+> - Manifest de Farcaster (`.well-known/farcaster.json`) — archivo simple, distribución gratis
+> - Temas de mapa desbloqueables (análogo a piece sets de Chessify)
+> - Duelo por código de sala — el modo viral de WhatsApp, pero necesita backend (🔶 Santiago)
+
 ---
 
 ## 0. Reglas de oro (leer antes de tocar nada)
