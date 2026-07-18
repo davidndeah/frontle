@@ -45,7 +45,7 @@ Testing inside MiniPay requires a **physical device + ngrok** (emulators don't w
 
 App Router under `frontend/app/`. Game logic is pure and lives in `app/lib/`:
 
-- **`lib/countries.ts`** — the border graph. Each country lists land-border `neighbors`; the graph is symmetrized at build time (if A→B exists, B→A is added). Island nations with no land border are excluded (no chains possible). ISO alpha-2 codes are *derived from the flag emoji* (`flagToCode`), not hand-typed.
+- **`lib/countries.ts`** — the border graph. Each country lists land-border `neighbors`; the graph is symmetrized at build time (if A→B exists, B→A is added). Island nations with no land border are excluded (no chains possible) — they live in `lib/islands.ts` and get their game surface in the quiz modes. ISO alpha-2 codes are *derived from the flag emoji* (`flagToCode`), not hand-typed.
 - **`lib/game.ts`** — core engine: `shortestPath` (BFS over the graph), `dailyChallenge`/`dateSeed` (deterministic per UTC date — everyone gets the same challenge), input handling (`normalize`, `resolveCountry`, alias table, `suggest`), and scoring (`distance`, `countryQuality`, `tryGuess`).
 - **`lib/i18n.ts`** — 4 locales (`es`, `en`, `fr`, `pt`) for Celo/MiniPay markets. Country names come from the native `Intl.DisplayNames` keyed off the ISO code — **never hand-translate country names.** `countryName()` takes a canonical name, `regionName()` takes an ISO code. `t(locale)` returns the UI string dictionary.
 - **`lib/payments.ts`** — everything on-chain: `requestPayment` (hints/retries), prize claims, balances, and `getPublicStats` / `CONTRACT_INFO` for the stats page. Holds both contract addresses.
@@ -54,9 +54,19 @@ App Router under `frontend/app/`. Game logic is pure and lives in `app/lib/`:
 - **`lib/privy.ts` + `components/PrivyGate.tsx`** — email login for players with no wallet. See the bundle note below.
 - **`lib/onchain.ts`** — tx counts / unique wallets / failure rate, read from the public Blockscout API.
 - **`app/components/WorldMap.tsx`** — map rendering with `d3-geo` + `topojson-client`.
-- **`app/page.tsx`** — the game UI and nearly all React state.
+- **`app/page.tsx`** — the game UI and nearly all React state. Four tabs (Jugar · Ranking · Perfil · Aprender) and the mode picker inside Jugar.
 - **`app/stats/`** — the public stats page. Required for the MiniPay listing.
-- **`app/lib/regions/` + `lib/regionGame.ts`** — the in-progress "Regions" mode (subdivisions instead of countries). Data, engine and maps exist; the UI does not. Nothing imports `regionGame.ts` yet, so it ships as dead code. Work on it happens on the `feat/regiones` branch — see `docs/HANDOFF-REGIONS.md`.
+
+Game modes beyond the daily challenge (all free, no pot — the daily challenge is the only paid/prized mode):
+
+- **Regions** — `lib/regions/` + `lib/regionGame.ts` + `components/RegionGame.tsx`: subdivisions of one country instead of countries. **Live in the mode picker** (`docs/HANDOFF-REGIONS.md` is historical).
+- **Quizzes** — `lib/quiz.ts` + `components/CountryQuizGame.tsx`: guess-the-flag and guess-the-outline. Their pool adds the island nations from `lib/islands.ts` that the border graph excludes.
+- **Practice** — `components/PracticeGame.tsx`: infinite random challenges, lives in the Aprender tab.
+
+Gamification/progress layer:
+
+- **`lib/progress.ts` + `lib/achievements.ts`** — persistent player progress on Supabase (migration 0007): streak, Frontle points, achievements. Streak and points are **derived server-side from `scores`** (view `player_progress`) — the client never asserts them, so they can't be inflated; achievements are insert-only under the same anon-key trust model. Everything degrades silently to local data if Supabase is missing.
+- The daily-game clock is wall-clock based (`startMs` persisted so refreshing can't reset it) minus accumulated pauses (`pausedMs`, accrued only while a hint payment is confirming — a full-screen overlay covers the board during the pause).
 
 Stack: TypeScript · Tailwind CSS v4 · `viem` for the chain · `@privy-io/react-auth` for email login. Deploys to Vercel from GitHub. (`@celo/abis` is a dependency but nothing imports it.)
 
