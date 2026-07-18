@@ -26,7 +26,7 @@
   }
   .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; margin-bottom: 16px; }
 
-  .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 340px; }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 360px; }
   .stage .who { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; text-align: center; }
   .stage .frame { width: 100%; height: 380px; display: grid; place-items: center; border-radius: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(183,156,237,0.2); overflow: hidden; }
   .stage canvas { display: block; }
@@ -62,38 +62,29 @@
 </style>
 </head>
 <body>
-  <h1>Bordy · planeta robot · EXP-2b (v4)</h1>
-  <p class="sub">Tres direcciones alrededor de la idea de <b>planeta robot</b>, sin texturas — solo
-  geometría y materiales. Se conserva <b>el panza-globo que eligió David</b> (con la cara
-  enriquecida) y se agregan dos estilos nuevos sacados de otra lectura de las referencias: el
-  <b>planeta anillado</b> (anillo, luna en órbita y cráteres) y el <b>planeta holograma</b> — la
-  panza como globo de líneas brillantes, guiño directo a las fronteras de Frontle y al render
-  wireframe favorito de David. Misma plantilla: 5 expresiones, 4 paletas EXP-1, LED semáforo.
-  Exploración: no toca producción.</p>
+  <h1>Bordy · planeta holograma · EXP-2b (v5)</h1>
+  <p class="sub">Se cerró la decisión en <b>el planeta holograma</b>. Ajustes pedidos: cejas fuera,
+  <b>boca</b> en su lugar; el nodo frontal ahora es un <b>"ombligo" blanco fijo</b> (no se tiñe con
+  la paleta); las líneas de meridianos y paralelos bajaron de intensidad para no competir con la
+  cara; se agregó <b>relieve de continentes</b> — bultos facetados sin textura, con una pequeña
+  variación de color entre ellos. Dos variantes para decidir: <b>sin gorra</b> y <b>con gorra</b>.
+  Misma plantilla: 5 expresiones, 4 paletas EXP-1, LED semáforo. Exploración: no toca producción.</p>
 
   <div class="row">
     <div class="stage panel">
-      <span class="who">1 · El elegido (panza-globo)</span>
-      <div class="frame" id="stage1" role="img" aria-label="Bordy panza-globo original, expresión y paleta seleccionables"></div>
-      <span class="cap">El modelo B que gustó, intacto: panza violeta con meridianos y brújula
-      dorada, cabeza de vidrio — ahora con la cara enriquecida (pupilas, cejas, boca).</span>
+      <span class="who">Sin gorra</span>
+      <div class="frame" id="stage1" role="img" aria-label="Bordy planeta holograma sin gorra, expresión y paleta seleccionables"></div>
+      <span class="cap">Cabeza de vidrio despejada, antena-LED al aire.</span>
     </div>
     <div class="stage panel">
-      <span class="who">2 · Planeta anillado</span>
-      <div class="frame" id="stage2" role="img" aria-label="Bordy planeta anillado con luna orbitando, expresión y paleta seleccionables"></div>
-      <span class="cap">La panza es un planeta con anillo dorado inclinado, una luna pequeña
-      orbitando y cráteres sutiles. Cero texturas: todo geometría.</span>
-    </div>
-    <div class="stage panel">
-      <span class="who">3 · Planeta holograma</span>
-      <div class="frame" id="stage3" role="img" aria-label="Bordy planeta holograma de líneas, expresión y paleta seleccionables"></div>
-      <span class="cap">La panza es un globo wireframe brillante girando — las líneas son el idioma
-      de Frontle (fronteras) y de la referencia favorita. Ojos cian a juego.</span>
+      <span class="who">Con gorra</span>
+      <div class="frame" id="stage2" role="img" aria-label="Bordy planeta holograma con gorra, expresión y paleta seleccionables"></div>
+      <span class="cap">Gorra tipo casquete + visera sobre la cabeza de vidrio, misma antena.</span>
     </div>
   </div>
 
   <div class="controls panel">
-    <span class="ctl-label">Expresión (aplica a los 3)</span>
+    <span class="ctl-label">Expresión (aplica a las 2)</span>
     <div class="exp-btns" role="group" aria-label="Expresiones de Bordy">
       <button class="exp-btn on" data-st="idle"><span class="e">🙂</span><span class="n">Idle</span><span class="u">hero · FAB · coach</span></button>
       <button class="exp-btn" data-st="acierto"><span class="e">😄</span><span class="n">Acierto</span><span class="u">semáforo verde</span></button>
@@ -113,17 +104,20 @@
   <div class="panel specs">
     <h2>Decisiones (diseño y rendimiento) — para la fase de integración</h2>
     <table>
-      <tr><th>Tema</th><th>1 · El elegido</th><th>2 · Anillado</th><th>3 · Holograma</th></tr>
-      <tr><td>Planeta</td><td>Esfera glossy con meridianos y brújula dorada.</td><td>Esfera + anillo dorado inclinado, luna en órbita, cráteres hundidos.</td><td>Globo wireframe (líneas de acento) sobre núcleo oscuro; gira despacio.</td></tr>
-      <tr><td>Cara</td><td colspan="2">Ojos marfil con pupila y brillo, cejas y boca por expresión.</td><td>La misma cara, en cian holograma (sin boca — la pantalla habla con los ojos).</td></tr>
-      <tr><td>Movimiento propio</td><td>Flota (bob).</td><td>Flota + luna orbitando el anillo.</td><td>Flota + el globo de líneas rota.</td></tr>
-      <tr><td>Texturas</td><td colspan="3"><b>Ninguna</b> (pedido de David) — solo el canvas de la sombra. Paleta en caliente vía <code>material.color</code>, sin redibujar nada.</td></tr>
-      <tr><td>Loop</td><td colspan="3">Un solo <code>requestAnimationFrame</code> para las 3 vistas; lerp interrumpible; con <code>prefers-reduced-motion</code>: sin loop, un frame por cambio (luna y rotación quedan estáticas).</td></tr>
+      <tr><th>Tema</th><th>Detalle</th></tr>
+      <tr><td>Cara</td><td>Ojos cian con pupila y brillo; <b>sin cejas</b>; boca por expresión (antes la cara holograma no tenía boca — ahora sí, igual que los demás Bordys).</td></tr>
+      <tr><td>Ombligo</td><td>Esfera blanca perlada fija en el frente de la panza — no cambia con la paleta, a propósito (lectura de "ombligo", no de acento de marca).</td></tr>
+      <tr><td>Líneas del globo</td><td>Meridianos/paralelos: color mezclado entre panza y acento (más apagado), opacidad ~0.38. Ecuador un poco más marcado (~0.55) para mantener jerarquía.</td></tr>
+      <tr><td>Relieve de continentes</td><td>6 bultos facetados (icosaedros de bajo poligonaje) distribuidos sobre la esfera, ligeramente elevados — sin textura. 4 tonos derivados de la paleta (mezclas panza/acento y panza/oro) para dar variación sutil de color entre "masas".</td></tr>
+      <tr><td>Gorra</td><td>Casquete + visera semicircular en el color de acento, montada sobre la cabeza de vidrio. Geometría pura, mismas 2 piezas en ambas paletas.</td></tr>
+      <tr><td>Movimiento propio</td><td>Flota (bob) + el globo de líneas y continentes gira despacio; con <code>prefers-reduced-motion</code> queda estático.</td></tr>
+      <tr><td>Texturas</td><td><b>Ninguna</b> — solo el canvas de la sombra. Paleta en caliente vía <code>material.color</code>.</td></tr>
     </table>
     <p class="note"><b>Expresiones y su caso de uso real:</b> idle (hero/FAB/coachmarks) · acierto
     (semáforo verde) · fallo (desvío grande) · racha (<code>milestone-toast</code> GAM-2) · pensando
     (compra de pista). URL directa: <code>?st=racha&amp;pal=arcade</code>. El <b>LED semáforo no
-    cambia con la paleta</b>. <b>No reemplaza <code>bordy-m2.webp</code></b> — David decide.</p>
+    cambia con la paleta</b>. <b>No reemplaza <code>bordy-m2.webp</code></b> — David decide entre
+    sin gorra / con gorra, y la paleta.</p>
   </div>
 
 <script type="importmap">
@@ -142,7 +136,8 @@ const PALETTES = {
   coral:   { head: '#4c2fb8', body: '#221248', accent: '#b79ced', gold: '#ff6a3d', seam: '#3a2494' },
 };
 const LED = { idle: '#efe08a', acierto: '#22c55e', fallo: '#ef4444', racha: '#fcff52', pensando: '#22d3ee' };
-const GLASS = '#08060f', IVORY = '#fff3c4', HOLO = '#8be9ff', PUPIL = '#1a1030';
+const GLASS = '#08060f', HOLO = '#8be9ff', PUPIL = '#1a1030', IVORY = '#fff3c4';
+const mixColor = (a, b, f) => new THREE.Color(a).lerp(new THREE.Color(b), f);
 
 function shadowTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -173,7 +168,7 @@ function makeView(el) {
   return { renderer, scene, cam, shadow };
 }
 
-// ---------- cara rica (pupilas + brillos + cejas + boca opcional) ----------
+// ---------- cara rica (pupilas + brillos + cejas opcionales + boca opcional) ----------
 const sphereProjector = (faceR) => (u, v, g) => {
   const z = Math.sqrt(Math.max(faceR * faceR - u * u - v * v, 0.005));
   g.position.set(u, v, z); g.lookAt(u * 2, v * 2, z * 2); return g;
@@ -195,7 +190,7 @@ function starMesh(r, mat) {
 }
 
 function buildFace(parent, project, k, opts = {}) {
-  const eyeC = opts.eyeC || IVORY, mouth = opts.mouth !== false;
+  const eyeC = opts.eyeC || IVORY, mouth = opts.mouth !== false, showBrow = opts.brow !== false;
   const sets = {};
   const make = (name, build) => {
     const g = new THREE.Group(); g.userData.o = 0; g.visible = false;
@@ -224,12 +219,12 @@ function buildFace(parent, project, k, opts = {}) {
 
   make('idle', (g) => {
     g.add(fullEye(-U, EY, 0, -0.01)); g.add(fullEye(U, EY, 0, -0.01));
-    g.add(brow(-U, EY + 0.34 * k, 0)); g.add(brow(U, EY + 0.34 * k, 0));
+    if (showBrow) { g.add(brow(-U, EY + 0.34 * k, 0)); g.add(brow(U, EY + 0.34 * k, 0)); }
     if (mouth) g.add(mouthArc(-0.28 * k, 0.13, 0.045, Math.PI * 0.8, Math.PI + 0.35));
   });
   make('acierto', (g) => {
     for (const s of [-1, 1]) { const e = eyeGroup(U * s, EY); e.add(arc(0.16 * k, 0.055 * k, faceMat(eyeC, 1))); g.add(e); }
-    g.add(brow(-U, EY + 0.36 * k, 0.1)); g.add(brow(U, EY + 0.36 * k, -0.1));
+    if (showBrow) { g.add(brow(-U, EY + 0.36 * k, 0.1)); g.add(brow(U, EY + 0.36 * k, -0.1)); }
     if (mouth) { const open = eyeGroup(0, -0.28 * k); const m = disc(0.12 * k, faceMat(eyeC, 1), 20); m.scale.y = 0.7; open.add(m); g.add(open); }
   });
   make('fallo', (g) => {
@@ -238,7 +233,7 @@ function buildFace(parent, project, k, opts = {}) {
       for (const r of [Math.PI / 4, -Math.PI / 4]) { const x = bar(0.36 * k, 0.06 * k, faceMat(eyeC, 1)); x.rotation.z = r; e.add(x); }
       g.add(e);
     }
-    g.add(brow(-U, EY + 0.3 * k, -0.35)); g.add(brow(U, EY + 0.3 * k, 0.35));
+    if (showBrow) { g.add(brow(-U, EY + 0.3 * k, -0.35)); g.add(brow(U, EY + 0.3 * k, 0.35)); }
     if (mouth) {
       const wav = eyeGroup(0, -0.26 * k);
       for (let i = 0; i < 3; i++) { const s2 = arc(0.06 * k, 0.028 * k, faceMat(eyeC, 1)); s2.position.x = (i - 1) * 0.115 * k; s2.rotation.z = i % 2 ? 0 : Math.PI; wav.add(s2); }
@@ -252,7 +247,7 @@ function buildFace(parent, project, k, opts = {}) {
   make('pensando', (g) => {
     g.add(fullEye(-U, EY + 0.04 * k, 0.05, 0.07));
     g.add(fullEye(U * 1.05, EY + 0.07 * k, 0.05, 0.07));
-    g.add(brow(U, EY + 0.34 * k, 0.25));
+    if (showBrow) g.add(brow(U, EY + 0.34 * k, 0.25));
     if (mouth) { const m2 = eyeGroup(0.06 * k, -0.26 * k); m2.add(bar(0.2 * k, 0.045 * k, faceMat(eyeC, 1))); m2.rotation.z = 0.12; g.add(m2); }
   });
   return sets;
@@ -308,14 +303,13 @@ function makeAntenna(headG, topY, matAcc) {
   return { ledMat, haloMat };
 }
 
-const BR = 0.88;
+const BR = 0.88, HR = 0.45;
 
-// cuello + cabeza de vidrio + cara + antena (compartido por los 3)
+// cuello + cabeza de vidrio + cara + antena
 function headAndFace(rig, matAcc, faceOpts) {
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.18, 14), matAcc);
   neck.position.y = 1.72; rig.add(neck);
   const headG = new THREE.Group(); headG.position.y = 2.16; rig.add(headG);
-  const HR = 0.45;
   headG.add(new THREE.Mesh(new THREE.SphereGeometry(HR, 32, 22),
     soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 })));
   const { ledMat, haloMat } = makeAntenna(headG, HR, matAcc);
@@ -323,118 +317,92 @@ function headAndFace(rig, matAcc, faceOpts) {
   return { headG, ledMat, haloMat, eyes };
 }
 
-// 1 · EL ELEGIDO — el panza-globo que gustó, intacto (meridianos + brújula), cara rica
-function buildOriginal(view) {
-  const p0 = PALETTES.actual;
-  const matHead = soft(p0.head), matDark = soft(p0.body), matAcc = soft(p0.accent);
-  const seamMat = soft(p0.seam);
-  const coreMat = soft(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.9 });
-
-  const rig = new THREE.Group(); view.scene.add(rig);
-  const planet = new THREE.Group(); planet.position.y = 0.78; rig.add(planet);
-  planet.add(new THREE.Mesh(new THREE.SphereGeometry(BR, 48, 32), matHead));
-  for (const ry of [0.55, -0.55]) {
-    const seam = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.002, 0.008, 6, 64), seamMat);
-    seam.rotation.y = ry; planet.add(seam);
-  }
-  const eq = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.002, 0.008, 6, 64), seamMat);
-  eq.rotation.x = Math.PI / 2; planet.add(eq);
-  // brújula dorada sobre la superficie (fija al rig, no gira con el planeta)
-  const pz = Math.sqrt(BR * BR - 0.08 * 0.08);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 10, 28), soft(GLASS, { roughness: 0.12 }));
-  ring.position.set(0, 0.86, pz); ring.lookAt(0, 0.94, pz + BR); rig.add(ring);
-  const compass = new THREE.Mesh(new THREE.SphereGeometry(0.12, 18, 14), coreMat);
-  compass.position.set(0, 0.86, pz + 0.02); rig.add(compass);
-
-  const { ledMat, haloMat, eyes } = headAndFace(rig, matAcc, { eyeC: IVORY, mouth: true });
-  const armL = makeArm(rig, -1, 8, 0.13, new THREE.Vector3(-0.78, 1.38, 0.05), 0.075, matHead, matAcc);
-  const armR = makeArm(rig, 1, 8, 0.13, new THREE.Vector3(0.78, 1.38, 0.05), 0.075, matHead, matAcc);
-
-  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx: makeFx(view.scene),
-    spin: planet, spinSpeed: 0.05,
-    pal: { heads: [matHead], acc: matAcc, dark: matDark, seams: [seamMat], core: coreMat } };
+// gorra: casquete tipo beanie (solo la coronilla, no baja hasta los ojos) + visera
+function addCap(headG, matAcc) {
+  const crownR = HR + 0.035, crownTheta = 1.0; // ~57°: cubre solo la coronilla
+  const crown = new THREE.Mesh(new THREE.SphereGeometry(crownR, 28, 16, 0, Math.PI * 2, 0, crownTheta), matAcc);
+  headG.add(crown);
+  const rimY = crownR * Math.cos(crownTheta), rimR = crownR * Math.sin(crownTheta);
+  // visera: casquete achatado (esfera aplanada), girado para que sobresalga hacia adelante y abajo
+  const brim = new THREE.Mesh(new THREE.SphereGeometry(0.3, 20, 10, 0, Math.PI * 2, 0, Math.PI * 0.32), matAcc);
+  brim.scale.set(1, 0.16, 1);
+  brim.rotation.x = Math.PI / 2 - 0.12;
+  brim.position.set(0, rimY - 0.1, rimR * 0.98);
+  headG.add(brim);
 }
 
-// 2 · PLANETA ANILLADO — anillo dorado inclinado + luna en órbita + cráteres
-function buildRinged(view) {
+// PLANETA HOLOGRAMA — globo de líneas + relieve de continentes + ombligo blanco
+function buildHolo(view, opts = {}) {
   const p0 = PALETTES.actual;
   const matHead = soft(p0.head), matDark = soft(p0.body), matAcc = soft(p0.accent);
-  const seamMat = soft(p0.seam);
-  const coreMat = soft(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.75, metalness: 0.35, roughness: 0.25 });
+  const wireMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.4), transparent: true, opacity: 0.38 });
+  const eqMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.6), transparent: true, opacity: 0.55 });
+  const bellyMat = soft('#f4f1fb', { roughness: 0.32, metalness: 0.04, clearcoatRoughness: 0.15 });
 
   const rig = new THREE.Group(); view.scene.add(rig);
   const planet = new THREE.Group(); planet.position.y = 0.78; rig.add(planet);
-  planet.add(new THREE.Mesh(new THREE.SphereGeometry(BR, 48, 32), matHead));
-  // cráteres: casquetes hundidos de tono seam
-  const craters = [[0.5, 0.35, 0.13], [-0.42, 0.05, 0.1], [0.15, -0.5, 0.16], [-0.3, 0.55, 0.08], [0.62, -0.18, 0.09]];
-  for (const [cx, cy, cr] of craters) {
-    const n = new THREE.Vector3(cx, cy, Math.sqrt(Math.max(1 - cx * cx - cy * cy, 0.05))).normalize();
-    const c = new THREE.Mesh(new THREE.SphereGeometry(cr, 16, 12), seamMat);
-    c.position.copy(n.multiplyScalar(BR * 0.94)); planet.add(c); // hundidos: solo asoma el casquete
-  }
-  // anillo tipo Saturno (grupo inclinado fijo; la luna orbita dentro de él)
-  const ringG = new THREE.Group(); ringG.position.y = 0.78;
-  ringG.rotation.set(0.45, 0, -0.18); rig.add(ringG);
-  const ringMain = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.42, 0.045, 10, 72), coreMat);
-  ringMain.rotation.x = Math.PI / 2; ringG.add(ringMain);
-  const ringThin = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.56, 0.016, 8, 72), matAcc);
-  ringThin.rotation.x = Math.PI / 2; ringG.add(ringThin);
-  const moon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), matAcc);
-  ringG.add(moon);
-
-  const { ledMat, haloMat, eyes } = headAndFace(rig, matAcc, { eyeC: IVORY, mouth: true });
-  const armL = makeArm(rig, -1, 8, 0.13, new THREE.Vector3(-0.78, 1.38, 0.05), 0.075, matHead, matAcc);
-  const armR = makeArm(rig, 1, 8, 0.13, new THREE.Vector3(0.78, 1.38, 0.05), 0.075, matHead, matAcc);
-
-  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx: makeFx(view.scene),
-    spin: planet, spinSpeed: 0.05,
-    tick: (t) => { const a = t * 0.55; moon.position.set(Math.cos(a) * (BR + 0.42), 0, Math.sin(a) * (BR + 0.42)); },
-    tickStatic: () => { moon.position.set(Math.cos(2.2) * (BR + 0.42), 0, Math.sin(2.2) * (BR + 0.42)); },
-    pal: { heads: [matHead], acc: matAcc, dark: matDark, seams: [seamMat], core: coreMat } };
-}
-
-// 3 · PLANETA HOLOGRAMA — globo wireframe brillante sobre núcleo oscuro
-function buildHolo(view) {
-  const p0 = PALETTES.actual;
-  const matHead = soft(p0.head), matDark = soft(p0.body), matAcc = soft(p0.accent);
-  const coreMat = soft(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.9 });
-
-  const rig = new THREE.Group(); view.scene.add(rig);
-  const planet = new THREE.Group(); planet.position.y = 0.78; rig.add(planet);
-  // núcleo sólido oscuro
   planet.add(new THREE.Mesh(new THREE.SphereGeometry(BR - 0.045, 40, 28), matDark));
-  // globo de líneas (mapa): jaula de meridianos + paralelos con toros finos (no wireframe triangulado)
-  const wireMat = new THREE.MeshBasicMaterial({ color: p0.accent, transparent: true, opacity: 0.8 });
-  for (let i = 0; i < 4; i++) { // meridianos (círculos máximos)
-    const mer = new THREE.Mesh(new THREE.TorusGeometry(BR, 0.011, 6, 64), wireMat);
+
+  for (let i = 0; i < 4; i++) { // meridianos
+    const mer = new THREE.Mesh(new THREE.TorusGeometry(BR, 0.009, 6, 64), wireMat);
     mer.rotation.y = (i / 4) * Math.PI; planet.add(mer);
   }
   for (const lat of [-0.55, 0.55]) { // paralelos
     const r = Math.sqrt(BR * BR - lat * lat * BR * BR);
-    const par = new THREE.Mesh(new THREE.TorusGeometry(r, 0.009, 6, 56), wireMat);
+    const par = new THREE.Mesh(new THREE.TorusGeometry(r, 0.008, 6, 56), wireMat);
     par.rotation.x = Math.PI / 2; par.position.y = lat * BR; planet.add(par);
   }
-  // ecuador acentuado + nodo dorado (núcleo del juego) al frente
-  const eqMat = new THREE.MeshBasicMaterial({ color: p0.accent, transparent: true, opacity: 0.95 });
-  const eq = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.01, 0.018, 6, 64), eqMat);
+  const eq = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.01, 0.014, 6, 64), eqMat);
   eq.rotation.x = Math.PI / 2; planet.add(eq);
-  const node = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), coreMat);
-  node.position.set(0, 0.86, Math.sqrt(BR * BR - 0.08 * 0.08)); rig.add(node);
 
-  const { ledMat, haloMat, eyes } = headAndFace(rig, matAcc, { eyeC: HOLO, mouth: false });
+  // relieve de continentes: bultos facetados, sin textura, con variación de color
+  const contDefs = [
+    { from: 'head', to: 'head', f: 0 },      // cabeza pura, saturada
+    { from: 'head', to: 'accent', f: 0.55 }, // más clara
+    { from: 'head', to: 'gold', f: 0.35 },   // toque cálido
+    { from: 'body', to: 'accent', f: 0.35 }, // más oscura
+    { from: 'head', to: 'accent', f: 0.22 },
+    { from: 'head', to: 'head', f: 0 },
+  ];
+  const contColor = (p, d) => mixColor(p[d.from], p[d.to], d.f);
+  const contMats = contDefs.map((d) => soft(contColor(p0, d), { roughness: 0.55, clearcoat: 0.25 }));
+  const CONT_DIRS = [ // vectores estilizados, no geografía real
+    [0.55, 0.4, 0.72, 0.19, 0], [-0.4, 0.15, 0.86, 0.15, 1], [0.08, -0.55, 0.78, 0.21, 2],
+    [-0.62, -0.32, 0.66, 0.14, 3], [0.7, -0.12, 0.5, 0.12, 4], [-0.18, 0.66, 0.62, 0.11, 5],
+  ];
+  const continents = CONT_DIRS.map(([x, y, z, r, mi]) => {
+    const dir = new THREE.Vector3(x, y, z).normalize();
+    const c = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), contMats[mi]);
+    c.position.copy(dir).multiplyScalar(BR + r * 0.32);
+    c.lookAt(dir.clone().multiplyScalar(BR + 5));
+    planet.add(c); return c;
+  });
+
+  // ombligo: bola blanca fija, no se tiñe con la paleta
+  const node = new THREE.Mesh(new THREE.SphereGeometry(0.085, 18, 14), bellyMat);
+  node.position.set(0, 0.86, Math.sqrt(BR * BR - 0.085 * 0.085)); rig.add(node);
+
+  const { headG, ledMat, haloMat, eyes } = headAndFace(rig, matAcc, { eyeC: HOLO, mouth: true, brow: false });
+  if (opts.cap) addCap(headG, matAcc);
+
   const armL = makeArm(rig, -1, 8, 0.13, new THREE.Vector3(-0.78, 1.38, 0.05), 0.075, matHead, matAcc);
   const armR = makeArm(rig, 1, 8, 0.13, new THREE.Vector3(0.78, 1.38, 0.05), 0.075, matHead, matAcc);
 
   return { view, rig, eyes, armL, armR, ledMat, haloMat, fx: makeFx(view.scene),
-    spin: planet, spinSpeed: 0.22,
-    pal: { heads: [matHead], acc: matAcc, dark: matDark, seams: [], core: coreMat, extra: [wireMat, eqMat] } };
+    spin: planet, spinSpeed: 0.2,
+    recolor(p) {
+      matHead.color.set(p.head); matDark.color.set(p.body); matAcc.color.set(p.accent);
+      wireMat.color.copy(mixColor(p.body, p.accent, 0.4));
+      eqMat.color.copy(mixColor(p.body, p.accent, 0.6));
+      contMats.forEach((mm, i) => mm.color.copy(contColor(p, contDefs[i])));
+      // bellyMat se queda blanca a propósito: es el "ombligo", no un acento de marca
+    } };
 }
 
 // ---------- estado global ----------
 const models = [
-  buildOriginal(makeView(document.getElementById('stage1'))),
-  buildRinged(makeView(document.getElementById('stage2'))),
-  buildHolo(makeView(document.getElementById('stage3'))),
+  buildHolo(makeView(document.getElementById('stage1')), { cap: false }),
+  buildHolo(makeView(document.getElementById('stage2')), { cap: true }),
 ];
 const POSES = {
   idle:     { bobA: 0.09, bobS: 0.9, tilt: 0,     aL: [0.12, 0.25, 0], aR: [0.12, 0.25, 0] },
@@ -446,7 +414,6 @@ const POSES = {
 models.forEach((m) => {
   m.cur = { bobA: 0.09, bobS: 0.9, tilt: 0, aL: [0.12, 0.25, 0], aR: [0.12, 0.25, 0] };
   m.led = new THREE.Color(LED.idle);
-  if (m.tickStatic) m.tickStatic();
 });
 
 let state = 'idle', palette = 'actual', tEnter = performance.now();
@@ -455,14 +422,7 @@ const FX_BY_STATE = { racha: 'sparks', pensando: 'dots' };
 function applyPalette(name) {
   palette = name;
   const p = PALETTES[name];
-  for (const m of models) {
-    m.pal.heads.forEach((mm) => mm.color.set(p.head));
-    m.pal.acc.color.set(p.accent);
-    m.pal.dark.color.set(p.body);
-    m.pal.seams.forEach((mm) => mm.color.set(p.seam));
-    m.pal.core.color.set(p.gold); m.pal.core.emissive.set(p.gold);
-    (m.pal.extra || []).forEach((mm) => mm.color.set(p.accent));
-  }
+  for (const m of models) m.recolor(p);
   document.querySelectorAll('.pal-btn').forEach((b) => b.classList.toggle('on', b.dataset.pal === name));
   if (REDUCED) drawAll(performance.now());
 }
@@ -526,10 +486,7 @@ function drawModel(m, now) {
     const tw = REDUCED ? 0.8 : Math.max(0, Math.sin(t * 2.2 - d.userData.ph)) ** 2;
     d.material.opacity = lerp(d.material.opacity, on ? 0.85 * tw : 0, REDUCED ? 1 : 0.12);
   });
-  if (!REDUCED) {
-    if (m.spin) m.spin.rotation.y = t * m.spinSpeed;
-    if (m.tick) m.tick(t);
-  }
+  if (!REDUCED && m.spin) m.spin.rotation.y = t * m.spinSpeed;
   m.view.renderer.render(m.view.scene, m.view.cam);
 }
 function drawAll(now) { models.forEach((m) => drawModel(m, now)); }
