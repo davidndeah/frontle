@@ -1091,6 +1091,7 @@ export default function Frontle() {
                 {payLow && inMiniPay && (
                   <div className="flex flex-col">
                     <DepositButton label={tr.deposit} />
+                    <p className="text-[10px] text-neutral-400 text-center mt-1.5">{tr.usdtOnly}</p>
                   </div>
                 )}
 
@@ -2217,7 +2218,12 @@ function WinCard({
           {retryBusy ? <>⏳ {tr.paying}</> : <>{tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span></>}
         </button>
         {payError && <p className="text-xs text-rose-400">{payError}</p>}
-        {showDeposit && <DepositButton label={tr.deposit} />}
+        {showDeposit && (
+          <div className="flex flex-col">
+            <DepositButton label={tr.deposit} />
+            <p className="text-[10px] text-neutral-400 text-center mt-1.5">{tr.usdtOnly}</p>
+          </div>
+        )}
         {/* Volver a la selección de nivel: jugar otro nivel (o revisar este). */}
         <button onClick={onHome} className="rounded-xl border border-[#b79ced]/40 px-6 py-3 font-bold text-[#c4b5fd] active:scale-95 transition hover:bg-white/10">
           🎮 {tr.chooseLevel}
