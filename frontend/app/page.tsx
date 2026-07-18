@@ -127,6 +127,10 @@ export default function Frontle() {
   const [started, setStarted] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const startRef = useRef(0);
+  // Tiempo acumulado en pausa (pagos de pistas): la confirmación on-chain
+  // tarda segundos y no es tiempo de juego. Se descuenta del cronómetro y se
+  // persiste junto a startMs para que un refresh no lo pierda.
+  const pausedMsRef = useRef(0);
   // Pago en curso (pista o reintento): deshabilita los botones de compra y
   // muestra "procesando" — con la wallet embebida la tx tarda varios segundos
   // y sin feedback el usuario re-clickeaba o creía que no funcionó.
@@ -275,7 +279,7 @@ export default function Frontle() {
     try {
       localStorage.setItem(
         gameKey,
-        JSON.stringify({ started: g.started, startMs: startRef.current, chain: g.chain, solved: g.solved, finalMs: g.finalMs ?? null })
+        JSON.stringify({ started: g.started, startMs: startRef.current, pausedMs: pausedMsRef.current, chain: g.chain, solved: g.solved, finalMs: g.finalMs ?? null })
       );
     } catch {}
   }
@@ -379,11 +383,12 @@ export default function Frontle() {
             }
           }
           startRef.current = g.startMs || Date.now();
-          elapsed = solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now());
+          pausedMsRef.current = g.pausedMs || 0;
+          elapsed = solved ? g.finalMs ?? 0 : Math.max(0, Date.now() - (g.startMs || Date.now()) - pausedMsRef.current);
         }
       }
     } catch {}
-    if (!started) startRef.current = 0;
+    if (!started) { startRef.current = 0; pausedMsRef.current = 0; }
     setState({ challenge: challengeForLevel, chain, solved });
     setStarted(started);
     setElapsedMs(elapsed);
@@ -410,12 +415,14 @@ export default function Frontle() {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
   }, [input, locale]);
 
-  // Cronómetro en vivo mientras se juega
+  // Cronómetro en vivo mientras se juega. Durante un pago (`paying`) el
+  // intervalo se detiene: el reloj queda congelado en pantalla y al terminar
+  // el pago retoma descontando la pausa acumulada (sin salto hacia atrás).
   useEffect(() => {
-    if (!started || state.solved) return;
-    const id = setInterval(() => setElapsedMs(Date.now() - startRef.current), 250);
+    if (!started || state.solved || paying) return;
+    const id = setInterval(() => setElapsedMs(Math.max(0, Date.now() - startRef.current - pausedMsRef.current)), 250);
     return () => clearInterval(id);
-  }, [started, state.solved]);
+  }, [started, state.solved, paying]);
 
   // Partida auto-reparada: el finalMs local se perdió al corromperse, pero la
   // marca real quedó en el ranking al ganar. Recuperarla y re-persistirla.
@@ -554,6 +561,7 @@ export default function Frontle() {
       return;
     }
     startRef.current = Date.now();
+    pausedMsRef.current = 0;
     setElapsedMs(0);
     setStarted(true);
     saveGame({ started: true, solved: false, chain: state.chain });
@@ -585,7 +593,7 @@ export default function Frontle() {
       setState((prev) => ({ ...prev, chain: newChain, solved }));
       setShowNextSil(false);
       setShowInitial(false);
-      const finalMs = solved ? Date.now() - startRef.current : undefined;
+      const finalMs = solved ? Math.max(0, Date.now() - startRef.current - pausedMsRef.current) : undefined;
       saveGame({ started: true, solved, chain: newChain, finalMs });
       if (solved) {
         setElapsedMs(finalMs!);
@@ -684,6 +692,7 @@ export default function Frontle() {
     setShowInitial(false);
     setStarted(false); // vuelve a la pantalla de Play (cronómetro se reinicia al jugar)
     setElapsedMs(0);
+    pausedMsRef.current = 0;
     saveGame({ started: false, solved: false, chain: [] });
   }
 
@@ -692,10 +701,16 @@ export default function Frontle() {
     const price = kind === "all" ? PRICES.hintAll : kind === "initial" ? PRICES.hintInitial : PRICES.hintNext;
     setPaying(kind);
     setMessage({ text: tr.paying, ok: true });
+    // La compra pausa el cronómetro. El overlay tapa el tablero mientras
+    // tanto: sin él, iniciar un pago sería tiempo de análisis gratis.
+    const pauseStart = Date.now();
     let res: PayResult = "error";
     try {
       res = await requestPayment(price, `pista: ${kind}`);
     } finally {
+      pausedMsRef.current += Date.now() - pauseStart;
+      // Persistir la pausa: un refresh a mitad de partida no debe perderla.
+      saveGame({ started: true, solved: false, chain: state.chain });
       setPaying(null);
     }
     if (res !== "success") {
@@ -958,6 +973,18 @@ export default function Frontle() {
               🕒 {formatTime(coaching ? 0 : elapsedMs)}
             </span>
           </p>
+        )}
+
+        {/* Pago de pista en curso: cronómetro en pausa + tablero tapado.
+            Devuelve exactamente el tiempo que la red se llevó — y nada más
+            (con el mapa visible, la espera sería análisis gratis). */}
+        {paying !== null && started && !state.solved && (
+          <div className="fixed inset-0 z-[60] bg-[#160833]/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 px-8">
+            <span className="text-4xl" aria-hidden>⏸️</span>
+            <span className="text-lg font-mono font-bold tabular-nums text-white">🕒 {formatTime(elapsedMs)}</span>
+            <p className="font-bold text-white animate-pulse">{tr.paying}</p>
+            <p className="text-sm text-neutral-300 text-center max-w-xs">{tr.payTimerPaused}</p>
+          </div>
         )}
 
         {/* Mapa o pantalla de Play (solo en el paso reto).
