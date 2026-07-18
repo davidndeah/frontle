@@ -982,11 +982,14 @@ export default function Frontle() {
             >
               {tr.play}
             </button>
-            {!myId && (hasWallet || privyActive) && (
+            {/* Zero-click connect: dentro de MiniPay la wallet llega sola vía el
+                auto-connect del mount; enseñar "Conectar" ahí está prohibido,
+                incluso en el instante en que `myId` aún no se resolvió. */}
+            {!myId && ((hasWallet && !inMiniPay) || privyActive) && (
               <div className="flex flex-col items-center gap-2">
                 <p className="text-[11px] text-neutral-300 text-center">{tr.connectBenefit}</p>
                 <div className="flex items-center gap-2">
-                  {hasWallet && (
+                  {hasWallet && !inMiniPay && (
                     <button
                       onClick={connectForRanking}
                       className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
@@ -1182,7 +1185,8 @@ export default function Frontle() {
                   {myId ? shortId(myId) : tr.profileConnectHint}
                 </div>
               </div>
-              {!myId && hasWallet && (
+              {/* Igual que en el sheet: nunca "Conectar" dentro de MiniPay. */}
+              {!myId && hasWallet && !inMiniPay && (
                 <button onClick={connectForRanking} className="rounded-lg border border-emerald-300/50 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 active:scale-95 transition">
                   {tr.connectWallet}
                 </button>
