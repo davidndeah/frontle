@@ -186,6 +186,8 @@ type Dict = {
   // Requisito MiniPay (Graceful Degradation): app mono-stablecoin debe
   // explicar que solo acepta USDT y cómo llegar ahí desde otra stablecoin.
   usdtOnly: string;
+  // Overlay del pago de pistas: el cronómetro se pausa durante la confirmación.
+  payTimerPaused: string;
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -420,6 +422,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu wallet para continuar.`,
     payNoGas: "Tu wallet no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     usdtOnly: "Frontle acepta solo USDT. Si tu saldo está en otra stablecoin (USDC o USDm), cámbialo a USDT en MiniPay primero.",
+    payTimerPaused: "El tiempo está en pausa mientras se confirma el pago. Sigue al confirmarse.",
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
@@ -669,6 +672,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Insufficient balance: this purchase costs ${a}. Top up your wallet to continue.`,
     payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
     usdtOnly: "Frontle only accepts USDT. If your balance is in another stablecoin (USDC or USDm), swap it to USDT in MiniPay first.",
+    payTimerPaused: "The clock is paused while your payment is confirmed. It resumes right after.",
     footer: "Frontle · Daily geography game · Made in Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -918,6 +922,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Saldo insuficiente: esta compra custa ${a}. Recarregue sua carteira para continuar.`,
     payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
     usdtOnly: "O Frontle aceita apenas USDT. Se o seu saldo está em outra stablecoin (USDC ou USDm), troque por USDT no MiniPay primeiro.",
+    payTimerPaused: "O tempo fica em pausa enquanto o pagamento é confirmado. Continua logo depois.",
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -1167,6 +1172,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoFunds: (a) => `Solde insuffisant : cet achat coûte ${a}. Rechargez votre portefeuille pour continuer.`,
     payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
     usdtOnly: "Frontle n'accepte que l'USDT. Si votre solde est dans une autre stablecoin (USDC ou USDm), échangez-la contre de l'USDT dans MiniPay d'abord.",
+    payTimerPaused: "Le chrono est en pause pendant la confirmation du paiement. Il reprend juste après.",
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
