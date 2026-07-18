@@ -13,7 +13,7 @@
   }
   h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
   h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; margin-bottom: 10px; }
-  .sub { color: #a99cc7; font-size: 13px; margin-bottom: 22px; max-width: 720px; line-height: 1.5; }
+  .sub { color: #a99cc7; font-size: 13px; margin-bottom: 22px; max-width: 740px; line-height: 1.5; }
   .sub b { color: #fff; }
   code { font-family: Consolas, monospace; font-size: 0.92em; color: #d8ccf2; }
 
@@ -29,11 +29,9 @@
   .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 340px; }
   .stage .who { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; text-align: center; }
   .stage .frame { width: 100%; height: 380px; display: grid; place-items: center; border-radius: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(183,156,237,0.2); overflow: hidden; }
-  .stage img { width: 230px; height: 278px; object-fit: contain; filter: drop-shadow(0 14px 22px rgba(0,0,0,0.45)); }
   .stage canvas { display: block; }
   .stage .cap { font-size: 11px; color: #a99cc7; text-align: center; line-height: 1.45; }
 
-  /* ---- controles compartidos: expresión + paleta ---- */
   .controls { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 22px; }
   .ctl-label { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #b79ced; }
   .exp-btns, .pal-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
@@ -46,9 +44,9 @@
   .exp-btn:active, .pal-btn:active { transform: scale(0.95); }
   .exp-btn .e { font-size: 17px; }
   .exp-btn .n, .pal-btn .n { font-size: 11px; font-weight: 800; }
-  .exp-btn .u, .pal-btn .u { font-size: 9px; color: #a99cc7; }
+  .exp-btn .u { font-size: 9px; color: #a99cc7; }
   .exp-btn.on, .pal-btn.on { background: rgba(252,255,82,0.12); border-color: rgba(252,255,82,0.45); }
-  .exp-btn.on .u, .pal-btn.on .u { color: #fcff52; }
+  .exp-btn.on .u { color: #fcff52; }
   .exp-btn:focus-visible, .pal-btn:focus-visible { outline: 2px solid #fcff52; outline-offset: 2px; }
   .pal-btn { flex-direction: row; gap: 7px; align-items: center; min-width: 0; padding: 8px 12px; }
   .pal-btn .sw { display: flex; gap: 3px; }
@@ -64,39 +62,37 @@
 </style>
 </head>
 <body>
-  <h1>Bordy 3D desde cero · EXP-2b</h1>
-  <p class="sub">Dos modelos nuevos en Three.js a partir de las referencias de David (ver
-  <code>references/README.md</code>), lado a lado con el raster actual. Los controles aplican a los
-  dos a la vez: <b>expresión</b> (los 5 momentos reales del juego) y <b>paleta</b> — las mismas 4
-  direcciones de la exploración EXP-1 (<code>palette-variants.html</code>), para ver a Bordy dentro
-  de la decisión de paleta pendiente. El <b>LED de la antena no cambia con la paleta</b>: es color
-  semántico del semáforo del juego, no de marca. Exploración: no toca producción.</p>
+  <h1>Bordy · robot globo terráqueo · EXP-2b (v3)</h1>
+  <p class="sub">Evolución del modelo panza-globo que eligió David: ahora la panza <b>es un globo
+  terráqueo</b> (continentes dibujados proceduralmente, sin texturas externas) y hay <b>3 estilos
+  sobre la misma plantilla</b> — mismas 5 expresiones, mismas 4 paletas de EXP-1, mismo esqueleto
+  (cabeza chica + panza-globo + brazos bendy + antena LED semáforo). Caras enriquecidas: pupilas,
+  brillos, cejas y boca según el estilo. El raster vigente sigue intacto en
+  <code>frontend/public/bordy-m2.webp</code>. Exploración: no toca producción.</p>
 
   <div class="row">
     <div class="stage panel">
-      <span class="who">Actual · bordy-m2.webp</span>
-      <div class="frame"><img src="../../frontend/public/bordy-m2.webp" alt="Bordy actual (imagen raster)"></div>
-      <span class="cap">Render estático: una cara y una pose para todo.</span>
+      <span class="who">Estilo 1 · Caricatura glossy</span>
+      <div class="frame" id="stage1" role="img" aria-label="Bordy estilo caricatura glossy, expresión y paleta seleccionables"></div>
+      <span class="cap">El panza-globo original pulido: globo con continentes, brújula dorada,
+      cara con pupilas, cejas y boca. Glossy con clearcoat.</span>
     </div>
-
     <div class="stage panel">
-      <span class="who">Modelo A · cabeza-globo</span>
-      <div class="frame" id="stageA" role="img" aria-label="Bordy modelo A: cabeza globo gigante, expresión y paleta seleccionables"></div>
-      <span class="cap">La cabeza ES el globo (meridianos sutiles). Cara de vidrio inset solo-ojos,
-      cuerpo mínimo, brazos bendy de 6 segmentos, pies stub.</span>
+      <span class="who">Estilo 2 · Juguete voxel</span>
+      <div class="frame" id="stage2" role="img" aria-label="Bordy estilo juguete voxel, expresión y paleta seleccionables"></div>
+      <span class="cap">La ref. de bloques: globo facetado con continentes pixelados, cabeza caja,
+      ojos rectangulares emisivos con marco, panel de pecho enmarcado, brazos de cubos.</span>
     </div>
-
     <div class="stage panel">
-      <span class="who">Modelo B · panza-globo</span>
-      <div class="frame" id="stageB" role="img" aria-label="Bordy modelo B: panza globo gigante y cabeza pequeña, expresión y paleta seleccionables"></div>
-      <span class="cap">La configuración literal de la referencia favorita: cabeza chica oscura
-      sobre panza-globo enorme (ahí van los meridianos y una brújula dorada), brazos bendy largos,
-      flota sin pies.</span>
+      <span class="who">Estilo 3 · Explorador K-VRC</span>
+      <div class="frame" id="stage3" role="img" aria-label="Bordy estilo explorador K-VRC, expresión y paleta seleccionables"></div>
+      <span class="cap">La ref. naranja: casco con aleta y orejas, pantalla negra con ojazos
+      blancos de pupila grande, arnés sobre el globo, brazos articulados.</span>
     </div>
   </div>
 
   <div class="controls panel">
-    <span class="ctl-label">Expresión (aplica a ambos)</span>
+    <span class="ctl-label">Expresión (aplica a los 3)</span>
     <div class="exp-btns" role="group" aria-label="Expresiones de Bordy">
       <button class="exp-btn on" data-st="idle"><span class="e">🙂</span><span class="n">Idle</span><span class="u">hero · FAB · coach</span></button>
       <button class="exp-btn" data-st="acierto"><span class="e">😄</span><span class="n">Acierto</span><span class="u">semáforo verde</span></button>
@@ -116,19 +112,19 @@
   <div class="panel specs">
     <h2>Decisiones (diseño y rendimiento) — para la fase de integración</h2>
     <table>
-      <tr><th>Tema</th><th>Modelo A · cabeza-globo</th><th>Modelo B · panza-globo</th></tr>
-      <tr><td>Silueta</td><td>Cabeza esférica ~2.3× el cuerpo; pies stub.</td><td>Cabeza chica (~0.4×) sobre panza esférica enorme; flota (sin pies), como la ref. de wireframe.</td></tr>
-      <tr><td>Dónde vive el globo</td><td>La cabeza: meridianos sutiles.</td><td>La panza: meridianos + brújula dorada de pecho (porthole).</td></tr>
-      <tr><td>Cara</td><td>Casquete de vidrio oscuro inset, solo ojos.</td><td>Toda la cabeza es vidrio oscuro; los ojos viven directo en ella.</td></tr>
-      <tr><td>Brazos</td><td>Bendy 6 segmentos.</td><td>Bendy 8 segmentos, más largos (nacen arriba de la panza).</td></tr>
-      <tr><td>Paleta</td><td colspan="2">Interactiva en caliente: los materiales comparten instancias y el selector actualiza <code>material.color</code> — así se integraría también en react-three-fiber (sin recrear geometría). El LED semáforo y el vidrio no cambian con la paleta (semántica y legibilidad).</td></tr>
-      <tr><td>Polígonos</td><td colspan="2">~14 k tris / ~40 draw calls (A) · ~13 k tris / ~35 draw calls (B). Cero texturas externas (solo 1 canvas procedural por vista para la sombra). Apto para gama media/baja (MiniPay).</td></tr>
-      <tr><td>Loop</td><td colspan="2">Un solo <code>requestAnimationFrame</code> dibuja ambas vistas; estado paramétrico con lerp → transiciones interrumpibles. Con <code>prefers-reduced-motion</code>: sin loop, un frame por cambio (equivalente a <code>frameloop="demand"</code> en r3f).</td></tr>
+      <tr><th>Tema</th><th>1 · Caricatura</th><th>2 · Voxel</th><th>3 · K-VRC</th></tr>
+      <tr><td>Globo terráqueo</td><td>Esfera lisa glossy, continentes suaves.</td><td>Esfera facetada (flat shading) + continentes pixelados (NearestFilter).</td><td>Esfera lisa con arnés de exploración cruzado.</td></tr>
+      <tr><td>Cara</td><td>Ojos con pupila+brillo, cejas y boca.</td><td>Ojos rectangulares emisivos cian con marco inset (sin boca, como la ref.).</td><td>Pantalla negra, ojazos blancos de pupila grande (sin boca, como K-VRC).</td></tr>
+      <tr><td>Detalle distintivo</td><td>Brújula dorada de pecho.</td><td>Panel de pecho enmarcado (ref. voxel) + LED cúbico.</td><td>Casco con aleta y franja + orejas + hebilla del arnés.</td></tr>
+      <tr><td>Brazos</td><td>Bendy de esferas (8 seg).</td><td>Bendy de cubos.</td><td>Articulado: junta oscura + eslabón de color, manos mitón.</td></tr>
+      <tr><td>Textura</td><td colspan="3">Un canvas procedural por modelo (512×256 continentes; se redibuja al cambiar paleta) + 1 canvas de sombra. Cero archivos externos.</td></tr>
+      <tr><td>Loop</td><td colspan="3">Un solo <code>requestAnimationFrame</code> para las 3 vistas; estado paramétrico con lerp (interrumpible). Con <code>prefers-reduced-motion</code>: sin loop, un frame por cambio.</td></tr>
     </table>
     <p class="note"><b>Expresiones y su caso de uso real:</b> idle (hero/FAB/coachmarks) · acierto
-    (semáforo verde) · fallo (desvío grande) · racha (<code>milestone-toast</code> de GAM-2) ·
-    pensando (compra de pista). URL directa: <code>?st=racha&amp;pal=arcade</code>.
-    <b>No reemplaza <code>bordy-m2.webp</code></b> — David decide modelo, paleta y si pasa a la app.</p>
+    (semáforo verde) · fallo (desvío grande) · racha (<code>milestone-toast</code> GAM-2) · pensando
+    (compra de pista). URL directa: <code>?st=racha&amp;pal=arcade</code>. El <b>LED semáforo no
+    cambia con la paleta</b> (color semántico del juego). <b>No reemplaza
+    <code>bordy-m2.webp</code></b> — David decide estilo, paleta y si pasa a la app (react-three-fiber).</p>
   </div>
 
 <script type="importmap">
@@ -141,18 +137,78 @@ const W = 336, H = 380;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ---------- paletas (las 4 direcciones de EXP-1) ----------
-// gold = acento funcional (núcleo/brújula); accent = secundario (hombros, manos, orejas)
 const PALETTES = {
   actual:  { head: '#4b2ed6', body: '#241552', accent: '#b79ced', gold: '#fcff52', seam: '#3b23a8' },
   arcade:  { head: '#6d28d9', body: '#2d0a66', accent: '#ff3db4', gold: '#ffe74a', seam: '#5b21b6' },
   premium: { head: '#3c306e', body: '#171131', accent: '#8f82c4', gold: '#d9b45a', seam: '#2e2456' },
   coral:   { head: '#4c2fb8', body: '#221248', accent: '#b79ced', gold: '#ff6a3d', seam: '#3a2494' },
 };
-// LED: color SEMÁNTICO del semáforo — fijo en todas las paletas
 const LED = { idle: '#efe08a', acierto: '#22c55e', fallo: '#ef4444', racha: '#fcff52', pensando: '#22d3ee' };
-const EYE_COLOR = '#fff3c4', GLASS = '#08060f';
+const GLASS = '#08060f', IVORY = '#fff3c4', CYAN = '#7ff3ff', PUPIL = '#1a1030';
 
-// ---------- helpers ----------
+// ---------- continentes simplificados (dataset generado por subagente; India añadida a mano) ----------
+const CONTINENTS = [
+  { name: "northamerica", pts: [
+    [-160, 68], [-140, 75], [-100, 72], [-80, 68], [-70, 50],
+    [-60, 40], [-70, 30], [-85, 25], [-95, 20], [-105, 18],
+    [-115, 22], [-125, 35], [-140, 50], [-155, 65] ] },
+  { name: "southamerica", pts: [
+    [-67, 13], [-60, 12], [-55, 10], [-45, 8], [-40, 5], [-38, -5],
+    [-35, -15], [-40, -25], [-50, -32], [-60, -35], [-68, -55],
+    [-72, -35], [-75, -20], [-75, -10], [-72, 5] ] },
+  { name: "africa", pts: [
+    [-10, 35], [0, 36], [10, 37], [20, 32], [30, 28], [40, 20],
+    [48, 12], [52, 0], [48, -8], [40, -20], [25, -32], [15, -30],
+    [8, -25], [0, -15], [-5, -8], [-8, 0], [-12, 15], [-8, 30] ] },
+  { name: "eurasia", pts: [
+    [-8, 42], [0, 45], [12, 50], [25, 52], [40, 55], [60, 60],
+    [85, 62], [110, 68], [135, 60], [145, 45], [140, 30],
+    [125, 20], [105, 15], [85, 18], [77, 8], [70, 22], [55, 28],
+    [40, 35], [30, 40], [20, 43], [5, 42] ] },
+  { name: "australia", pts: [
+    [135, -12], [142, -15], [148, -20], [151, -28], [150, -35],
+    [145, -40], [135, -42], [125, -40], [118, -35], [112, -28],
+    [110, -20], [115, -12], [125, -10] ] },
+  { name: "greenland", pts: [
+    [-35, 83], [-30, 81], [-22, 78], [-15, 73], [-12, 68],
+    [-15, 62], [-25, 60], [-38, 62], [-45, 68], [-48, 75],
+    [-45, 80], [-40, 82] ] },
+];
+
+// ---------- textura del globo terráqueo (procedural, se redibuja por paleta) ----------
+const lighten = (hex, f) => {
+  const c = new THREE.Color(hex), w = new THREE.Color('#ffffff');
+  return '#' + c.lerp(w, f).getHexString();
+};
+function drawGlobe(ctx, W2, H2, ocean, land, grid) {
+  ctx.fillStyle = ocean; ctx.fillRect(0, 0, W2, H2);
+  // graticule sutil
+  ctx.strokeStyle = grid; ctx.lineWidth = Math.max(1, H2 / 128);
+  for (let i = 1; i < 6; i++) { ctx.beginPath(); ctx.moveTo(0, H2 * i / 6); ctx.lineTo(W2, H2 * i / 6); ctx.stroke(); }
+  for (let i = 1; i < 8; i++) { ctx.beginPath(); ctx.moveTo(W2 * i / 8, 0); ctx.lineTo(W2 * i / 8, H2); ctx.stroke(); }
+  ctx.fillStyle = land;
+  for (const c of CONTINENTS) {
+    ctx.beginPath();
+    c.pts.forEach(([lon, lat], i) => {
+      const x = (lon + 180) / 360 * W2, y = (90 - lat) / 180 * H2;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.closePath(); ctx.fill();
+  }
+}
+function makeGlobeTexture(p, style) {
+  const px = style === 'voxel';
+  const W2 = px ? 128 : 512, H2 = px ? 64 : 256;
+  const c = document.createElement('canvas'); c.width = W2; c.height = H2;
+  const ctx = c.getContext('2d');
+  drawGlobe(ctx, W2, H2, p.head, lighten(p.head, 0.42), lighten(p.head, 0.12));
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  if (px) { t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; }
+  return t;
+}
+
+// ---------- helpers de escena ----------
 function shadowTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256;
   const g = c.getContext('2d');
@@ -182,56 +238,146 @@ function makeView(el) {
   return { renderer, scene, cam, shadow };
 }
 
-// ojos: los 5 sets, parametrizados por radio de cara y escala (k)
-function buildEyeSets(parent, faceR, k) {
+// ---------- caras: sets de expresión ricos, por estilo ----------
+// projector(u, v) → coloca un Group mirando hacia afuera (esfera) o al frente (caja)
+const sphereProjector = (faceR) => (u, v, g) => {
+  const z = Math.sqrt(Math.max(faceR * faceR - u * u - v * v, 0.005));
+  g.position.set(u, v, z); g.lookAt(u * 2, v * 2, z * 2); return g;
+};
+const flatProjector = (zF) => (u, v, g) => { g.position.set(u, v, zF); return g; };
+
+// materiales de cara: transparentes para el crossfade; baseO define opacidad máxima
+function faceMat(color, baseO = 1, emissive = false) {
+  const m = emissive
+    ? new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 })
+    : new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
+  m.userData.baseO = baseO; return m;
+}
+const disc = (r, mat, seg = 24) => new THREE.Mesh(new THREE.CircleGeometry(r, seg), mat);
+const bar = (w, h, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.015), mat);
+const arc = (r, tube, mat, ang = Math.PI) => new THREE.Mesh(new THREE.TorusGeometry(r, tube, 8, 20, ang), mat);
+function starMesh(r, mat) {
+  const s = new THREE.Shape();
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 === 0 ? r : r * 0.44;
+    i === 0 ? s.moveTo(Math.cos(a) * rr, Math.sin(a) * rr) : s.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  return new THREE.Mesh(new THREE.ShapeGeometry(s), mat);
+}
+
+// construye los 5 sets de cara según estilo; devuelve registry {idle,acierto,...}
+function buildFace(parent, project, k, style) {
   const sets = {};
-  const eyeMat = () => new THREE.MeshBasicMaterial({ color: EYE_COLOR, transparent: true, opacity: 0 });
-  const onFace = (u, v, mesh) => {
-    const z = Math.sqrt(Math.max(faceR * faceR - u * u - v * v, 0.005));
-    mesh.position.set(u, v, z); mesh.lookAt(u * 2, v * 2, z * 2); return mesh;
-  };
   const make = (name, build) => {
     const g = new THREE.Group(); g.userData.o = 0; g.visible = false;
     build(g); parent.add(g); sets[name] = g;
   };
-  const EY = 0.06 * k;         // altura base de los ojos
-  const U = faceR * 0.28;      // separación horizontal, proporcional a la cara
-  make('idle', (g) => { for (const s of [-1, 1]) g.add(onFace(U * s, EY, new THREE.Mesh(new THREE.CircleGeometry(0.19 * k, 28), eyeMat()))); });
+  const U = 0.30 * k, EY = 0.06 * k;
+  const eyeGroup = (u, v) => { const g = new THREE.Group(); project(u, v, g); return g; };
+
+  if (style === 'voxel') {
+    // ojos rectangulares cian emisivos con marco inset (ref. voxel); sin boca
+    const frame = () => bar(0.5 * k, 0.34 * k, faceMat('#0a1620', 1));
+    const rect = () => bar(0.4 * k, 0.24 * k, faceMat(CYAN, 1));
+    make('idle', (g) => { for (const s of [-1, 1]) { const e = eyeGroup(U * s, EY); const f = frame(); e.add(f); const r = rect(); r.position.z = 0.012; e.add(r); g.add(e); } });
+    make('acierto', (g) => {
+      for (const s of [-1, 1]) {
+        const e = eyeGroup(U * s, EY);
+        const a = bar(0.3 * k, 0.09 * k, faceMat(CYAN, 1)); a.rotation.z = 0.6; a.position.x = -0.11 * k;
+        const b = bar(0.3 * k, 0.09 * k, faceMat(CYAN, 1)); b.rotation.z = -0.6; b.position.x = 0.11 * k;
+        e.add(a); e.add(b); g.add(e);
+      }
+    });
+    make('fallo', (g) => {
+      for (const s of [-1, 1]) {
+        const e = eyeGroup(U * s, EY);
+        for (const r of [Math.PI / 4, -Math.PI / 4]) { const x = bar(0.42 * k, 0.09 * k, faceMat(CYAN, 1)); x.rotation.z = r; e.add(x); }
+        g.add(e);
+      }
+    });
+    make('racha', (g) => { for (const s of [-1, 1]) { const e = eyeGroup(U * s, EY); e.add(starMesh(0.26 * k, faceMat(CYAN, 1))); g.add(e); } });
+    make('pensando', (g) => {
+      for (const s of [-1, 1]) { const e = eyeGroup(U * s + 0.06 * k, EY + 0.12 * k); e.add(bar(0.26 * k, 0.16 * k, faceMat(CYAN, 1))); g.add(e); }
+      const brow = eyeGroup(U, EY + 0.34 * k); brow.add(bar(0.34 * k, 0.07 * k, faceMat('#0a1620', 1))); g.add(brow);
+    });
+    return sets;
+  }
+
+  // estilos redondos: caricatura (pupila mediana + cejas + boca) y kvrc (ojazos, sin boca)
+  const kv = style === 'kvrc';
+  const eyeR = (kv ? 0.30 : 0.19) * k, pupR = (kv ? 0.085 : 0.075) * k, hiR = (kv ? 0.045 : 0.03) * k;
+  const eyeC = kv ? '#f5f9ff' : IVORY;
+  const fullEye = (u, v, pdx = 0, pdy = 0) => {
+    const e = eyeGroup(u, v);
+    e.add(disc(eyeR, faceMat(eyeC, 1), 28));
+    const p = disc(pupR, faceMat(PUPIL, 1), 20); p.position.set(pdx * k, pdy * k, 0.012); e.add(p);
+    const h = disc(hiR, faceMat('#ffffff', 0.9), 12); h.position.set((pdx - 0.05) * k, (pdy + 0.06) * k, 0.02); e.add(h);
+    return e;
+  };
+  const brow = (u, v, rot, len = 0.22) => {
+    const b = eyeGroup(u, v);
+    const m = arc(len * k, 0.03 * k, faceMat(eyeC, 0.45), Math.PI * 0.5);
+    m.rotation.z = Math.PI * 0.25 + rot; b.add(m); return b;
+  };
+  const mouthArc = (v, r, tube, ang, rotZ, o = 1) => {
+    const mg = eyeGroup(0, v);
+    const m = arc(r * k, tube * k, faceMat(eyeC, o), ang);
+    m.rotation.z = rotZ; mg.add(m); return mg;
+  };
+
+  make('idle', (g) => {
+    g.add(fullEye(-U, EY, 0, -0.01)); g.add(fullEye(U, EY, 0, -0.01));
+    if (!kv) { g.add(brow(-U, EY + 0.34 * k, 0)); g.add(brow(U, EY + 0.34 * k, 0));
+      g.add(mouthArc(-0.28 * k, 0.13, 0.045, Math.PI * 0.8, Math.PI + 0.35)); }
+  });
   make('acierto', (g) => {
-    for (const s of [-1, 1]) g.add(onFace(U * s, EY - 0.02 * k, new THREE.Mesh(new THREE.TorusGeometry(0.17 * k, 0.055 * k, 8, 20, Math.PI), eyeMat())));
+    for (const s of [-1, 1]) { const e = eyeGroup(U * s, EY); const a = arc(0.16 * k * (kv ? 1.5 : 1), 0.055 * k, faceMat(eyeC, 1)); e.add(a); g.add(e); }
+    if (!kv) {
+      g.add(brow(-U, EY + 0.28 * k, 0.1)); g.add(brow(U, EY + 0.28 * k, -0.1));
+      const open = eyeGroup(0, -0.28 * k); const m = disc(0.12 * k, faceMat(eyeC, 1), 20); m.scale.y = 0.7; open.add(m); g.add(open);
+    }
   });
   make('fallo', (g) => {
-    for (const s of [-1, 1]) for (const r of [Math.PI / 4, -Math.PI / 4]) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.34 * k, 0.06 * k, 0.02), eyeMat());
-      onFace(U * s, EY, bar); bar.rotateZ(r); g.add(bar);
+    for (const s of [-1, 1]) {
+      const e = eyeGroup(U * s, EY);
+      for (const r of [Math.PI / 4, -Math.PI / 4]) { const x = bar(0.36 * k * (kv ? 1.3 : 1), 0.06 * k, faceMat(eyeC, 1)); x.rotation.z = r; e.add(x); }
+      g.add(e);
+    }
+    if (!kv) {
+      const wav = eyeGroup(0, -0.26 * k);
+      for (let i = 0; i < 3; i++) { const s2 = arc(0.06 * k, 0.028 * k, faceMat(eyeC, 1)); s2.position.x = (i - 1) * 0.115 * k; s2.rotation.z = i % 2 ? 0 : Math.PI; wav.add(s2); }
+      g.add(wav);
+      g.add(brow(-U, EY + 0.26 * k, -0.35)); g.add(brow(U, EY + 0.26 * k, 0.35));
     }
   });
   make('racha', (g) => {
-    const star = new THREE.Shape();
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * Math.PI * 2 - Math.PI / 2, r = (i % 2 === 0 ? 0.23 : 0.1) * k;
-      i === 0 ? star.moveTo(Math.cos(a) * r, Math.sin(a) * r) : star.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-    }
-    const geo = new THREE.ShapeGeometry(star);
-    for (const s of [-1, 1]) g.add(onFace(U * s, EY, new THREE.Mesh(geo, eyeMat())));
+    for (const s of [-1, 1]) { const e = eyeGroup(U * s, EY); e.add(starMesh((kv ? 0.3 : 0.24) * k, faceMat(eyeC, 1))); g.add(e); }
+    if (!kv) { const open = eyeGroup(0, -0.28 * k); open.add(arc(0.1 * k, 0.04 * k, faceMat(eyeC, 1), Math.PI * 2)); g.add(open); }
   });
   make('pensando', (g) => {
-    g.add(onFace(-U * 0.87, EY + 0.14 * k, new THREE.Mesh(new THREE.CircleGeometry(0.14 * k, 24), eyeMat())));
-    g.add(onFace(U * 1.2, EY + 0.17 * k, new THREE.Mesh(new THREE.CircleGeometry(0.105 * k, 24), eyeMat())));
+    g.add(fullEye(-U, EY + 0.04 * k, 0.05, 0.07));
+    g.add(fullEye(U * 1.05, EY + 0.07 * k, 0.05, 0.07));
+    g.add(brow(U, EY + (kv ? 0.42 : 0.3) * k, 0.25));
+    if (!kv) { const m2 = eyeGroup(0.06 * k, -0.26 * k); m2.add(bar(0.2 * k, 0.045 * k, faceMat(eyeC, 1))); m2.rotation.z = 0.12; g.add(m2); }
   });
   return sets;
 }
 
-// brazos bendy parametrizados
-function makeArm(rig, matSeg, matAcc, side, segs, segLen, base, segR) {
-  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(segR * 1.45, 16, 12), matAcc);
+// ---------- brazos bendy parametrizados (con estilo de eslabón) ----------
+function makeArm(rig, side, segs, segLen, base, segR, mats, style) {
+  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(segR * 1.45, 16, 12), mats.acc);
   rig.add(shoulder); shoulder.position.copy(base);
   const parts = [];
   for (let i = 0; i < segs; i++) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(segR, 14, 10), matSeg);
+    let m;
+    if (style === 'voxel') m = new THREE.Mesh(new THREE.BoxGeometry(segR * 1.9, segR * 1.9, segR * 1.9), mats.seg);
+    else if (style === 'kvrc') m = new THREE.Mesh(new THREE.SphereGeometry(i % 2 ? segR * 0.8 : segR, 14, 10), i % 2 ? mats.dark : mats.seg);
+    else m = new THREE.Mesh(new THREE.SphereGeometry(segR, 14, 10), mats.seg);
     rig.add(m); parts.push(m);
   }
-  const hand = new THREE.Mesh(new THREE.SphereGeometry(segR * 1.25, 16, 12), matAcc);
+  let hand;
+  if (style === 'voxel') hand = new THREE.Mesh(new THREE.BoxGeometry(segR * 2.6, segR * 2.6, segR * 2.6), mats.acc);
+  else { hand = new THREE.Mesh(new THREE.SphereGeometry(segR * 1.5, 16, 12), mats.acc); if (style === 'kvrc') hand.scale.set(1.1, 0.85, 1.15); }
   rig.add(hand);
   return { side, parts, hand, base, segs, segLen };
 }
@@ -247,8 +393,7 @@ function poseArm(arm, ang, curl, fz) {
   arm.hand.position.copy(p).add(new THREE.Vector3(0, -0.02, fz * 0.12));
 }
 
-// fx compartidos por escena
-function makeFx(scene, matGoldLike) {
+function makeFx(scene) {
   const fxMat = (color) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0 });
   const sparks = [[-1.5, 2.6, 0.3], [1.6, 2.9, 0.1], [1.9, 1.7, 0.4]].map((p, i) => {
     const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.1), fxMat('#fcff52'));
@@ -261,130 +406,160 @@ function makeFx(scene, matGoldLike) {
   return { sparks, dots };
 }
 
-// ---------- MODELO A · cabeza-globo ----------
-function buildModelA(view) {
-  const matHead = soft(PALETTES.actual.head), matBody = soft(PALETTES.actual.body);
-  const matAcc = soft(PALETTES.actual.accent), matGlass = soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 });
-  const seamMat = soft(PALETTES.actual.seam);
-  const coreMat = soft(PALETTES.actual.gold, { emissive: PALETTES.actual.gold, emissiveIntensity: 0.9 });
-
-  const rig = new THREE.Group(); view.scene.add(rig);
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.46, 0.3, 8, 20), matBody);
-  body.position.y = 0.28; body.scale.set(1.08, 1, 0.92); rig.add(body);
-  const coreRing = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 10, 24), matGlass);
-  coreRing.position.set(0, 0.34, 0.44); rig.add(coreRing);
-  const core = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), coreMat);
-  core.position.set(0, 0.34, 0.46); rig.add(core);
-  for (const s of [-1, 1]) {
-    const foot = new THREE.Mesh(new THREE.CapsuleGeometry(0.125, 0.08, 6, 14), matAcc);
-    foot.position.set(0.24 * s, -0.32, 0.04); foot.scale.set(1.15, 0.72, 1.3); rig.add(foot);
-  }
-
-  const headG = new THREE.Group(); headG.position.y = 1.62; rig.add(headG);
-  const R = 1.02;
-  headG.add(new THREE.Mesh(new THREE.SphereGeometry(R, 48, 32), matHead));
-  for (const ry of [0.5, -0.5]) {
-    const seam = new THREE.Mesh(new THREE.TorusGeometry(R + 0.002, 0.008, 6, 64), seamMat);
-    seam.rotation.y = ry; headG.add(seam);
-  }
-  const eq = new THREE.Mesh(new THREE.TorusGeometry(R * 0.86, 0.008, 6, 64), seamMat);
-  eq.rotation.x = Math.PI / 2; eq.position.y = -0.55; headG.add(eq);
-  const glassCap = new THREE.Mesh(
-    new THREE.SphereGeometry(R + 0.025, 48, 24, Math.PI / 2 - 0.60, 1.20, Math.PI / 2 - 0.42, 0.86), matGlass);
-  headG.add(glassCap);
-  for (const s of [-1, 1]) {
-    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 12), matAcc);
-    ear.position.set(1.05 * s, 0.05, 0); ear.scale.set(0.34, 1.15, 0.8); headG.add(ear);
-  }
-  const stem = new THREE.Mesh(new THREE.CapsuleGeometry(0.028, 0.24, 6, 10), matAcc);
-  stem.position.y = R + 0.14; headG.add(stem);
+// antena LED (común a los 3; en voxel el foco es un cubo)
+function makeAntenna(headG, topY, matAcc, cube = false) {
+  const stem = new THREE.Mesh(new THREE.CapsuleGeometry(0.026, 0.2, 6, 10), matAcc);
+  stem.position.y = topY + 0.1; headG.add(stem);
   const ledMat = new THREE.MeshStandardMaterial({ color: LED.idle, emissive: LED.idle, emissiveIntensity: 1.05 });
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 14), ledMat);
-  bulb.position.y = R + 0.33; headG.add(bulb);
+  const bulb = cube
+    ? new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), ledMat)
+    : new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 12), ledMat);
+  bulb.position.y = topY + 0.26; headG.add(bulb);
   const haloMat = new THREE.MeshBasicMaterial({ color: LED.idle, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending });
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 12), haloMat);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12), haloMat);
   halo.position.copy(bulb.position); headG.add(halo);
-
-  const eyes = buildEyeSets(headG, R + 0.07, 1);
-  const armL = makeArm(rig, matHead, matAcc, -1, 6, 0.15, new THREE.Vector3(-0.6, 0.6, 0.07), 0.096);
-  const armR = makeArm(rig, matHead, matAcc, 1, 6, 0.15, new THREE.Vector3(0.6, 0.6, 0.07), 0.096);
-  const fx = makeFx(view.scene);
-
-  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx,
-    pal: { matHead, matBody, matAcc, seamMat, coreMat },
-    // pose por estado (los brazos de A son cortos: mismos ángulos del plan original)
-    poses: {
-      idle:     { bobA: 0.06, bobS: 1.0, tilt: 0,     aL: [0.14, 0.3, 0],  aR: [0.14, 0.3, 0] },
-      acierto:  { bobA: 0.05, bobS: 1.2, tilt: 0,     aL: [1.25, 0.5, 0],  aR: [1.25, 0.5, 0] },
-      fallo:    { bobA: 0.02, bobS: 0.7, tilt: -0.14, aL: [0.04, 0.12, 0], aR: [0.04, 0.12, 0] },
-      racha:    { bobA: 0.12, bobS: 2.3, tilt: 0.04,  aL: [2.35, 0.5, 0],  aR: [2.35, 0.5, 0] },
-      pensando: { bobA: 0.03, bobS: 0.5, tilt: 0.06,  aL: [0.28, 0.5, 0],  aR: [2.05, 1.65, 0.5] },
-    } };
+  return { ledMat, haloMat };
 }
 
-// ---------- MODELO B · panza-globo (la configuración literal de la ref. favorita) ----------
-function buildModelB(view) {
-  const matBelly = soft(PALETTES.actual.head), matDark = soft(PALETTES.actual.body);
-  const matAcc = soft(PALETTES.actual.accent), matGlass = soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 });
-  const seamMat = soft(PALETTES.actual.seam);
-  const coreMat = soft(PALETTES.actual.gold, { emissive: PALETTES.actual.gold, emissiveIntensity: 0.9 });
+// ---------- esqueleto común: cabeza chica + panza-globo + brazos + flota ----------
+const BR = 0.88; // radio de la panza-globo
+
+// ESTILO 1 · Caricatura glossy
+function buildCartoon(view) {
+  const p0 = PALETTES.actual;
+  const matDark = soft(p0.body), matAcc = soft(p0.accent);
+  const matGlass = soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 });
+  const coreMat = soft(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.9 });
+  const globeMat = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: makeGlobeTexture(p0, 'cartoon'),
+    roughness: 0.32, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.22 });
 
   const rig = new THREE.Group(); view.scene.add(rig);
-  // panza-globo enorme
-  const BR = 0.88;
-  const belly = new THREE.Mesh(new THREE.SphereGeometry(BR, 48, 32), matBelly);
-  belly.position.y = 0.78; rig.add(belly);
-  for (const ry of [0.55, -0.55]) {
-    const seam = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.002, 0.008, 6, 64), seamMat);
-    seam.rotation.y = ry; seam.position.y = 0.78; rig.add(seam);
-  }
-  const eq = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.002, 0.008, 6, 64), seamMat);
-  eq.rotation.x = Math.PI / 2; eq.position.y = 0.78; rig.add(eq);
-  // brújula dorada (porthole) sobre la superficie de la panza, mirando al frente
-  const pz = Math.sqrt(BR * BR - 0.08 * 0.08); // z de la superficie a esa altura
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.045, 10, 28), matGlass);
-  ring.position.set(0, 0.86, pz); ring.lookAt(0, 0.86 + 0.08, pz + BR); rig.add(ring);
-  const compass = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 14), coreMat);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(BR, 48, 32), globeMat);
+  belly.position.y = 0.78; belly.rotation.y = -1.2; rig.add(belly);
+  const pz = Math.sqrt(BR * BR - 0.08 * 0.08);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.04, 10, 28), matGlass);
+  ring.position.set(0, 0.86, pz); ring.lookAt(0, 0.94, pz + BR); rig.add(ring);
+  const compass = new THREE.Mesh(new THREE.SphereGeometry(0.12, 18, 14), coreMat);
   compass.position.set(0, 0.86, pz + 0.02); rig.add(compass);
 
-  // cuello + cabeza chica de vidrio (los ojos viven directo en ella)
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.18, 14), matAcc);
   neck.position.y = 1.72; rig.add(neck);
-  const headG = new THREE.Group(); headG.position.y = 2.12; rig.add(headG);
-  const HR = 0.4;
+  const headG = new THREE.Group(); headG.position.y = 2.16; rig.add(headG);
+  const HR = 0.45;
   headG.add(new THREE.Mesh(new THREE.SphereGeometry(HR, 32, 22), matGlass));
-  const stem = new THREE.Mesh(new THREE.CapsuleGeometry(0.024, 0.18, 6, 10), matAcc);
-  stem.position.y = HR + 0.1; headG.add(stem);
-  const ledMat = new THREE.MeshStandardMaterial({ color: LED.idle, emissive: LED.idle, emissiveIntensity: 1.05 });
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 18, 12), ledMat);
-  bulb.position.y = HR + 0.24; headG.add(bulb);
-  const haloMat = new THREE.MeshBasicMaterial({ color: LED.idle, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending });
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.165, 16, 12), haloMat);
-  halo.position.copy(bulb.position); headG.add(halo);
+  const { ledMat, haloMat } = makeAntenna(headG, HR, matAcc);
+  const eyes = buildFace(headG, sphereProjector(HR + 0.03), 0.5, 'cartoon');
 
-  const eyes = buildEyeSets(headG, HR + 0.03, 0.42);
-  // brazos largos desde lo alto de la panza
-  const armL = makeArm(rig, matBelly, matAcc, -1, 8, 0.13, new THREE.Vector3(-0.78, 1.38, 0.05), 0.075);
-  const armR = makeArm(rig, matBelly, matAcc, 1, 8, 0.13, new THREE.Vector3(0.78, 1.38, 0.05), 0.075);
-  const fx = makeFx(view.scene);
+  const mats = { seg: soft(p0.head), acc: matAcc, dark: matDark };
+  const armL = makeArm(rig, -1, 8, 0.13, new THREE.Vector3(-0.78, 1.38, 0.05), 0.075, mats, 'cartoon');
+  const armR = makeArm(rig, 1, 8, 0.13, new THREE.Vector3(0.78, 1.38, 0.05), 0.075, mats, 'cartoon');
 
-  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx,
-    pal: { matHead: matBelly, matBody: matDark, matAcc, seamMat, coreMat },
-    // B flota: bob base mayor; brazos largos usan curl algo menor para no enredarse
-    poses: {
-      idle:     { bobA: 0.09, bobS: 0.9, tilt: 0,     aL: [0.12, 0.25, 0], aR: [0.12, 0.25, 0] },
-      acierto:  { bobA: 0.08, bobS: 1.2, tilt: 0,     aL: [1.2, 0.4, 0],   aR: [1.2, 0.4, 0] },
-      fallo:    { bobA: 0.04, bobS: 0.7, tilt: -0.13, aL: [0.03, 0.1, 0],  aR: [0.03, 0.1, 0] },
-      racha:    { bobA: 0.14, bobS: 2.3, tilt: 0.04,  aL: [2.2, 0.45, 0],  aR: [2.2, 0.45, 0] },
-      pensando: { bobA: 0.05, bobS: 0.5, tilt: 0.05,  aL: [0.25, 0.4, 0],  aR: [2.3, 1.5, 0.45] },
-    } };
+  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx: makeFx(view.scene), style: 'cartoon',
+    pal: { globeMat, mats: [mats.seg], acc: matAcc, dark: matDark, core: coreMat } };
 }
 
-// ---------- estado global (expresión + paleta, compartidos por ambos modelos) ----------
-const viewA = makeView(document.getElementById('stageA'));
-const viewB = makeView(document.getElementById('stageB'));
-const models = [buildModelA(viewA), buildModelB(viewB)];
-models.forEach((m) => { m.cur = { bobA: 0.06, bobS: 1, tilt: 0, aL: [0.2, 0.3, 0], aR: [0.2, 0.3, 0] }; m.led = new THREE.Color(LED.idle); });
+// ESTILO 2 · Juguete voxel
+function buildVoxel(view) {
+  const p0 = PALETTES.actual;
+  const flat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05, flatShading: true, ...extra });
+  const matDark = flat(p0.body), matAcc = flat(p0.accent);
+  const coreMat = flat(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.55 });
+  const globeMat = new THREE.MeshStandardMaterial({ color: '#ffffff', map: makeGlobeTexture(p0, 'voxel'),
+    roughness: 0.6, metalness: 0.05, flatShading: true });
+
+  const rig = new THREE.Group(); view.scene.add(rig);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(BR, 18, 12), globeMat);
+  belly.position.y = 0.78; belly.rotation.y = -1.2; rig.add(belly);
+  // panel de pecho enmarcado (ref. voxel)
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.4, 0.1), coreMat);
+  frame.position.set(0, 0.82, BR - 0.06); frame.rotation.x = -0.1; rig.add(frame);
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.26, 0.12), matDark);
+  inner.position.set(0, 0.82, BR - 0.05); inner.rotation.x = -0.1; rig.add(inner);
+
+  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, 0.18), matAcc);
+  neck.position.y = 1.72; rig.add(neck);
+  const headG = new THREE.Group(); headG.position.y = 2.12; rig.add(headG);
+  const HB = { w: 0.78, h: 0.6, d: 0.56 };
+  headG.add(new THREE.Mesh(new THREE.BoxGeometry(HB.w, HB.h, HB.d), flat(p0.head)));
+  const headMat = headG.children[0].material;
+  for (const s of [-1, 1]) { // orejas cubo
+    const ear = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.2), matAcc);
+    ear.position.set((HB.w / 2 + 0.05) * s, 0, 0); headG.add(ear);
+  }
+  const { ledMat, haloMat } = makeAntenna(headG, HB.h / 2, matAcc, true);
+  const eyes = buildFace(headG, flatProjector(HB.d / 2 + 0.012), 0.5, 'voxel');
+
+  const mats = { seg: flat(p0.head), acc: matAcc, dark: matDark };
+  const armL = makeArm(rig, -1, 6, 0.15, new THREE.Vector3(-0.8, 1.34, 0.05), 0.07, mats, 'voxel');
+  const armR = makeArm(rig, 1, 6, 0.15, new THREE.Vector3(0.8, 1.34, 0.05), 0.07, mats, 'voxel');
+
+  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx: makeFx(view.scene), style: 'voxel',
+    pal: { globeMat, mats: [mats.seg, headMat], acc: matAcc, dark: matDark, core: coreMat } };
+}
+
+// ESTILO 3 · Explorador K-VRC
+function buildKvrc(view) {
+  const p0 = PALETTES.actual;
+  const matDark = soft(p0.body), matAcc = soft(p0.accent);
+  const matGlass = soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 });
+  const matShell = soft(p0.head);
+  const coreMat = soft(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.9 });
+  const globeMat = new THREE.MeshPhysicalMaterial({ color: '#ffffff', map: makeGlobeTexture(p0, 'kvrc'),
+    roughness: 0.32, metalness: 0.05, clearcoat: 1, clearcoatRoughness: 0.22 });
+
+  const rig = new THREE.Group(); view.scene.add(rig);
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(BR, 48, 32), globeMat);
+  belly.position.y = 0.78; belly.rotation.y = -1.2; rig.add(belly);
+  // arnés de exploración: dos correas cruzadas + hebilla dorada
+  for (const rz of [0.65, -0.65]) {
+    const strap = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.015, 0.035, 8, 48), matDark);
+    strap.rotation.set(0.12, 0, rz); strap.position.y = 0.78; rig.add(strap);
+  }
+  const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.18, 0.08), coreMat);
+  buckle.position.set(0, 0.9, BR - 0.02); buckle.rotation.x = -0.12; rig.add(buckle);
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 0.18, 14), matDark);
+  neck.position.y = 1.72; rig.add(neck);
+  const headG = new THREE.Group(); headG.position.y = 2.18; rig.add(headG);
+  const HR = 0.48;
+  headG.add(new THREE.Mesh(new THREE.SphereGeometry(HR, 36, 24), matGlass));
+  // casco: casquete amplio que enmarca la cara + aleta de acento + orejas grandes
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(HR + 0.05, 36, 22, 0, Math.PI * 2, 0, Math.PI * 0.6), matShell);
+  helmet.rotation.x = -0.1; headG.add(helmet);
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.34), matAcc);
+  fin.position.set(0, HR + 0.16, -0.06); fin.rotation.x = 0.35; headG.add(fin);
+  for (const s of [-1, 1]) { // orejas cilindro grandes, adelantadas para que se vean
+    const ear = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.12, 18), matShell);
+    ear.rotation.z = Math.PI / 2; ear.position.set((HR + 0.08) * s, 0, 0.06); headG.add(ear);
+    const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.14, 12), matDark);
+    dot.rotation.z = Math.PI / 2; dot.position.set((HR + 0.09) * s, 0, 0.06); headG.add(dot);
+  }
+  const { ledMat, haloMat } = makeAntenna(headG, HR + 0.1, matAcc);
+  const eyes = buildFace(headG, sphereProjector(HR + 0.03), 0.5, 'kvrc');
+
+  const mats = { seg: matShell, acc: matAcc, dark: matDark };
+  const armL = makeArm(rig, -1, 8, 0.13, new THREE.Vector3(-0.78, 1.38, 0.05), 0.078, mats, 'kvrc');
+  const armR = makeArm(rig, 1, 8, 0.13, new THREE.Vector3(0.78, 1.38, 0.05), 0.078, mats, 'kvrc');
+
+  return { view, rig, eyes, armL, armR, ledMat, haloMat, fx: makeFx(view.scene), style: 'kvrc',
+    pal: { globeMat, mats: [matShell], acc: matAcc, dark: matDark, core: coreMat } };
+}
+
+// ---------- estado global ----------
+const models = [
+  buildCartoon(makeView(document.getElementById('stage1'))),
+  buildVoxel(makeView(document.getElementById('stage2'))),
+  buildKvrc(makeView(document.getElementById('stage3'))),
+];
+// poses comunes de la plantilla panza-globo
+const POSES = {
+  idle:     { bobA: 0.09, bobS: 0.9, tilt: 0,     aL: [0.12, 0.25, 0], aR: [0.12, 0.25, 0] },
+  acierto:  { bobA: 0.08, bobS: 1.2, tilt: 0,     aL: [1.2, 0.4, 0],   aR: [1.2, 0.4, 0] },
+  fallo:    { bobA: 0.04, bobS: 0.7, tilt: -0.13, aL: [0.03, 0.1, 0],  aR: [0.03, 0.1, 0] },
+  racha:    { bobA: 0.14, bobS: 2.3, tilt: 0.04,  aL: [2.2, 0.45, 0],  aR: [2.2, 0.45, 0] },
+  pensando: { bobA: 0.05, bobS: 0.5, tilt: 0.05,  aL: [0.25, 0.4, 0],  aR: [2.3, 1.5, 0.45] },
+};
+models.forEach((m) => { m.cur = { bobA: 0.09, bobS: 0.9, tilt: 0, aL: [0.12, 0.25, 0], aR: [0.12, 0.25, 0] }; m.led = new THREE.Color(LED.idle); });
 
 let state = 'idle', palette = 'actual', tEnter = performance.now();
 const FX_BY_STATE = { racha: 'sparks', pensando: 'dots' };
@@ -393,11 +568,13 @@ function applyPalette(name) {
   palette = name;
   const p = PALETTES[name];
   for (const m of models) {
-    m.pal.matHead.color.set(p.head);
-    m.pal.matBody.color.set(p.body);
-    m.pal.matAcc.color.set(p.accent);
-    m.pal.seamMat.color.set(p.seam);
-    m.pal.coreMat.color.set(p.gold); m.pal.coreMat.emissive.set(p.gold);
+    const old = m.pal.globeMat.map;
+    m.pal.globeMat.map = makeGlobeTexture(p, m.style);
+    if (old) old.dispose();
+    m.pal.mats.forEach((mm) => mm.color.set(p.head));
+    m.pal.acc.color.set(p.accent);
+    m.pal.dark.color.set(p.body);
+    m.pal.core.color.set(p.gold); m.pal.core.emissive.set(p.gold);
   }
   document.querySelectorAll('.pal-btn').forEach((b) => b.classList.toggle('on', b.dataset.pal === name));
   if (REDUCED) drawAll(performance.now());
@@ -408,7 +585,7 @@ function setState(name) {
   if (REDUCED) { models.forEach((m) => snapModel(m, name)); drawAll(performance.now()); }
 }
 function snapModel(m, name) {
-  const P = m.poses[name];
+  const P = POSES[name];
   Object.assign(m.cur, { bobA: P.bobA, bobS: P.bobS, tilt: P.tilt, aL: [...P.aL], aR: [...P.aR] });
   m.led.set(LED[name]);
   for (const k in m.eyes) m.eyes[k].userData.o = k === name ? 1 : 0;
@@ -418,7 +595,7 @@ function snapModel(m, name) {
 
 const lerp = (a, b, k) => a + (b - a) * k;
 function drawModel(m, now) {
-  const P = m.poses[state];
+  const P = POSES[state];
   const t = now / 1000, te = (now - tEnter) / 1000;
   const k = REDUCED ? 1 : 0.1;
   const c = m.cur;
@@ -447,7 +624,9 @@ function drawModel(m, now) {
     const g = m.eyes[k2], target = k2 === state ? 1 : 0;
     g.userData.o = REDUCED ? target : lerp(g.userData.o, target, 0.16);
     g.visible = g.userData.o > 0.02;
-    if (g.visible) g.traverse((mm) => { if (mm.material) mm.material.opacity = g.userData.o; });
+    if (g.visible) g.traverse((mm) => {
+      if (mm.material) mm.material.opacity = g.userData.o * (mm.material.userData.baseO ?? 1);
+    });
   }
   m.fx.sparks.forEach((s) => {
     const on = FX_BY_STATE[state] === 'sparks';
@@ -460,6 +639,8 @@ function drawModel(m, now) {
     const tw = REDUCED ? 0.8 : Math.max(0, Math.sin(t * 2.2 - d.userData.ph)) ** 2;
     d.material.opacity = lerp(d.material.opacity, on ? 0.85 * tw : 0, REDUCED ? 1 : 0.12);
   });
+  // el globo gira despacio (la Tierra, al fin y al cabo)
+  if (!REDUCED) m.rig.children[0].rotation.y = -1.2 + t * 0.08;
   m.view.renderer.render(m.view.scene, m.view.cam);
 }
 function drawAll(now) { models.forEach((m) => drawModel(m, now)); }
@@ -469,13 +650,12 @@ applyPalette('actual');
 drawAll(performance.now());
 if (!REDUCED) (function loop(now) { drawAll(now); requestAnimationFrame(loop); })(performance.now());
 
-// controles + URL (?st=racha&pal=arcade — entrada directa: snap, no transición)
 document.querySelectorAll('.exp-btn').forEach((b) => b.addEventListener('click', () => setState(b.dataset.st)));
 document.querySelectorAll('.pal-btn').forEach((b) => b.addEventListener('click', () => applyPalette(b.dataset.pal)));
 const qs = new URLSearchParams(location.search);
 const qSt = qs.get('st'), qPal = qs.get('pal');
 if (qPal && PALETTES[qPal]) applyPalette(qPal);
-if (qSt && models[0].poses[qSt]) { setState(qSt); models.forEach((m) => snapModel(m, qSt)); drawAll(performance.now()); }
+if (qSt && POSES[qSt]) { setState(qSt); models.forEach((m) => snapModel(m, qSt)); drawAll(performance.now()); }
 window.__done = true;
 </script>
 </body>
