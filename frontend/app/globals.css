@@ -62,17 +62,40 @@
 .halo { animation: halo-pulse 4.5s ease-in-out infinite; }
 
 /* Botón con volumen (bevel + sombra inferior), estilo Chesscito/GameArena */
+/* Botón primario neo-brutalista: amarillo plano, borde grueso casi negro y
+   sombra dura desplazada (sin blur). Al tocar, el botón se "hunde" hacia la
+   sombra — feedback físico, mismo lenguaje que .brutal-press. */
 .btn-3d {
   position: relative;
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffff86 0%, #fcff52 45%, #e6e63a 100%);
+  background: #fcff52;
   color: #1c0b3e;
-  box-shadow: 0 6px 0 #b3b32e, 0 12px 24px rgba(252, 255, 82, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 2px solid #0d0420;
+  box-shadow: 5px 5px 0 #0d0420;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 .btn-3d:active {
-  transform: translateY(4px);
-  box-shadow: 0 2px 0 #b3b32e, 0 6px 14px rgba(252, 255, 82, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transform: translate(4px, 4px);
+  box-shadow: 1px 1px 0 #0d0420;
+}
+
+/* ===== Neo-brutalismo sobre Violeta Prisma (cards y botones) =====
+   Lenguaje de la referencia: borde grueso, sombra dura desplazada, hundirse
+   al tocar. La paleta NO cambia: violeta de marca para la card héroe,
+   superficie oscura para el resto. */
+.brutal {
+  border: 2px solid #0d0420;
+  box-shadow: 4px 4px 0 #0d0420;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.brutal-sm {
+  border: 2px solid #0d0420;
+  box-shadow: 3px 3px 0 #0d0420;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.brutal-press:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 #0d0420;
 }
 
 body {

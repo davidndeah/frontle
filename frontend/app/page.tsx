@@ -819,7 +819,9 @@ export default function Frontle() {
         {/* ---- Flujo pre-juego: 1) modos ---- */}
         {!started && jugarStep === "modes" && (
           <div className="flex flex-col gap-3">
-            <div className="panel p-4 flex flex-col gap-3">
+            {/* Card héroe (el único modo con premio): violeta de marca sólido,
+                lenguaje neo-brutalista — borde grueso + sombra dura. */}
+            <div className="brutal rounded-2xl bg-[#6c2bd9] p-4 flex flex-col gap-3">
               <button
                 onClick={() => setModeOpen(modeOpen === "daily" ? null : "daily")}
                 className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
@@ -827,7 +829,7 @@ export default function Frontle() {
                 <span className="text-3xl">🌍</span>
                 <span className="flex-1">
                   <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
-                  <span className="text-xs text-neutral-300">{tr.modes.dailySub}</span>
+                  <span className="text-xs text-white/80">{tr.modes.dailySub}</span>
                 </span>
                 <span className="text-[#fcff52] text-2xl">{modeOpen === "daily" ? "▾" : "→"}</span>
               </button>
@@ -836,7 +838,7 @@ export default function Frontle() {
               )}
             </div>
             {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa */}
-            <div className="panel p-4 flex flex-col gap-3">
+            <div className="brutal rounded-2xl bg-[#1c0b3e] p-4 flex flex-col gap-3">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
                 className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
@@ -883,7 +885,7 @@ export default function Frontle() {
             {/* Modos quiz: adivina la bandera / el contorno (gratis) */}
             <button
               onClick={() => setQuizMode("flag")}
-              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+              className="brutal brutal-press rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3 text-left"
             >
               <span className="text-3xl">🏳️</span>
               <span className="flex-1">
@@ -894,7 +896,7 @@ export default function Frontle() {
             </button>
             <button
               onClick={() => setQuizMode("outline")}
-              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+              className="brutal brutal-press rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3 text-left"
             >
               <span className="text-3xl">🗺️</span>
               <span className="flex-1">
@@ -906,7 +908,7 @@ export default function Frontle() {
             {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
             <button
               onClick={() => { setTab("aprender"); setPracticeOn(true); }}
-              className="panel p-4 flex items-center gap-3 text-left active:scale-[0.98] transition"
+              className="brutal brutal-press rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3 text-left"
             >
               <span className="text-3xl">🎓</span>
               <span className="flex-1">
@@ -1094,7 +1096,7 @@ export default function Frontle() {
                     autoCapitalize="off"
                     className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
                   />
-                  <button type="submit" className="rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e] active:scale-95 transition">OK</button>
+                  <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
                 </form>
 
                 {suggestions.length > 0 && (
@@ -1467,7 +1469,7 @@ function DepositButton({ label }: { label: string }) {
   return (
     <a
       href={ADD_CASH_URL}
-      className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 text-center font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+      className="brutal-sm brutal-press rounded-xl bg-[#34d399] px-6 py-3 text-center font-bold text-[#053b27] inline-block"
     >
       ↓ {label}
     </a>
@@ -1765,12 +1767,12 @@ function HintButton({ active, busy, locked, onClick, label, price, fmt }: { acti
     <button
       onClick={onClick}
       disabled={active || busy || locked}
-      className={`rounded-lg border px-3 py-1.5 text-xs transition active:scale-95 ${
+      className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${
         active
-          ? "border-amber-400/60 bg-amber-400/20 text-amber-200"
+          ? "bg-amber-300 text-[#1c0b3e]"
           : busy
-            ? "border-white/25 text-white animate-pulse"
-            : `border-white/25 text-white hover:bg-white/10 ${locked ? "opacity-50" : ""}`
+            ? "bg-[#1c0b3e] text-white animate-pulse"
+            : `bg-[#1c0b3e] text-white hover:bg-[#2a1257] ${locked ? "opacity-50" : ""}`
       }`}
     >
       {label} {active ? "✓" : busy ? "⏳" : <span className="opacity-70">· {fmt(price)}</span>}
