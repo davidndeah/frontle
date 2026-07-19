@@ -168,7 +168,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
             <button
               key={lv}
               onClick={() => { setLevel(lv); newRound(lv); }}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold active:scale-95 transition ${level === lv ? "border-[#fcff52]/70 text-[#fcff52] bg-[#fcff52]/10" : "border-[#b79ced]/30 text-white hover:bg-white/10"}`}
+              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-[#fcff52] text-[#1c0b3e]" : "bg-[#1c0b3e] text-white"}`}
             >
               {tr.levels[lv]}
             </button>
@@ -225,10 +225,10 @@ frontle.vercel.app`}
             />
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            <button onClick={() => newRound()} className="rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25">
+            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e]">
               🔄 {tr.practiceNextRound}
             </button>
-            <button onClick={onExit} className="rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
+            <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white">
               {tr.practiceExit}
             </button>
           </div>
@@ -244,7 +244,7 @@ frontle.vercel.app`}
               autoComplete="off"
               className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
             />
-            <button type="submit" className="rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e] active:scale-95 transition">OK</button>
+            <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
           </form>
 
           {suggestions.length > 0 && (
@@ -295,7 +295,7 @@ function PHintBtn({ onClick, active, label }: { onClick: () => void; active: boo
     <button
       onClick={onClick}
       disabled={active}
-      className="rounded-lg border border-[#b79ced]/30 px-3 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+      className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-1.5 text-xs text-white disabled:opacity-50"
     >
       {label} {active ? "✓" : ""}
     </button>

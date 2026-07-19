@@ -263,7 +263,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
                   autoComplete="off"
                   className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
                 />
-                <button type="submit" className="rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e] active:scale-95 transition">OK</button>
+                <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
               </form>
 
               {suggestions.length > 0 && (
@@ -344,7 +344,7 @@ function RegionWin({
           copiedLabel={tr.copied}
         />
       </div>
-      <button onClick={onExit} className="mt-3 w-full rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10">
+      <button onClick={onExit} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white">
         {tr.region.chooseOtherMode}
       </button>
       <p className="text-[11px] text-neutral-400 mt-3">{tr.region.modeFooter(def.title)}</p>
@@ -358,7 +358,7 @@ function HintBtn({ onClick, active, label }: { onClick: () => void; active: bool
     <button
       onClick={onClick}
       disabled={active}
-      className="rounded-lg border border-[#b79ced]/30 px-3 py-1.5 text-xs text-white hover:bg-white/10 active:scale-95 transition disabled:opacity-50"
+      className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-1.5 text-xs text-white disabled:opacity-50"
     >
       {label} {active ? "✓" : ""}
     </button>

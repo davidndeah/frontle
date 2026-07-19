@@ -239,7 +239,7 @@ export default function StatsView() {
         <div className="flex flex-col gap-2 mt-1">
           <a
             href={SUPPORT_MAILTO}
-            className="rounded-lg border border-[#b79ced]/25 bg-white/[0.03] px-3 py-2 text-[13px] text-white active:scale-95 transition hover:bg-white/10"
+            className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-2 text-[13px] text-white"
           >
             ✉️ {tr.supportEmail} · <span className="text-[#fcff52]">{SUPPORT_EMAIL}</span>
           </a>
@@ -247,7 +247,7 @@ export default function StatsView() {
             href={SUPPORT_X_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-lg border border-[#b79ced]/25 bg-white/[0.03] px-3 py-2 text-[13px] text-white active:scale-95 transition hover:bg-white/10"
+            className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-2 text-[13px] text-white"
           >
             𝕏 · <span className="text-[#c4b5fd]">@{SUPPORT_X}</span>
           </a>

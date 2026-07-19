@@ -42,7 +42,7 @@ export default function ScoreCard({
       />
       <button
         onClick={share}
-        className="w-full rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e] active:scale-95 transition shadow-lg shadow-[#fcff52]/25"
+        className="brutal-sm brutal-press w-full rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e]"
       >
         {done ? copiedLabel : `📤 ${label}`}
       </button>
