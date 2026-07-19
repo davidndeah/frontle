@@ -62,21 +62,22 @@
 </style>
 </head>
 <body>
-  <h1>Bordy · planeta holograma · EXP-2b (v7)</h1>
-  <p class="sub">Ajustes de David sobre v6: <b>sin antena superior ni banda de mandíbula</b> — ahora
-  <b>las orejas laterales son el LED semáforo</b> (cambian de color y pulsan con cada estado).
-  <b>Continentes redibujados a mano</b> con rasgos reconocibles (Alaska, golfo de México, istmo de
-  Panamá, cuerno de África, Arabia, India, Kamchatka…), en <b>dorado cálido</b> contra el globo
-  frío. <b>Más juego de paleta</b>: brazos a dos tonos (brazo violeta, antebrazo claro), núcleo del
-  globo violeta profundo en vez de negro plano. Misma plantilla: 5 expresiones, 4 paletas EXP-1.
+  <h1>Bordy · planeta holograma · EXP-2b (v8)</h1>
+  <p class="sub">Ajustes de David con la referencia de robots retro: la cabeza ahora tiene
+  <b>casco</b> — carcasa de color con la <b>pantalla oscura inset y su marco</b> (la cara sigue
+  siendo pantalla de píxeles, pero ya no se ve solo la pantalla), más escotilla superior con
+  remache dorado. Los <b>continentes ahora van rellenos</b> con un tono distinto por continente
+  (relleno geométrico proyectado a la esfera, sin texturas) además del contorno dorado. <b>Brazos
+  rediseñados</b>: más contundentes, codo oscuro, antebrazo claro cónico, <b>puño dorado</b> en la
+  muñeca y manopla acento. Misma plantilla: 5 expresiones, 4 paletas EXP-1, orejas-LED semáforo.
   Exploración: no toca producción.</p>
 
   <div class="row">
     <div class="stage panel">
       <span class="who">Bordy · planeta holograma</span>
       <div class="frame" id="stage1" role="img" aria-label="Bordy planeta holograma con brazos articulados, expresión y paleta seleccionables"></div>
-      <span class="cap">Globo de líneas con continentes dorados girando; brazos articulados a dos
-      tonos con manoplas; las orejas son el LED semáforo.</span>
+      <span class="cap">Casco con pantalla inset; globo con continentes rellenos por tono girando;
+      brazos con puño dorado y manoplas; las orejas son el LED semáforo.</span>
     </div>
     <div class="controls panel">
       <span class="ctl-label">Expresión</span>
@@ -101,10 +102,10 @@
     <h2>Decisiones (diseño y rendimiento) — para la fase de integración</h2>
     <table>
       <tr><th>Tema</th><th>Detalle</th></tr>
-      <tr><td>Continentes</td><td><b>Redibujados a mano</b> con rasgos reconocibles (~40 vértices los grandes; tensión de curva baja para que sobrevivan cabos y golfos), en <b>dorado cálido</b> (mezcla oro+acento) — la masa continental es el foco del globo. Sin relleno, sin textura.</td></tr>
-      <tr><td>LED semáforo</td><td>Vive en las <b>orejas laterales</b> (bolita + halo por lado): ámbar idle · verde acierto · rojo fallo · oro pulsante racha · cyan pensando. La antena superior salió.</td></tr>
-      <tr><td>Brazos</td><td>Articulados a <b>dos tonos</b>: brazo violeta → antebrazo claro (mezcla cabeza+acento) → palma acento → dedos oscuros. Misma máquina de poses (hombro/codo).</td></tr>
-      <tr><td>Fuera de esta versión</td><td>Antena superior, banda de mandíbula (v6); rocas, ombligo, gorra (v5).</td></tr>
+      <tr><td>Casco</td><td>Carcasa esférica en color de paleta con <b>pantalla oscura inset + marco</b> al frente (referencias retro: la cara es pantalla, pero con diseño alrededor) y escotilla superior con remache dorado. Los ojos/boca de píxel cyan viven sobre la pantalla.</td></tr>
+      <tr><td>Continentes</td><td>Contorno dorado + <b>relleno translúcido con un tono distinto por continente</b> (mezclas oro/acento/cabeza de la paleta). El relleno es geometría proyectada a la esfera (triangulación subdividida) — sin texturas.</td></tr>
+      <tr><td>LED semáforo</td><td>Vive en las <b>orejas laterales</b> (bolita + halo por lado): ámbar idle · verde acierto · rojo fallo · oro pulsante racha · cyan pensando.</td></tr>
+      <tr><td>Brazos</td><td>Hombro acento → brazo violeta grueso → <b>codo oscuro</b> → antebrazo claro cónico → <b>puño dorado</b> → manopla acento con dedos oscuros. Misma máquina de poses (hombro/codo).</td></tr>
       <tr><td>Movimiento propio</td><td>Flota (bob) + el globo (líneas y continentes) gira despacio; con <code>prefers-reduced-motion</code> queda estático.</td></tr>
       <tr><td>Texturas</td><td><b>Ninguna</b> — solo el canvas de la sombra. Paleta en caliente vía <code>material.color</code>.</td></tr>
     </table>
@@ -173,6 +174,33 @@ const lonLatToV3 = (lon, lat, r) => {
   const la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
   return new THREE.Vector3(Math.cos(la) * Math.sin(lo) * r, Math.sin(la) * r, Math.cos(la) * Math.cos(lo) * r);
 };
+
+// relleno de continente: triangula el polígono en el plano lon/lat, subdivide 2 veces
+// (para que los triángulos grandes no se hundan como cuerdas dentro de la esfera) y
+// proyecta cada vértice a la superficie. Geometría pura, sin texturas.
+function continentFill(poly, r, mat) {
+  const shape = new THREE.Shape();
+  poly.forEach(([lon, lat], i) => { i ? shape.lineTo(lon, lat) : shape.moveTo(lon, lat); });
+  let geo = new THREE.ShapeGeometry(shape).toNonIndexed();
+  for (let round = 0; round < 2; round++) {
+    const p = geo.attributes.position; const out = [];
+    for (let i = 0; i < p.count; i += 3) {
+      const ax = p.getX(i), ay = p.getY(i), bx = p.getX(i + 1), by = p.getY(i + 1), cx = p.getX(i + 2), cy = p.getY(i + 2);
+      const m1x = (ax + bx) / 2, m1y = (ay + by) / 2, m2x = (bx + cx) / 2, m2y = (by + cy) / 2, m3x = (cx + ax) / 2, m3y = (cy + ay) / 2;
+      out.push(ax, ay, 0, m1x, m1y, 0, m3x, m3y, 0,  m1x, m1y, 0, bx, by, 0, m2x, m2y, 0,
+               m3x, m3y, 0, m2x, m2y, 0, cx, cy, 0,  m1x, m1y, 0, m2x, m2y, 0, m3x, m3y, 0);
+    }
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(out, 3));
+  }
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const v = lonLatToV3(p.getX(i), p.getY(i), r);
+    p.setXYZ(i, v.x, v.y, v.z);
+  }
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, mat);
+}
 
 function shadowTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 256;
@@ -292,23 +320,25 @@ function placeSegment(mesh, a, b) {
   mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
 }
 function makeArm(rig, side, base, mats) {
-  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 14), mats.acc);
+  // más juego de color y forma (referencias retro): hombro acento, brazo violeta grueso,
+  // codo oscuro, antebrazo claro cónico, PUÑO dorado en la muñeca, manopla acento
+  const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.135, 18, 14), mats.acc);
   shoulder.position.copy(base); rig.add(shoulder);
-  const upper = limbSegment(rig, 0.062, mats.seg);
-  const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), mats.acc); rig.add(elbow);
-  const fore = limbSegment(rig, 0.055, mats.fore || mats.seg);
-  const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 10), mats.acc); rig.add(wrist);
-  // manopla: palma clara + 3 dedos oscuros (como la referencia roja: la mano es protagonista)
+  const upper = limbSegment(rig, 0.072, mats.seg);
+  const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.09, 16, 12), mats.dark); rig.add(elbow);
+  const fore = limbSegment(rig, 0.062, mats.fore || mats.seg);
   const hand = new THREE.Group(); rig.add(hand);
-  const palm = new THREE.Mesh(new THREE.SphereGeometry(0.125, 18, 14), mats.acc);
+  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.088, 0.06, 14), mats.cuff);
+  cuff.position.y = -0.13; hand.add(cuff);
+  const palm = new THREE.Mesh(new THREE.SphereGeometry(0.13, 18, 14), mats.acc);
   palm.scale.set(1, 0.82, 1.05); hand.add(palm);
   for (let i = -1; i <= 1; i++) {
-    const f = new THREE.Mesh(new THREE.CapsuleGeometry(0.036, 0.1, 6, 10), mats.dark);
-    f.position.set(i * 0.068, 0.11, 0.02);
+    const f = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.1, 6, 10), mats.dark);
+    f.position.set(i * 0.072, 0.11, 0.02);
     f.rotation.x = -0.15; f.rotation.z = i * -0.18;
     hand.add(f);
   }
-  return { side, base, shoulder, upper, elbow, fore, wrist, hand, L1: 0.32, L2: 0.34 };
+  return { side, base, shoulder, upper, elbow, fore, hand, L1: 0.32, L2: 0.34 };
 }
 function poseArm(arm, ang, curl, fz) {
   const th1 = -Math.PI / 2 + ang;
@@ -320,8 +350,7 @@ function poseArm(arm, ang, curl, fz) {
   placeSegment(arm.upper, arm.base, E);
   arm.elbow.position.copy(E);
   placeSegment(arm.fore, E, Hp);
-  arm.wrist.position.copy(Hp);
-  arm.hand.position.copy(Hp).addScaledVector(d2, 0.09);
+  arm.hand.position.copy(Hp).addScaledVector(d2, 0.1);
   arm.hand.quaternion.setFromUnitVectors(UP, d2);
 }
 
@@ -339,14 +368,14 @@ function makeFx(scene) {
 }
 
 // orejas-antena laterales: ahora ELLAS son el LED semáforo (sin antena superior)
-function makeEarLeds(headG, matDark) {
+function makeEarLeds(headG, matDark, baseR) {
   const ledMat = new THREE.MeshStandardMaterial({ color: LED.idle, emissive: LED.idle, emissiveIntensity: 1.05 });
   const haloMat = new THREE.MeshBasicMaterial({ color: LED.idle, transparent: true, opacity: 0.2, depthWrite: false, blending: THREE.AdditiveBlending });
   for (const s of [-1, 1]) {
     const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.032, 0.16, 10), matDark);
-    stem.rotation.z = Math.PI / 2; stem.position.set((HR + 0.07) * s, 0.02, 0); headG.add(stem);
+    stem.rotation.z = Math.PI / 2; stem.position.set((baseR + 0.05) * s, 0.02, 0); headG.add(stem);
     const ball = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), ledMat);
-    ball.position.set((HR + 0.18) * s, 0.02, 0); headG.add(ball);
+    ball.position.set((baseR + 0.16) * s, 0.02, 0); headG.add(ball);
     const halo = new THREE.Mesh(new THREE.SphereGeometry(0.125, 14, 10), haloMat);
     halo.position.copy(ball.position); headG.add(halo);
   }
@@ -383,26 +412,54 @@ function buildHolo(view) {
   const eq = new THREE.Mesh(new THREE.TorusGeometry(BR + 0.01, 0.014, 6, 64), eqMat);
   eq.rotation.x = Math.PI / 2; planet.add(eq);
 
-  // continentes DIBUJADOS: contorno como tubo fino sobre la esfera (mismo idioma que los meridianos)
-  for (const poly of CONTINENTS) {
+  // continentes: contorno dorado + RELLENO translúcido con un tono distinto por continente
+  // (NA, SA, ÁF, EU, AU, GR) — más juego de paleta dentro del globo
+  const fillDefs = [
+    { a: 'gold', b: 'accent', f: 0.55 }, // Norteamérica
+    { a: 'gold', b: 'accent', f: 0.25 }, // Sudamérica: más oro
+    { a: 'gold', b: 'head', f: 0.3 },    // África: oro profundo
+    { a: 'accent', b: 'head', f: 0.35 }, // Eurasia: frío claro
+    { a: 'gold', b: 'accent', f: 0.4 },  // Australia
+    { a: 'accent', b: 'head', f: 0.55 }, // Groenlandia
+  ];
+  const fillColor = (p, d) => mixColor(p[d.a], p[d.b], d.f);
+  const fillMats = fillDefs.map((d) => new THREE.MeshBasicMaterial({
+    color: fillColor(p0, d), transparent: true, opacity: 0.62, depthWrite: false, side: THREE.DoubleSide }));
+  CONTINENTS.forEach((poly, i) => {
+    planet.add(continentFill(poly, BR + 0.004, fillMats[i]));
     const pts = poly.map(([lon, lat]) => lonLatToV3(lon, lat, BR + 0.008));
     const curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.25);
     const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, poly.length * 6, 0.012, 5, true), contMat);
     planet.add(tube);
-  }
+  });
   planet.rotation.y = -1.0; // arranca mostrando América/África hacia cámara
 
   // cuello + cabeza
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.18, 14), matAcc);
   neck.position.y = 1.72; rig.add(neck);
   const headG = new THREE.Group(); headG.position.y = 2.16; rig.add(headG);
-  headG.add(new THREE.Mesh(new THREE.SphereGeometry(HR, 32, 22),
-    soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 })));
-  // orejas-antena laterales = LED semáforo (la antena superior y la mandíbula salieron)
-  const { ledMat, haloMat } = makeEarLeds(headG, matDark);
-  const eyes = buildFace(headG, sphereProjector(HR + 0.03), 0.5, { eyeC: HOLO });
+  // casco (referencias retro): carcasa de color con la pantalla oscura inset al frente
+  const SR = HR + 0.03; // radio de la carcasa
+  headG.add(new THREE.Mesh(new THREE.SphereGeometry(SR, 36, 24), matHead));
+  // escotilla superior con remache dorado (detalle de panel, como los cascos de las refs)
+  const hatch = new THREE.Mesh(new THREE.SphereGeometry(SR + 0.012, 24, 10, 0, Math.PI * 2, 0, 0.48), matFore);
+  headG.add(hatch);
+  const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), contMat);
+  bolt.position.y = SR + 0.02; headG.add(bolt);
+  // marco + pantalla (la cara es una pantalla, pero con casco alrededor — no solo pantalla)
+  const frame = new THREE.Mesh(
+    new THREE.SphereGeometry(SR + 0.018, 40, 22, Math.PI / 2 - 0.74, 1.48, Math.PI / 2 - 0.52, 1.04), matDark);
+  headG.add(frame);
+  const screen = new THREE.Mesh(
+    new THREE.SphereGeometry(SR + 0.032, 40, 22, Math.PI / 2 - 0.63, 1.26, Math.PI / 2 - 0.43, 0.86),
+    soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 }));
+  headG.add(screen);
+  // orejas-antena laterales = LED semáforo
+  const { ledMat, haloMat } = makeEarLeds(headG, matDark, SR);
+  const eyes = buildFace(headG, sphereProjector(SR + 0.045), 0.5, { eyeC: HOLO });
 
-  const mats = { seg: matHead, fore: matFore, acc: matAcc, dark: matDark };
+  const matCuff = soft(mixColor(p0.gold, p0.accent, 0.3), { metalness: 0.3, roughness: 0.3 });
+  const mats = { seg: matHead, fore: matFore, acc: matAcc, dark: matDark, cuff: matCuff };
   const armL = makeArm(rig, -1, new THREE.Vector3(-0.8, 1.42, 0.05), mats);
   const armR = makeArm(rig, 1, new THREE.Vector3(0.8, 1.42, 0.05), mats);
 
@@ -415,6 +472,8 @@ function buildHolo(view) {
       wireMat.color.copy(mixColor(p.body, p.accent, 0.4));
       eqMat.color.copy(mixColor(p.body, p.accent, 0.6));
       contMat.color.copy(mixColor(p.gold, p.accent, 0.3));
+      matCuff.color.copy(mixColor(p.gold, p.accent, 0.3));
+      fillMats.forEach((mm, i) => mm.color.copy(fillColor(p, fillDefs[i])));
     } };
 }
 
