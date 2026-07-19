@@ -62,15 +62,14 @@
 </style>
 </head>
 <body>
-  <h1>Bordy · planeta holograma · EXP-2b (v8)</h1>
-  <p class="sub">Ajustes de David con la referencia de robots retro: la cabeza ahora tiene
+  <h1>Bordy · planeta holograma · EXP-2b (v9)</h1>
+  <p class="sub">Ajustes de David con la referencia de robots retro: la cabeza tiene
   <b>casco</b> — carcasa de color con la <b>pantalla oscura inset y su marco</b> (la cara sigue
-  siendo pantalla de píxeles, pero ya no se ve solo la pantalla), más escotilla superior con
-  remache dorado. Los <b>continentes ahora van rellenos</b> con un tono distinto por continente
-  (relleno geométrico proyectado a la esfera, sin texturas) además del contorno dorado. <b>Brazos
-  rediseñados</b>: más contundentes, codo oscuro, antebrazo claro cónico, <b>puño dorado</b> en la
-  muñeca y manopla acento. Misma plantilla: 5 expresiones, 4 paletas EXP-1, orejas-LED semáforo.
-  Exploración: no toca producción.</p>
+  siendo pantalla de píxeles, pero ya no se ve solo la pantalla). Los <b>continentes van rellenos</b>
+  con un tono distinto por continente (relleno geométrico proyectado a la esfera, sin texturas)
+  además del contorno dorado. <b>Brazos</b>: cilindros del color de la cabeza/mar, codo oscuro,
+  <b>puño dorado</b> en la muñeca y manopla acento. Misma plantilla: 5 expresiones, 4 paletas EXP-1,
+  orejas-LED semáforo. Exploración: no toca producción.</p>
 
   <div class="row">
     <div class="stage panel">
@@ -102,7 +101,7 @@
     <h2>Decisiones (diseño y rendimiento) — para la fase de integración</h2>
     <table>
       <tr><th>Tema</th><th>Detalle</th></tr>
-      <tr><td>Casco</td><td>Carcasa esférica en color de paleta con <b>pantalla oscura inset + marco</b> al frente (referencias retro: la cara es pantalla, pero con diseño alrededor) y escotilla superior con remache dorado. Los ojos/boca de píxel cyan viven sobre la pantalla.</td></tr>
+      <tr><td>Casco</td><td>Carcasa esférica en color de paleta con <b>pantalla oscura inset + marco</b> al frente (referencias retro: la cara es pantalla, pero con diseño alrededor). Los ojos/boca de píxel cyan viven sobre la pantalla.</td></tr>
       <tr><td>Continentes</td><td>Contorno dorado + <b>relleno translúcido con un tono distinto por continente</b> (mezclas oro/acento/cabeza de la paleta). El relleno es geometría proyectada a la esfera (triangulación subdividida) — sin texturas.</td></tr>
       <tr><td>LED semáforo</td><td>Vive en las <b>orejas laterales</b> (bolita + halo por lado): ámbar idle · verde acierto · rojo fallo · oro pulsante racha · cyan pensando.</td></tr>
       <tr><td>Brazos</td><td>Hombro acento → brazo violeta grueso → <b>codo oscuro</b> → antebrazo claro cónico → <b>puño dorado</b> → manopla acento con dedos oscuros. Misma máquina de poses (hombro/codo).</td></tr>
@@ -387,11 +386,10 @@ const BR = 0.88, HR = 0.45;
 // PLANETA HOLOGRAMA v6
 function buildHolo(view) {
   const p0 = PALETTES.actual;
-  // más juego de paleta: núcleo violeta profundo (no negro plano), antebrazos más claros
-  // que los brazos, y continentes en DORADO cálido contra el globo frío
+  // más juego de paleta: núcleo violeta profundo (no negro plano),
+  // y continentes en DORADO cálido contra el globo frío
   const matHead = soft(p0.head), matDark = soft(p0.body), matAcc = soft(p0.accent);
   const matCore = soft(mixColor(p0.body, p0.head, 0.35), { roughness: 0.38 });
-  const matFore = soft(mixColor(p0.head, p0.accent, 0.45));
   const wireMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.4), transparent: true, opacity: 0.38 });
   const eqMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.6), transparent: true, opacity: 0.55 });
   const contMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.gold, p0.accent, 0.3), transparent: true, opacity: 0.92 });
@@ -441,11 +439,6 @@ function buildHolo(view) {
   // casco (referencias retro): carcasa de color con la pantalla oscura inset al frente
   const SR = HR + 0.03; // radio de la carcasa
   headG.add(new THREE.Mesh(new THREE.SphereGeometry(SR, 36, 24), matHead));
-  // escotilla superior con remache dorado (detalle de panel, como los cascos de las refs)
-  const hatch = new THREE.Mesh(new THREE.SphereGeometry(SR + 0.012, 24, 10, 0, Math.PI * 2, 0, 0.48), matFore);
-  headG.add(hatch);
-  const bolt = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), contMat);
-  bolt.position.y = SR + 0.02; headG.add(bolt);
   // marco + pantalla (la cara es una pantalla, pero con casco alrededor — no solo pantalla)
   const frame = new THREE.Mesh(
     new THREE.SphereGeometry(SR + 0.018, 40, 22, Math.PI / 2 - 0.74, 1.48, Math.PI / 2 - 0.52, 1.04), matDark);
@@ -469,7 +462,6 @@ function buildHolo(view) {
     recolor(p) {
       matHead.color.set(p.head); matDark.color.set(p.body); matAcc.color.set(p.accent);
       matCore.color.copy(mixColor(p.body, p.head, 0.35));
-      matFore.color.copy(mixColor(p.head, p.accent, 0.45));
       wireMat.color.copy(mixColor(p.body, p.accent, 0.4));
       eqMat.color.copy(mixColor(p.body, p.accent, 0.6));
       contMat.color.copy(mixColor(p.gold, p.accent, 0.3));
