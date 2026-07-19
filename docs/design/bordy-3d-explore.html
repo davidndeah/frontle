@@ -62,22 +62,21 @@
 </style>
 </head>
 <body>
-  <h1>Bordy · planeta holograma · EXP-2b (v6)</h1>
-  <p class="sub">Iteración sobre el holograma elegido, con las nuevas referencias de David (robots
-  retro articulados). Fuera: rocas, ombligo y gorra. Los <b>continentes ahora son contornos
-  dibujados</b> con el mismo lenguaje de líneas que los meridianos (un poco más brillantes, para que
-  la masa continental sea la protagonista del globo). <b>Brazos nuevos articulados</b>: hombro-bola,
-  brazo delgado, codo-bola, antebrazo y <b>manopla de 3 dedos</b> como las referencias. <b>Cabeza
-  con más detalle</b>: antenas laterales tipo orejas con bolita dorada y banda metálica de
-  mandíbula. Misma plantilla: 5 expresiones, 4 paletas EXP-1, LED semáforo. Exploración: no toca
-  producción.</p>
+  <h1>Bordy · planeta holograma · EXP-2b (v7)</h1>
+  <p class="sub">Ajustes de David sobre v6: <b>sin antena superior ni banda de mandíbula</b> — ahora
+  <b>las orejas laterales son el LED semáforo</b> (cambian de color y pulsan con cada estado).
+  <b>Continentes redibujados a mano</b> con rasgos reconocibles (Alaska, golfo de México, istmo de
+  Panamá, cuerno de África, Arabia, India, Kamchatka…), en <b>dorado cálido</b> contra el globo
+  frío. <b>Más juego de paleta</b>: brazos a dos tonos (brazo violeta, antebrazo claro), núcleo del
+  globo violeta profundo en vez de negro plano. Misma plantilla: 5 expresiones, 4 paletas EXP-1.
+  Exploración: no toca producción.</p>
 
   <div class="row">
     <div class="stage panel">
       <span class="who">Bordy · planeta holograma</span>
       <div class="frame" id="stage1" role="img" aria-label="Bordy planeta holograma con brazos articulados, expresión y paleta seleccionables"></div>
-      <span class="cap">Globo de líneas con continentes dibujados girando; brazos articulados con
-      manoplas; orejas con bolita dorada y banda de mandíbula.</span>
+      <span class="cap">Globo de líneas con continentes dorados girando; brazos articulados a dos
+      tonos con manoplas; las orejas son el LED semáforo.</span>
     </div>
     <div class="controls panel">
       <span class="ctl-label">Expresión</span>
@@ -102,10 +101,10 @@
     <h2>Decisiones (diseño y rendimiento) — para la fase de integración</h2>
     <table>
       <tr><th>Tema</th><th>Detalle</th></tr>
-      <tr><td>Continentes</td><td><b>Contornos dibujados</b> (tubos finos sobre curvas cerradas por los vértices lat/lon del dataset simplificado) — mismo lenguaje que los meridianos, un poco más brillantes para jerarquía: masa continental &gt; graticule. Sin relleno, sin textura.</td></tr>
-      <tr><td>Brazos</td><td>Articulados (referencias retro): hombro-bola → brazo delgado → codo-bola → antebrazo → muñeca → <b>manopla con 3 dedos</b>. Misma máquina de poses (hombro/codo) — todas las expresiones funcionan igual.</td></tr>
-      <tr><td>Cabeza</td><td>Antenas laterales tipo orejas (vástago + bolita dorada, como la referencia roja) + banda metálica de mandíbula en la parte baja del vidrio. Cara: ojos cian con pupila y brillo + boca (sin cejas).</td></tr>
-      <tr><td>Fuera de esta versión</td><td>Rocas/relieve, ombligo blanco, gorra (pedido de David).</td></tr>
+      <tr><td>Continentes</td><td><b>Redibujados a mano</b> con rasgos reconocibles (~40 vértices los grandes; tensión de curva baja para que sobrevivan cabos y golfos), en <b>dorado cálido</b> (mezcla oro+acento) — la masa continental es el foco del globo. Sin relleno, sin textura.</td></tr>
+      <tr><td>LED semáforo</td><td>Vive en las <b>orejas laterales</b> (bolita + halo por lado): ámbar idle · verde acierto · rojo fallo · oro pulsante racha · cyan pensando. La antena superior salió.</td></tr>
+      <tr><td>Brazos</td><td>Articulados a <b>dos tonos</b>: brazo violeta → antebrazo claro (mezcla cabeza+acento) → palma acento → dedos oscuros. Misma máquina de poses (hombro/codo).</td></tr>
+      <tr><td>Fuera de esta versión</td><td>Antena superior, banda de mandíbula (v6); rocas, ombligo, gorra (v5).</td></tr>
       <tr><td>Movimiento propio</td><td>Flota (bob) + el globo (líneas y continentes) gira despacio; con <code>prefers-reduced-motion</code> queda estático.</td></tr>
       <tr><td>Texturas</td><td><b>Ninguna</b> — solo el canvas de la sombra. Paleta en caliente vía <code>material.color</code>.</td></tr>
     </table>
@@ -134,14 +133,41 @@ const LED = { idle: '#efe08a', acierto: '#22c55e', fallo: '#ef4444', racha: '#fc
 const GLASS = '#08060f', HOLO = '#8be9ff', PUPIL = '#1a1030', IVORY = '#fff3c4';
 const mixColor = (a, b, f) => new THREE.Color(a).lerp(new THREE.Color(b), f);
 
-// contornos de continentes MUY simplificados ([lon, lat]) — mismo dataset de la ronda del globo
+// contornos de continentes ([lon, lat]) — redibujados a mano con rasgos reconocibles:
+// Alaska, bahía de Hudson, Florida y golfo de México, istmo de Panamá, el "codo" de Brasil,
+// golfo de Guinea y cuerno de África, Escandinavia, Siberia, Kamchatka, India, Arabia.
 const CONTINENTS = [
-  [[-160, 68], [-140, 75], [-100, 72], [-80, 68], [-70, 50], [-60, 40], [-70, 30], [-85, 25], [-95, 20], [-105, 18], [-115, 22], [-125, 35], [-140, 50], [-155, 65]],
-  [[-67, 13], [-60, 12], [-55, 10], [-45, 8], [-40, 5], [-38, -5], [-35, -15], [-40, -25], [-50, -32], [-60, -35], [-68, -55], [-72, -35], [-75, -20], [-75, -10], [-72, 5]],
-  [[-10, 35], [0, 36], [10, 37], [20, 32], [30, 28], [40, 20], [48, 12], [52, 0], [48, -8], [40, -20], [25, -32], [15, -30], [8, -25], [0, -15], [-5, -8], [-8, 0], [-12, 15], [-8, 30]],
-  [[-8, 42], [0, 45], [12, 50], [25, 52], [40, 55], [60, 60], [85, 62], [110, 68], [135, 60], [145, 45], [140, 30], [125, 20], [105, 15], [85, 18], [77, 8], [70, 22], [55, 28], [40, 35], [30, 40], [20, 43], [5, 42]],
-  [[135, -12], [142, -15], [148, -20], [151, -28], [150, -35], [145, -40], [135, -42], [125, -40], [118, -35], [112, -28], [110, -20], [115, -12], [125, -10]],
-  [[-35, 83], [-30, 81], [-22, 78], [-15, 73], [-12, 68], [-15, 62], [-25, 60], [-38, 62], [-45, 68], [-48, 75], [-45, 80], [-40, 82]],
+  // Norteamérica + Centroamérica
+  [[-165, 66], [-158, 71], [-140, 70], [-125, 72], [-110, 73], [-95, 70], [-85, 66], [-82, 62],
+   [-92, 58], [-85, 55], [-75, 59], [-65, 59], [-55, 52], [-65, 45], [-70, 42], [-75, 36],
+   [-79, 30], [-80, 25], [-84, 30], [-90, 29], [-95, 27], [-97, 22], [-95, 17], [-90, 14],
+   [-85, 11], [-80, 9], [-85, 13], [-93, 16], [-98, 20], [-106, 24], [-112, 28], [-117, 33],
+   [-122, 38], [-124, 45], [-127, 50], [-132, 56], [-140, 59], [-152, 59], [-160, 56], [-164, 60]],
+  // Sudamérica
+  [[-77, 8], [-72, 11], [-64, 10], [-60, 8], [-52, 5], [-50, 0], [-44, -3], [-37, -5],
+   [-35, -8], [-39, -13], [-40, -20], [-48, -25], [-53, -30], [-58, -34], [-62, -39],
+   [-65, -45], [-68, -50], [-68, -55], [-72, -50], [-73, -44], [-72, -35], [-70, -25],
+   [-70, -18], [-75, -14], [-79, -6], [-80, -3], [-77, 2]],
+  // África (corta en Suez)
+  [[-6, 35], [3, 37], [11, 37], [20, 32], [28, 31], [33, 30], [36, 22], [40, 15], [43, 11],
+   [48, 11], [51, 10], [46, 4], [42, -1], [40, -8], [38, -15], [35, -22], [32, -29],
+   [26, -34], [20, -35], [16, -29], [13, -22], [12, -15], [9, -8], [8, -2], [6, 3],
+   [0, 5], [-6, 4], [-12, 7], [-17, 12], [-17, 15], [-16, 21], [-13, 27], [-9, 32]],
+  // Eurasia (Iberia → Escandinavia → Siberia → Kamchatka → China → India → Arabia → Med)
+  [[-9, 37], [-9, 43], [-2, 44], [-5, 48], [0, 50], [4, 52], [8, 56], [5, 62], [12, 65],
+   [18, 70], [27, 71], [40, 68], [55, 69], [70, 73], [85, 74], [100, 77], [115, 74],
+   [130, 72], [145, 72], [160, 70], [170, 66], [170, 60], [162, 58], [159, 52], [150, 59],
+   [142, 54], [140, 47], [134, 43], [129, 38], [121, 34], [114, 22], [108, 17], [105, 10],
+   [103, 2], [100, 8], [98, 14], [94, 18], [90, 22], [86, 20], [82, 15], [78, 8],
+   [73, 16], [70, 21], [66, 25], [58, 26], [51, 28], [55, 24], [59, 22], [55, 16],
+   [45, 12], [43, 16], [38, 22], [34, 28], [30, 36], [24, 38], [18, 40], [10, 43],
+   [3, 42], [-2, 36], [-6, 36]],
+  // Australia
+  [[135, -12], [142, -15], [148, -20], [151, -28], [150, -35], [145, -40], [135, -42],
+   [125, -40], [118, -35], [112, -28], [110, -20], [115, -12], [125, -10]],
+  // Groenlandia
+  [[-35, 83], [-30, 81], [-22, 78], [-15, 73], [-12, 68], [-15, 62], [-25, 60], [-38, 62],
+   [-45, 68], [-48, 75], [-45, 80], [-40, 82]],
 ];
 const lonLatToV3 = (lon, lat, r) => {
   const la = lat * Math.PI / 180, lo = lon * Math.PI / 180;
@@ -270,7 +296,7 @@ function makeArm(rig, side, base, mats) {
   shoulder.position.copy(base); rig.add(shoulder);
   const upper = limbSegment(rig, 0.062, mats.seg);
   const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 12), mats.acc); rig.add(elbow);
-  const fore = limbSegment(rig, 0.055, mats.seg);
+  const fore = limbSegment(rig, 0.055, mats.fore || mats.seg);
   const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.065, 14, 10), mats.acc); rig.add(wrist);
   // manopla: palma clara + 3 dedos oscuros (como la referencia roja: la mano es protagonista)
   const hand = new THREE.Group(); rig.add(hand);
@@ -312,15 +338,18 @@ function makeFx(scene) {
   return { sparks, dots };
 }
 
-function makeAntenna(headG, topY, matAcc) {
-  const stem = new THREE.Mesh(new THREE.CapsuleGeometry(0.026, 0.2, 6, 10), matAcc);
-  stem.position.y = topY + 0.1; headG.add(stem);
+// orejas-antena laterales: ahora ELLAS son el LED semáforo (sin antena superior)
+function makeEarLeds(headG, matDark) {
   const ledMat = new THREE.MeshStandardMaterial({ color: LED.idle, emissive: LED.idle, emissiveIntensity: 1.05 });
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 12), ledMat);
-  bulb.position.y = topY + 0.26; headG.add(bulb);
-  const haloMat = new THREE.MeshBasicMaterial({ color: LED.idle, transparent: true, opacity: 0.22, depthWrite: false, blending: THREE.AdditiveBlending });
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 12), haloMat);
-  halo.position.copy(bulb.position); headG.add(halo);
+  const haloMat = new THREE.MeshBasicMaterial({ color: LED.idle, transparent: true, opacity: 0.2, depthWrite: false, blending: THREE.AdditiveBlending });
+  for (const s of [-1, 1]) {
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.032, 0.16, 10), matDark);
+    stem.rotation.z = Math.PI / 2; stem.position.set((HR + 0.07) * s, 0.02, 0); headG.add(stem);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 12), ledMat);
+    ball.position.set((HR + 0.18) * s, 0.02, 0); headG.add(ball);
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(0.125, 14, 10), haloMat);
+    halo.position.copy(ball.position); headG.add(halo);
+  }
   return { ledMat, haloMat };
 }
 
@@ -329,15 +358,18 @@ const BR = 0.88, HR = 0.45;
 // PLANETA HOLOGRAMA v6
 function buildHolo(view) {
   const p0 = PALETTES.actual;
+  // más juego de paleta: núcleo violeta profundo (no negro plano), antebrazos más claros
+  // que los brazos, y continentes en DORADO cálido contra el globo frío
   const matHead = soft(p0.head), matDark = soft(p0.body), matAcc = soft(p0.accent);
-  const goldMat = soft(p0.gold, { emissive: p0.gold, emissiveIntensity: 0.45, metalness: 0.3, roughness: 0.3 });
+  const matCore = soft(mixColor(p0.body, p0.head, 0.35), { roughness: 0.38 });
+  const matFore = soft(mixColor(p0.head, p0.accent, 0.45));
   const wireMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.4), transparent: true, opacity: 0.38 });
   const eqMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.6), transparent: true, opacity: 0.55 });
-  const contMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.body, p0.accent, 0.85), transparent: true, opacity: 0.9 });
+  const contMat = new THREE.MeshBasicMaterial({ color: mixColor(p0.gold, p0.accent, 0.3), transparent: true, opacity: 0.92 });
 
   const rig = new THREE.Group(); view.scene.add(rig);
   const planet = new THREE.Group(); planet.position.y = 0.78; rig.add(planet);
-  planet.add(new THREE.Mesh(new THREE.SphereGeometry(BR - 0.045, 40, 28), matDark));
+  planet.add(new THREE.Mesh(new THREE.SphereGeometry(BR - 0.045, 40, 28), matCore));
 
   for (let i = 0; i < 4; i++) { // meridianos
     const mer = new THREE.Mesh(new THREE.TorusGeometry(BR, 0.009, 6, 64), wireMat);
@@ -354,8 +386,8 @@ function buildHolo(view) {
   // continentes DIBUJADOS: contorno como tubo fino sobre la esfera (mismo idioma que los meridianos)
   for (const poly of CONTINENTS) {
     const pts = poly.map(([lon, lat]) => lonLatToV3(lon, lat, BR + 0.008));
-    const curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.4);
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, poly.length * 6, 0.013, 5, true), contMat);
+    const curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.25);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, poly.length * 6, 0.012, 5, true), contMat);
     planet.add(tube);
   }
   planet.rotation.y = -1.0; // arranca mostrando América/África hacia cámara
@@ -366,21 +398,11 @@ function buildHolo(view) {
   const headG = new THREE.Group(); headG.position.y = 2.16; rig.add(headG);
   headG.add(new THREE.Mesh(new THREE.SphereGeometry(HR, 32, 22),
     soft(GLASS, { roughness: 0.12, clearcoatRoughness: 0.08 })));
-  // banda de mandíbula (referencia roja: aro metálico bajo la cara)
-  const jawY = -HR * 0.55, jawR = Math.sqrt(HR * HR - jawY * jawY) + 0.02;
-  const jaw = new THREE.Mesh(new THREE.TorusGeometry(jawR, 0.028, 8, 48), matAcc);
-  jaw.rotation.x = Math.PI / 2; jaw.position.y = jawY; headG.add(jaw);
-  // orejas-antena laterales con bolita dorada (referencia roja)
-  for (const s of [-1, 1]) {
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.032, 0.16, 10), matDark);
-    stem.rotation.z = Math.PI / 2; stem.position.set((HR + 0.07) * s, 0.02, 0); headG.add(stem);
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.07, 14, 10), goldMat);
-    ball.position.set((HR + 0.17) * s, 0.02, 0); headG.add(ball);
-  }
-  const { ledMat, haloMat } = makeAntenna(headG, HR, matAcc);
+  // orejas-antena laterales = LED semáforo (la antena superior y la mandíbula salieron)
+  const { ledMat, haloMat } = makeEarLeds(headG, matDark);
   const eyes = buildFace(headG, sphereProjector(HR + 0.03), 0.5, { eyeC: HOLO });
 
-  const mats = { seg: matHead, acc: matAcc, dark: matDark };
+  const mats = { seg: matHead, fore: matFore, acc: matAcc, dark: matDark };
   const armL = makeArm(rig, -1, new THREE.Vector3(-0.8, 1.42, 0.05), mats);
   const armR = makeArm(rig, 1, new THREE.Vector3(0.8, 1.42, 0.05), mats);
 
@@ -388,10 +410,11 @@ function buildHolo(view) {
     spin: planet, spinSpeed: 0.2, spinBase: -1.0,
     recolor(p) {
       matHead.color.set(p.head); matDark.color.set(p.body); matAcc.color.set(p.accent);
-      goldMat.color.set(p.gold); goldMat.emissive.set(p.gold);
+      matCore.color.copy(mixColor(p.body, p.head, 0.35));
+      matFore.color.copy(mixColor(p.head, p.accent, 0.45));
       wireMat.color.copy(mixColor(p.body, p.accent, 0.4));
       eqMat.color.copy(mixColor(p.body, p.accent, 0.6));
-      contMat.color.copy(mixColor(p.body, p.accent, 0.85));
+      contMat.color.copy(mixColor(p.gold, p.accent, 0.3));
     } };
 }
 
