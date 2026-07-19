@@ -459,7 +459,8 @@ function buildHolo(view) {
   const eyes = buildFace(headG, sphereProjector(SR + 0.045), 0.5, { eyeC: HOLO });
 
   const matCuff = soft(mixColor(p0.gold, p0.accent, 0.3), { metalness: 0.3, roughness: 0.3 });
-  const mats = { seg: matHead, fore: matFore, acc: matAcc, dark: matDark, cuff: matCuff };
+  // brazo y antebrazo (cilindros) al color de la cabeza/mar del globo (pedido de David)
+  const mats = { seg: matHead, fore: matHead, acc: matAcc, dark: matDark, cuff: matCuff };
   const armL = makeArm(rig, -1, new THREE.Vector3(-0.8, 1.42, 0.05), mats);
   const armR = makeArm(rig, 1, new THREE.Vector3(0.8, 1.42, 0.05), mats);
 
