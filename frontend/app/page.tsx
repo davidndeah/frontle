@@ -875,7 +875,7 @@ export default function Frontle() {
               <RegionMapPreview regionId={regionPick} loadingLabel={tr.loadingMap} />
               <button
                 onClick={() => setRegionMode(regionPick)}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#fcff52] text-[#1c0b3e] font-display font-black py-2.5 active:scale-95 transition"
+                className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-[#fcff52] text-[#1c0b3e] font-display font-black py-2.5"
               >
                 ▶ {tr.modes.play(REGIONS[regionPick].title)}
               </button>
@@ -1021,7 +1021,7 @@ export default function Frontle() {
                   {hasWallet && !inMiniPay && (
                     <button
                       onClick={connectForRanking}
-                      className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-4 py-2 text-xs font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20"
+                      className="brutal-sm brutal-press rounded-xl bg-[#34d399] px-4 py-2 text-xs font-bold text-[#053b27]"
                     >
                       {tr.connectWallet}
                     </button>
@@ -1029,7 +1029,7 @@ export default function Frontle() {
                   {privyActive && (
                     <EmailLoginButton
                       label={tr.emailLogin}
-                      className="rounded-xl border border-sky-300/50 bg-sky-400/10 px-4 py-2 text-xs font-bold text-sky-200 active:scale-95 transition hover:bg-sky-400/20"
+                      className="brutal-sm brutal-press rounded-xl bg-[#38bdf8] px-4 py-2 text-xs font-bold text-[#082f49]"
                     />
                   )}
                 </div>
@@ -1200,7 +1200,7 @@ export default function Frontle() {
                       placeholder={tr.namePlaceholder}
                       className="w-full min-w-0 rounded-lg bg-[#160833] border border-[#b79ced]/40 px-2 py-1 text-sm text-white outline-none focus:border-[#fcff52]/70"
                     />
-                    <button type="submit" className="rounded-lg bg-[#fcff52] text-[#1c0b3e] font-bold text-xs px-2.5 active:scale-95 transition">OK</button>
+                    <button type="submit" className="brutal-sm brutal-press rounded-lg bg-[#fcff52] text-[#1c0b3e] font-bold text-xs px-2.5">OK</button>
                   </form>
                 ) : (
                   <button
@@ -1217,7 +1217,7 @@ export default function Frontle() {
               </div>
               {/* Igual que en el sheet: nunca "Conectar" dentro de MiniPay. */}
               {!myId && hasWallet && !inMiniPay && (
-                <button onClick={connectForRanking} className="rounded-lg border border-emerald-300/50 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200 active:scale-95 transition">
+                <button onClick={connectForRanking} className="brutal-sm brutal-press rounded-lg bg-[#34d399] px-3 py-1.5 text-xs font-bold text-[#053b27]">
                   {tr.connectWallet}
                 </button>
               )}
@@ -1291,7 +1291,7 @@ export default function Frontle() {
               <p className="text-xs text-neutral-300 max-w-[16rem]">{tr.learnBubbles[0]}</p>
               <button
                 onClick={() => setOverlay("full")}
-                className="w-full rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3 active:scale-95 transition shadow-lg shadow-[#fcff52]/25"
+                className="brutal brutal-press w-full rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3"
               >
                 ✨ {tr.fullTutorial}
               </button>
@@ -1347,7 +1347,7 @@ export default function Frontle() {
               <p className="text-sm text-white leading-snug">{tr.welcomeBonus(fmt(Number(bonus)))}</p>
               <button
                 onClick={() => setBonus(null)}
-                className="mt-2 rounded-lg bg-[#fcff52] px-3 py-1.5 text-xs font-bold text-[#1c0b3e] active:scale-95 transition"
+                className="brutal-sm brutal-press mt-2 rounded-lg bg-[#fcff52] px-3 py-1.5 text-xs font-bold text-[#1c0b3e]"
               >
                 {tr.bonusDismiss}
               </button>
@@ -1509,7 +1509,7 @@ function WalletCard({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
-          className="mt-2 w-full truncate rounded-lg border border-white/15 px-2 py-1.5 text-[11px] font-mono text-neutral-300 active:scale-95 transition hover:bg-white/10"
+          className="brutal-sm brutal-press mt-2 w-full truncate rounded-lg bg-[#160833] px-2 py-1.5 text-[11px] font-mono text-neutral-300"
           title={address}
         >
           {copied ? tr.addressCopied : `${address} 📋`}
@@ -1634,12 +1634,12 @@ function WalletSheet({
             {/* Zero-click connect: dentro de MiniPay la wallet ya está
                 conectada, así que enseñar "Conectar" está prohibido. */}
             {hasWallet && !inMiniPay && (
-              <button onClick={() => { onConnect(); onClose(); }} className="rounded-2xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition">
+              <button onClick={() => { onConnect(); onClose(); }} className="brutal-sm brutal-press rounded-2xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
                 {tr.connectWallet}
               </button>
             )}
             {emailLogin && (
-              <EmailLoginButton label={tr.emailLogin} className="rounded-2xl border border-sky-300/50 bg-sky-400/10 px-6 py-3 font-bold text-sky-200 active:scale-95 transition" />
+              <EmailLoginButton label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
             )}
             <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
           </div>
@@ -1875,7 +1875,7 @@ function LevelSelect({
               type="button"
               onClick={() => onChange(l)}
               aria-pressed={on}
-              className={`flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 transition active:scale-95 backdrop-blur-sm ${
+              className={`brutal-shadow brutal-press flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 backdrop-blur-sm ${
                 on ? "bg-[#1c0b3e]/80" : "bg-[#1c0b3e]/35 opacity-60"
               }`}
               style={{ borderColor: on ? m.color : "rgba(183,156,237,0.2)" }}
@@ -1989,7 +1989,7 @@ function WinnersCard({
                 {mine && !w.claimed && (
                   <button
                     onClick={onGoToProfile}
-                    className="rounded-lg border border-amber-400/60 bg-amber-400/20 px-2.5 py-1 text-[11px] font-medium text-amber-100 transition active:scale-95 hover:bg-amber-400/30"
+                    className="brutal-sm brutal-press rounded-lg bg-amber-300 px-2.5 py-1 text-[11px] font-bold text-[#1c0b3e]"
                   >
                     {tr.claimInProfile}
                   </button>
@@ -2056,7 +2056,7 @@ function PrizesCard({
               <button
                 onClick={() => onClaim(p.day, p.level)}
                 disabled={claimingKey !== null || celebrating}
-                className="rounded-lg border border-amber-400/60 bg-amber-400/20 px-3 py-1.5 text-xs font-medium text-amber-100 transition active:scale-95 hover:bg-amber-400/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+                className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-[#1c0b3e] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {celebrating ? `✓ ${tr.prizeClaimedLabel}` : claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
               </button>
@@ -2242,7 +2242,7 @@ function WinCard({
         <button
           onClick={onRetry}
           disabled={retryBusy}
-          className={`rounded-xl border border-white/30 px-6 py-3 font-bold text-white active:scale-95 transition hover:bg-white/10 ${retryBusy ? "animate-pulse" : ""}`}
+          className={`brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white ${retryBusy ? "animate-pulse" : ""}`}
         >
           {retryBusy ? <>⏳ {tr.paying}</> : <>{tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span></>}
         </button>
@@ -2254,11 +2254,11 @@ function WinCard({
           </div>
         )}
         {/* Volver a la selección de nivel: jugar otro nivel (o revisar este). */}
-        <button onClick={onHome} className="rounded-xl border border-[#b79ced]/40 px-6 py-3 font-bold text-[#c4b5fd] active:scale-95 transition hover:bg-white/10">
+        <button onClick={onHome} className="brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-[#c4b5fd]">
           🎮 {tr.chooseLevel}
         </button>
         {!inRanking && hasWallet && (
-          <button onClick={onConnect} className="rounded-xl border border-emerald-300/50 bg-emerald-400/10 px-6 py-3 font-bold text-emerald-200 active:scale-95 transition hover:bg-emerald-400/20">
+          <button onClick={onConnect} className="brutal-sm brutal-press rounded-xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
             {tr.connectToRank}
           </button>
         )}

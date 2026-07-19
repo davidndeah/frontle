@@ -74,10 +74,8 @@
   box-shadow: 5px 5px 0 #0d0420;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.btn-3d:active {
-  transform: translate(4px, 4px);
-  box-shadow: 1px 1px 0 #0d0420;
-}
+/* El press de .btn-3d vive junto al de .brutal-press (al final del bloque
+   brutal) para ganarle al hover en cascada. */
 
 /* ===== Neo-brutalismo sobre Violeta Prisma (cards y botones) =====
    Lenguaje de la referencia: borde grueso, sombra dura desplazada, hundirse
@@ -93,7 +91,26 @@
   box-shadow: 3px 3px 0 #0d0420;
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.brutal-press:active {
+/* Solo la sombra dura (sin pisar el borde): para botones cuyo borde de color
+   es semántico, como las cards de nivel. */
+.brutal-shadow {
+  box-shadow: 3px 3px 0 #0d0420;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+/* Hover (solo dispositivos con puntero): el botón se "levanta" — sube 1px y
+   la sombra crece. En táctil no hay hover, así que no hay estados pegados. */
+@media (hover: hover) {
+  .btn-3d:not(:disabled):hover { transform: translate(-1px, -1px); box-shadow: 6px 6px 0 #0d0420; }
+  .brutal.brutal-press:not(:disabled):hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #0d0420; }
+  .brutal-sm.brutal-press:not(:disabled):hover,
+  .brutal-shadow.brutal-press:not(:disabled):hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #0d0420; }
+}
+/* El press va DESPUÉS del hover (y con :hover:active) para ganarle en cascada
+   mientras ambos aplican: al tocar, el botón se hunde hacia su sombra. */
+.brutal-press:active,
+.brutal-press:hover:active,
+.btn-3d:active,
+.btn-3d:hover:active {
   transform: translate(3px, 3px);
   box-shadow: 1px 1px 0 #0d0420;
 }
