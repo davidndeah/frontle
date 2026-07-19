@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Bordy actual animado (EXP-2d)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%) fixed;
+    color: #f3edff; padding: 24px; -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; }
+  h2 { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; margin-bottom: 10px; }
+  .sub { color: #a99cc7; font-size: 13px; margin-bottom: 22px; max-width: 740px; line-height: 1.5; }
+  .sub b { color: #fff; }
+  code { font-family: Consolas, monospace; font-size: 0.92em; color: #d8ccf2; }
+
+  .panel {
+    border-radius: 16px;
+    background: linear-gradient(160deg, rgba(138,92,245,0.26), rgba(76,29,149,0.30));
+    border: 1px solid rgba(183,156,237,0.28);
+    backdrop-filter: blur(12px);
+    padding: 18px;
+  }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: stretch; margin-bottom: 16px; }
+
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 440px; }
+  .stage .who { font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; text-align: center; }
+  .stage .frame { width: 100%; height: 460px; display: grid; place-items: center; border-radius: 16px; background: rgba(0,0,0,0.25); border: 1px solid rgba(183,156,237,0.2); overflow: hidden; position: relative; }
+  .stage .cap { font-size: 11px; color: #a99cc7; text-align: center; line-height: 1.45; }
+
+  .controls { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 22px; max-width: 476px; }
+  .ctl-label { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #b79ced; }
+  .exp-btns, .pal-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .exp-btn, .pal-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 1px;
+    min-width: 96px; padding: 8px 10px; border-radius: 12px; cursor: pointer;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(183,156,237,0.28);
+    color: #f3edff; font: inherit; transition: transform 0.08s ease, background 0.15s ease;
+  }
+  .exp-btn:active, .pal-btn:active { transform: scale(0.95); }
+  .exp-btn .e { font-size: 17px; }
+  .exp-btn .n, .pal-btn .n { font-size: 11px; font-weight: 800; }
+  .exp-btn .u { font-size: 9px; color: #a99cc7; }
+  .exp-btn.on, .pal-btn.on { background: rgba(252,255,82,0.12); border-color: rgba(252,255,82,0.45); }
+  .exp-btn.on .u { color: #fcff52; }
+  .exp-btn:focus-visible, .pal-btn:focus-visible { outline: 2px solid #fcff52; outline-offset: 2px; }
+  .pal-btn { flex-direction: row; gap: 7px; align-items: center; min-width: 0; padding: 8px 12px; }
+  .pal-btn .sw { display: flex; gap: 3px; }
+  .pal-btn .sw i { width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.25); }
+
+  .specs { max-width: 1080px; }
+  .specs table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  .specs th, .specs td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(183,156,237,0.18); vertical-align: top; line-height: 1.45; }
+  .specs th { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #b79ced; }
+  .specs td:first-child { white-space: nowrap; font-weight: 700; }
+  .note { font-size: 11px; color: #a99cc7; line-height: 1.55; margin-top: 10px; max-width: 1040px; }
+  .note b { color: #e9e2f8; }
+
+  /* ================= Bordy animado ================= */
+  /* capas: .float (bob infinito) > .pose (tilt/vaivén interrumpible) > .shot (one-shots) > img+led */
+  .float { will-change: transform; }
+  .pose { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); will-change: transform; }
+  .shot { position: relative; will-change: transform; }
+  .bordy-wrap { position: relative; width: 250px; }
+  .bordy-wrap img { width: 100%; display: block; filter: drop-shadow(0 16px 24px rgba(0,0,0,0.45)); transition: filter 0.35s ease; }
+
+  /* sombra en el piso (se encoge cuando salta) */
+  .floor {
+    position: absolute; left: 50%; bottom: 28px; width: 170px; height: 26px;
+    transform: translateX(-50%);
+    background: radial-gradient(50% 50% at 50% 50%, rgba(0,0,0,0.5), rgba(0,0,0,0));
+    transition: transform 0.3s ease; will-change: transform;
+  }
+
+  /* LED semáforo superpuesto sobre la bolita de la antena del render */
+  /* punto sólido pintado ENCIMA de la bolita amarilla del render (como si la bolita
+     misma cambiara de color) + halo por box-shadow — sin blend modes, robusto */
+  .led {
+    position: absolute; width: 21px; height: 21px; border-radius: 50%;
+    left: var(--led-x, 50%); top: var(--led-y, 5%);
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 38% 32%, rgba(255,255,255,0.55) 0%, var(--led) 45%, color-mix(in srgb, var(--led) 72%, #000) 100%);
+    box-shadow: 0 0 16px 5px color-mix(in srgb, var(--led) 55%, transparent);
+    pointer-events: none;
+    transition: background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  }
+
+  /* estados */
+  .viz { --led: #efe08a; }
+  .viz.st-acierto  { --led: #22c55e; }
+  .viz.st-fallo    { --led: #ef4444; }
+  .viz.st-racha    { --led: #fcff52; }
+  .viz.st-pensando { --led: #22d3ee; }
+
+  /* idle: flota siempre (como bordy-float en producción) */
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+  .float { animation: bob 3.2s ease-in-out infinite; }
+
+  /* acierto / racha: salto one-shot con squash & stretch (se re-dispara al entrar al estado) */
+  @keyframes hop {
+    0% { transform: translateY(0) scale(1, 1); }
+    18% { transform: translateY(2px) scale(1.05, 0.92); }
+    45% { transform: translateY(-30px) scale(0.97, 1.05); }
+    72% { transform: translateY(0) scale(1.04, 0.94); }
+    86% { transform: translateY(-8px) scale(1, 1.01); }
+    100% { transform: translateY(0) scale(1, 1); }
+  }
+  .st-acierto .shot { animation: hop 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes hopBig {
+    0% { transform: translateY(0) scale(1, 1); }
+    15% { transform: translateY(3px) scale(1.07, 0.9); }
+    42% { transform: translateY(-44px) scale(0.96, 1.07) rotate(-3deg); }
+    70% { transform: translateY(0) scale(1.06, 0.92); }
+    84% { transform: translateY(-12px) scale(0.99, 1.02) rotate(2deg); }
+    100% { transform: translateY(0) scale(1, 1); }
+  }
+  .st-racha .shot { animation: hopBig 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+  .st-acierto .floor, .st-racha .floor { transform: translateX(-50%) scale(0.82); }
+
+  /* fallo: sacudida one-shot + queda ladeado mientras dura el estado */
+  @keyframes shake {
+    0% { transform: translateX(0); } 15% { transform: translateX(-7px) rotate(-2deg); }
+    30% { transform: translateX(6px) rotate(2deg); } 45% { transform: translateX(-5px) rotate(-1.5deg); }
+    60% { transform: translateX(4px) rotate(1deg); } 75% { transform: translateX(-2px); }
+    100% { transform: translateX(0); }
+  }
+  .st-fallo .shot { animation: shake 0.55s ease-out; }
+  .st-fallo .pose { transform: rotate(-7deg) translateY(3px); }
+
+  /* pensando: vaivén lento mientras dura el estado */
+  @keyframes sway { 0%, 100% { transform: rotate(-1.6deg); } 50% { transform: rotate(1.6deg); } }
+  .st-pensando .pose { animation: sway 2.6s ease-in-out infinite; }
+
+  /* LED pulsante en racha / pensando */
+  @keyframes ledPulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  .st-racha .led { animation: ledPulse 0.5s ease-in-out infinite; }
+  .st-pensando .led { animation: ledPulse 1.4s ease-in-out infinite; }
+
+  /* chispas de racha */
+  .spark { position: absolute; width: 12px; height: 12px; opacity: 0; pointer-events: none;
+    background: #fcff52; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); }
+  @keyframes sparkle {
+    0% { opacity: 0; transform: scale(0.4) rotate(0deg); }
+    30% { opacity: 1; transform: scale(1.15) rotate(40deg); }
+    100% { opacity: 0; transform: scale(0.5) rotate(90deg) translateY(-18px); }
+  }
+  .st-racha .spark { animation: sparkle 1.1s ease-out infinite; }
+  .spark.s1 { left: 8%;  top: 14%; }
+  .spark.s2 { right: 6%; top: 8%;  animation-delay: 0.35s; }
+  .spark.s3 { right: 12%; top: 38%; animation-delay: 0.7s; }
+
+  /* puntitos de pensar */
+  .dot { position: absolute; border-radius: 50%; background: #b79ced; opacity: 0; pointer-events: none; }
+  .dot.d1 { width: 8px;  height: 8px;  right: 17%; top: 16%; }
+  .dot.d2 { width: 11px; height: 11px; right: 11%; top: 10%; }
+  .dot.d3 { width: 14px; height: 14px; right: 4%;  top: 3%; }
+  @keyframes think { 0%, 100% { opacity: 0; transform: translateY(2px); } 40%, 70% { opacity: 0.9; transform: translateY(0); } }
+  .st-pensando .dot { animation: think 2.2s ease-in-out infinite; }
+  .st-pensando .dot.d2 { animation-delay: 0.3s; }
+  .st-pensando .dot.d3 { animation-delay: 0.6s; }
+
+  /* paletas: aproximación por filtros CSS sobre el render (nota en la tabla) */
+  .pal-arcade  .bordy-wrap img { filter: hue-rotate(-38deg) saturate(1.3) drop-shadow(0 16px 24px rgba(0,0,0,0.45)); }
+  .pal-premium .bordy-wrap img { filter: saturate(0.55) brightness(0.94) drop-shadow(0 16px 24px rgba(0,0,0,0.45)); }
+  .pal-coral   .bordy-wrap img { filter: hue-rotate(14deg) saturate(1.15) sepia(0.12) drop-shadow(0 16px 24px rgba(0,0,0,0.45)); }
+
+  /* accesibilidad: sin movimiento, el LED sigue informando el estado con color */
+  @media (prefers-reduced-motion: reduce) {
+    .float, .st-acierto .shot, .st-racha .shot, .st-fallo .shot,
+    .st-pensando .pose, .st-racha .led, .st-pensando .led,
+    .st-racha .spark, .st-pensando .dot { animation: none !important; }
+    .pose { transition: none; }
+    .st-pensando .dot { opacity: 0.7; }
+    .st-racha .spark { opacity: 0.8; }
+  }
+</style>
+</head>
+<body>
+  <h1>Bordy actual animado · EXP-2d</h1>
+  <p class="sub">Pedido de David: en vez de reemplazar a Bordy, <b>animar el que ya está en la
+  app</b> (<code>bordy-m2.webp</code>, el mismo del hero y el FAB). Como es un render estático, su
+  cara no puede cambiar — la expresión se comunica con <b>movimiento</b> (salto, sacudida, vaivén),
+  el <b>LED semáforo superpuesto sobre la bolita de su antena</b> y <b>partículas</b>. Las paletas
+  son una aproximación por filtros CSS (un cambio real de paleta en el raster pediría re-render).
+  El Bordy 3D que construimos queda guardado en <code>bordy-3d-explore.html</code>. Exploración:
+  no toca producción.</p>
+
+  <div class="row">
+    <div class="stage panel">
+      <span class="who">Bordy de producción · bordy-m2.webp</span>
+      <div class="frame viz st-idle" id="viz">
+        <div class="float">
+          <div class="pose">
+            <div class="shot">
+              <div class="bordy-wrap">
+                <img src="../../frontend/public/bordy-m2.webp" alt="Bordy, el robot de Frontle">
+                <div class="led"></div>
+                <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
+                <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="floor"></div>
+      </div>
+      <span class="cap">El render intacto + capas de animación encima: bob permanente, one-shots
+      por estado, LED en la antena y partículas.</span>
+    </div>
+
+    <div class="controls panel">
+      <span class="ctl-label">Expresión</span>
+      <div class="exp-btns" role="group" aria-label="Expresiones de Bordy">
+        <button class="exp-btn on" data-st="idle"><span class="e">🙂</span><span class="n">Idle</span><span class="u">hero · FAB · coach</span></button>
+        <button class="exp-btn" data-st="acierto"><span class="e">😄</span><span class="n">Acierto</span><span class="u">semáforo verde</span></button>
+        <button class="exp-btn" data-st="fallo"><span class="e">😵</span><span class="n">Fallo</span><span class="u">desvío grande</span></button>
+        <button class="exp-btn" data-st="racha"><span class="e">🎉</span><span class="n">Racha</span><span class="u">milestone-toast</span></button>
+        <button class="exp-btn" data-st="pensando"><span class="e">🤔</span><span class="n">Pensando</span><span class="u">comprar pista</span></button>
+      </div>
+      <span class="ctl-label">Paleta (aprox. por filtros)</span>
+      <div class="pal-btns" role="group" aria-label="Paletas de color">
+        <button class="pal-btn on" data-pal="actual"><span class="sw"><i style="background:#4b2ed6"></i><i style="background:#b79ced"></i><i style="background:#fcff52"></i></span><span class="n">Actual</span></button>
+        <button class="pal-btn" data-pal="arcade"><span class="sw"><i style="background:#6d28d9"></i><i style="background:#ff3db4"></i><i style="background:#ffe74a"></i></span><span class="n">A · Arcade</span></button>
+        <button class="pal-btn" data-pal="premium"><span class="sw"><i style="background:#3c306e"></i><i style="background:#8f82c4"></i><i style="background:#d9b45a"></i></span><span class="n">B · Premium</span></button>
+        <button class="pal-btn" data-pal="coral"><span class="sw"><i style="background:#4c2fb8"></i><i style="background:#b79ced"></i><i style="background:#ff6a3d"></i></span><span class="n">C · Coral</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel specs">
+    <h2>Decisiones — para llevarlo a producción</h2>
+    <table>
+      <tr><th>Tema</th><th>Detalle</th></tr>
+      <tr><td>Qué se anima</td><td>El <code>bordy-m2.webp</code> real, intacto. Tres capas de transform: bob infinito (idle, igual que <code>bordy-float</code> de producción) → pose interrumpible (ladeo de fallo, vaivén de pensando, con transition ease-out) → one-shots (salto de acierto 0.7s, salto grande de racha 0.9s con squash &amp; stretch, sacudida de fallo 0.55s).</td></tr>
+      <tr><td>LED semáforo</td><td>Glow superpuesto sobre la bolita de la antena del render (<code>mix-blend-mode: screen</code>): ámbar idle · verde acierto · rojo fallo · oro pulsante racha · cyan pensando. La posición es un % fijo del contenedor — estable porque la imagen no cambia de encuadre.</td></tr>
+      <tr><td>Partículas</td><td>Chispas de estrella en racha y puntitos de pensar en pensando — spans absolutos con keyframes de opacity/transform.</td></tr>
+      <tr><td>Paletas</td><td><b>Aproximación</b> por filtros CSS (<code>hue-rotate</code>/<code>saturate</code>): sirven para comparar temperatura, pero desplazan TODOS los tonos (también la antena). Un cambio real de paleta del raster pediría re-render del arte. El 3D (<code>bordy-3d-explore.html</code>) sí cambia de paleta de verdad — esa es la diferencia clave entre ambos caminos.</td></tr>
+      <tr><td>Rendimiento</td><td>Solo <code>transform</code>/<code>opacity</code> (GPU); cero JS en las animaciones (clases CSS); apto para MiniPay tal cual.</td></tr>
+      <tr><td>Accesibilidad</td><td>Con <code>prefers-reduced-motion</code>: sin bob/saltos/sacudidas/pulsos; el LED sigue comunicando el estado con color y las partículas quedan estáticas tenues.</td></tr>
+    </table>
+    <p class="note"><b>Expresiones y su caso de uso real:</b> idle (hero/FAB/coachmarks) · acierto
+    (semáforo verde) · fallo (desvío grande) · racha (<code>milestone-toast</code> GAM-2) · pensando
+    (compra de pista). URL directa: <code>?st=racha&amp;pal=arcade</code>. Integración a producción:
+    estas clases CSS + el glow del LED se montan sobre el <code>&lt;img&gt;</code> existente sin
+    tocar el asset.</p>
+  </div>
+
+<script>
+  const viz = document.getElementById('viz');
+  const STATES = ['idle', 'acierto', 'fallo', 'racha', 'pensando'];
+  const PALS = ['actual', 'arcade', 'premium', 'coral'];
+  // posición del LED sobre la bolita de la antena del webp (% del contenedor .bordy-wrap)
+  viz.querySelector('.led').style.setProperty('--led-x', '52.5%');
+  viz.querySelector('.led').style.setProperty('--led-y', '3.6%');
+
+  function setState(name) {
+    STATES.forEach((s) => viz.classList.remove('st-' + s));
+    // re-disparar one-shots aunque se repita el estado: forzar reflow entre quitar y poner
+    void viz.offsetWidth;
+    viz.classList.add('st-' + name);
+    document.querySelectorAll('.exp-btn').forEach((b) => b.classList.toggle('on', b.dataset.st === name));
+  }
+  function setPal(name) {
+    PALS.forEach((p) => document.body.classList.remove('pal-' + p));
+    if (name !== 'actual') document.body.classList.add('pal-' + name);
+    document.querySelectorAll('.pal-btn').forEach((b) => b.classList.toggle('on', b.dataset.pal === name));
+  }
+  document.querySelectorAll('.exp-btn').forEach((b) => b.addEventListener('click', () => setState(b.dataset.st)));
+  document.querySelectorAll('.pal-btn').forEach((b) => b.addEventListener('click', () => setPal(b.dataset.pal)));
+
+  const qs = new URLSearchParams(location.search);
+  const qSt = qs.get('st'), qPal = qs.get('pal');
+  if (qPal && PALS.includes(qPal)) setPal(qPal);
+  if (qSt && STATES.includes(qSt)) setState(qSt);
+</script>
+</body>
+</html>
