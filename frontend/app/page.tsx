@@ -50,6 +50,8 @@ import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/curre
 import WorldMap from "./components/WorldMap";
 import WeeklyLeague from "./components/WeeklyLeague";
 import StreakCard from "./components/StreakCard";
+import CoinShop, { CoinShopCard } from "./components/CoinShop";
+import { getCoinBalance, retryPendingCredit } from "./lib/coins";
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
 import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
@@ -178,6 +180,12 @@ export default function Frontle() {
   // Sub-tab dentro de Ranking: el reto diario y la liga semanal son dos
   // competencias distintas (una por marca/tiempo, otra por XP), separadas.
   const [rankTab, setRankTab] = useState<"daily" | "weekly">("daily");
+  // Tienda de monedas: sheet compartido (Home + Perfil) y saldo cacheado.
+  const [shopOpen, setShopOpen] = useState(false);
+  const [coinBalance, setCoinBalance] = useState<number | null>(null);
+  const refreshCoins = useCallback(() => {
+    retryPendingCredit().then(() => getCoinBalance().then(setCoinBalance));
+  }, []);
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
@@ -371,8 +379,11 @@ export default function Frontle() {
   // Al conectar, la wallet pasa a ser la identidad de la liga semanal — el
   // XP anterior del id anónimo queda en ese id (la fusión llega en Fase 2).
   useEffect(() => {
-    if (myId) bindXpIdentity(myId);
-  }, [myId]);
+    if (myId) {
+      bindXpIdentity(myId);
+      refreshCoins();
+    }
+  }, [myId, refreshCoins]);
 
   // Privy solo tiene sentido fuera de MiniPay: allí el wallet ya viene
   // inyectado y el SDK sería más de un megabyte de código muerto.
@@ -953,6 +964,8 @@ export default function Frontle() {
               </span>
               <span className="text-[#fcff52] text-2xl">→</span>
             </button>
+            {/* Tienda de monedas: entrada desde el home */}
+            <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
           </div>
         )}
 
@@ -1289,6 +1302,8 @@ export default function Frontle() {
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
               <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
+            {/* Tienda de monedas: entrada desde el perfil */}
+            <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
             {/* Racha v2: congelar / recuperar con monedas */}
             <StreakCard tr={tr} onStreak={setStreak} />
             <Achievements tr={tr} playerId={myId || undefined} />
@@ -1483,6 +1498,10 @@ export default function Frontle() {
           tr={tr}
         />
       )}
+
+      {/* Tienda de monedas (compartida por Home y Perfil). Al cerrar refresca
+          el saldo por si hubo compra. */}
+      <CoinShop tr={tr} open={shopOpen} onClose={() => { setShopOpen(false); refreshCoins(); }} />
 
       {/* Prompt de nombre al registrarse */}
       {nameModal && (

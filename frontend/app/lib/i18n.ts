@@ -200,6 +200,8 @@ type Dict = {
   // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
   coins: {
     shop: string;
+    shopSub: string;
+    buy: string;
     blurb: string;
     balance: (n: number) => string;
     bought: (n: number) => string;
@@ -468,6 +470,8 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coins: {
       shop: "Tienda de monedas",
+      shopSub: "Pistas y nuevos intentos para la liga",
+      buy: "Comprar",
       blurb: "Las monedas pagan pistas y nuevos intentos en los modos de la liga, al instante y sin esperas. Cada compra hace crecer el premio semanal.",
       balance: (n) => `Tienes ${n} 🪙`,
       bought: (n) => `¡Listo! Se acreditaron ${n} 🪙.`,
@@ -749,6 +753,8 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coins: {
       shop: "Coin shop",
+      shopSub: "Hints and new attempts for the league",
+      buy: "Buy",
       blurb: "Coins pay for hints and new attempts in league modes, instantly with no waiting. Every purchase grows the weekly prize.",
       balance: (n) => `You have ${n} 🪙`,
       bought: (n) => `Done! ${n} 🪙 credited.`,
@@ -1030,6 +1036,8 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coins: {
       shop: "Loja de moedas",
+      shopSub: "Dicas e novas tentativas para a liga",
+      buy: "Comprar",
       blurb: "As moedas pagam dicas e novas tentativas nos modos da liga, na hora e sem esperas. Cada compra faz crescer o prêmio semanal.",
       balance: (n) => `Você tem ${n} 🪙`,
       bought: (n) => `Pronto! ${n} 🪙 creditadas.`,
@@ -1311,6 +1319,8 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coins: {
       shop: "Boutique de pièces",
+      shopSub: "Indices et nouveaux essais pour la ligue",
+      buy: "Acheter",
       blurb: "Les pièces paient les indices et les nouveaux essais des modes de la ligue, instantanément et sans attente. Chaque achat fait grossir le prix hebdomadaire.",
       balance: (n) => `Vous avez ${n} 🪙`,
       bought: (n) => `C'est fait ! ${n} 🪙 créditées.`,
