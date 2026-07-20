@@ -201,6 +201,19 @@ type Dict = {
     noFunds: string;
     cost: (n: number) => string;
   };
+  // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
+  streakCard: {
+    days: string;
+    freezeHint: string;
+    buyFreeze: string;
+    freezeBought: string;
+    freezeMax: string;
+    repair: (days: number) => string;
+    repaired: string;
+    notRepairable: string;
+    needCoins: string;
+    otherDevice: string;
+  };
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -452,6 +465,18 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "No se pudo completar la compra. Intenta de nuevo.",
       noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
       cost: (n) => `${n} 🪙`,
+    },
+    streakCard: {
+      days: "días seguidos",
+      freezeHint: "Un congelador cubre un día que no puedas jugar y mantiene viva tu racha. Puedes guardar hasta 2.",
+      buyFreeze: "Comprar congelador",
+      freezeBought: "¡Congelador listo! Se usará solo si faltas un día.",
+      freezeMax: "Ya tienes 2 congeladores guardados.",
+      repair: (days) => `Recuperar racha de ${days}`,
+      repaired: "¡Racha recuperada!",
+      notRepairable: "Esa racha ya no se puede recuperar.",
+      needCoins: "No te alcanzan las monedas. Consigue más en la tienda.",
+      otherDevice: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
     },
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
     hintsTitle: "Pistas",
@@ -720,6 +745,18 @@ const STRINGS: Record<Locale, Dict> = {
       noFunds: "Not enough balance for this pack. Deposit a little and come back.",
       cost: (n) => `${n} 🪙`,
     },
+    streakCard: {
+      days: "days in a row",
+      freezeHint: "A freeze covers one day you can't play and keeps your streak alive. You can hold up to 2.",
+      buyFreeze: "Buy a freeze",
+      freezeBought: "Freeze ready! It only kicks in if you miss a day.",
+      freezeMax: "You already hold 2 freezes.",
+      repair: (days) => `Restore ${days}-day streak`,
+      repaired: "Streak restored!",
+      notRepairable: "That streak can't be restored anymore.",
+      needCoins: "Not enough coins. Get more in the shop.",
+      otherDevice: "Your account is in use on another device. Buy coins here to activate it.",
+    },
     footer: "Frontle · Daily geography game · Made in Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -987,6 +1024,18 @@ const STRINGS: Record<Locale, Dict> = {
       noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
       cost: (n) => `${n} 🪙`,
     },
+    streakCard: {
+      days: "dias seguidos",
+      freezeHint: "Um congelador cobre um dia que você não puder jogar e mantém sua sequência viva. Dá para guardar até 2.",
+      buyFreeze: "Comprar congelador",
+      freezeBought: "Congelador pronto! Só será usado se você faltar um dia.",
+      freezeMax: "Você já tem 2 congeladores guardados.",
+      repair: (days) => `Recuperar sequência de ${days}`,
+      repaired: "Sequência recuperada!",
+      notRepairable: "Essa sequência não pode mais ser recuperada.",
+      needCoins: "Suas moedas não são suficientes. Consiga mais na loja.",
+      otherDevice: "Sua conta está em uso em outro aparelho. Compre moedas aqui para ativá-lo.",
+    },
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -1253,6 +1302,18 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "L'achat n'a pas abouti. Réessayez.",
       noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
       cost: (n) => `${n} 🪙`,
+    },
+    streakCard: {
+      days: "jours d'affilée",
+      freezeHint: "Un gel couvre un jour où vous ne pouvez pas jouer et garde votre série en vie. Vous pouvez en garder 2.",
+      buyFreeze: "Acheter un gel",
+      freezeBought: "Gel prêt ! Il ne s'active que si vous manquez un jour.",
+      freezeMax: "Vous avez déjà 2 gels en réserve.",
+      repair: (days) => `Récupérer la série de ${days}`,
+      repaired: "Série récupérée !",
+      notRepairable: "Cette série ne peut plus être récupérée.",
+      needCoins: "Vos pièces ne suffisent pas. Trouvez-en plus dans la boutique.",
+      otherDevice: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
     },
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     hintsTitle: "Indices",
