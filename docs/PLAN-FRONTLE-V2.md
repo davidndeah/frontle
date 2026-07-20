@@ -16,7 +16,9 @@
 >   ⏳ **Pendiente manual de Santiago:** desplegarlo, verificarlo y configurar las 2 variables
 >   (ver §9). Mientras no exista, la compra de monedas sigue por el camino interino
 >   (transfer a la wallet del operador) y el edge function acepta ambos.
-> - ⏳ **Fase 5** — divisiones, anti-sybil.
+> - ✅ **Fase 5** — divisiones con ascenso/descenso + wallet obligatoria para competir
+>   (migración 0013). El pot va al podio de la división más alta. Queda pendiente el
+>   anti-sybil con humano verificado (Self/GoodID), que necesita decisión de producto.
 
 ## 1. Resumen ejecutivo
 
@@ -93,11 +95,22 @@ fuente de gasto de monedas que sostiene el pot semanal.
   *consumibles del juego*, no entradas al torneo. (Ver la nota de riesgo en
   [[frontle-economy-model-decision]] y `PLAN-COPA-SEMANAL.md` §5.)
 
-### 3.4 Futuro (v2.1, no bloquea)
+### 3.4 Divisiones (Fase 5, implementado)
 
-- **Divisiones con ascenso/descenso** (cohortes de ~30, patrón Duolingo) cuando el
-  volumen de jugadores lo amerite.
-- **1 entrada por humano verificado** (Self/GoodID) antes de que los premios crezcan.
+- **4 divisiones**: Bronce · Plata · Oro · Diamante. Todos empiezan en Bronce.
+- Al cerrar la semana, **dentro de cada división suben los 3 primeros y bajan los
+  3 últimos** — solo en cohortes de ≥5 jugadores, para no zarandear grupos diminutos.
+- **El pot se lo lleva el podio de la división MÁS ALTA con participantes.** Las
+  demás compiten por ascender (y por el XP). Así el contrato sigue pagando a 3
+  direcciones y subir de división tiene consecuencia real.
+- **Competir exige wallet**, igual que el ranking diario: sin ella no se emite XP
+  (impuesto con un check en la base, no solo en el cliente). Jugar sigue siendo
+  libre para cualquiera; lo que requiere identidad es entrar a la tabla.
+
+### 3.5 Futuro (no bloquea)
+
+- **1 entrada por humano verificado** (Self / GoodID) antes de que los premios
+  crezcan. Requiere integrar un proveedor externo — decisión pendiente.
 
 ## 4. Sistema de XP
 

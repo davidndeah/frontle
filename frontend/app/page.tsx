@@ -1193,8 +1193,9 @@ export default function Frontle() {
                 <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
               </div>
             )}
-            {/* Liga semanal v2 (Fase 1: en seco, sin premio) */}
-            <WeeklyLeague tr={tr} />
+            {/* Liga semanal v2: divisiones + XP. Exige wallet, igual que el
+                ranking diario, así que ofrece el mismo CTA de conectar. */}
+            <WeeklyLeague tr={tr} onConnect={hasWallet && !inMiniPay ? connectForRanking : undefined} />
             {/* Selector de nivel: cada nivel tiene su ranking */}
             <LevelSelect tr={tr} level={level} onChange={setLevel} />
             <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />

@@ -14,10 +14,13 @@
 //  El lunes de la semana `w` del contrato es el día 7w-3 desde el epoch
 //  (el epoch cayó en jueves). Aquí se convierte una sola vez.
 //
-//  ⚠️ Jugadores sin wallet: el XP se puede ganar con identidad anónima, pero
-//  on-chain solo se puede premiar a una dirección. Igual que `close-day`, los
-//  player_id que no son 0x… se SALTAN y el puesto pasa al siguiente elegible;
-//  la respuesta los reporta en `skipped` para poder atenderlos a mano.
+//  El pot lo gana el top 3 de la DIVISIÓN MÁS ALTA con participantes (Fase 5,
+//  PLAN §3.4) — lo resuelve `weekly_podium()`. Tras repartir, se cierran las
+//  divisiones: dentro de cada tier suben los 3 primeros y bajan los 3 últimos.
+//
+//  Jugar la liga exige wallet (misma regla que el ranking diario), así que
+//  todo el podio es premiable on-chain; el filtro de direcciones que queda es
+//  solo una red de seguridad.
 //
 //  Secrets requeridos (supabase secrets set ...):
 //    SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY   (los inyecta Supabase)
@@ -98,15 +101,8 @@ Deno.serve(async () => {
       return json({ ok: true, skipped: "ya rolled on-chain", week: Number(week), weekStart });
     }
 
-    // Podio por XP. Se piden más de 3 porque hay que descartar a los jugadores
-    // sin wallet (no premiables on-chain) y ascender a los siguientes.
-    const { data: board, error: boardErr } = await supabase
-      .from("weekly_xp")
-      .select("player_id, xp, last_event")
-      .eq("week", weekStart)
-      .order("xp", { ascending: false })
-      .order("last_event", { ascending: true })
-      .limit(30);
+    // Podio del dinero: top 3 de la división más alta con participantes.
+    const { data: board, error: boardErr } = await supabase.rpc("weekly_podium", { p_week: weekStart });
     if (boardErr) throw boardErr;
 
     const payable: { address: `0x${string}`; xp: number }[] = [];
@@ -153,12 +149,19 @@ Deno.serve(async () => {
     const { error: insErr } = await supabase.from("weekly_winners").insert(rows);
     if (insErr) throw insErr;
 
+    // Ascensos y descensos para la semana que empieza. Va DESPUÉS del reparto
+    // para que un fallo aquí no impida pagar: el dinero es lo crítico.
+    const { data: moved, error: divErr } = await supabase.rpc("close_week_divisions", { p_week: weekStart });
+    if (divErr) console.error("[close-week] divisiones fallaron:", divErr);
+
     return json({
       ok: true,
       week: Number(week),
       weekStart,
       pot: formatUnits(potRaw, TOKEN_DECIMALS),
       podium: rows.map((r) => ({ place: r.place, winner: r.winner_address, xp: r.xp })),
+      tier: (board as { tier?: number }[])[0]?.tier ?? null,
+      divisionsMoved: moved ?? 0,
       notPayable: skipped,
       roll_tx: rollTx,
     });
