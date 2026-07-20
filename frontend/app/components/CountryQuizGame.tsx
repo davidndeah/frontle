@@ -15,6 +15,8 @@ import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCoun
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
 import { awardQuizCorrect } from "../lib/xp";
+import { spendCoins } from "../lib/coins";
+import CoinShop from "./CoinShop";
 import ScoreCard from "./ScoreCard";
 
 function BigFlag({ name }: { name: string }) {
@@ -51,6 +53,14 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
   const [revealed, setRevealed] = useState(0); // nº de pistas mostradas
   const [tries, setTries] = useState(0);
   const [solved, setSolved] = useState(false);
+  // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
+  const [shopOpen, setShopOpen] = useState(false);
+  async function paidReveal() {
+    if (revealed >= hints.length) return;
+    const r = await spendCoins("spend_hint", `quiz:${mode}`);
+    if (r === "ok") setRevealed((n) => Math.min(hints.length, n + 1));
+    else setShopOpen(true);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
 
   const hints = useMemo(
@@ -105,6 +115,7 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
   return (
     <div className="flex flex-col gap-4">
       {/* volver */}
+      <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
         <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
         <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
@@ -201,11 +212,11 @@ frontle.vercel.app`}
 
           <div className="flex items-center justify-center gap-3">
             <button
-              onClick={() => setRevealed((r) => Math.min(hints.length, r + 1))}
+              onClick={() => void paidReveal()}
               disabled={revealed >= hints.length}
               className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-4 py-1.5 text-xs text-white disabled:opacity-50"
             >
-              💡 {tr.quiz.hintBtn} ({revealed}/{hints.length})
+              💡 {tr.quiz.hintBtn} ({revealed}/{hints.length}) · {tr.coins.cost(3)}
             </button>
             <span className="text-xs text-neutral-400">{tr.quiz.tries(tries)}</span>
           </div>

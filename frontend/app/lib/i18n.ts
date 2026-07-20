@@ -190,6 +190,17 @@ type Dict = {
   payTimerPaused: string;
   // Liga semanal (v2 Fase 1: ranking de XP en seco, sin premio todavía).
   liga: { title: string; dry: string; empty: string; you: string; closes: (time: string) => string };
+  // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
+  coins: {
+    shop: string;
+    blurb: string;
+    balance: (n: number) => string;
+    bought: (n: number) => string;
+    pending: string;
+    failed: string;
+    noFunds: string;
+    cost: (n: number) => string;
+  };
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -431,6 +442,16 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
       you: "Tú",
       closes: (time) => `Cierra en ${time}`,
+    },
+    coins: {
+      shop: "Tienda de monedas",
+      blurb: "Las monedas pagan pistas y nuevos intentos en los modos de la liga, al instante y sin esperas. Cada compra hace crecer el premio semanal.",
+      balance: (n) => `Tienes ${n} 🪙`,
+      bought: (n) => `¡Listo! Se acreditaron ${n} 🪙.`,
+      pending: "Pago confirmado. Tus monedas se acreditan en un momento.",
+      failed: "No se pudo completar la compra. Intenta de nuevo.",
+      noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
+      cost: (n) => `${n} 🪙`,
     },
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
     hintsTitle: "Pistas",
@@ -689,6 +710,16 @@ const STRINGS: Record<Locale, Dict> = {
       you: "You",
       closes: (time) => `Closes in ${time}`,
     },
+    coins: {
+      shop: "Coin shop",
+      blurb: "Coins pay for hints and new attempts in league modes, instantly with no waiting. Every purchase grows the weekly prize.",
+      balance: (n) => `You have ${n} 🪙`,
+      bought: (n) => `Done! ${n} 🪙 credited.`,
+      pending: "Payment confirmed. Your coins will be credited in a moment.",
+      failed: "The purchase didn't go through. Please try again.",
+      noFunds: "Not enough balance for this pack. Deposit a little and come back.",
+      cost: (n) => `${n} 🪙`,
+    },
     footer: "Frontle · Daily geography game · Made in Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -946,6 +977,16 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Você",
       closes: (time) => `Fecha em ${time}`,
     },
+    coins: {
+      shop: "Loja de moedas",
+      blurb: "As moedas pagam dicas e novas tentativas nos modos da liga, na hora e sem esperas. Cada compra faz crescer o prêmio semanal.",
+      balance: (n) => `Você tem ${n} 🪙`,
+      bought: (n) => `Pronto! ${n} 🪙 creditadas.`,
+      pending: "Pagamento confirmado. Suas moedas serão creditadas em instantes.",
+      failed: "A compra não foi concluída. Tente de novo.",
+      noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
+      cost: (n) => `${n} 🪙`,
+    },
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -1202,6 +1243,16 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Personne n'a gagné d'XP cette semaine. Jouez un mode et ouvrez le classement !",
       you: "Vous",
       closes: (time) => `Se termine dans ${time}`,
+    },
+    coins: {
+      shop: "Boutique de pièces",
+      blurb: "Les pièces paient les indices et les nouveaux essais des modes de la ligue, instantanément et sans attente. Chaque achat fait grossir le prix hebdomadaire.",
+      balance: (n) => `Vous avez ${n} 🪙`,
+      bought: (n) => `C'est fait ! ${n} 🪙 créditées.`,
+      pending: "Paiement confirmé. Vos pièces arrivent dans un instant.",
+      failed: "L'achat n'a pas abouti. Réessayez.",
+      noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
+      cost: (n) => `${n} 🪙`,
     },
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     hintsTitle: "Indices",
