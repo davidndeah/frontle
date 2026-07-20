@@ -258,10 +258,15 @@ palabras prohibidas), móvil 360×640, `prefers-reduced-motion` en animaciones n
 
 ---
 
-## 9. Despliegue de `FrontleWeekly` (pendiente manual)
+## 9. Despliegue de `FrontleWeekly` ✅ HECHO (2026-07-20)
 
-El contrato está en `contracts/src/FrontleWeekly.sol` con su script y sus tests.
-**Requiere la cuenta desplegadora de Santiago**, por eso no está desplegado.
+**Desplegado y verificado en Celo Mainnet:**
+`0x766A12333AA5249CDEf2259Cc9D3aD0c746c8132`
+(tx `0xce5691b2…7492d2`, bloque 72674170, coste 0.23 CELO · minPurchase 0.10 USDT ·
+recaudo 10%). Ver `NIVELES.md`.
+
+Queda solo configurar las dos variables de la tabla de abajo. El comando que se
+usó y la receta de verificación quedan aquí como referencia:
 
 ```bash
 cd contracts

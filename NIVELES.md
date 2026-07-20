@@ -138,6 +138,13 @@ sembrado** por la plataforma (`fundPot`). Ver memoria `frontle-economy-model-dec
   Deploy tx `0x91ab87910d56f319a1a029afa7b5825a6634288208b90156fb9126e99a24725a`.
 - **Contrato viejo (mainnet, ganador único, v1):**
   `0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09` — se deja como data source histórica.
+- **FrontleWeekly (mainnet, pot semanal de la liga v2) — desplegado 2026-07-20:**
+  `0x766A12333AA5249CDEf2259Cc9D3aD0c746c8132` — verificado en Celoscan.
+  Deploy tx `0xce5691b24ad31e5ac33bc5d7083df7995bba9bbfc0120d011668537eeb7492d2`
+  (bloque 72674170). Parámetros: minPurchase `100000` (0.10 USDT), protocolBps
+  `1000` (10%, topado por `MAX_PROTOCOL_BPS`). Reparte 50/30/10 al podio semanal.
+  ⚠️ Su índice de semana (`currentWeek()`, lunes a lunes) NO es el `week_start`
+  de Supabase: ver `supabase/functions/close-week`.
 - **Token USDT (6 dec):** `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e`
 - **feeCurrency (adapter USDT):** `0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72`
 - **Operator (firma `rollDay`, necesita CELO para gas):**
