@@ -9,7 +9,7 @@
 import { ensureSecret, localSecret, rpc } from "./secret";
 import { xpPlayerId } from "./xp";
 
-export const FREEZE_COST = 15;
+export const FREEZE_COST = 5;
 export const MAX_FREEZES = 2;
 
 // Consume congeladores por los días perdidos y devuelve la racha vigente.

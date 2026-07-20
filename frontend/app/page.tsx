@@ -175,6 +175,9 @@ export default function Frontle() {
 
   // Navegación (app shell) + sheet de wallet
   const [tab, setTab] = useState<Tab>("jugar");
+  // Sub-tab dentro de Ranking: el reto diario y la liga semanal son dos
+  // competencias distintas (una por marca/tiempo, otra por XP), separadas.
+  const [rankTab, setRankTab] = useState<"daily" | "weekly">("daily");
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
@@ -783,11 +786,8 @@ export default function Frontle() {
       <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1 px-2.5 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
         <span className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</span>
         <div className="flex-1" />
-        {pot !== null && (
-          <span className="shrink-0 rounded-full bg-amber-400/15 border border-amber-300/40 px-2 py-1 text-[11px] font-bold text-amber-300 whitespace-nowrap">
-            🏆 {fmt(pot)}
-          </span>
-        )}
+        {/* El premio del día ya NO va en la barra: vive en el tab Ranking
+            (sub-tab Diario), su lugar natural. */}
         {/* Un solo botón de ajustes agrupa idioma + audio (música y efectos):
             a 360px no caben 3 controles sueltos de 44px, y así los efectos
             (que solo vivían en Perfil) quedan también a un tap del header. */}
@@ -1187,29 +1187,49 @@ export default function Frontle() {
         {/* ---------- TAB RANKING ---------- */}
         {tab === "ranking" && (
           <>
-            {levelPot !== null && (
-              <div className="panel p-3 flex items-center justify-between">
-                <span className="text-sm font-bold text-amber-300">{tr.levelPrize(fmt(levelPot))}</span>
-                <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
-              </div>
+            {/* Segmented control: Diario (marca+tiempo) vs Semanal (XP) */}
+            <div className="flex gap-1 p-1 rounded-2xl bg-[#160833] border border-[#b79ced]/20">
+              {(["daily", "weekly"] as const).map((rt) => (
+                <button
+                  key={rt}
+                  onClick={() => setRankTab(rt)}
+                  className={`flex-1 rounded-xl py-2 text-sm font-display font-bold transition ${
+                    rankTab === rt ? "bg-[#6c2bd9] text-white" : "text-neutral-300 active:scale-95"
+                  }`}
+                >
+                  {rt === "daily" ? tr.rankTabs.daily : tr.rankTabs.weekly}
+                </button>
+              ))}
+            </div>
+
+            {rankTab === "daily" && (
+              <>
+                {levelPot !== null && (
+                  <div className="panel p-3 flex items-center justify-between">
+                    <span className="text-sm font-bold text-amber-300">{tr.levelPrize(fmt(levelPot))}</span>
+                    <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
+                  </div>
+                )}
+                {/* Selector de nivel: cada nivel tiene su ranking */}
+                <LevelSelect tr={tr} level={level} onChange={setLevel} />
+                <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
+                {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
+                <WinnersCard
+                  tr={tr}
+                  cycle={cycle}
+                  names={winnerNames}
+                  myId={myId}
+                  onGoToProfile={() => setTab("perfil")}
+                  panel={panel}
+                  fmt={fmt}
+                />
+                <p className="text-center text-[11px] text-neutral-400">{tr.nextChallenge(countdown)}</p>
+              </>
             )}
-            {/* Liga semanal v2: divisiones + XP. Exige wallet, igual que el
-                ranking diario, así que ofrece el mismo CTA de conectar. */}
-            <WeeklyLeague tr={tr} onConnect={hasWallet && !inMiniPay ? connectForRanking : undefined} />
-            {/* Selector de nivel: cada nivel tiene su ranking */}
-            <LevelSelect tr={tr} level={level} onChange={setLevel} />
-            <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
-            {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
-            <WinnersCard
-              tr={tr}
-              cycle={cycle}
-              names={winnerNames}
-              myId={myId}
-              onGoToProfile={() => setTab("perfil")}
-              panel={panel}
-              fmt={fmt}
-            />
-            <p className="text-center text-[11px] text-neutral-400">{tr.nextChallenge(countdown)}</p>
+
+            {rankTab === "weekly" && (
+              <WeeklyLeague tr={tr} onConnect={hasWallet && !inMiniPay ? connectForRanking : undefined} />
+            )}
           </>
         )}
 
