@@ -193,7 +193,7 @@ gasto es un débito instantáneo en el ledger.
 | Pista en modos de la liga (inicial / silueta del siguiente) | **3 🪙** | $0.03 | Regiones · quizzes · Práctica |
 | Pista fuerte en modos de la liga (silueta de todos / equivalente del modo) | **5 🪙** | $0.05 | Regiones · Práctica |
 | **Nuevo intento en modos de la liga** (el 1º es gratis, §2b) | **5 🪙** | $0.05 | Regiones · quizzes · Práctica |
-| **Congelar racha** (1 día sin jugar no la rompe) | **15 🪙** | $0.15 | racha del diario; máx 2 equipadas (patrón Duolingo) |
+| **Congelar racha** (1 día sin jugar no la rompe) | **5 🪙** | $0.05 | racha del diario; máx 2 equipadas (patrón Duolingo) |
 | **Reparar racha perdida** (ventana de 48h) | **25 🪙** | $0.25 | racha ≤ 7 días |
 | Reparar racha larga (ventana de 48h) | **50 🪙** | $0.50 | racha > 7 días (vale más, cuesta más) |
 
