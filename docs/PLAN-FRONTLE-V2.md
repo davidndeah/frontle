@@ -12,9 +12,12 @@
 Frontle v2 añade **una liga semanal tipo Duolingo** encima del juego actual:
 todos los modos (incluidos los gratis) emiten **XP** que posiciona al jugador en un
 **ranking semanal**; al cerrar la semana, los 3 primeros reparten un **pot real**
-(50 / 30 / 10, con 10% de recaudo para el protocolo). Además llega un **mercado de
-monedas de juego**: el jugador compra monedas por adelantado y paga pistas,
-reintentos y reparaciones de racha **al instante, sin transacción en medio del reto**.
+(50 / 30 / 10, con 10% de recaudo para el protocolo) desde **un contrato nuevo**
+(`FrontleWeekly`). Además llega un **mercado de monedas de juego** para la liga y
+sus modos: el jugador compra monedas por adelantado (esa venta fondea el pot
+semanal) y paga pistas, reintentos y reparaciones de racha **al instante, sin
+transacción en medio del juego**. El reto diario y sus compras en USDT **no se
+tocan** — cada economía fondea su propio pot.
 
 ## 2. Lo que NO cambia (v1 sigue intacta)
 
@@ -22,9 +25,11 @@ reintentos y reparaciones de racha **al instante, sin transacción en medio del 
   (países, tiempo) — igual que hoy.
 - **Pot diario on-chain** repartido entre los ganadores de nivel (50/35/15, contrato
   v2 actual) y su flujo de fees 80% pot / 20% protocolo.
+- **Las compras del diario no se tocan:** pistas y reintentos del reto diario se
+  siguen pagando **directo en USDT** (con la pausa del cronómetro ya implementada)
+  y siguen fondeando el pot diario. **Las monedas NO aplican en el reto diario** —
+  las dos economías no se cruzan.
 - **Sistema de rachas** (días consecutivos resolviendo el diario) con sus hitos.
-- Pago directo en USDT de pistas/reintentos **sigue disponible** (con la pausa del
-  cronómetro ya implementada) — las monedas son el camino rápido, no el único.
 
 ## 3. Liga semanal
 
@@ -51,11 +56,14 @@ reintentos y reparaciones de racha **al instante, sin transacción en medio del 
   con menos de 3 participantes, las partes vacantes **se acumulan al pot de la
   semana siguiente**.
 
-### 3.3 Fondeo del pot
+### 3.3 Fondeo del pot (contrato propio)
 
+- El pot semanal vive en **un contrato separado** (`FrontleWeekly`) — el contrato
+  del diario no se modifica.
 - **Siembra de la plataforma** (`fundPot` semanal) — el premio base garantizado.
 - **Ventas de monedas:** el 100% de cada compra de monedas entra al pot de la
-  semana en curso; el recaudo del protocolo sale del 10% en el reparto.
+  semana en curso en `FrontleWeekly`; el recaudo del protocolo sale del 10% en el
+  reparto.
 - Encuadre de cumplimiento: **torneo con premio sembrado por la casa**. Los modos
   que dan XP son gratis — nadie paga por competir; las monedas compran
   *consumibles del juego*, no entradas al torneo. (Ver la nota de riesgo en
@@ -103,9 +111,12 @@ reintentos y reparaciones de racha **al instante, sin transacción en medio del 
 ## 5. Mercado de monedas 🪙
 
 **Moneda de juego prepagada** (nombre visible: *monedas*). Se compran con USDT en
-la tienda y se gastan al instante dentro del juego — **sin transacción on-chain en
-medio del reto**, que era el dolor que la pausa del cronómetro mitiga; con monedas
-la pausa ni siquiera hace falta porque el gasto es inmediato.
+la tienda y se gastan al instante — sin transacción on-chain en medio del juego.
+
+**Ámbito: la liga semanal y sus modos (Regiones, quizzes, Práctica) + los ítems de
+racha.** El reto diario queda fuera: allí se sigue pagando directo en USDT (§2).
+La compra de monedas es la transacción on-chain (va al pot semanal, §3.3); el
+gasto es un débito instantáneo en el ledger.
 
 ### 5.1 Paridad y paquetes
 
@@ -125,18 +136,22 @@ la pausa ni siquiera hace falta porque el gasto es inmediato.
 
 ### 5.2 Qué se puede comprar y a qué precio
 
-| Ítem | Monedas | Equivalente | Nota |
+| Ítem | Monedas | Equivalente | Dónde aplica |
 |---|---|---|---|
-| Pista: inicial del siguiente país | **5 🪙** | $0.05 | mismo precio actual |
-| Pista: silueta del siguiente país | **5 🪙** | $0.05 | mismo precio actual |
-| Pista: silueta de todos | **10 🪙** | $0.10 | mismo precio actual |
-| Reintento del reto diario | **10 🪙** | $0.10 | mismo precio actual |
-| **Congelar racha** (1 día sin jugar no la rompe) | **15 🪙** | $0.15 | máx 2 equipadas (patrón Duolingo) |
+| Pista en modos de la liga (inicial / silueta del siguiente) | **3 🪙** | $0.03 | Regiones · quizzes · Práctica |
+| Pista fuerte en modos de la liga (silueta de todos / equivalente del modo) | **5 🪙** | $0.05 | Regiones · Práctica |
+| Reintento de ronda en modos de la liga | **5 🪙** | $0.05 | Regiones · Práctica |
+| **Congelar racha** (1 día sin jugar no la rompe) | **15 🪙** | $0.15 | racha del diario; máx 2 equipadas (patrón Duolingo) |
 | **Reparar racha perdida** (ventana de 48h) | **25 🪙** | $0.25 | racha ≤ 7 días |
 | Reparar racha larga (ventana de 48h) | **50 🪙** | $0.50 | racha > 7 días (vale más, cuesta más) |
 
-- El pago directo en USDT de pistas/reintentos sigue existiendo al mismo precio —
-  monedas = conveniencia (instantáneo), no descuento ni exclusividad.
+- **Las pistas y reintentos del reto diario NO se pagan con monedas** — allí sigue
+  el flujo USDT directo actual (0.05/0.05/0.10 pista, 0.10 reintento) hacia el pot
+  diario. Sin solapamiento entre economías.
+- Los ítems de racha son *meta* (se compran fuera de cualquier reto en curso), por
+  eso viven en monedas aunque la racha sea del diario.
+- Las pistas de la liga son más baratas que las del diario a propósito: en la liga
+  no compiten contra un premio diario en tiempo real.
 - La reparación de racha restaura la racha **y** su elegibilidad al +5 XP diario,
   pero **no** paga retroactivamente el XP de los días perdidos.
 
@@ -152,10 +167,16 @@ la pausa ni siquiera hace falta porque el gasto es inmediato.
 ## 6. Flujo del dinero (v2 completo)
 
 ```
-Pago directo pista/reintento (USDT)  →  80% pot diario · 20% protocolo   (v1, sin cambios)
-Compra de monedas (USDT)             →  100% pot semanal                 (nuevo)
-Reparto semanal                      →  50% 🥇 · 30% 🥈 · 10% 🥉 · 10% protocolo
-Siembra de plataforma (fundPot)      →  pot diario y/o semanal, a discreción
+RETO DIARIO (contrato actual, sin cambios)
+  Pista/reintento directo en USDT    →  80% pot diario · 20% protocolo
+
+LIGA SEMANAL (contrato nuevo: FrontleWeekly)
+  Compra de monedas (USDT)           →  100% pot semanal
+  Gasto de monedas (pistas liga,
+  reintentos liga, ítems de racha)   →  débito en ledger (off-chain, instantáneo)
+  Reparto al cierre                  →  50% 🥇 · 30% 🥈 · 10% 🥉 · 10% protocolo
+
+Siembra de plataforma (fundPot)      →  cada contrato por separado, a discreción
 ```
 
 ## 7. Implementación por fases
@@ -163,7 +184,7 @@ Siembra de plataforma (fundPot)      →  pot diario y/o semanal, a discreción
 | Fase | Entregable | Alcance |
 |---|---|---|
 | **1** | XP en todos los modos + topes, vista semanal, UI del ranking semanal (sin premio) | Supabase (`xp_events` + vistas) y frontend. Valida la liga en seco. |
-| **2** | Tienda de monedas + `coin_ledger` + gasto instantáneo de pistas/reintentos | Edge function de acreditación; UI de tienda; el flujo USDT directo se conserva. |
+| **2** | Tienda de monedas + `coin_ledger` + pistas/reintentos con monedas en los modos de la liga | Edge function de acreditación; UI de tienda; el diario no se toca. |
 | **3** | Congelar/reparar racha con monedas | Lógica de racha en servidor + UI en el strip de racha. |
 | **4** | Contrato `FrontleWeekly` (pot semanal, `rollWeek(w, first, second, third)` con 50/30/10/10, claim, `recoverUnrolledPot`) + cierre semanal en el cron | Foundry + operador. Mientras no exista, el premio semanal se paga con el flujo de premios actual sembrado a mano. |
 | **5** | v2.1: divisiones, verificación de humano, notificaciones del cierre | Cuando haya tracción. |
@@ -180,8 +201,8 @@ palabras prohibidas), móvil 360×640, `prefers-reduced-motion` en animaciones n
 | Sybil (multicuentas por el premio semanal) | Corto plazo: XP gratis capeado hace caro el ataque; medio plazo: 1 entrada por humano (Self/GoodID) antes de subir premios |
 | Lectura de "apuesta" en el review de MiniPay | Competir es gratis; monedas = consumibles; premio sembrado por la casa; recaudo explícito del 10% (§3.3) |
 | Monedas como cuasi-token | No retirables, no transferibles, no compran XP; solo consumibles in-app (§5.1) |
-| Doble economía confusa (USDT directo vs monedas) | Mismos precios en ambos caminos; la tienda comunica "sin esperas dentro del reto" como único diferencial |
-| El pot diario pierde fondeo si todos migran a monedas | Monitorear el mix en `/stats`; si el diario se seca, rebalancear (ej. 30% de ventas de monedas al pot diario) — decisión de datos, no de diseño |
+| Confusión entre las dos economías | Separación estricta por modalidad: diario = USDT directo, liga = monedas. Nunca conviven en la misma pantalla |
+| Comprar pistas de la liga como atajo de XP | Las pistas ayudan a resolver pero el XP de los modos gratis está capeado por día (§4.1) — pagar no rompe el tope |
 
 ---
 
