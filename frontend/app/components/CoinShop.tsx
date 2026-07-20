@@ -11,6 +11,36 @@ import { useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
 import { COIN_PACKS, buyCoinPack, getCoinBalance, retryPendingCredit } from "../lib/coins";
 
+// Tarjeta de entrada a la tienda (Home y Perfil). Muestra el saldo y abre el
+// sheet. `balance === null` = aún cargando o sin wallet: se enseña la pista.
+export function CoinShopCard({
+  tr,
+  balance,
+  onOpen,
+}: {
+  tr: ReturnType<typeof t>;
+  balance: number | null;
+  onOpen: () => void;
+}) {
+  return (
+    <section className="brutal rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3">
+      <span className="text-3xl" aria-hidden>🪙</span>
+      <div className="flex-1 min-w-0">
+        <div className="font-display font-bold text-white text-lg leading-tight">{tr.coins.shop}</div>
+        <div className="text-xs text-neutral-300 truncate">
+          {balance === null ? tr.coins.shopSub : tr.coins.balance(balance)}
+        </div>
+      </div>
+      <button
+        onClick={onOpen}
+        className="brutal-sm brutal-press rounded-lg bg-[#fcff52] px-4 py-2 text-xs font-bold text-[#1c0b3e] flex-none"
+      >
+        {tr.coins.buy}
+      </button>
+    </section>
+  );
+}
+
 export default function CoinShop({
   tr,
   open,
