@@ -188,6 +188,39 @@ type Dict = {
   usdtOnly: string;
   // Overlay del pago de pistas: el cronómetro se pausa durante la confirmación.
   payTimerPaused: string;
+  // Liga semanal (v2 Fase 1: ranking de XP en seco, sin premio todavía).
+  liga: {
+    title: string;
+    dry: string;
+    empty: string;
+    you: string;
+    closes: (time: string) => string;
+    needWallet: string;
+  };
+  // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
+  coins: {
+    shop: string;
+    blurb: string;
+    balance: (n: number) => string;
+    bought: (n: number) => string;
+    pending: string;
+    failed: string;
+    noFunds: string;
+    cost: (n: number) => string;
+  };
+  // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
+  streakCard: {
+    days: string;
+    freezeHint: string;
+    buyFreeze: string;
+    freezeBought: string;
+    freezeMax: string;
+    repair: (days: number) => string;
+    repaired: string;
+    notRepairable: string;
+    needCoins: string;
+    otherDevice: string;
+  };
   footer: string;
   hintsTitle: string;
   hintInitial: string;
@@ -423,6 +456,36 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Tu wallet no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     usdtOnly: "Frontle acepta solo USDT. Si tu saldo está en otra stablecoin (USDC o USDm), cámbialo a USDT en MiniPay primero.",
     payTimerPaused: "El tiempo está en pausa mientras se confirma el pago. Sigue al confirmarse.",
+    liga: {
+      title: "Liga semanal",
+      dry: "Temporada de prueba: suma XP jugando cualquier modo. Los premios llegan pronto.",
+      empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
+      you: "Tú",
+      closes: (time) => `Cierra en ${time}`,
+      needWallet: "Conecta tu wallet para competir en la liga y cobrar el premio.",
+    },
+    coins: {
+      shop: "Tienda de monedas",
+      blurb: "Las monedas pagan pistas y nuevos intentos en los modos de la liga, al instante y sin esperas. Cada compra hace crecer el premio semanal.",
+      balance: (n) => `Tienes ${n} 🪙`,
+      bought: (n) => `¡Listo! Se acreditaron ${n} 🪙.`,
+      pending: "Pago confirmado. Tus monedas se acreditan en un momento.",
+      failed: "No se pudo completar la compra. Intenta de nuevo.",
+      noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
+      cost: (n) => `${n} 🪙`,
+    },
+    streakCard: {
+      days: "días seguidos",
+      freezeHint: "Un congelador cubre un día que no puedas jugar y mantiene viva tu racha. Puedes guardar hasta 2.",
+      buyFreeze: "Comprar congelador",
+      freezeBought: "¡Congelador listo! Se usará solo si faltas un día.",
+      freezeMax: "Ya tienes 2 congeladores guardados.",
+      repair: (days) => `Recuperar racha de ${days}`,
+      repaired: "¡Racha recuperada!",
+      notRepairable: "Esa racha ya no se puede recuperar.",
+      needCoins: "No te alcanzan las monedas. Consigue más en la tienda.",
+      otherDevice: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
+    },
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
@@ -673,6 +736,36 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
     usdtOnly: "Frontle only accepts USDT. If your balance is in another stablecoin (USDC or USDm), swap it to USDT in MiniPay first.",
     payTimerPaused: "The clock is paused while your payment is confirmed. It resumes right after.",
+    liga: {
+      title: "Weekly league",
+      dry: "Trial season: earn XP by playing any mode. Prizes are coming soon.",
+      empty: "No one has earned XP this week. Play any mode and open the board!",
+      you: "You",
+      closes: (time) => `Closes in ${time}`,
+      needWallet: "Connect your wallet to compete in the league and collect the prize.",
+    },
+    coins: {
+      shop: "Coin shop",
+      blurb: "Coins pay for hints and new attempts in league modes, instantly with no waiting. Every purchase grows the weekly prize.",
+      balance: (n) => `You have ${n} 🪙`,
+      bought: (n) => `Done! ${n} 🪙 credited.`,
+      pending: "Payment confirmed. Your coins will be credited in a moment.",
+      failed: "The purchase didn't go through. Please try again.",
+      noFunds: "Not enough balance for this pack. Deposit a little and come back.",
+      cost: (n) => `${n} 🪙`,
+    },
+    streakCard: {
+      days: "days in a row",
+      freezeHint: "A freeze covers one day you can't play and keeps your streak alive. You can hold up to 2.",
+      buyFreeze: "Buy a freeze",
+      freezeBought: "Freeze ready! It only kicks in if you miss a day.",
+      freezeMax: "You already hold 2 freezes.",
+      repair: (days) => `Restore ${days}-day streak`,
+      repaired: "Streak restored!",
+      notRepairable: "That streak can't be restored anymore.",
+      needCoins: "Not enough coins. Get more in the shop.",
+      otherDevice: "Your account is in use on another device. Buy coins here to activate it.",
+    },
     footer: "Frontle · Daily geography game · Made in Colombia",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
@@ -923,6 +1016,36 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
     usdtOnly: "O Frontle aceita apenas USDT. Se o seu saldo está em outra stablecoin (USDC ou USDm), troque por USDT no MiniPay primeiro.",
     payTimerPaused: "O tempo fica em pausa enquanto o pagamento é confirmado. Continua logo depois.",
+    liga: {
+      title: "Liga semanal",
+      dry: "Temporada de teste: some XP jogando qualquer modo. Os prêmios chegam em breve.",
+      empty: "Ninguém somou XP esta semana. Jogue qualquer modo e inaugure a tabela!",
+      you: "Você",
+      closes: (time) => `Fecha em ${time}`,
+      needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
+    },
+    coins: {
+      shop: "Loja de moedas",
+      blurb: "As moedas pagam dicas e novas tentativas nos modos da liga, na hora e sem esperas. Cada compra faz crescer o prêmio semanal.",
+      balance: (n) => `Você tem ${n} 🪙`,
+      bought: (n) => `Pronto! ${n} 🪙 creditadas.`,
+      pending: "Pagamento confirmado. Suas moedas serão creditadas em instantes.",
+      failed: "A compra não foi concluída. Tente de novo.",
+      noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
+      cost: (n) => `${n} 🪙`,
+    },
+    streakCard: {
+      days: "dias seguidos",
+      freezeHint: "Um congelador cobre um dia que você não puder jogar e mantém sua sequência viva. Dá para guardar até 2.",
+      buyFreeze: "Comprar congelador",
+      freezeBought: "Congelador pronto! Só será usado se você faltar um dia.",
+      freezeMax: "Você já tem 2 congeladores guardados.",
+      repair: (days) => `Recuperar sequência de ${days}`,
+      repaired: "Sequência recuperada!",
+      notRepairable: "Essa sequência não pode mais ser recuperada.",
+      needCoins: "Suas moedas não são suficientes. Consiga mais na loja.",
+      otherDevice: "Sua conta está em uso em outro aparelho. Compre moedas aqui para ativá-lo.",
+    },
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
@@ -1173,6 +1296,36 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
     usdtOnly: "Frontle n'accepte que l'USDT. Si votre solde est dans une autre stablecoin (USDC ou USDm), échangez-la contre de l'USDT dans MiniPay d'abord.",
     payTimerPaused: "Le chrono est en pause pendant la confirmation du paiement. Il reprend juste après.",
+    liga: {
+      title: "Ligue hebdo",
+      dry: "Saison d'essai : gagnez de l'XP dans n'importe quel mode. Les prix arrivent bientôt.",
+      empty: "Personne n'a gagné d'XP cette semaine. Jouez un mode et ouvrez le classement !",
+      you: "Vous",
+      closes: (time) => `Se termine dans ${time}`,
+      needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
+    },
+    coins: {
+      shop: "Boutique de pièces",
+      blurb: "Les pièces paient les indices et les nouveaux essais des modes de la ligue, instantanément et sans attente. Chaque achat fait grossir le prix hebdomadaire.",
+      balance: (n) => `Vous avez ${n} 🪙`,
+      bought: (n) => `C'est fait ! ${n} 🪙 créditées.`,
+      pending: "Paiement confirmé. Vos pièces arrivent dans un instant.",
+      failed: "L'achat n'a pas abouti. Réessayez.",
+      noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
+      cost: (n) => `${n} 🪙`,
+    },
+    streakCard: {
+      days: "jours d'affilée",
+      freezeHint: "Un gel couvre un jour où vous ne pouvez pas jouer et garde votre série en vie. Vous pouvez en garder 2.",
+      buyFreeze: "Acheter un gel",
+      freezeBought: "Gel prêt ! Il ne s'active que si vous manquez un jour.",
+      freezeMax: "Vous avez déjà 2 gels en réserve.",
+      repair: (days) => `Récupérer la série de ${days}`,
+      repaired: "Série récupérée !",
+      notRepairable: "Cette série ne peut plus être récupérée.",
+      needCoins: "Vos pièces ne suffisent pas. Trouvez-en plus dans la boutique.",
+      otherDevice: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
+    },
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",

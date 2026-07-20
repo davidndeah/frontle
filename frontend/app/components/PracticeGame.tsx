@@ -24,6 +24,9 @@ import WorldMap from "./WorldMap";
 import ScoreCard from "./ScoreCard";
 import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import { awardPracticeSolve } from "../lib/xp";
+import { spendCoins } from "../lib/coins";
+import CoinShop from "./CoinShop";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
 function CFlag({ name, size = 28 }: { name: string; size?: number }) {
@@ -54,6 +57,14 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   const [showNextSil, setShowNextSil] = useState(false);
   const [round, setRound] = useState(0);
   const startRef = useRef(0);
+  // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
+  const [shopOpen, setShopOpen] = useState(false);
+  async function paidHint(already: boolean, apply: () => void) {
+    if (already) return;
+    const r = await spendCoins("spend_hint", "practice");
+    if (r === "ok") apply();
+    else setShopOpen(true);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reto aleatorio nuevo (arranca en cliente para no romper la hidratación).
@@ -120,7 +131,11 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       setState({ ...state, chain, solved });
       setShowInitial(false);
       setShowNextSil(false);
-      if (solved) setElapsedMs(Date.now() - startRef.current);
+      if (solved) {
+        setElapsedMs(Date.now() - startRef.current);
+        // Liga v2: reto de práctica resuelto da XP (tope diario en el servidor).
+        awardPracticeSolve();
+      }
     }
     setInput("");
     setSuggestions([]);
@@ -140,6 +155,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   return (
     <div className="flex flex-col gap-4">
       {/* volver */}
+      <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
         <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
         <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
@@ -268,10 +284,10 @@ frontle.vercel.app`}
             <p className="text-center text-sm text-[#fcff52]">💡 {tr.hintNextInitial(countryName(hintCountry, locale).charAt(0))}</p>
           )}
 
-          {/* Las 3 pistas del reto diario, gratis (UX-5) */}
+          {/* Pistas de la liga: se pagan con monedas (v2 §5.2). */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <PHintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.hintInitial}`} />
-            <PHintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext}`} />
+            <PHintBtn onClick={() => void paidHint(showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.hintInitial} · ${tr.coins.cost(3)}`} />
+            <PHintBtn onClick={() => void paidHint(showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext} · ${tr.coins.cost(3)}`} />
           </div>
           <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.used(guessCount)}</p>
         </section>

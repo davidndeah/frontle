@@ -162,6 +162,16 @@ const erc20Abi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "transfer",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+    stateMutability: "nonpayable",
+  },
 ] as const;
 
 // --- Mapeo reason → función del contrato --------------------------------
@@ -727,5 +737,119 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
       return active.embedded ? "no_gas" : "no_funds";
     }
     return "error";
+  }
+}
+
+// --- Compra de monedas 🪙 (v2, PLAN-FRONTLE-V2 §5) ----------------------
+// El dinero va al contrato del pot semanal (`FrontleWeekly.buyCoins`), que lo
+// suma 100% al pot de la semana en curso. Las monedas en sí NO son un token:
+// son saldo en la base de datos, que `credit-coins` acredita tras verificar
+// esta transacción on-chain.
+//
+// Mientras el contrato no esté desplegado (`NEXT_PUBLIC_WEEKLY_ADDRESS` sin
+// definir), cae al camino interino: transfer directo a la tesorería del
+// operador, que siembra el pot a mano. El edge function acepta ambos.
+export const COIN_TREASURY = "0x54E83C8D7B7A77cbf0a2842c1a82d51be8814DD0" as const;
+
+const WEEKLY_ADDRESS = (process.env.NEXT_PUBLIC_WEEKLY_ADDRESS ?? "") as `0x${string}` | "";
+
+const weeklyAbi = [
+  {
+    type: "function",
+    name: "buyCoins",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  { type: "function", name: "currentWeek", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "pot", inputs: [{ name: "week", type: "uint256" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
+] as const;
+
+export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayResult; txHash?: string; account?: string }> {
+  const active = getProvider();
+  if (!active) return { res: "error" };
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transport = custom(active.provider as any);
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    let [account] = await walletClient.getAddresses();
+    if (!account) [account] = await walletClient.requestAddresses();
+    if (!account) return { res: "error" };
+
+    const wei = parseUnits(String(amountUsdt), TOKEN_DECIMALS);
+    const bal = await publicClient.readContract({ address: TOKEN_ADDRESS, abi: erc20Abi, functionName: "balanceOf", args: [account] });
+    if (bal < wei) return { res: "no_funds" };
+    if (active.embedded) {
+      const gasBal = await publicClient.getBalance({ address: account });
+      if (gasBal < parseEther("0.02")) return { res: "no_gas" };
+    }
+    const feeOpts = feeOptsFor(active.embedded);
+
+    let hash: `0x${string}`;
+    if (WEEKLY_ADDRESS) {
+      // El contrato tira del saldo con transferFrom → hace falta approve.
+      const allowance = await publicClient.readContract({
+        address: TOKEN_ADDRESS,
+        abi: erc20Abi,
+        functionName: "allowance",
+        args: [account, WEEKLY_ADDRESS],
+      });
+      if (allowance < wei) {
+        const approveHash = await walletClient.writeContract({
+          account,
+          chain: ACTIVE_CHAIN,
+          address: TOKEN_ADDRESS,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [WEEKLY_ADDRESS, maxUint256],
+          ...feeOpts,
+        });
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+      }
+      hash = await walletClient.writeContract({
+        account,
+        chain: ACTIVE_CHAIN,
+        address: WEEKLY_ADDRESS,
+        abi: weeklyAbi,
+        functionName: "buyCoins",
+        args: [wei],
+        ...feeOpts,
+      });
+    } else {
+      hash = await walletClient.writeContract({
+        account,
+        chain: ACTIVE_CHAIN,
+        address: TOKEN_ADDRESS,
+        abi: erc20Abi,
+        functionName: "transfer",
+        args: [COIN_TREASURY, wei],
+        ...feeOpts,
+      });
+    }
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    return receipt.status === "success"
+      ? { res: "success", txHash: hash, account: account.toLowerCase() }
+      : { res: "error" };
+  } catch (err) {
+    console.error("[monedas] compra falló o cancelada:", err);
+    if (isUserRejection(err)) return { res: "cancelled" };
+    if (/insufficient funds|exceeds the balance/i.test(String((err as Error)?.message ?? ""))) {
+      return { res: active.embedded ? "no_gas" : "no_funds" };
+    }
+    return { res: "error" };
+  }
+}
+
+// --- Lectura: pot de la semana en curso (para la UI de la liga) ---------
+export async function getWeeklyPot(): Promise<number | null> {
+  if (!WEEKLY_ADDRESS) return null;
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const week = await publicClient.readContract({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "currentWeek" });
+    const p = await publicClient.readContract({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "pot", args: [week] });
+    return Number(formatUnits(p, TOKEN_DECIMALS));
+  } catch {
+    return null;
   }
 }

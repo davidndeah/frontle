@@ -7,6 +7,20 @@
 
 ---
 
+> ## 🚧 Estado de ejecución (rama `v2`, sin mergear a main)
+> - ✅ **Fase 1** — XP en los 4 modos + ranking semanal en seco (migración 0008 en prod).
+> - ✅ **Fase 2** — monedas: `coin_ledger`, tienda, pistas de la liga (migración 0009 + edge function `credit-coins`).
+> - ✅ **Fase 3** — racha real con congelar/reparar (migración 0010). Incluye el arreglo de
+>   una vulnerabilidad de la Fase 2: los gastos ahora exigen identidad verificada.
+> - ✅ **Fase 4** — contrato `FrontleWeekly` escrito y **24/24 tests en verde** (69/69 en total).
+>   ⏳ **Pendiente manual de Santiago:** desplegarlo, verificarlo y configurar las 2 variables
+>   (ver §9). Mientras no exista, la compra de monedas sigue por el camino interino
+>   (transfer a la wallet del operador) y el edge function acepta ambos.
+> - ✅ **Fase 5** — wallet obligatoria para competir (migración 0013). Las divisiones
+>   se implementaron y luego se **retiraron** (migración 0014): con el volumen actual
+>   va **un solo ranking semanal global** que premia al top 3. Pendiente el anti-sybil
+>   con humano verificado (Self/GoodID), que necesita decisión de producto.
+
 ## 1. Resumen ejecutivo
 
 Frontle v2 añade **una liga semanal tipo Duolingo** encima del juego actual:
@@ -82,11 +96,25 @@ fuente de gasto de monedas que sostiene el pot semanal.
   *consumibles del juego*, no entradas al torneo. (Ver la nota de riesgo en
   [[frontle-economy-model-decision]] y `PLAN-COPA-SEMANAL.md` §5.)
 
-### 3.4 Futuro (v2.1, no bloquea)
+### 3.4 Un solo ranking, sin divisiones (decisión 2026-07-20)
 
-- **Divisiones con ascenso/descenso** (cohortes de ~30, patrón Duolingo) cuando el
-  volumen de jugadores lo amerite.
-- **1 entrada por humano verificado** (Self/GoodID) antes de que los premios crezcan.
+- **Una sola tabla semanal global**: se reinicia cada lunes y premia a los 3
+  primeros por XP. Nada de divisiones mientras no haya volumen — partir la liga
+  en 4 dejaba cohortes de una o dos personas, sin competencia real y con el pot
+  yendo a un grupo casi vacío. (El código de divisiones se retiró en la
+  migración 0014; queda en el historial por si vuelve.)
+- **Competir exige wallet**, igual que el ranking diario: sin ella no se emite XP
+  (impuesto con un check en la base, no solo en el cliente). Jugar sigue siendo
+  libre para cualquiera; lo que requiere identidad es entrar a la tabla.
+- **El incentivo**: más XP = jugar más y mejor. Las monedas ayudan a jugar más
+  (pistas y nuevos intentos en los modos de la liga), y cada compra engorda el
+  pot de esa misma semana.
+
+### 3.5 Futuro (no bloquea)
+
+- **Divisiones** con ascenso/descenso cuando el volumen de jugadores lo pida.
+- **1 entrada por humano verificado** (Self / GoodID) antes de que los premios
+  crezcan. Requiere integrar un proveedor externo — decisión pendiente.
 
 ## 4. Sistema de XP
 
@@ -119,6 +147,13 @@ solución (las estrellas de precisión que ya existen)**:
 
 1. **El XP no se compra** — ni con monedas ni con USDT. Nunca. Es la moneda del
    ranking y comprarla mataría la liga (y el encuadre de torneo de habilidad).
+   Corolario: **los topes diarios NO se tocan hasta pasar el listing de MiniPay**
+   (decisión de Santiago, 2026-07-20). Con topes, gastar mejora tu *consistencia*
+   —una pista te salva un reto, un intento extra te da otra oportunidad— pero el
+   techo diario es el mismo para todos, así que la liga no se lee como "pagar
+   para ganar dinero real", que es justo lo que el review mira con lupa.
+   Si más adelante hace falta más presión monetaria, el camino es **subir los
+   topes de los modos gratis** (premiar jugar mucho), no atar XP al gasto.
 2. Los topes diarios se validan **en el servidor** (mismo modelo que
    `player_progress`: el cliente reporta eventos, el servidor deriva y capea).
 3. El XP semanal vive en Supabase (`xp_events` → vista semanal agregada); el
@@ -220,6 +255,56 @@ palabras prohibidas), móvil 360×640, `prefers-reduced-motion` en animaciones n
 | Monedas como cuasi-token | No retirables, no transferibles, no compran XP; solo consumibles in-app (§5.1) |
 | Confusión entre las dos economías | Separación estricta por modalidad: diario = USDT directo, liga = monedas. Nunca conviven en la misma pantalla |
 | Comprar pistas de la liga como atajo de XP | Las pistas ayudan a resolver pero el XP de los modos gratis está capeado por día (§4.1) — pagar no rompe el tope |
+
+---
+
+## 9. Despliegue de `FrontleWeekly` ✅ HECHO (2026-07-20)
+
+**Desplegado y verificado en Celo Mainnet:**
+`0x766A12333AA5249CDEf2259Cc9D3aD0c746c8132`
+(tx `0xce5691b2…7492d2`, bloque 72674170, coste 0.23 CELO · minPurchase 0.10 USDT ·
+recaudo 10%). Ver `NIVELES.md`.
+
+Queda solo configurar las dos variables de la tabla de abajo. El comando que se
+usó y la receta de verificación quedan aquí como referencia:
+
+```bash
+cd contracts
+forge test --match-contract FrontleWeekly     # 24/24 en verde
+
+# .env: OPERATOR=0x54E8…DD0 · TOKEN_ADDRESS=0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e
+# MIN_PURCHASE=100000 (0.10 USDT, 6 dec) · PROTOCOL_BPS=1000 (10%)
+forge script script/DeployWeekly.s.sol --rpc-url celo --account frontle-deployer --broadcast
+
+forge verify-contract <addr> src/FrontleWeekly.sol:FrontleWeekly --chain-id 42220 \
+  --verifier etherscan --verifier-url "https://api.etherscan.io/v2/api?chainid=42220"
+```
+
+Tras desplegar, dos variables activan el camino definitivo (el código ya las lee):
+
+| Dónde | Variable | Valor |
+|---|---|---|
+| Vercel (frontend) | `NEXT_PUBLIC_WEEKLY_ADDRESS` | dirección del contrato |
+| Supabase (secrets) | `WEEKLY_ADDRESS` | la misma dirección |
+
+Sin ellas, la compra de monedas hace un transfer a la wallet del operador y el
+premio semanal se siembra a mano — todo lo demás (XP, liga, monedas, racha)
+funciona igual.
+
+**Cierre semanal:** ✅ hecho. `supabase/functions/close-week` está desplegada y
+agendada por cron los **lunes 00:20 UTC** (10 min después del `close-day` de ese
+día, porque ambas firman con la misma wallet y dos tx simultáneas se pisarían el
+nonce). Lee el top-3 de `weekly_xp`, llama `rollWeek` y registra el podio en
+`weekly_winners` (migración 0011). Es idempotente y, sin `WEEKLY_ADDRESS`,
+responde `skipped` sin tocar nada — probado en producción.
+
+Dos detalles que quedaron resueltos ahí:
+- **Los dos números de semana**: el lunes de la semana `w` del contrato es el día
+  `7w-3` desde el epoch (cayó en jueves). La conversión está verificada.
+- **Jugadores sin wallet**: el XP se gana con identidad anónima, pero on-chain solo
+  se premia a una dirección. Igual que `close-day`, se saltan y el puesto pasa al
+  siguiente elegible; la respuesta los lista en `notPayable` para atenderlos a mano.
+  Es el punto que conviene revisar si la liga crece con muchos jugadores sin wallet.
 
 ---
 

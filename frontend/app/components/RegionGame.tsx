@@ -17,6 +17,9 @@ import {
   nextRegionHint,
   type RegionPlayState,
 } from "../lib/regionGame";
+import { awardRegionWin } from "../lib/xp";
+import { spendCoins } from "../lib/coins";
+import CoinShop from "./CoinShop";
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
 import { t, type Locale } from "../lib/i18n";
 import RegionMap from "./RegionMap";
@@ -92,6 +95,14 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
   const [showAllSil, setShowAllSil] = useState(false);
   const [best, setBest] = useState<number | null>(null);
   const startRef = useRef(0);
+  // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
+  const [shopOpen, setShopOpen] = useState(false);
+  async function paidHint(kind: "spend_hint" | "spend_hint_strong", already: boolean, apply: () => void) {
+    if (already) return;
+    const r = await spendCoins(kind, `region:${regionId}`);
+    if (r === "ok") apply();
+    else setShopOpen(true);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { challenge } = state;
@@ -181,6 +192,8 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
+        // Liga v2: completar un país da XP (tope diario en el servidor).
+        awardRegionWin();
       }
     }
     setInput("");
@@ -195,6 +208,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
   return (
     <div className="flex flex-col gap-4">
       {/* volver */}
+      <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
         <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -286,10 +300,12 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
               {showInitial && hintEntity && (
                 <p className="text-center text-sm text-[#fcff52]">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one)}</p>
               )}
+              {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
+                  lo valida el servidor; sin saldo, se abre la tienda. */}
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <HintBtn onClick={() => setShowInitial(true)} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)}`} />
-                <HintBtn onClick={() => setShowNextSil(true)} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)}`} />
-                <HintBtn onClick={() => setShowAllSil(true)} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)} · ${tr.coins.cost(3)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)} · ${tr.coins.cost(3)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)} · ${tr.coins.cost(5)}`} />
               </div>
               <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.region.used(guessCount)}</p>
             </section>

@@ -48,6 +48,12 @@ import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, t
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
+import WeeklyLeague from "./components/WeeklyLeague";
+import StreakCard from "./components/StreakCard";
+// Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
+import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC } from "./lib/xp";
+// Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
+import { syncStreak } from "./lib/streak";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
@@ -238,15 +244,35 @@ export default function Frontle() {
       for (let i = 0; i < localStorage.length; i++) {
         if (localStorage.key(i)?.startsWith("frontle-best-")) n++;
       }
-      if (daysReadyRef.current && n > prevDaysRef.current) {
-        setStreakBump(true);
-        if (n === 3 || n === 7) setMilestone(n);
-      }
       prevDaysRef.current = n;
       daysReadyRef.current = true;
       setDaysPlayed(n);
     } catch {}
   }, [best, tab]);
+
+  // Racha REAL (días consecutivos), derivada en el servidor: `daysPlayed`
+  // cuenta días jugados en total, que no es lo mismo. `sync_streak` además
+  // consume los congeladores comprados por los días que faltaron.
+  const [streak, setStreak] = useState(0);
+  const prevStreakRef = useRef(0);
+  const streakReadyRef = useRef(false);
+  useEffect(() => {
+    let alive = true;
+    syncStreak().then((s) => {
+      if (!alive) return;
+      // Solo celebra/paga si la racha SUBE dentro de la sesión: al cargar va
+      // de 0 al valor real, y una racha estancada en 7 no debe re-pagar XP.
+      if (streakReadyRef.current && s > prevStreakRef.current) {
+        setStreakBump(true);
+        if (s === 3 || s === 7 || s === 30 || s === 100) setMilestone(s);
+        awardStreakMilestone(todayUTC(), s); // idempotente y solo 7/30/100
+      }
+      prevStreakRef.current = s;
+      streakReadyRef.current = true;
+      setStreak(s);
+    });
+    return () => { alive = false; };
+  }, [best, tab, myId]);
   useEffect(() => {
     if (milestone === null) return;
     const id = setTimeout(() => setMilestone(null), 4500);
@@ -338,6 +364,12 @@ export default function Frontle() {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
   }, []);
+
+  // Al conectar, la wallet pasa a ser la identidad de la liga semanal — el
+  // XP anterior del id anónimo queda en ese id (la fusión llega en Fase 2).
+  useEffect(() => {
+    if (myId) bindXpIdentity(myId);
+  }, [myId]);
 
   // Privy solo tiene sentido fuera de MiniPay: allí el wallet ya viene
   // inyectado y el SDK sería más de un megabyte de código muerto.
@@ -606,6 +638,10 @@ export default function Frontle() {
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
         void enterRanking(score, finalMs!);
+        // Liga v2: XP por nivel + calidad (estrellas de la win card) + sin
+        // pistas + racha del día. Idempotente por (día, nivel) en el servidor.
+        const stars = score <= challenge.optimal ? 3 : score === challenge.optimal + 1 ? 2 : 1;
+        awardDailySolve(day, level, stars, showInitial || showNextSil || showAllSil);
       }
     }
     setInput("");
@@ -799,7 +835,7 @@ export default function Frontle() {
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
               <div className="flex items-center gap-1.5">
                 <span className="text-xl">🔥</span>
-                <span key={daysPlayed} className={`font-display font-bold text-white text-lg leading-none${streakBump ? " streak-bump" : ""}`}>{daysPlayed}</span>
+                <span key={streak} className={`font-display font-bold text-white text-lg leading-none${streakBump ? " streak-bump" : ""}`}>{streak}</span>
                 <span className="text-[11px] text-neutral-400">{tr.home.streak}</span>
               </div>
               <div className="w-px h-7 bg-white/10" />
@@ -1157,6 +1193,9 @@ export default function Frontle() {
                 <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
               </div>
             )}
+            {/* Liga semanal v2: divisiones + XP. Exige wallet, igual que el
+                ranking diario, así que ofrece el mismo CTA de conectar. */}
+            <WeeklyLeague tr={tr} onConnect={hasWallet && !inMiniPay ? connectForRanking : undefined} />
             {/* Selector de nivel: cada nivel tiene su ranking */}
             <LevelSelect tr={tr} level={level} onChange={setLevel} />
             <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
@@ -1230,6 +1269,8 @@ export default function Frontle() {
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
               <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
+            {/* Racha v2: congelar / recuperar con monedas */}
+            <StreakCard tr={tr} onStreak={setStreak} />
             <Achievements tr={tr} playerId={myId || undefined} />
             {prizes.length > 0 && (
               <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
@@ -1371,7 +1412,7 @@ export default function Frontle() {
           </p>
         </div>
       )}
-      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={daysPlayed} />
+      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={streak} />
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
