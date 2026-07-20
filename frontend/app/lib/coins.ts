@@ -14,6 +14,7 @@
 
 import { purchaseCoinPack, type PayResult } from "./payments";
 import { xpPlayerId } from "./xp";
+import { ensureSecret, localSecret, rpc } from "./secret";
 
 // Paquetes del plan §5.1 (1 🪙 = $0.01; los grandes traen bonus).
 export const COIN_PACKS = [
@@ -58,29 +59,24 @@ export async function getCoinBalance(): Promise<number> {
   }
 }
 
-export type SpendResult = "ok" | "insufficient" | "error";
+export type SpendResult = "ok" | "insufficient" | "identity" | "error";
 
-// Gasta un ítem. El servidor fija el precio (check) y el techo (trigger de
-// saldo): si no alcanza, el insert rebota y devolvemos "insufficient".
+// Gasta un ítem. Pasa por `spend_coins` en el servidor: verifica la identidad
+// (secret), fija el precio y aborta si el saldo no alcanza — el cliente no
+// puede gastar el saldo de otro ni inventarse el importe.
 export async function spendCoins(kind: SpendKind, ref?: string): Promise<SpendResult> {
   if (!useSupabase) return "error";
-  try {
-    const r = await fetch(`${SUPA_URL}/rest/v1/coin_ledger`, {
-      method: "POST",
-      headers: { ...HEADERS(), "Content-Type": "application/json", Prefer: "return=minimal" },
-      body: JSON.stringify({
-        player_id: xpPlayerId(),
-        kind,
-        amount: -COIN_COSTS[kind],
-        ref: ref ?? null,
-      }),
-    });
-    if (r.ok) return "ok";
-    const body = await r.text();
-    return /saldo insuficiente/i.test(body) ? "insufficient" : "error";
-  } catch {
-    return "error";
-  }
+  if (!(await ensureSecret())) return "identity";
+  const r = await rpc<number>("spend_coins", {
+    p_player: xpPlayerId(),
+    p_secret: localSecret(),
+    p_kind: kind,
+    p_ref: ref ?? null,
+  });
+  if (r.ok) return "ok";
+  if (r.code === "P0001") return "insufficient";
+  if (r.code === "P0002") return "identity";
+  return "error";
 }
 
 export type BuyCoinsResult = { res: PayResult | "credit_pending"; coins?: number };
@@ -126,7 +122,10 @@ async function creditTx(txHash: string): Promise<number | null> {
     const r = await fetch(`${SUPA_URL}/functions/v1/credit-coins`, {
       method: "POST",
       headers: { ...HEADERS(), "Content-Type": "application/json" },
-      body: JSON.stringify({ txHash }),
+      // El secret viaja con la compra: la tx on-chain prueba que el jugador
+      // controla la wallet, así que el servidor puede (re)ligar la identidad
+      // de gasto a ESTE dispositivo. Es la vía de recuperación cross-device.
+      body: JSON.stringify({ txHash, secret: localSecret() }),
     });
     if (!r.ok) return null;
     const j = await r.json();

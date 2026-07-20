@@ -35,7 +35,7 @@ const json = (status: number, body: unknown) =>
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
-    const { txHash } = await req.json().catch(() => ({}));
+    const { txHash, secret } = await req.json().catch(() => ({}));
     if (!/^0x[0-9a-fA-F]{64}$/.test(String(txHash ?? ""))) return json(400, { error: "txHash inválido" });
 
     const rpcUrl = Deno.env.get("CELO_RPC_URL") || "https://forno.celo.org";
@@ -66,6 +66,18 @@ Deno.serve(async (req) => {
     if (coins <= 0) return json(400, { error: "monto demasiado pequeño" });
 
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // Recuperación cross-device: la tx prueba que quien compra controla la
+    // wallet, así que su dispositivo pasa a ser el dueño de la identidad de
+    // gasto. Sin esto, cambiar de teléfono dejaría las monedas inutilizables.
+    if (typeof secret === "string" && secret.length >= 16) {
+      const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secret));
+      const secretHash = Array.from(new Uint8Array(hashBuf), (b) => b.toString(16).padStart(2, "0")).join("");
+      await supa
+        .from("player_secrets")
+        .upsert({ player_id: payer, secret_hash: secretHash, updated_at: new Date().toISOString() }, { onConflict: "player_id" });
+    }
+
     const { error } = await supa.from("coin_ledger").insert({
       player_id: payer,
       kind: "purchase",
