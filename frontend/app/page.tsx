@@ -73,6 +73,7 @@ import {
 } from "./lib/payments";
 import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
+import Sheet from "./components/Sheet";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -1743,53 +1744,48 @@ function WalletSheet({
   tr: ReturnType<typeof t>;
 }) {
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
-        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-3">{tr.walletSheet.title}</h3>
-        {myId ? (
-          <div className="panel p-4">
-            <div className="text-[11px] text-neutral-400">{tr.walletSheet.connectedAs}</div>
-            {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
-                forma truncada, que MiniPay solo admite como pista secundaria. */}
-            <div className="text-white text-sm mt-0.5 break-all">
-              {alias || <span className="font-mono">{shortId(myId)}</span>}
-            </div>
-            {/* Salir solo se ofrece si la sesión vino del correo. Con la wallet
-                de MiniPay o de una extensión no hay nada que cerrar: la
-                inyecta el navegador y seguiría ahí al recargar. */}
-            {canSignOut && (
-              <div className="mt-4">
-                <button
-                  onClick={onSignOut}
-                  className="brutal-sm brutal-press w-full rounded-xl bg-[#fda4af] px-4 py-2.5 text-sm font-bold text-[#4c0519]"
-                >
-                  {tr.walletSheet.signOut}
-                </button>
-                <p className="mt-2 text-center text-[11px] text-neutral-400">
-                  {tr.walletSheet.signOutHint}
-                </p>
-              </div>
-            )}
+    <Sheet onClose={onClose} title={tr.walletSheet.title}>
+      {myId ? (
+        <div className="panel p-4">
+          <div className="text-[11px] text-neutral-400">{tr.walletSheet.connectedAs}</div>
+          {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
+              forma truncada, que MiniPay solo admite como pista secundaria. */}
+          <div className="text-white text-sm mt-0.5 break-all">
+            {alias || <span className="font-mono">{shortId(myId)}</span>}
           </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {/* Zero-click connect: dentro de MiniPay la wallet ya está
-                conectada, así que enseñar "Conectar" está prohibido. */}
-            {hasWallet && !inMiniPay && (
-              <button onClick={() => { onConnect(); onClose(); }} className="brutal-sm brutal-press rounded-2xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
-                {tr.connectWallet}
+          {/* Salir solo se ofrece si la sesión vino del correo. Con la wallet
+              de MiniPay o de una extensión no hay nada que cerrar: la
+              inyecta el navegador y seguiría ahí al recargar. */}
+          {canSignOut && (
+            <div className="mt-4">
+              <button
+                onClick={onSignOut}
+                className="brutal-sm brutal-press w-full rounded-xl bg-[#fda4af] px-4 py-2.5 text-sm font-bold text-[#4c0519]"
+              >
+                {tr.walletSheet.signOut}
               </button>
-            )}
-            {emailLogin && (
-              <EmailLoginButton label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
-            )}
-            <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
-          </div>
-        )}
-      </div>
-    </>
+              <p className="mt-2 text-center text-[11px] text-neutral-400">
+                {tr.walletSheet.signOutHint}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {/* Zero-click connect: dentro de MiniPay la wallet ya está
+              conectada, así que enseñar "Conectar" está prohibido. */}
+          {hasWallet && !inMiniPay && (
+            <button onClick={() => { onConnect(); onClose(); }} className="brutal-sm brutal-press rounded-2xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
+              {tr.connectWallet}
+            </button>
+          )}
+          {emailLogin && (
+            <EmailLoginButton label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
+          )}
+          <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
+        </div>
+      )}
+    </Sheet>
   );
 }
 
@@ -1815,23 +1811,18 @@ function SettingsSheet({
   tr: ReturnType<typeof t>;
 }) {
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
-        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-4">{tr.settingsSheet.title}</h3>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-neutral-200 flex items-center gap-2">
-              <span>🌐</span>{tr.settingsSheet.language}
-            </span>
-            <LanguageSelect locale={locale} onChange={onChangeLocale} />
-          </div>
-          <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
-          <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
+    <Sheet onClose={onClose} title={tr.settingsSheet.title}>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-neutral-200 flex items-center gap-2">
+            <span>🌐</span>{tr.settingsSheet.language}
+          </span>
+          <LanguageSelect locale={locale} onChange={onChangeLocale} />
         </div>
+        <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
+        <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
       </div>
-    </>
+    </Sheet>
   );
 }
 
@@ -1851,10 +1842,13 @@ function NamePrompt({
   const [draft, setDraft] = useState(initial);
   const clean = draft.trim();
   return (
-    <>
-      <div className="fixed inset-0 z-[65] bg-black/60" onClick={onSkip} />
-      <div className="fixed inset-x-0 bottom-0 z-[66] rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8 pop-in">
-        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
+    // z alto: puede convivir con otros overlays y debe quedar encima.
+    <Sheet
+      onClose={onSkip}
+      label={tr.name.title}
+      z={65}
+      className="pop-in"
+      title={
         <div className="flex items-center gap-3 mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
@@ -1863,24 +1857,25 @@ function NamePrompt({
             <p className="text-xs text-neutral-300">{tr.name.sub}</p>
           </div>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            maxLength={16}
-            autoFocus
-            placeholder={tr.namePlaceholder}
-            className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
-          />
-          <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
-            {tr.name.save}
-          </button>
-        </form>
-        <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
-          {tr.name.skip}
+      }
+    >
+      <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={16}
+          autoFocus
+          placeholder={tr.namePlaceholder}
+          className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
+        />
+        <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
+          {tr.name.save}
         </button>
-      </div>
-    </>
+      </form>
+      <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
+        {tr.name.skip}
+      </button>
+    </Sheet>
   );
 }
 
