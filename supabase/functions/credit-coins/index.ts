@@ -19,6 +19,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const USDT = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e"; // 6 dec, lowercase
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+// keccak256("CoinsPurchased(address,uint256,uint256)") — evento de FrontleWeekly.
+const COINS_PURCHASED_TOPIC = "0xe42c627940ae035b15bcb45ba29d47ff8b9716b27a4b993b5513d8c0516dc1ed";
 const DEFAULT_TREASURY = "0x54e83c8d7b7a77cbf0a2842c1a82d51be8814dd0";
 
 const PACKS: Record<string, number> = { "500000": 50, "1000000": 110, "2500000": 300 }; // wei USDT → 🪙
@@ -50,17 +52,37 @@ Deno.serve(async (req) => {
     if (!receipt) return json(404, { error: "tx no encontrada (¿aún sin confirmar?)" });
     if (receipt.status !== "0x1") return json(400, { error: "la tx falló on-chain" });
 
-    // Transfer USDT → tesorería. topics[1] = from (pagador), topics[2] = to.
-    const log = (receipt.logs ?? []).find(
-      (l: { address?: string; topics?: string[] }) =>
-        String(l.address).toLowerCase() === USDT &&
-        l.topics?.[0] === TRANSFER_TOPIC &&
-        `0x${String(l.topics?.[2] ?? "").slice(-40)}`.toLowerCase() === treasury
-    );
-    if (!log) return json(400, { error: "la tx no es una compra de monedas" });
+    // Camino 1 (definitivo): evento CoinsPurchased del contrato FrontleWeekly.
+    //   topics[1] = player, topics[2] = week, data = amount.
+    // Camino 2 (interino, mientras el contrato no esté desplegado): Transfer de
+    //   USDT a la tesorería del operador. topics[1] = from, topics[2] = to.
+    const weeklyAddr = (Deno.env.get("WEEKLY_ADDRESS") || "").toLowerCase();
+    const logs = receipt.logs ?? [];
 
-    const payer = `0x${String(log.topics[1]).slice(-40)}`.toLowerCase();
-    const wei = BigInt(log.data);
+    let payer = "";
+    let wei = 0n;
+
+    const purchase = weeklyAddr
+      ? logs.find(
+        (l: { address?: string; topics?: string[] }) =>
+          String(l.address).toLowerCase() === weeklyAddr && l.topics?.[0] === COINS_PURCHASED_TOPIC
+      )
+      : undefined;
+
+    if (purchase) {
+      payer = `0x${String(purchase.topics[1]).slice(-40)}`.toLowerCase();
+      wei = BigInt(purchase.data);
+    } else {
+      const transfer = logs.find(
+        (l: { address?: string; topics?: string[] }) =>
+          String(l.address).toLowerCase() === USDT &&
+          l.topics?.[0] === TRANSFER_TOPIC &&
+          `0x${String(l.topics?.[2] ?? "").slice(-40)}`.toLowerCase() === treasury
+      );
+      if (!transfer) return json(400, { error: "la tx no es una compra de monedas" });
+      payer = `0x${String(transfer.topics[1]).slice(-40)}`.toLowerCase();
+      wei = BigInt(transfer.data);
+    }
     // 1 🪙 = $0.01 = 10_000 wei de USDT (6 dec). Paquetes exactos con bonus.
     const coins = PACKS[wei.toString()] ?? Number(wei / 10_000n);
     if (coins <= 0) return json(400, { error: "monto demasiado pequeño" });

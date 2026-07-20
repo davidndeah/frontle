@@ -7,6 +7,17 @@
 
 ---
 
+> ## 🚧 Estado de ejecución (rama `v2`, sin mergear a main)
+> - ✅ **Fase 1** — XP en los 4 modos + ranking semanal en seco (migración 0008 en prod).
+> - ✅ **Fase 2** — monedas: `coin_ledger`, tienda, pistas de la liga (migración 0009 + edge function `credit-coins`).
+> - ✅ **Fase 3** — racha real con congelar/reparar (migración 0010). Incluye el arreglo de
+>   una vulnerabilidad de la Fase 2: los gastos ahora exigen identidad verificada.
+> - ✅ **Fase 4** — contrato `FrontleWeekly` escrito y **24/24 tests en verde** (69/69 en total).
+>   ⏳ **Pendiente manual de Santiago:** desplegarlo, verificarlo y configurar las 2 variables
+>   (ver §9). Mientras no exista, la compra de monedas sigue por el camino interino
+>   (transfer a la wallet del operador) y el edge function acepta ambos.
+> - ⏳ **Fase 5** — divisiones, anti-sybil.
+
 ## 1. Resumen ejecutivo
 
 Frontle v2 añade **una liga semanal tipo Duolingo** encima del juego actual:
@@ -220,6 +231,43 @@ palabras prohibidas), móvil 360×640, `prefers-reduced-motion` en animaciones n
 | Monedas como cuasi-token | No retirables, no transferibles, no compran XP; solo consumibles in-app (§5.1) |
 | Confusión entre las dos economías | Separación estricta por modalidad: diario = USDT directo, liga = monedas. Nunca conviven en la misma pantalla |
 | Comprar pistas de la liga como atajo de XP | Las pistas ayudan a resolver pero el XP de los modos gratis está capeado por día (§4.1) — pagar no rompe el tope |
+
+---
+
+## 9. Despliegue de `FrontleWeekly` (pendiente manual)
+
+El contrato está en `contracts/src/FrontleWeekly.sol` con su script y sus tests.
+**Requiere la cuenta desplegadora de Santiago**, por eso no está desplegado.
+
+```bash
+cd contracts
+forge test --match-contract FrontleWeekly     # 24/24 en verde
+
+# .env: OPERATOR=0x54E8…DD0 · TOKEN_ADDRESS=0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e
+# MIN_PURCHASE=100000 (0.10 USDT, 6 dec) · PROTOCOL_BPS=1000 (10%)
+forge script script/DeployWeekly.s.sol --rpc-url celo --account frontle-deployer --broadcast
+
+forge verify-contract <addr> src/FrontleWeekly.sol:FrontleWeekly --chain-id 42220 \
+  --verifier etherscan --verifier-url "https://api.etherscan.io/v2/api?chainid=42220"
+```
+
+Tras desplegar, dos variables activan el camino definitivo (el código ya las lee):
+
+| Dónde | Variable | Valor |
+|---|---|---|
+| Vercel (frontend) | `NEXT_PUBLIC_WEEKLY_ADDRESS` | dirección del contrato |
+| Supabase (secrets) | `WEEKLY_ADDRESS` | la misma dirección |
+
+Sin ellas, la compra de monedas hace un transfer a la wallet del operador y el
+premio semanal se siembra a mano — todo lo demás (XP, liga, monedas, racha)
+funciona igual.
+
+**Cierre semanal:** falta la edge function `close-week` (análoga a `close-day`)
+que lea el top-3 de `weekly_xp` de la semana cerrada y llame a
+`rollWeek(week, first, second, third)` con la wallet del operador. Ojo con los
+**dos números de semana**: `weekly_xp.week` es la fecha del lunes (`YYYY-MM-DD`)
+y `currentWeek()` del contrato es un índice desde el epoch — convertir es
+responsabilidad de quien la escriba (mismo patrón que los dos "días" de v1).
 
 ---
 
