@@ -793,12 +793,27 @@ export default function Frontle() {
         <PrivyGate onIdentity={handlePrivyIdentity} onWelcomeBonus={(a) => setBonus(a)} />
       )}
 
-      {/* Header fijo: logo + chip de pot + chip de wallet */}
+      {/* Header fijo: logo + racha + monedas + ajustes + wallet */}
       <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1 px-2.5 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
         <span className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</span>
         <div className="flex-1" />
-        {/* El premio del día ya NO va en la barra: vive en el tab Ranking
-            (sub-tab Diario), su lugar natural. */}
+        {/* El premio del día ya NO va en la barra: vive en el tab Ranking. */}
+        {/* Racha: solo si la tiene (≥1). Indicador, no botón. */}
+        {streak > 0 && (
+          <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-white/5 border border-[#b79ced]/25 px-2 py-1 text-[11px] font-bold text-white whitespace-nowrap" aria-label={`${streak} ${tr.home.streak}`}>
+            🔥<span className="tabular-nums">{streak}</span>
+          </span>
+        )}
+        {/* Monedas: tap → abre la tienda. Solo cuando hay identidad (saldo cargado). */}
+        {coinBalance !== null && (
+          <button
+            onClick={() => setShopOpen(true)}
+            aria-label={tr.coins.shop}
+            className="shrink-0 flex items-center gap-0.5 rounded-full bg-[#fcff52]/12 border border-[#fcff52]/35 px-2 py-1 text-[11px] font-bold text-[#fcff52] whitespace-nowrap active:scale-95 transition"
+          >
+            🪙<span className="tabular-nums">{coinBalance}</span>
+          </button>
+        )}
         {/* Un solo botón de ajustes agrupa idioma + audio (música y efectos):
             a 360px no caben 3 controles sueltos de 44px, y así los efectos
             (que solo vivían en Perfil) quedan también a un tap del header. */}
