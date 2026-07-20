@@ -14,9 +14,9 @@
 //  El lunes de la semana `w` del contrato es el día 7w-3 desde el epoch
 //  (el epoch cayó en jueves). Aquí se convierte una sola vez.
 //
-//  El pot lo gana el top 3 de la DIVISIÓN MÁS ALTA con participantes (Fase 5,
-//  PLAN §3.4) — lo resuelve `weekly_podium()`. Tras repartir, se cierran las
-//  divisiones: dentro de cada tier suben los 3 primeros y bajan los 3 últimos.
+//  Un solo ranking GLOBAL: el pot lo gana el top 3 de la semana por XP, que
+//  resuelve `weekly_podium()`. (Las divisiones se retiraron mientras no haya
+//  volumen de jugadores — ver migración 0014.)
 //
 //  Jugar la liga exige wallet (misma regla que el ranking diario), así que
 //  todo el podio es premiable on-chain; el filtro de direcciones que queda es
@@ -101,7 +101,7 @@ Deno.serve(async () => {
       return json({ ok: true, skipped: "ya rolled on-chain", week: Number(week), weekStart });
     }
 
-    // Podio del dinero: top 3 de la división más alta con participantes.
+    // Podio del dinero: top 3 global de la semana por XP.
     const { data: board, error: boardErr } = await supabase.rpc("weekly_podium", { p_week: weekStart });
     if (boardErr) throw boardErr;
 
@@ -149,19 +149,12 @@ Deno.serve(async () => {
     const { error: insErr } = await supabase.from("weekly_winners").insert(rows);
     if (insErr) throw insErr;
 
-    // Ascensos y descensos para la semana que empieza. Va DESPUÉS del reparto
-    // para que un fallo aquí no impida pagar: el dinero es lo crítico.
-    const { data: moved, error: divErr } = await supabase.rpc("close_week_divisions", { p_week: weekStart });
-    if (divErr) console.error("[close-week] divisiones fallaron:", divErr);
-
     return json({
       ok: true,
       week: Number(week),
       weekStart,
       pot: formatUnits(potRaw, TOKEN_DECIMALS),
       podium: rows.map((r) => ({ place: r.place, winner: r.winner_address, xp: r.xp })),
-      tier: (board as { tier?: number }[])[0]?.tier ?? null,
-      divisionsMoved: moved ?? 0,
       notPayable: skipped,
       roll_tx: rollTx,
     });

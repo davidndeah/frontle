@@ -176,12 +176,7 @@ export function awardPracticeSolve(day = todayUTC()): void {
 export interface WeeklyEntry {
   playerId: string;
   xp: number;
-  tier: number;
 }
-
-/// Divisiones de la liga (Fase 5). Solo la más alta con participantes se
-/// lleva el pot; las demás compiten por ascender.
-export const TIERS = 4;
 
 // Lunes (UTC) de la semana de `d`, como 'YYYY-MM-DD' — la clave de `weekly_xp`.
 export function weekStartUTC(d = new Date()): string {
@@ -197,40 +192,37 @@ export function msToWeekClose(now = new Date()): number {
   return close - now.getTime();
 }
 
-// Tabla de MI división esta semana, ordenada por el criterio del plan (§3.2):
-// XP desc, y a igualdad gana quien llegó antes. Se compite contra tu nivel,
-// no contra el #1 global (patrón Duolingo).
+// Tabla de la semana: UN SOLO ranking global que se reinicia cada lunes.
+// Orden del plan (§3.2): XP desc, y a igualdad gana quien llegó antes.
 export async function getWeeklyRanking(limit = 20): Promise<WeeklyEntry[]> {
   if (!useSupabase) return [];
-  const tier = await getMyTier();
   try {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/weekly_board?week=eq.${weekStartUTC()}&tier=eq.${tier}&select=player_id,xp,tier&order=xp.desc,last_event.asc&limit=${limit}`,
+      `${SUPA_URL}/rest/v1/weekly_xp?week=eq.${weekStartUTC()}&select=player_id,xp&order=xp.desc,last_event.asc&limit=${limit}`,
       { headers: HEADERS() }
     );
     const j = await r.json();
     if (!Array.isArray(j)) return [];
-    return j.map((row: { player_id: string; xp: number; tier: number }) => ({
+    return j.map((row: { player_id: string; xp: number }) => ({
       playerId: String(row.player_id),
       xp: Number(row.xp ?? 0),
-      tier: Number(row.tier ?? 1),
     }));
   } catch {
     return [];
   }
 }
 
-// División en la que compito esta semana (1 = Bronce … 4 = Diamante).
-export async function getMyTier(): Promise<number> {
-  if (!useSupabase || !hasLeagueIdentity()) return 1;
+// XP semanal del propio jugador (0 si aún no tiene eventos esta semana).
+export async function getMyWeeklyXp(): Promise<number> {
+  if (!useSupabase || !hasLeagueIdentity()) return 0;
   try {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/league_divisions?player_id=eq.${encodeURIComponent(xpPlayerId())}&week_start=lte.${weekStartUTC()}&select=tier&order=week_start.desc&limit=1`,
+      `${SUPA_URL}/rest/v1/weekly_xp?week=eq.${weekStartUTC()}&player_id=eq.${encodeURIComponent(xpPlayerId())}&select=xp`,
       { headers: HEADERS() }
     );
     const j = await r.json();
-    return Number((Array.isArray(j) && j[0]?.tier) || 1);
+    return Number((Array.isArray(j) && j[0]?.xp) || 0);
   } catch {
-    return 1;
+    return 0;
   }
 }

@@ -1,10 +1,9 @@
 "use client";
 
 // ============================================================
-//  Frontle v2 — Liga semanal con divisiones (Fase 1 + Fase 5)
-//  Compites contra tu división (patrón Duolingo), no contra el #1 global:
-//  suben los 3 primeros y bajan los 3 últimos al cerrar la semana. El pot
-//  se lo lleva el podio de la división MÁS ALTA con participantes.
+//  Frontle v2 — Liga semanal (un solo ranking global)
+//  Se reinicia cada lunes y premia a los 3 primeros por XP. El XP se gana
+//  jugando: cuanto más juegas (y mejor resuelves), más alto llegas.
 //
 //  Entrar exige wallet, igual que el ranking diario: sin ella se muestra el
 //  CTA de conectar (jugar sigue siendo libre; competir es lo que requiere
@@ -14,21 +13,7 @@
 import { useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
 import { getNamesFor, shortId } from "../lib/ranking";
-import {
-  getMyTier,
-  getWeeklyRanking,
-  hasLeagueIdentity,
-  msToWeekClose,
-  xpPlayerId,
-  type WeeklyEntry,
-} from "../lib/xp";
-
-const TIER_STYLE: Record<number, { icon: string; color: string }> = {
-  1: { icon: "🥉", color: "#d4a373" },
-  2: { icon: "🥈", color: "#cbd5e1" },
-  3: { icon: "🥇", color: "#fcff52" },
-  4: { icon: "💎", color: "#22d3ee" },
-};
+import { getWeeklyRanking, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry } from "../lib/xp";
 
 function fmtClose(ms: number): string {
   const totalH = Math.max(0, Math.floor(ms / 3_600_000));
@@ -40,7 +25,6 @@ function fmtClose(ms: number): string {
 export default function WeeklyLeague({ tr, onConnect }: { tr: ReturnType<typeof t>; onConnect?: () => void }) {
   const [entries, setEntries] = useState<WeeklyEntry[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [tier, setTier] = useState(1);
   const [loaded, setLoaded] = useState(false);
   const joined = hasLeagueIdentity();
   const me = xpPlayerId();
@@ -48,9 +32,8 @@ export default function WeeklyLeague({ tr, onConnect }: { tr: ReturnType<typeof 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [t0, rows] = await Promise.all([getMyTier(), getWeeklyRanking()]);
+      const rows = await getWeeklyRanking();
       if (!alive) return;
-      setTier(t0);
       setEntries(rows);
       setLoaded(true);
       const n = await getNamesFor(rows.map((r) => r.playerId));
@@ -63,22 +46,12 @@ export default function WeeklyLeague({ tr, onConnect }: { tr: ReturnType<typeof 
 
   const myIndex = entries.findIndex((e) => e.playerId === me);
   const medals = ["🥇", "🥈", "🥉"];
-  const style = TIER_STYLE[tier] ?? TIER_STYLE[1];
 
   return (
     <section className="panel p-4 flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-display font-bold text-white">⚡ {tr.liga.title}</h2>
         <span className="text-[11px] font-mono text-neutral-300">🕒 {tr.liga.closes(fmtClose(msToWeekClose()))}</span>
-      </div>
-
-      {/* División en la que compites */}
-      <div className="flex items-center gap-2">
-        <span className="text-lg" aria-hidden>{style.icon}</span>
-        <span className="text-sm font-display font-bold" style={{ color: style.color }}>
-          {tr.liga.tiers[tier - 1]}
-        </span>
-        <span className="text-[11px] text-neutral-400">· {tr.liga.promo}</span>
       </div>
 
       <p className="text-[11px] text-neutral-400">{tr.liga.dry}</p>

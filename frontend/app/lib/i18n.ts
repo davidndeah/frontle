@@ -195,8 +195,6 @@ type Dict = {
     empty: string;
     you: string;
     closes: (time: string) => string;
-    tiers: [string, string, string, string];
-    promo: string;
     needWallet: string;
   };
   // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
@@ -464,8 +462,6 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
       you: "Tú",
       closes: (time) => `Cierra en ${time}`,
-      tiers: ["Bronce", "Plata", "Oro", "Diamante"],
-      promo: "suben 3 · bajan 3",
       needWallet: "Conecta tu wallet para competir en la liga y cobrar el premio.",
     },
     coins: {
@@ -746,8 +742,6 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "No one has earned XP this week. Play any mode and open the board!",
       you: "You",
       closes: (time) => `Closes in ${time}`,
-      tiers: ["Bronze", "Silver", "Gold", "Diamond"],
-      promo: "top 3 move up · bottom 3 move down",
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
     },
     coins: {
@@ -1028,8 +1022,6 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Ninguém somou XP esta semana. Jogue qualquer modo e inaugure a tabela!",
       you: "Você",
       closes: (time) => `Fecha em ${time}`,
-      tiers: ["Bronze", "Prata", "Ouro", "Diamante"],
-      promo: "sobem 3 · descem 3",
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
     },
     coins: {
@@ -1310,8 +1302,6 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Personne n'a gagné d'XP cette semaine. Jouez un mode et ouvrez le classement !",
       you: "Vous",
       closes: (time) => `Se termine dans ${time}`,
-      tiers: ["Bronze", "Argent", "Or", "Diamant"],
-      promo: "3 montent · 3 descendent",
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
     },
     coins: {
