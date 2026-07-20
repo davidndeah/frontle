@@ -221,6 +221,35 @@ const SEA_LINKS: [string, string][] = [
   ["Indonesia", "Australia"], // Mar de Timor (no aplica si Australia no existe)
 ];
 
+// Fronteras que existen porque el MAPA pinta el territorio como parte del país
+// metropolitano. Son las mismas de BUG-1 (ver comentario de Spain/France).
+const OVERSEAS_LINKS: [string, string][] = [
+  ["Spain", "Morocco"], // Ceuta y Melilla
+  ["France", "Brazil"], // Guayana Francesa
+  ["France", "Suriname"], // Guayana Francesa
+];
+
+// --- Aristas "exóticas" -------------------------------------------------
+// Cruces marítimos + territorios de ultramar. Son válidas al jugar y deben
+// seguir siéndolo: el mapa las pinta y la victoria tiene que dispararse.
+// Pero son conocimiento de nicho — que Francia limite con Brasil es cierto y
+// casi nadie lo sabe. Construir un reto FÁCIL encima de ellas castiga justo a
+// quien el nivel fácil debería proteger, así que `dailyChallenge()` las evita
+// al ARMAR retos fáciles (no al resolverlos). Ver game.ts.
+const edgeKey = (a: string, b: string) => (a < b ? `${a} ${b}` : `${b} ${a}`);
+
+const EXOTIC_EDGES: ReadonlySet<string> = new Set(
+  [...SEA_LINKS, ...OVERSEAS_LINKS].map(([a, b]) => edgeKey(a, b))
+);
+
+// ¿La ruta se apoya en alguna de esas aristas?
+export function usesExoticEdge(path: string[]): boolean {
+  for (let i = 1; i < path.length; i++) {
+    if (EXOTIC_EDGES.has(edgeKey(path[i - 1], path[i]))) return true;
+  }
+  return false;
+}
+
 // Construye un grafo simétrico y consistente a partir de RAW.
 // Si A lista a B pero B no lista a A, se agrega la arista inversa.
 function buildGraph(): Record<string, Country> {

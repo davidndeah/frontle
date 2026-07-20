@@ -5,7 +5,8 @@
 //  - Normalización de nombres para el input del usuario
 // ============================================================
 
-import { COUNTRIES, COUNTRY_NAMES, getCountry, areNeighbors } from "./countries.js";
+import { COUNTRIES, COUNTRY_NAMES, getCountry, areNeighbors, usesExoticEdge } from "./countries.js";
+import { CONTINENT_OF } from "./continents.js";
 
 export type Difficulty = "easy" | "medium" | "hard";
 export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
@@ -191,6 +192,16 @@ export function tierOf(name: string): Difficulty | undefined {
   return COUNTRY_TIER[name];
 }
 
+// Región a efectos de "no cruzar el mundo" en el nivel fácil. Es casi el
+// continente, con una excepción: Norteamérica y Sudamérica cuentan como UNA
+// sola. México→Colombia cruza NA→SA en los datos, pero por tierra es la ruta
+// más natural que hay y separarlas dejaba América casi fuera del nivel fácil
+// (7 retos de 366). Nadie piensa en "dos continentes" al bajar por Centroamérica.
+function regionOf(name: string): string {
+  const c = CONTINENT_OF[COUNTRIES[name]?.code ?? ""];
+  return c === "NA" || c === "SA" ? "AM" : (c ?? "");
+}
+
 // Mezcla la semilla del día con el nivel → cada nivel tiene su propio reto,
 // pero sigue siendo determinístico por fecha (todos ven lo mismo).
 function seedForLevel(seed: number, level: Difficulty): number {
@@ -210,7 +221,38 @@ export function dailyChallenge(seed = dateSeed(), level: Difficulty = "medium"):
   // en curso (el reto diario es determinístico por fecha; cambiarlo hoy
   // desincronizaría el ranking/pot). El seed del reto diario es YYYYMMDD.
   const EASY_CAP_FROM = 20260706; // protege 2026-07-05 y días anteriores
-  const MAX_OPT = level === "easy" && seed >= EASY_CAP_FROM ? 3 : 7;
+
+  // Rebalanceo de los tres niveles. Antes, fácil y medio solo se distinguían
+  // por qué tan famosos eran los extremos: la longitud era la misma (7) y nada
+  // impedía que un reto "fácil" se apoyara en una arista exótica. Ahora:
+  //   fácil  → ruta corta Y sin aristas exóticas (ver más abajo)
+  //   medio  → ruta media
+  //   difícil→ ruta larga, sin restricciones
+  // Con la misma guarda de fecha que EASY_CAP_FROM y por la misma razón: el
+  // reto es determinístico por fecha, así que cambiar la generación reescribe
+  // los retos ya jugados y desincroniza el ranking y el pot on-chain.
+  const REBALANCE_FROM = 20260720; // protege 2026-07-19 y días anteriores
+  const rebalanced = seed >= REBALANCE_FROM;
+
+  const MAX_OPT =
+    level === "easy" && seed >= EASY_CAP_FROM ? 3 : level === "medium" && rebalanced ? 5 : 7;
+
+  // Dos filtros para el nivel fácil, por la misma razón de fondo: pocos países
+  // no es lo mismo que fácil si el salto no se le ocurre a nadie.
+  //
+  //  1. Nada de aristas exóticas (Francia↔Brasil por la Guayana, España↔
+  //     Marruecos por Ceuta, EE.UU.↔Rusia por Bering, Italia↔Albania por el
+  //     Adriático…). Son ciertas y el mapa las pinta, pero son de nicho.
+  //  2. Origen y destino en la misma región. Sin esto quedaban retos como
+  //     Tailandia→Noruega en 3 pasos: correcto y corto, pero pide encadenar
+  //     medio mundo por Rusia. El fácil se juega "dentro de casa".
+  //
+  // Ambos filtros aplican solo a CONSTRUIR el reto. Al jugar, todas las
+  // aristas siguen válidas en todos los niveles.
+  const easyMode = level === "easy" && rebalanced;
+  const rejects = (path: string[]) =>
+    easyMode &&
+    (usesExoticEdge(path) || regionOf(path[0]) !== regionOf(path[path.length - 1]));
 
   // 1) Estricto: AMBOS extremos del nivel, cadena dentro de la banda.
   for (let i = 0; i < 400; i++) {
@@ -218,7 +260,7 @@ export function dailyChallenge(seed = dateSeed(), level: Difficulty = "medium"):
     const b = pool[Math.floor(rand() * pool.length)];
     if (a === b) continue;
     const path = shortestPath(a, b);
-    if (!path) continue;
+    if (!path || rejects(path)) continue;
     const optimal = path.length - 2; // intermedios = total - origen - destino
     if (optimal >= MIN_OPT && optimal <= MAX_OPT) {
       return { start: a, end: b, optimal, path, level };
@@ -232,7 +274,7 @@ export function dailyChallenge(seed = dateSeed(), level: Difficulty = "medium"):
     const b = COUNTRY_NAMES[Math.floor(rand() * COUNTRY_NAMES.length)];
     if (a === b) continue;
     const path = shortestPath(a, b);
-    if (!path) continue;
+    if (!path || rejects(path)) continue;
     const optimal = path.length - 2;
     if (optimal >= MIN_OPT && optimal <= MAX_OPT) {
       return { start: a, end: b, optimal, path, level };
@@ -244,7 +286,7 @@ export function dailyChallenge(seed = dateSeed(), level: Difficulty = "medium"):
     for (const b of pool) {
       if (a === b) continue;
       const path = shortestPath(a, b);
-      if (path && path.length >= 3) {
+      if (path && path.length >= 3 && !rejects(path)) {
         return { start: a, end: b, optimal: path.length - 2, path, level };
       }
     }
