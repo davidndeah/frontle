@@ -14,6 +14,7 @@ import { countryName, t, type Locale } from "../lib/i18n";
 import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCountries, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
+import { awardQuizCorrect } from "../lib/xp";
 import ScoreCard from "./ScoreCard";
 
 function BigFlag({ name }: { name: string }) {
@@ -85,6 +86,8 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
       setSolved(true);
       setMessage({ text: tr.quiz.correct(countryName(country, locale)), ok: true });
       sfxWin();
+      // Liga v2: acierto de quiz da XP (tope diario en el servidor).
+      awardQuizCorrect(mode);
     } else {
       setTries((n) => n + 1);
       setMessage({ text: canonical ? tr.quiz.wrong : tr.feedback("unknown", { end: "", input: value }), ok: false });

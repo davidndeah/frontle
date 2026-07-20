@@ -17,6 +17,7 @@ import {
   nextRegionHint,
   type RegionPlayState,
 } from "../lib/regionGame";
+import { awardRegionWin } from "../lib/xp";
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
 import { t, type Locale } from "../lib/i18n";
 import RegionMap from "./RegionMap";
@@ -181,6 +182,8 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
+        // Liga v2: completar un país da XP (tope diario en el servidor).
+        awardRegionWin();
       }
     }
     setInput("");

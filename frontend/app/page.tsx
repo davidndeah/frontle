@@ -48,6 +48,9 @@ import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, t
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 import WorldMap from "./components/WorldMap";
+import WeeklyLeague from "./components/WeeklyLeague";
+// Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
+import { awardDailySolve, bindXpIdentity } from "./lib/xp";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
@@ -339,6 +342,12 @@ export default function Frontle() {
     setMpChecked(true);
   }, []);
 
+  // Al conectar, la wallet pasa a ser la identidad de la liga semanal — el
+  // XP anterior del id anónimo queda en ese id (la fusión llega en Fase 2).
+  useEffect(() => {
+    if (myId) bindXpIdentity(myId);
+  }, [myId]);
+
   // Privy solo tiene sentido fuera de MiniPay: allí el wallet ya viene
   // inyectado y el SDK sería más de un megabyte de código muerto.
   const privyActive = PRIVY_ENABLED && mpChecked && !inMiniPay;
@@ -606,6 +615,10 @@ export default function Frontle() {
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
         void enterRanking(score, finalMs!);
+        // Liga v2: XP por nivel + calidad (estrellas de la win card) + sin
+        // pistas + racha del día. Idempotente por (día, nivel) en el servidor.
+        const stars = score <= challenge.optimal ? 3 : score === challenge.optimal + 1 ? 2 : 1;
+        awardDailySolve(day, level, stars, showInitial || showNextSil || showAllSil);
       }
     }
     setInput("");
@@ -1157,6 +1170,8 @@ export default function Frontle() {
                 <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
               </div>
             )}
+            {/* Liga semanal v2 (Fase 1: en seco, sin premio) */}
+            <WeeklyLeague tr={tr} />
             {/* Selector de nivel: cada nivel tiene su ranking */}
             <LevelSelect tr={tr} level={level} onChange={setLevel} />
             <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />

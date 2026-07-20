@@ -24,6 +24,7 @@ import WorldMap from "./WorldMap";
 import ScoreCard from "./ScoreCard";
 import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import { awardPracticeSolve } from "../lib/xp";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
 function CFlag({ name, size = 28 }: { name: string; size?: number }) {
@@ -120,7 +121,11 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       setState({ ...state, chain, solved });
       setShowInitial(false);
       setShowNextSil(false);
-      if (solved) setElapsedMs(Date.now() - startRef.current);
+      if (solved) {
+        setElapsedMs(Date.now() - startRef.current);
+        // Liga v2: reto de práctica resuelto da XP (tope diario en el servidor).
+        awardPracticeSolve();
+      }
     }
     setInput("");
     setSuggestions([]);
