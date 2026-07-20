@@ -40,6 +40,13 @@ export default function Sheet({
   z?: number;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
+  // ¿El gesto de cierre empezó sobre el overlay? (ver comentario abajo)
+  const presionadoAqui = useRef(false);
+
+  // Un título de texto plano ya sirve de nombre accesible; si es un nodo
+  // (icono + subtítulo), hace falta el `label` explícito.
+  const tituloPlano = typeof title === "string" ? title : null;
+  const nombreAccesible = label ?? tituloPlano ?? undefined;
 
   useEffect(() => {
     // Quién tenía el foco antes de abrir: hay que devolvérselo al cerrar, o el
@@ -65,24 +72,36 @@ export default function Sheet({
 
   return (
     <>
+      {/* El overlay cierra solo si el gesto EMPEZÓ y TERMINÓ sobre él.
+          Sin esto pasan dos cosas feas:
+          · el mismo click que abre el sheet aterriza en el overlay recién
+            montado y lo cierra en el acto (con el sheet abriéndose desde
+            otro sheet era sistemático: la tienda nunca llegaba a verse);
+          · arrastrar desde dentro del panel y soltar fuera lo cerraba. */}
       <div
         className="fixed inset-0 bg-black/55"
         style={{ zIndex: z }}
-        onClick={onClose}
+        onPointerDown={(e) => {
+          presionadoAqui.current = e.target === e.currentTarget;
+        }}
+        onClick={(e) => {
+          if (presionadoAqui.current && e.target === e.currentTarget) onClose();
+          presionadoAqui.current = false;
+        }}
         aria-hidden="true"
       />
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={label ?? (typeof title === "string" ? title : undefined)}
+        aria-label={nombreAccesible}
         tabIndex={-1}
         style={{ zIndex: z + 1 }}
         className={`fixed inset-x-0 bottom-0 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8 outline-none max-h-[85vh] overflow-y-auto ${className}`}
       >
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        {typeof title === "string" ? (
-          <h3 className="text-white font-bold text-base mb-3">{title}</h3>
+        {tituloPlano !== null ? (
+          <h3 className="text-white font-bold text-base mb-3">{tituloPlano}</h3>
         ) : (
           title
         )}

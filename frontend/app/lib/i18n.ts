@@ -322,6 +322,15 @@ type Dict = {
   walletSheet: { title: string; connectedAs: string; signIn: string; signOut: string; signOutHint: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
   settingsSheet: { title: string; language: string };
+  // Menú de Bordy (lo que abre el FAB): atajos a lo que ya existe
+  bordyMenu: {
+    open: string; title: string; sub: string;
+    tutorial: string; tutorialHint: string;
+    shop: string; shopHint: string;
+    profile: string; profileHint: string;
+    settings: string; settingsHint: string;
+    support: string; supportHint: string;
+  };
   comingSoon: string;
   // Nombres de continente (pistas de los modos quiz)
   continents: Record<"AF" | "EU" | "AS" | "NA" | "SA" | "OC", string>;
@@ -575,6 +584,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
     walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Cerrar sesión", signOutHint: "Podrás volver a entrar con otro correo." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
+    bordyMenu: {
+      open: "Abrir el menú de Bordy", title: "¿En qué te ayudo?", sub: "Soy Bordy, tu guía",
+      tutorial: "Cómo se juega", tutorialHint: "Repasa las reglas conmigo",
+      shop: "Tienda", shopHint: "Monedas para pistas y reintentos",
+      profile: "Mi perfil", profileHint: "Nombre, logros y premios",
+      settings: "Ajustes", settingsHint: "Idioma, música y efectos",
+      support: "Soporte", supportHint: "Escríbenos si algo falla",
+    },
     continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
     quiz: {
       flagTitle: "Adivina la bandera", flagSub: "¿de qué país es? · gratis",
@@ -858,6 +875,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
     walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as", signIn: "👤 Sign in", signOut: "Sign out", signOutHint: "You can sign back in with a different email." },
     settingsSheet: { title: "⚙️ Settings", language: "Language" },
+    bordyMenu: {
+      open: "Open Bordy's menu", title: "How can I help?", sub: "I'm Bordy, your guide",
+      tutorial: "How to play", tutorialHint: "Go over the rules with me",
+      shop: "Shop", shopHint: "Coins for hints and retries",
+      profile: "My profile", profileHint: "Name, achievements and prizes",
+      settings: "Settings", settingsHint: "Language, music and effects",
+      support: "Support", supportHint: "Write to us if something breaks",
+    },
     continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
     quiz: {
       flagTitle: "Guess the flag", flagSub: "which country is it? · free",
@@ -1141,6 +1166,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
     walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Sair da conta", signOutHint: "Você poderá entrar de novo com outro e-mail." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
+    bordyMenu: {
+      open: "Abrir o menu do Bordy", title: "Como posso ajudar?", sub: "Sou o Bordy, seu guia",
+      tutorial: "Como se joga", tutorialHint: "Revise as regras comigo",
+      shop: "Loja", shopHint: "Moedas para dicas e novas tentativas",
+      profile: "Meu perfil", profileHint: "Nome, conquistas e prêmios",
+      settings: "Ajustes", settingsHint: "Idioma, música e efeitos",
+      support: "Suporte", supportHint: "Escreva para nós se algo falhar",
+    },
     continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
     quiz: {
       flagTitle: "Adivinhe a bandeira", flagSub: "de que país é? · grátis",
@@ -1424,6 +1457,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
     walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que", signIn: "👤 Se connecter", signOut: "Se déconnecter", signOutHint: "Tu pourras te reconnecter avec une autre adresse e-mail." },
     settingsSheet: { title: "⚙️ Réglages", language: "Langue" },
+    bordyMenu: {
+      open: "Ouvrir le menu de Bordy", title: "Comment puis-je t'aider ?", sub: "Je suis Bordy, ton guide",
+      tutorial: "Comment jouer", tutorialHint: "Revois les règles avec moi",
+      shop: "Boutique", shopHint: "Des pièces pour les indices et les reprises",
+      profile: "Mon profil", profileHint: "Nom, succès et prix",
+      settings: "Réglages", settingsHint: "Langue, musique et effets",
+      support: "Assistance", supportHint: "Écris-nous si quelque chose ne va pas",
+    },
     continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
     quiz: {
       flagTitle: "Devine le drapeau", flagSub: "de quel pays est-il ? · gratuit",
