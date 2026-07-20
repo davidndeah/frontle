@@ -12,14 +12,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { geoMercator, geoPath, geoGraticule } from "d3-geo";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 import type { Status } from "../lib/game";
+import { STATUS_COLORS as COLORS } from "../lib/theme";
 
-const COLORS: Record<Status, string> = {
-  start: "#22d3ee",
-  end: "#e879f9",
-  green: "#22c55e",
-  yellow: "#eab308",
-  red: "#ef4444",
-};
 
 interface Props {
   regionId: string;

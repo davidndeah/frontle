@@ -6,16 +6,10 @@ import { feature } from "topojson-client";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 import { COUNTRY_NAMES } from "../lib/countries";
 import type { Status } from "../lib/game";
+import { STATUS_COLORS as COLORS } from "../lib/theme";
 
 const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-const COLORS: Record<Status, string> = {
-  start: "#22d3ee",
-  end: "#e879f9",
-  green: "#22c55e",
-  yellow: "#eab308",
-  red: "#ef4444",
-};
 
 function norm(s: string): string {
   return s

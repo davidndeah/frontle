@@ -6,6 +6,8 @@
 //  el PNG y copia el texto.
 // ============================================================
 
+import { STATUS_COLORS } from "./theme";
+
 export type Square = "green" | "yellow" | "red" | "start" | "end";
 
 export interface ScoreCardData {
@@ -16,13 +18,9 @@ export interface ScoreCardData {
   stats: string[];     // líneas de métrica sin emoji, p.ej. ["5 países", "01:23"]
 }
 
-const SQ_COLOR: Record<Square, string> = {
-  green: "#22c55e",
-  yellow: "#eab308",
-  red: "#ef4444",
-  start: "#22d3ee",
-  end: "#e879f9",
-};
+// Mismos colores que pintan los mapas: la imagen que se comparte tiene que
+// decir exactamente lo que el jugador vio en pantalla.
+const SQ_COLOR: Record<Square, string> = STATUS_COLORS;
 
 const S = 1080; // lado del lienzo
 

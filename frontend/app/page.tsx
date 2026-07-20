@@ -75,6 +75,7 @@ import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
 import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
+import { STATUS_COLORS } from "./lib/theme";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -1169,11 +1170,11 @@ export default function Frontle() {
           <>
             <div className="flex items-center justify-center -mt-2">
               <div className="flex items-center gap-3 text-[11px] text-white bg-[#1c0b3e]/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#b79ced]/20">
-                <Legend color="#22d3ee" label={tr.legend.origin} />
-                <Legend color="#e879f9" label={tr.legend.destination} />
-                <Legend color="#22c55e" label={tr.legend.good} />
-                <Legend color="#eab308" label={tr.legend.lateral} />
-                <Legend color="#ef4444" label={tr.legend.far} />
+                <Legend color={STATUS_COLORS.start} label={tr.legend.origin} />
+                <Legend color={STATUS_COLORS.end} label={tr.legend.destination} />
+                <Legend color={STATUS_COLORS.green} label={tr.legend.good} />
+                <Legend color={STATUS_COLORS.yellow} label={tr.legend.lateral} />
+                <Legend color={STATUS_COLORS.red} label={tr.legend.far} />
               </div>
             </div>
 
