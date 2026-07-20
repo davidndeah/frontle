@@ -147,6 +147,13 @@ solución (las estrellas de precisión que ya existen)**:
 
 1. **El XP no se compra** — ni con monedas ni con USDT. Nunca. Es la moneda del
    ranking y comprarla mataría la liga (y el encuadre de torneo de habilidad).
+   Corolario: **los topes diarios NO se tocan hasta pasar el listing de MiniPay**
+   (decisión de Santiago, 2026-07-20). Con topes, gastar mejora tu *consistencia*
+   —una pista te salva un reto, un intento extra te da otra oportunidad— pero el
+   techo diario es el mismo para todos, así que la liga no se lee como "pagar
+   para ganar dinero real", que es justo lo que el review mira con lupa.
+   Si más adelante hace falta más presión monetaria, el camino es **subir los
+   topes de los modos gratis** (premiar jugar mucho), no atar XP al gasto.
 2. Los topes diarios se validan **en el servidor** (mismo modelo que
    `player_progress`: el cliente reporta eventos, el servidor deriva y capea).
 3. El XP semanal vive en Supabase (`xp_events` → vista semanal agregada); el
