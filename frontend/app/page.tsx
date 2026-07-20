@@ -78,6 +78,12 @@ import Bordy, { useBordyMood } from "./components/Bordy";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
+// Tutorial visto. Un solo flag para el recorrido completo (modal + coachmarks):
+// antes había dos y podían quedar en estados incoherentes — p. ej. ver el modal
+// para siempre porque nunca marcaste su checkbox, pero no volver a ver nunca los
+// coachmarks porque esos se marcaban solos.
+const TUTORIAL_KEY = "frontle-tutorial-visto";
+
 // El SDK de Privy (~1.27 MB) sale del bundle inicial. `ssr: false` porque solo
 // existe en cliente. Ojo: se monta únicamente DESPUÉS de comprobar si estamos
 // en MiniPay — montarlo antes descargaría el chunk igual, aunque luego se
@@ -226,12 +232,26 @@ export default function Frontle() {
       setNameModal(true);
     }
   }, [myId]);
-  // Coachmarks de las pistas (1ª vez): el juego se muestra en "modo previo"
-  // (países ocultos, cronómetro congelado) mientras Bordy explica. El reloj
-  // arranca SOLO al terminar el coach → nadie gana ventaja.
+  // Segunda mitad del tutorial: los coachmarks sobre el juego real. El juego
+  // se muestra en "modo previo" (países ocultos, cronómetro congelado)
+  // mientras Bordy explica; el reloj arranca SOLO al terminar → nadie gana
+  // ventaja por leer.
+  //
+  // Antes esto era un tutorial APARTE del modal, y salían los dos seguidos en
+  // la primera partida repitiendo lo mismo. Ahora es un solo recorrido: el
+  // modal enseña la mecánica y el semáforo con el tablero de ejemplo, y aquí
+  // se señalan las dos cosas que solo tienen sentido sobre la pantalla real
+  // (el panel de pistas y el cronómetro). Un único flag para los dos tramos.
   const [coaching, setCoaching] = useState(false);
   function coachSeen(): boolean {
-    try { return localStorage.getItem("frontle-coach-hints") === "1"; } catch { return true; }
+    try {
+      if (localStorage.getItem(TUTORIAL_KEY) === "1") return true;
+      // Migración: a quien ya vio el tutorial viejo COMPLETO (modal marcado
+      // como "no mostrar" + coachmarks) no se le vuelve a mostrar nada.
+      return localStorage.getItem("frontle-coach-hints") === "1";
+    } catch {
+      return true;
+    }
   }
   function enterGame() {
     if (coachSeen()) startGame();
@@ -1602,13 +1622,16 @@ export default function Frontle() {
       {coaching && (
         <Coachmarks
           steps={[
-            { target: "game-input", text: tr.coachSteps[0] },
-            { target: "hints-panel", text: tr.coachSteps[1] },
-            { target: "game-timer", text: tr.coachSteps[2] },
+            // Solo lo que gana con señalarse en la pantalla real. El paso
+            // del input se eliminó: el modal ya explicó que se escriben
+            // países vecinos, y repetirlo era la redundancia más obvia
+            // entre los dos tutoriales.
+            { target: "hints-panel", text: tr.coachSteps[0] },
+            { target: "game-timer", text: tr.coachSteps[1] },
           ]}
           labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
           onDone={() => {
-            try { localStorage.setItem("frontle-coach-hints", "1"); } catch {}
+            try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
             setCoaching(false);
             startGame();
           }}
