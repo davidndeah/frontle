@@ -262,12 +262,20 @@ Sin ellas, la compra de monedas hace un transfer a la wallet del operador y el
 premio semanal se siembra a mano — todo lo demás (XP, liga, monedas, racha)
 funciona igual.
 
-**Cierre semanal:** falta la edge function `close-week` (análoga a `close-day`)
-que lea el top-3 de `weekly_xp` de la semana cerrada y llame a
-`rollWeek(week, first, second, third)` con la wallet del operador. Ojo con los
-**dos números de semana**: `weekly_xp.week` es la fecha del lunes (`YYYY-MM-DD`)
-y `currentWeek()` del contrato es un índice desde el epoch — convertir es
-responsabilidad de quien la escriba (mismo patrón que los dos "días" de v1).
+**Cierre semanal:** ✅ hecho. `supabase/functions/close-week` está desplegada y
+agendada por cron los **lunes 00:20 UTC** (10 min después del `close-day` de ese
+día, porque ambas firman con la misma wallet y dos tx simultáneas se pisarían el
+nonce). Lee el top-3 de `weekly_xp`, llama `rollWeek` y registra el podio en
+`weekly_winners` (migración 0011). Es idempotente y, sin `WEEKLY_ADDRESS`,
+responde `skipped` sin tocar nada — probado en producción.
+
+Dos detalles que quedaron resueltos ahí:
+- **Los dos números de semana**: el lunes de la semana `w` del contrato es el día
+  `7w-3` desde el epoch (cayó en jueves). La conversión está verificada.
+- **Jugadores sin wallet**: el XP se gana con identidad anónima, pero on-chain solo
+  se premia a una dirección. Igual que `close-day`, se saltan y el puesto pasa al
+  siguiente elegible; la respuesta los lista en `notPayable` para atenderlos a mano.
+  Es el punto que conviene revisar si la liga crece con muchos jugadores sin wallet.
 
 ---
 
