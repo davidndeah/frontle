@@ -5,14 +5,13 @@
 //    key — mismo modelo de confianza que `scores`. El VALOR y el TOPE de
 //    cada fuente los valida el servidor (check + primary key), no este
 //    archivo: aquí solo evitamos requests que sabemos que rebotarían.
-//  · Identidad: la wallet si existe; si no, el id anónimo del navegador.
-//    Un jugador sin wallet acumula XP y solo necesita conectarse si queda
-//    en el podio (el puente no-cripto del plan). `bindXpIdentity` fija la
-//    wallet como identidad al conectar.
+//  · Identidad: SIEMPRE la wallet. Igual que el ranking diario, la liga
+//    exige wallet — sin ella no se emite XP (el servidor además lo impone
+//    con un check de formato de dirección). `bindXpIdentity` la fija al
+//    conectar; jugar sigue siendo libre, lo que requiere wallet es competir.
 //  · Todo degrada en silencio: sin Supabase, el juego sigue.
 // ============================================================
 
-import { getPlayerId } from "./ranking";
 import type { Difficulty } from "./game";
 
 // Valores de XP por fuente. Deben coincidir con el check `xp_shape` de la
@@ -52,12 +51,18 @@ export function bindXpIdentity(walletId: string): void {
   } catch {}
 }
 
+// Dirección con la que se compite. Cadena vacía = sin wallet: no hay XP ni
+// monedas (misma regla que el ranking diario).
 export function xpPlayerId(): string {
   try {
-    const bound = localStorage.getItem(XP_ID_KEY);
-    if (bound) return bound;
-  } catch {}
-  return getPlayerId();
+    return localStorage.getItem(XP_ID_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function hasLeagueIdentity(): boolean {
+  return /^0x[0-9a-f]{40}$/.test(xpPlayerId());
 }
 
 // --- Inserción de eventos ----------------------------------------------------
@@ -171,7 +176,12 @@ export function awardPracticeSolve(day = todayUTC()): void {
 export interface WeeklyEntry {
   playerId: string;
   xp: number;
+  tier: number;
 }
+
+/// Divisiones de la liga (Fase 5). Solo la más alta con participantes se
+/// lleva el pot; las demás compiten por ascender.
+export const TIERS = 4;
 
 // Lunes (UTC) de la semana de `d`, como 'YYYY-MM-DD' — la clave de `weekly_xp`.
 export function weekStartUTC(d = new Date()): string {
@@ -187,37 +197,40 @@ export function msToWeekClose(now = new Date()): number {
   return close - now.getTime();
 }
 
-// Top de la semana en curso, ya ordenado por el criterio del plan (§3.2):
-// XP desc, y a igualdad gana quien llegó antes.
+// Tabla de MI división esta semana, ordenada por el criterio del plan (§3.2):
+// XP desc, y a igualdad gana quien llegó antes. Se compite contra tu nivel,
+// no contra el #1 global (patrón Duolingo).
 export async function getWeeklyRanking(limit = 20): Promise<WeeklyEntry[]> {
   if (!useSupabase) return [];
+  const tier = await getMyTier();
   try {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/weekly_xp?week=eq.${weekStartUTC()}&select=player_id,xp&order=xp.desc,last_event.asc&limit=${limit}`,
+      `${SUPA_URL}/rest/v1/weekly_board?week=eq.${weekStartUTC()}&tier=eq.${tier}&select=player_id,xp,tier&order=xp.desc,last_event.asc&limit=${limit}`,
       { headers: HEADERS() }
     );
     const j = await r.json();
     if (!Array.isArray(j)) return [];
-    return j.map((row: { player_id: string; xp: number }) => ({
+    return j.map((row: { player_id: string; xp: number; tier: number }) => ({
       playerId: String(row.player_id),
       xp: Number(row.xp ?? 0),
+      tier: Number(row.tier ?? 1),
     }));
   } catch {
     return [];
   }
 }
 
-// XP semanal del propio jugador (0 si aún no tiene eventos esta semana).
-export async function getMyWeeklyXp(): Promise<number> {
-  if (!useSupabase) return 0;
+// División en la que compito esta semana (1 = Bronce … 4 = Diamante).
+export async function getMyTier(): Promise<number> {
+  if (!useSupabase || !hasLeagueIdentity()) return 1;
   try {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/weekly_xp?week=eq.${weekStartUTC()}&player_id=eq.${encodeURIComponent(xpPlayerId())}&select=xp`,
+      `${SUPA_URL}/rest/v1/league_divisions?player_id=eq.${encodeURIComponent(xpPlayerId())}&week_start=lte.${weekStartUTC()}&select=tier&order=week_start.desc&limit=1`,
       { headers: HEADERS() }
     );
     const j = await r.json();
-    return Number((Array.isArray(j) && j[0]?.xp) || 0);
+    return Number((Array.isArray(j) && j[0]?.tier) || 1);
   } catch {
-    return 0;
+    return 1;
   }
 }
