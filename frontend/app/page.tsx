@@ -1595,7 +1595,6 @@ export default function Frontle() {
           onTutorial={() => setOverlay("full")}
           onProfile={() => setTab("perfil")}
           onSettings={() => setSettingsOpen(true)}
-          onShop={() => setShopOpen(true)}
           tr={tr}
         />
       )}
@@ -1854,19 +1853,16 @@ function BordyMenuSheet({
   onTutorial,
   onProfile,
   onSettings,
-  onShop,
   tr,
 }: {
   onClose: () => void;
   onTutorial: () => void;
   onProfile: () => void;
   onSettings: () => void;
-  onShop: () => void;
   tr: ReturnType<typeof t>;
 }) {
   const items: { icon: string; label: string; hint: string; onClick: () => void }[] = [
     { icon: "🎓", label: tr.bordyMenu.tutorial, hint: tr.bordyMenu.tutorialHint, onClick: onTutorial },
-    { icon: "🪙", label: tr.bordyMenu.shop, hint: tr.bordyMenu.shopHint, onClick: onShop },
     { icon: "👤", label: tr.bordyMenu.profile, hint: tr.bordyMenu.profileHint, onClick: onProfile },
     { icon: "⚙️", label: tr.bordyMenu.settings, hint: tr.bordyMenu.settingsHint, onClick: onSettings },
   ];
