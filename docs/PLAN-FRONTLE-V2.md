@@ -31,6 +31,19 @@ tocan** — cada economía fondea su propio pot.
   las dos economías no se cruzan.
 - **Sistema de rachas** (días consecutivos resolviendo el diario) con sus hitos.
 
+## 2b. Regla universal de intentos
+
+**En todos los modos — incluido el reto diario — el primer intento es gratis**
+(como hoy). **El segundo intento se paga**, cada uno en la moneda de su economía:
+
+| Modo | 1er intento | 2do intento en adelante |
+|---|---|---|
+| Reto diario | Gratis | **0.10 USDT** directo (como hoy, al pot diario) |
+| Regiones / Quiz / Práctica (liga) | Gratis | **5 🪙** ($0.05) por intento, al ledger |
+
+Hoy los modos gratis tienen intentos ilimitados; en v2 adoptan esta regla — es la
+fuente de gasto de monedas que sostiene el pot semanal.
+
 ## 3. Liga semanal
 
 ### 3.1 Ciclo
@@ -79,13 +92,17 @@ tocan** — cada economía fondea su propio pot.
 
 ### 4.1 Dónde y cuánto se gana
 
+El reto diario da XP según **dos ejes: el nivel jugado y la calidad de la
+solución (las estrellas de precisión que ya existen)**:
+
 | Fuente | XP | Tope |
 |---|---|---|
 | Reto diario resuelto — **fácil** | **10** | por nivel/día |
 | Reto diario resuelto — **medio** | **20** | por nivel/día |
 | Reto diario resuelto — **difícil** | **30** | por nivel/día |
-| Bonus ruta óptima (⭐⭐⭐) | **+10** | por nivel/día |
-| Bonus ⭐⭐ (+1 país sobre la óptima) | **+5** | por nivel/día |
+| Solución ⭐⭐⭐ (ruta óptima) | **+10** | por nivel/día |
+| Solución ⭐⭐ (+1 país sobre la óptima) | **+5** | por nivel/día |
+| Solución ⭐ (+2 países) | **+0** | resolver ya paga el XP base |
 | Bonus sin pistas | **+5** | por nivel/día |
 | **Racha mantenida** (resolver el diario del día) | **+5** | 1/día |
 | Hito de racha (7, 30, 100 días) | **+20** | 1 por hito |
@@ -140,7 +157,7 @@ gasto es un débito instantáneo en el ledger.
 |---|---|---|---|
 | Pista en modos de la liga (inicial / silueta del siguiente) | **3 🪙** | $0.03 | Regiones · quizzes · Práctica |
 | Pista fuerte en modos de la liga (silueta de todos / equivalente del modo) | **5 🪙** | $0.05 | Regiones · Práctica |
-| Reintento de ronda en modos de la liga | **5 🪙** | $0.05 | Regiones · Práctica |
+| **Nuevo intento en modos de la liga** (el 1º es gratis, §2b) | **5 🪙** | $0.05 | Regiones · quizzes · Práctica |
 | **Congelar racha** (1 día sin jugar no la rompe) | **15 🪙** | $0.15 | racha del diario; máx 2 equipadas (patrón Duolingo) |
 | **Reparar racha perdida** (ventana de 48h) | **25 🪙** | $0.25 | racha ≤ 7 días |
 | Reparar racha larga (ventana de 48h) | **50 🪙** | $0.50 | racha > 7 días (vale más, cuesta más) |
