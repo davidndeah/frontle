@@ -114,26 +114,21 @@ información).
 | # | Qué hacer | Qué debe pasar |
 |---|---|---|
 | 1 | Tocar a Bordy | Abre el menú (antes iba directo al tutorial) |
-| 2 | Probar los 5 destinos | Tutorial, tienda, perfil, ajustes y soporte |
+| 2 | Probar los 4 destinos | Tutorial, perfil, ajustes y soporte |
 | 3 | Tocar fuera del panel | Cierra |
 | 4 | **Arrastrar desde dentro del panel y soltar fuera** | **NO** debe cerrarse |
-| 5 | Tocar "Tienda" | La tienda abre (esto fallaba siempre antes del arreglo) |
 
-### D. Tienda
+> **Actualización (20 jul):** el menú tenía un 5º destino, "Tienda", con una
+> tienda de monedas placeholder (saldo en localStorage). La quité del PR el
+> mismo día: al revisar el repo encontré que Santiago abrió la rama `v2` horas
+> después con la implementación REAL del mercado de monedas (ledger verificado
+> on-chain, XP, rachas, contrato `FrontleWeekly`) — y de paso corrigió la spec
+> para que las monedas ya **no** apliquen al reto diario, que era justo lo que
+> mi placeholder mostraba. Ver commit `7cbc8f6`. Cuando `v2` se integre, el
+> menú gana su entrada de tienda de forma natural. Nada que revisar aquí sobre
+> tienda; si la ves en la app, es la de `v2`, no la de este PR.
 
-| # | Qué debe pasar |
-|---|---|
-| 1 | 3 paquetes: 50 🪙 / $0.50 · 110 🪙 / $1.00 (+10%) · 300 🪙 / $2.50 (+20%) |
-| 2 | Los precios de uso coinciden con tu plan v2 §5.2 |
-| 3 | Comprar suma monedas al saldo |
-| 4 | El copy **nunca** dice "gas" ni "cripto" |
-
-> 🚨 **La tienda no cobra nada todavía.** El saldo es un placeholder en
-> localStorage para poder ver la interfaz. Falta la Fase 2 de Santiago
-> (`coin_ledger` + edge function). El punto exacto donde entra `requestPayment`
-> está marcado en el código.
-
-### E. Accesibilidad de los sheets (nuevo)
+### D. Accesibilidad de los sheets (nuevo)
 
 En cualquier sheet (wallet, ajustes, menú, tienda):
 
@@ -143,7 +138,7 @@ En cualquier sheet (wallet, ajustes, menú, tienda):
 | 2 | El fondo **no** hace scroll mientras está abierto |
 | 3 | Al cerrar, el foco vuelve al botón que lo abrió |
 
-### F. Sin cambios visuales (regresión)
+### E. Sin cambios visuales (regresión)
 
 El refactor de colores no debería verse. Comprobar que siguen igual:
 
