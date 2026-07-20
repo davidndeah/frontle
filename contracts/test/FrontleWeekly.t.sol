@@ -332,6 +332,38 @@ contract FrontleWeeklyTest is Test {
         weekly.setParams(1 ether, 100);
     }
 
+    /// Un recaudo > 10% haría que 50+30+10+cut pasara del 100% y `rollWeek`
+    /// revertiría por underflow, bloqueando el cierre. Debe ser imposible
+    /// configurarlo, tanto al desplegar como después.
+    function test_protocolBps_cappedAtTenPercent() public {
+        assertEq(weekly.MAX_PROTOCOL_BPS(), 1000);
+
+        vm.expectRevert(FrontleWeekly.InvalidBps.selector);
+        new FrontleWeekly(address(token), operator, MIN_PURCHASE, 2000); // el 20% del contrato diario
+
+        vm.expectRevert(FrontleWeekly.InvalidBps.selector);
+        weekly.setParams(MIN_PURCHASE, 1001);
+
+        weekly.setParams(MIN_PURCHASE, 1000); // el tope sí se admite
+        assertEq(weekly.protocolBps(), 1000);
+    }
+
+    /// Con el recaudo en su tope, un podio completo sigue repartiendo sin
+    /// revertir y sin dejar sobras.
+    function test_fullPodium_atMaxProtocolBps() public {
+        weekly.setParams(MIN_PURCHASE, 1000);
+        uint256 week = weekly.currentWeek();
+        weekly.fundPot(10 ether);
+        _nextWeek();
+
+        vm.prank(operator);
+        weekly.rollWeek(week, w1, w2, w3);
+
+        assertEq(weekly.prize(week, P1) + weekly.prize(week, P2) + weekly.prize(week, P3), 9 ether);
+        assertEq(weekly.protocolAccrued(), 1 ether);
+        assertEq(weekly.pot(weekly.currentWeek()), 0);
+    }
+
     // --- invariante ---------------------------------------------------------
 
     /// Conservación: recaudo + premios + rollover == pot, para cualquier monto

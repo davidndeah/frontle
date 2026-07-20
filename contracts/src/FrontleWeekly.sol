@@ -47,6 +47,13 @@ contract FrontleWeekly is Ownable {
     uint8 public constant PLACE_SECOND = 2;
     uint8 public constant PLACE_THIRD = 3;
 
+    /// @notice Tope del recaudo: 50+30+10 del podio deja como mucho un 10%.
+    /// @dev Sin este límite, un `protocolBps` mayor haría que las partes
+    ///      sumaran más del pot y `_computeShares` revertiría por underflow —
+    ///      el cierre semanal quedaría bloqueado. Se valida al desplegar y en
+    ///      `setParams` para que no se pueda romper ni por error de config.
+    uint256 public constant MAX_PROTOCOL_BPS = 1000;
+
     /// @notice Stablecoin único de la liga (USDT en mainnet; mock en tests).
     IERC20 public immutable token;
 
@@ -102,7 +109,7 @@ contract FrontleWeekly is Ownable {
 
     constructor(address token_, address operator_, uint256 minPurchase_, uint256 protocolBps_) Ownable(msg.sender) {
         if (token_ == address(0) || operator_ == address(0)) revert ZeroAddress();
-        if (protocolBps_ > 10_000) revert InvalidBps();
+        if (protocolBps_ > MAX_PROTOCOL_BPS) revert InvalidBps();
         token = IERC20(token_);
         operator = operator_;
         minPurchase = minPurchase_;
@@ -246,7 +253,7 @@ contract FrontleWeekly is Ownable {
     }
 
     function setParams(uint256 minPurchase_, uint256 protocolBps_) external onlyOwner {
-        if (protocolBps_ > 10_000) revert InvalidBps();
+        if (protocolBps_ > MAX_PROTOCOL_BPS) revert InvalidBps();
         minPurchase = minPurchase_;
         protocolBps = protocolBps_;
         emit ParamsUpdated(minPurchase_, protocolBps_);
