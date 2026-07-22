@@ -382,6 +382,15 @@
 @keyframes br-antena-triste { to { transform: rotate(-30deg) translateY(4%); } }
 .br-antena-triste { animation: br-antena-triste 0.5s ease-out forwards; }
 
+/* --- DESVÍO: un casi-acierto no merece el mismo castigo que el fallo. En
+       vez de desinflarse, saluda con un brazo: reconoce el intento. --- */
+@keyframes br-brazoD-saluda {
+  0%{transform:rotate(0)} 20%{transform:rotate(120deg)} 35%{transform:rotate(95deg)}
+  50%{transform:rotate(125deg)} 65%{transform:rotate(95deg)} 80%{transform:rotate(120deg)}
+  100%{transform:rotate(0)}
+}
+.br-brazoD-saluda { animation: br-brazoD-saluda 1.4s ease-in-out; }
+
 .br-led {
   position: absolute;
   left: 50%; top: 29%;

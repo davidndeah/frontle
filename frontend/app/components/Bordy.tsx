@@ -24,7 +24,9 @@ export type BordyMood = "idle" | "acierto" | "desvio" | "fallo" | "racha" | "pen
 const LED: Record<BordyMood, string> = {
   idle: "#fbbf24",
   acierto: "#34d399",
-  desvio: "#fbbf24",
+  // Naranja, no ámbar: con el ámbar del idle el desvío no se percibía como
+  // un cambio de estado (era literalmente el mismo color del reposo).
+  desvio: "#fb923c",
   fallo: "#f87171",
   racha: "#fcff52",
   pensando: "#38bdf8",
@@ -125,6 +127,10 @@ function Boca({ forma }: { forma: string }) {
       />
     );
   }
+  if (forma === "plana") {
+    // Boca neutra: ni premia ni castiga un casi-acierto.
+    return <rect x={x - 46} y={y + 2} width={92} height={20} rx={10} fill={MORADO} />;
+  }
   if (forma === "mueca") {
     // La sonrisa invertida: mismo trazo, curvatura al revés.
     return (
@@ -181,6 +187,13 @@ const RIG: Partial<Record<BordyMood, {
     antena: "br-antena-triste",
     cara: "x",
     boca: "mueca",
+  },
+  desvio: {
+    brazoI: "br-brazoI-idle",
+    brazoD: "br-brazoD-saluda",
+    antena: "br-antena-latigazo",
+    orejas: true,
+    boca: "plana",
   },
 };
 
