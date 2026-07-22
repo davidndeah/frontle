@@ -36,7 +36,7 @@ const DURACION: Partial<Record<BordyMood, number>> = {
   acierto: 850, // salto con anticipación (0.8s) + margen
   desvio: 550,
   fallo: 1600, // sacudida (550) + un rato ladeado, para que se lea
-  racha: 1150, // voltereta completa (1.05s) + margen para reasentarse
+  racha: 1700, // festejo de 3 brincos (1.5s) + margen
 };
 
 // Coordenadas medidas sobre el arte fuente (1280x1520): los ojos son los
@@ -49,6 +49,40 @@ const MORADO = "#a855f7";
 
 /** Ojos vectoriales. Cambiar de forma es lo que el raster no permitía. */
 function Ojos({ forma }: { forma: string }) {
+  if (forma === "llama") {
+    // En racha los ojos ARDEN. Anchas a propósito (~196px, 2.2x la cuenca):
+    // más angostas se leían como "un ojo raro" en vez de fuego.
+    const llama = (o: typeof OJO_I, delay: string) => {
+      const { cx: x, cy: y } = o;
+      return (
+        <g key={delay} className="br-llama-ojo" style={{ animationDelay: delay }}>
+          <path
+            d={`M ${x} ${y - 140} C ${x + 87} ${y - 62}, ${x + 136} ${y + 12}, ${x} ${y + 70} C ${x - 136} ${y + 12}, ${x - 87} ${y - 62}, ${x} ${y - 140} Z`}
+            fill="url(#br-gLlama)"
+          />
+          <path
+            d={`M ${x} ${y - 76} C ${x + 49} ${y - 26}, ${x + 76} ${y + 24}, ${x} ${y + 54} C ${x - 76} ${y + 24}, ${x - 49} ${y - 26}, ${x} ${y - 76} Z`}
+            fill="#ffe74a"
+            opacity={0.92}
+          />
+        </g>
+      );
+    };
+    return (
+      <>
+        <defs>
+          <linearGradient id="br-gLlama" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="#ff3d00" />
+            <stop offset="50%" stopColor="#ff8a00" />
+            <stop offset="100%" stopColor="#ffe74a" />
+          </linearGradient>
+        </defs>
+        {/* desfasadas: si ondearan igual se notaría que son la misma forma */}
+        {llama(OJO_I, "0s")}
+        {llama(OJO_D, "0.18s")}
+      </>
+    );
+  }
   if (forma === "feliz") {
     // Arcos "^ ^": el ojo cerrado de alegría.
     const arco = (o: typeof OJO_I) =>
@@ -109,6 +143,14 @@ const RIG: Partial<Record<BordyMood, {
     cara: "feliz",
     boca: "grande",
   },
+  racha: {
+    brazoI: "br-brazoI-bombea",
+    brazoD: "br-brazoD-bombea",
+    antena: "br-antena-vibra",
+    orejas: true,
+    cara: "llama",
+    boca: "grande",
+  },
 };
 
 export default function Bordy({
@@ -142,7 +184,7 @@ export default function Bordy({
 
   const shot =
     mood === "acierto" ? "bordy-hop"
-    : mood === "racha" ? "bordy-hop-big"
+    : mood === "racha" ? "bordy-festeja"
     : mood === "fallo" ? "bordy-shake"
     : mood === "desvio" ? "bordy-nope"
     : "";

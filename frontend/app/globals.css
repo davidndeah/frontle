@@ -324,6 +324,53 @@
 .br-orejaI-tiembla { animation: br-orejaI-tiembla 0.55s ease-in-out; }
 .br-orejaD-tiembla { animation: br-orejaD-tiembla 0.55s ease-in-out; }
 
+/* --- RACHA: celebración, no acrobacia. Antes era una voltereta de 360°;
+       se cambió porque leía como truco de circo y no como alegría. Ahora
+       son tres brincos con los brazos bombeando y los OJOS EN LLAMAS. --- */
+@keyframes bordy-festeja {
+  0%   { transform: translateY(0) scale(1, 1); }
+  8%   { transform: translateY(2%) scale(1.08, 0.9); }
+  22%  { transform: translateY(-15%) scale(0.96, 1.06) rotate(-4deg); }
+  36%  { transform: translateY(0) scale(1.06, 0.93); }
+  48%  { transform: translateY(-12%) scale(0.97, 1.05) rotate(4deg); }
+  62%  { transform: translateY(0) scale(1.05, 0.94); }
+  74%  { transform: translateY(-9%) scale(0.98, 1.04) rotate(-3deg); }
+  88%  { transform: translateY(0) scale(1.04, 0.95); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.bordy-festeja { animation: bordy-festeja 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes br-brazoI-bombea {
+  0%{transform:rotate(0)} 15%{transform:rotate(-118deg)} 35%{transform:rotate(-78deg)}
+  55%{transform:rotate(-118deg)} 75%{transform:rotate(-78deg)} 100%{transform:rotate(-112deg)}
+}
+@keyframes br-brazoD-bombea {
+  0%{transform:rotate(0)} 15%{transform:rotate(118deg)} 35%{transform:rotate(78deg)}
+  55%{transform:rotate(118deg)} 75%{transform:rotate(78deg)} 100%{transform:rotate(112deg)}
+}
+.br-brazoI-bombea { animation: br-brazoI-bombea 1.5s ease-in-out; }
+.br-brazoD-bombea { animation: br-brazoD-bombea 1.5s ease-in-out; }
+
+@keyframes br-antena-vibra {
+  0%,100%{transform:rotate(-14deg)} 25%{transform:rotate(14deg)}
+  50%{transform:rotate(-10deg)} 75%{transform:rotate(10deg)}
+}
+.br-antena-vibra { animation: br-antena-vibra 0.35s ease-in-out 4; }
+
+/* Las llamas ondean desde su base. `fill-box` para que el origen sea la
+   propia llama y no el lienzo entero del SVG. */
+@keyframes br-llamita {
+  0%,100% { transform: scale(1, 1) rotate(0deg); }
+  22%     { transform: scale(0.9, 1.2) rotate(-4deg); }
+  48%     { transform: scale(1.1, 0.9) rotate(3deg); }
+  72%     { transform: scale(0.94, 1.12) rotate(-2deg); }
+}
+.br-llama-ojo {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: br-llamita 0.36s ease-in-out infinite;
+}
+
 .br-led {
   position: absolute;
   left: 50%; top: 29%;
