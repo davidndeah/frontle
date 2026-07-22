@@ -141,6 +141,16 @@
 }
 .bordy-shake { animation: bordy-shake 0.55s ease-out; }
 
+/* Desvío (cerca, pero dirección equivocada): un "no-no" suave de cabeza —
+   más leve que la sacudida del fallo. Comunica "casi, pero no" sin castigar. */
+@keyframes bordy-nope {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-5deg); }
+  50%      { transform: rotate(4deg); }
+  75%      { transform: rotate(-2deg); }
+}
+.bordy-nope { animation: bordy-nope 0.5s ease-in-out; }
+
 /* Poses sostenidas. La transición hace que entrar y salir del estado sea
    suave en vez de un corte seco. */
 .bordy-pose { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
@@ -542,6 +552,7 @@ body {
   .bordy-hop,
   .bordy-hop-big,
   .bordy-shake,
+  .bordy-nope,
   .bordy-pose-think,
   .bordy-led-fast,
   .bordy-led-slow,

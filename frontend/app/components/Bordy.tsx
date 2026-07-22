@@ -71,7 +71,8 @@ export default function Bordy({
   const shot =
     mood === "acierto" ? "bordy-hop"
     : mood === "racha" ? "bordy-hop-big"
-    : mood === "fallo" || mood === "desvio" ? "bordy-shake"
+    : mood === "fallo" ? "bordy-shake"
+    : mood === "desvio" ? "bordy-nope"
     : "";
 
   const pose =
