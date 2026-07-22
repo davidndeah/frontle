@@ -117,20 +117,6 @@
 }
 .bordy-hop { animation: bordy-hop 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
 
-/* Racha / victoria: voltereta completa. Se agacha para cargar impulso,
-   despega girando 360°, y aterriza aplastándose antes de reasentarse. Un
-   giro entero (no un ladeo) es lo que hace que se lea "vivo" como el 3D. */
-@keyframes bordy-hop-big {
-  0%   { transform: translateY(0) scale(1, 1) rotate(0deg); }
-  12%  { transform: translateY(5px) scale(1.09, 0.88) rotate(0deg); }      /* anticipación: carga */
-  40%  { transform: translateY(-54px) scale(0.94, 1.08) rotate(-205deg); } /* despega girando */
-  58%  { transform: translateY(-60px) scale(1, 1) rotate(-320deg); }       /* cima de la voltereta */
-  78%  { transform: translateY(0) scale(1.09, 0.89) rotate(-360deg); }     /* aterriza aplastado, giro completo */
-  90%  { transform: translateY(-11px) scale(0.98, 1.03) rotate(-360deg); } /* rebote */
-  100% { transform: translateY(0) scale(1, 1) rotate(-360deg); }
-}
-.bordy-hop-big { animation: bordy-hop-big 1.05s cubic-bezier(0.22, 1, 0.36, 1); }
-
 /* Fallo: sacudida corta. El ladeo que la sigue vive en .bordy-pose-sad. */
 @keyframes bordy-shake {
   0%   { transform: translateX(0); }
@@ -168,34 +154,20 @@
 }
 .bordy-pose-sad { animation: bordy-dizzy 1.3s ease-in-out infinite; }
 
-/* Pensando: no un vaivén de metrónomo, sino que se ASOMA — se inclina y se
-   acerca un poco, como quien escudriña el tablero buscando la ruta. */
-@keyframes bordy-peek {
-  0%   { transform: rotate(-3deg) scale(1); }
-  35%  { transform: rotate(4deg) scale(1.04) translateY(-2px); }
-  65%  { transform: rotate(2.5deg) scale(1.04) translateY(-2px); }
-  100% { transform: rotate(-3deg) scale(1); }
+/* Pensando: cabeza ladeada y quieta, contemplativa. Antes se "asomaba"
+   escalando hacia el tablero; se cambió porque el zoom leía como acercarse
+   a mirar, no como cavilar. Ahora la vida la ponen los ojos (que barren) y
+   el brazo en la barbilla, no el tamaño del cuerpo. */
+@keyframes bordy-cavila {
+  0%, 100% { transform: rotate(-7deg); }
+  50%      { transform: rotate(-4.5deg); }
 }
-.bordy-pose-think { animation: bordy-peek 2.4s ease-in-out infinite; }
+.bordy-pose-think { animation: bordy-cavila 3.4s ease-in-out infinite; }
 
-/* LED semáforo sobre la bolita de la antena del render. Punto sólido pintado
-   ENCIMA — nada de mix-blend: sobre el amarillo de la bolita, `screen` lava el
-   rojo hasta volverlo blanco y el estado de fallo se vuelve invisible. El halo
-   sale de box-shadow. Posición calibrada contra el render, no estimada. */
-.bordy-led {
-  position: absolute;
-  left: 52.5%;
-  top: 3.6%;
-  width: 21%;
-  max-width: 21px;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.55) 0%, var(--led) 45%, color-mix(in srgb, var(--led) 72%, #000) 100%);
-  box-shadow: 0 0 16px 5px color-mix(in srgb, var(--led) 55%, transparent);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
-}
+/* El LED semáforo ahora vive en `.br-led`, DENTRO del grupo de la antena del
+   rig, para que rote con ella. Estas clases de pulso se siguen aplicando ahí.
+   (Nota que sigue valiendo: nada de mix-blend — sobre el amarillo de la
+   bolita, `screen` lava el rojo y el estado de fallo se vuelve invisible.) */
 @keyframes bordy-led-pulse {
   0%, 100% { opacity: 0.55; }
   50%      { opacity: 1; }
@@ -244,6 +216,185 @@
   opacity: 0;
   pointer-events: none;
   animation: bordy-think 2.2s ease-in-out infinite;
+}
+
+/* ===== Bordy RIGGEADO =====
+   El render dejó de ser una sola imagen: `scripts/despiece-bordy.py` lo parte
+   en capas (base, antena, orejas, brazos, boca) y los ojos se redibujan como
+   SVG. Eso desbloquea lo que un raster entero no puede: brazos que rotan en
+   el HOMBRO y una cara que cambia de expresión.
+   Las posiciones son % medidos sobre el arte fuente de 1280x1520, así que
+   reensamblan el original exacto (verificado: 5 px de diferencia en 884.449).
+   `aspect-ratio` + `margin-inline:auto` imitan el object-contain que hacía
+   el <img> anterior, para no romper a quien le pasa un contenedor cualquiera. */
+.bordy-rig { position: relative; height: 100%; aspect-ratio: 1280 / 1520; margin-inline: auto; max-width: 100%; }
+.bordy-rig > img { position: absolute; display: block; }
+.br-base   { left: 0;      top: 0;      width: 100%; }
+.br-orejaI { left: 13.75%; top: 28.95%; width: 4.45%;  transform-origin: 100% 50%; }
+.br-orejaD { left: 85.86%; top: 28.95%; width: 8.83%;  transform-origin: 0% 50%; }
+.br-brazoI { left: 18.13%; top: 61.71%; width: 11.41%; transform-origin: 85% 12%; }
+.br-brazoD { left: 77.27%; top: 63.09%; width: 12.27%; transform-origin: 15% 12%; }
+.br-boca   { left: 38.44%; top: 47.37%; width: 14.06%; }
+.br-cara   { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* La antena es un GRUPO (imagen + LED) para que el semáforo rote CON ella.
+   El LED sigue siendo información del juego, no decoración. */
+.br-antena { position: absolute; left: 48.36%; top: 0.20%; width: 9.53%; transform-origin: 50% 100%; }
+.br-antena img { width: 100%; display: block; }
+/* --- REPOSO: el estado que más se ve, así que es el que más tiene que
+       "respirar". Los brazos se mecen, la antena oscila y los ojos parpadean
+       solos cada ~5s. Todo desfasado del flote del cuerpo para que no lata
+       en bloque (eso es lo que delataba al PNG entero). --- */
+@keyframes br-brazoI-idle { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
+@keyframes br-brazoD-idle { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-6deg); } }
+.br-brazoI-idle { animation: br-brazoI-idle 3.6s ease-in-out infinite; }
+.br-brazoD-idle { animation: br-brazoD-idle 3.6s ease-in-out infinite; }
+
+@keyframes br-antena-idle { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+.br-antena-idle { animation: br-antena-idle 3.6s ease-in-out infinite; }
+
+/* Parpadeo: se aplasta el óvalo en Y. Posible solo porque los ojos ahora
+   son SVG y no están horneados en el visor. */
+@keyframes br-parpadeo { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.08); } 97% { transform: scaleY(1); } }
+.br-ojos-parpadean ellipse {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: br-parpadeo 5.2s ease-in-out infinite;
+}
+
+/* --- ACIERTO: los brazos SUBEN. Esto es lo que el PNG entero no podía
+       hacer, y es lo que convierte el salto en una celebración. --- */
+@keyframes br-brazoI-arriba {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(-115deg); }
+  70%  { transform: rotate(-100deg); }
+  100% { transform: rotate(-108deg); }
+}
+@keyframes br-brazoD-arriba {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(115deg); }
+  70%  { transform: rotate(100deg); }
+  100% { transform: rotate(108deg); }
+}
+.br-brazoI-arriba { animation: br-brazoI-arriba 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.br-brazoD-arriba { animation: br-brazoD-arriba 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+/* La antena late con RETARDO respecto al cuerpo (follow-through): la masa
+   de la bolita no frena a la vez que el torso. */
+@keyframes br-antena-latigazo {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(-26deg); }
+  45%  { transform: rotate(18deg); }
+  65%  { transform: rotate(-10deg); }
+  82%  { transform: rotate(5deg); }
+  100% { transform: rotate(0deg); }
+}
+.br-antena-latigazo { animation: br-antena-latigazo 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes br-orejaI-tiembla { 0%, 100% { transform: rotate(0) scale(1); } 30% { transform: rotate(-12deg) scale(1.08); } 60% { transform: rotate(6deg); } }
+@keyframes br-orejaD-tiembla { 0%, 100% { transform: rotate(0) scale(1); } 30% { transform: rotate(12deg) scale(1.08); } 60% { transform: rotate(-6deg); } }
+.br-orejaI-tiembla { animation: br-orejaI-tiembla 0.55s ease-in-out; }
+.br-orejaD-tiembla { animation: br-orejaD-tiembla 0.55s ease-in-out; }
+
+/* --- RACHA: celebración, no acrobacia. Antes era una voltereta de 360°;
+       se cambió porque leía como truco de circo y no como alegría. Ahora
+       son tres brincos con los brazos bombeando y los OJOS EN LLAMAS. --- */
+@keyframes bordy-festeja {
+  0%   { transform: translateY(0) scale(1, 1); }
+  8%   { transform: translateY(2%) scale(1.08, 0.9); }
+  22%  { transform: translateY(-15%) scale(0.96, 1.06) rotate(-4deg); }
+  36%  { transform: translateY(0) scale(1.06, 0.93); }
+  48%  { transform: translateY(-12%) scale(0.97, 1.05) rotate(4deg); }
+  62%  { transform: translateY(0) scale(1.05, 0.94); }
+  74%  { transform: translateY(-9%) scale(0.98, 1.04) rotate(-3deg); }
+  88%  { transform: translateY(0) scale(1.04, 0.95); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.bordy-festeja { animation: bordy-festeja 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@keyframes br-brazoI-bombea {
+  0%{transform:rotate(0)} 15%{transform:rotate(-118deg)} 35%{transform:rotate(-78deg)}
+  55%{transform:rotate(-118deg)} 75%{transform:rotate(-78deg)} 100%{transform:rotate(-112deg)}
+}
+@keyframes br-brazoD-bombea {
+  0%{transform:rotate(0)} 15%{transform:rotate(118deg)} 35%{transform:rotate(78deg)}
+  55%{transform:rotate(118deg)} 75%{transform:rotate(78deg)} 100%{transform:rotate(112deg)}
+}
+.br-brazoI-bombea { animation: br-brazoI-bombea 1.5s ease-in-out; }
+.br-brazoD-bombea { animation: br-brazoD-bombea 1.5s ease-in-out; }
+
+@keyframes br-antena-vibra {
+  0%,100%{transform:rotate(-14deg)} 25%{transform:rotate(14deg)}
+  50%{transform:rotate(-10deg)} 75%{transform:rotate(10deg)}
+}
+.br-antena-vibra { animation: br-antena-vibra 0.35s ease-in-out 4; }
+
+/* Las llamas ondean desde su base. `fill-box` para que el origen sea la
+   propia llama y no el lienzo entero del SVG. */
+@keyframes br-llamita {
+  0%,100% { transform: scale(1, 1) rotate(0deg); }
+  22%     { transform: scale(0.9, 1.2) rotate(-4deg); }
+  48%     { transform: scale(1.1, 0.9) rotate(3deg); }
+  72%     { transform: scale(0.94, 1.12) rotate(-2deg); }
+}
+.br-llama-ojo {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: br-llamita 0.36s ease-in-out infinite;
+}
+
+/* --- FALLO: se desinfla. Los brazos CAEN y la antena se dobla hacia
+       adelante — el lenguaje corporal de "se me bajó la energía", que un
+       raster entero solo podía insinuar ladeándose. --- */
+@keyframes br-brazoI-cae { to { transform: rotate(28deg) translateY(6%); } }
+@keyframes br-brazoD-cae { to { transform: rotate(-28deg) translateY(6%); } }
+.br-brazoI-cae { animation: br-brazoI-cae 0.45s ease-out forwards; }
+.br-brazoD-cae { animation: br-brazoD-cae 0.45s ease-out forwards; }
+
+@keyframes br-antena-triste { to { transform: rotate(-30deg) translateY(4%); } }
+.br-antena-triste { animation: br-antena-triste 0.5s ease-out forwards; }
+
+/* --- DESVÍO: un casi-acierto no merece el mismo castigo que el fallo. En
+       vez de desinflarse, saluda con un brazo: reconoce el intento. --- */
+@keyframes br-brazoD-saluda {
+  0%{transform:rotate(0)} 20%{transform:rotate(120deg)} 35%{transform:rotate(95deg)}
+  50%{transform:rotate(125deg)} 65%{transform:rotate(95deg)} 80%{transform:rotate(120deg)}
+  100%{transform:rotate(0)}
+}
+.br-brazoD-saluda { animation: br-brazoD-saluda 1.4s ease-in-out; }
+
+/* --- PENSANDO: un brazo sube a la "barbilla" y se queda ahí. El gesto
+       clásico de cavilar, imposible sin brazos separados. --- */
+@keyframes br-brazoD-piensa { to { transform: rotate(74deg) translate(-16%, -14%); } }
+.br-brazoD-piensa { animation: br-brazoD-piensa 0.55s ease-out forwards; }
+@keyframes br-brazoI-quieto { to { transform: rotate(3deg); } }
+.br-brazoI-quieto { animation: br-brazoI-quieto 0.5s ease-out forwards; }
+
+/* La antena se ladea y queda "procesando". */
+@keyframes br-antena-piensa { 0%, 100% { transform: rotate(12deg); } 50% { transform: rotate(20deg); } }
+.br-antena-piensa { animation: br-antena-piensa 2.8s ease-in-out infinite; }
+
+/* El barrido de los ojos va por CSS (no con <animate> de SMIL, que ignora
+   prefers-reduced-motion). Las unidades son del viewBox, no px de pantalla. */
+@keyframes br-ojo-barre {
+  0%, 100% { transform: translateX(-14px); }
+  50%      { transform: translateX(16px); }
+}
+.br-ojos-piensan ellipse {
+  transform-box: fill-box;
+  animation: br-ojo-barre 3.2s ease-in-out infinite;
+}
+
+.br-led {
+  position: absolute;
+  left: 50%; top: 29%;
+  width: 64%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.6) 0%, var(--led) 46%, color-mix(in srgb, var(--led) 68%, #000) 100%);
+  box-shadow: 0 0 14px 5px color-mix(in srgb, var(--led) 55%, transparent);
+  transition: background 0.28s ease, box-shadow 0.28s ease;
 }
 
 /* Aparición con "pop" */
@@ -552,7 +703,6 @@ body {
      el estado con COLOR, que es la parte informativa. El ladeo de fallo se
      conserva (es pose, no movimiento) pero entra sin transición. */
   .bordy-hop,
-  .bordy-hop-big,
   .bordy-shake,
   .bordy-nope,
   .bordy-pose-think,
@@ -562,6 +712,33 @@ body {
   .bordy-pose { transition: none; }
   /* El ladeo de fallo se conserva como pose fija (sin el balanceo woozy). */
   .bordy-pose-sad { animation: none; transform: rotate(-7deg) translateY(3px); }
+
+  /* --- Bordy riggeado ---
+     Se apaga el MOVIMIENTO pero se conservan las POSES finales: los brazos
+     arriba al celebrar o caídos al fallar son información sobre el estado,
+     igual que el color del LED. Quitarlas dejaría a Bordy inexpresivo en
+     vez de solo quieto. */
+  .bordy-festeja,
+  .br-brazoI-idle, .br-brazoD-idle,
+  .br-antena-idle, .br-antena-latigazo, .br-antena-vibra, .br-antena-piensa,
+  .br-orejaI-tiembla, .br-orejaD-tiembla,
+  .br-brazoD-saluda { animation: none; }
+
+  .br-brazoI-arriba { animation: none; transform: rotate(-108deg); }
+  .br-brazoD-arriba { animation: none; transform: rotate(108deg); }
+  .br-brazoI-bombea { animation: none; transform: rotate(-112deg); }
+  .br-brazoD-bombea { animation: none; transform: rotate(112deg); }
+  .br-brazoI-cae    { animation: none; transform: rotate(28deg) translateY(6%); }
+  .br-brazoD-cae    { animation: none; transform: rotate(-28deg) translateY(6%); }
+  .br-brazoD-piensa { animation: none; transform: rotate(74deg) translate(-16%, -14%); }
+  .br-brazoI-quieto { animation: none; transform: rotate(3deg); }
+  .br-antena-triste { animation: none; transform: rotate(-30deg) translateY(4%); }
+
+  /* Ojos: la FORMA se conserva (feliz, aspas, llama son expresión); solo
+     se detiene el parpadeo, el barrido y el ondear del fuego. */
+  .br-ojos-parpadean ellipse,
+  .br-ojos-piensan ellipse,
+  .br-llama-ojo { animation: none; }
   .bordy-spark { display: none; }
   .bordy-think-dot { animation: none; opacity: 0.7; }
 
