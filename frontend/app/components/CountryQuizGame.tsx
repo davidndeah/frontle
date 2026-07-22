@@ -27,7 +27,7 @@ function BigFlag({ name }: { name: string }) {
   useEffect(() => setFailed(false), [name]);
   if (!c) return null;
   return (
-    <div className="w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20 flex items-center justify-center py-6">
+    <div className="w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20 flex items-center justify-center py-6">
       {failed ? (
         <span className="text-[96px] leading-none drop-shadow-2xl" aria-hidden>{c.flag}</span>
       ) : (
@@ -117,7 +117,7 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
       {/* volver */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
+        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
         <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
       </button>
 
@@ -127,7 +127,7 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
           <button
             key={lv}
             onClick={() => { setLevel(lv); newRound(lv); }}
-            className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-[#fcff52] text-[#1c0b3e]" : "bg-[#1c0b3e] text-white"}`}
+            className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
           >
             {tr.levels[lv]}
           </button>
@@ -140,7 +140,7 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
 
       {/* pistas reveladas */}
       {hints.slice(0, revealed).map((h, i) => (
-        <p key={i} className="text-center text-sm text-[#fcff52]">
+        <p key={i} className="text-center text-sm text-gold">
           💡 {h.kind === "continent" ? tr.quiz.continentIn(tr.continents[h.text as keyof typeof tr.continents]) : h.text}
         </p>
       ))}
@@ -172,10 +172,10 @@ frontle.vercel.app`}
             />
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e]">
+            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
               🔄 {tr.practiceNextRound}
             </button>
-            <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white">
+            <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.region.chooseOtherMode}
             </button>
           </div>
@@ -189,13 +189,13 @@ frontle.vercel.app`}
               onChange={(e) => setInput(e.target.value)}
               placeholder={tr.placeholder}
               autoComplete="off"
-              className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
+              className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
             />
-            <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
+            <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
           </form>
 
           {suggestions.length > 0 && (
-            <ul className="absolute z-20 top-14 w-full rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 overflow-hidden shadow-2xl">
+            <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
               {suggestions.map((s) => (
                 <li key={s}>
                   <button type="button" onClick={() => submit(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10">
@@ -214,7 +214,7 @@ frontle.vercel.app`}
             <button
               onClick={() => void paidReveal()}
               disabled={revealed >= hints.length}
-              className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-4 py-1.5 text-xs text-white disabled:opacity-50"
+              className="brutal-sm brutal-press rounded-lg bg-surface px-4 py-1.5 text-xs text-white disabled:opacity-50"
             >
               💡 {tr.quiz.hintBtn} ({revealed}/{hints.length}) · {tr.coins.cost(3)}
             </button>

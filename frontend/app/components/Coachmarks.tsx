@@ -40,7 +40,7 @@ export default function Coachmarks({ steps, labels, onDone }: { steps: CoachStep
     <div className="fixed inset-0 z-[70]">
       {/* spotlight: el hueco lo hace el box-shadow gigante */}
       <div
-        className="absolute rounded-2xl border-2 border-[#fcff52] transition-all duration-300 pointer-events-none"
+        className="absolute rounded-2xl border-2 border-gold transition-all duration-300 pointer-events-none"
         style={{
           left: rect.left - pad,
           top: rect.top - pad,

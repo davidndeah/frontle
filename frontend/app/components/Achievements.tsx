@@ -68,7 +68,7 @@ export default function Achievements({ tr, playerId }: { tr: ReturnType<typeof t
           🎖️ {tr.achievements.title}
         </p>
         {points !== null && points > 0 && (
-          <span className="rounded-full border border-[#fcff52]/40 bg-[#fcff52]/10 px-2.5 py-0.5 text-[11px] font-semibold text-[#fcff52]">
+          <span className="rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-[11px] font-semibold text-gold">
             ✨ {tr.points.total(points)}
           </span>
         )}
@@ -85,7 +85,7 @@ export default function Achievements({ tr, playerId }: { tr: ReturnType<typeof t
               title={item.desc}
               className={`relative rounded-xl border px-2 py-3 text-center ${
                 on
-                  ? `border-[#fcff52]/40 bg-[#fcff52]/10${fresh.has(id) ? " award-pop" : ""}`
+                  ? `border-gold/40 bg-gold/10${fresh.has(id) ? " award-pop" : ""}`
                   : "border-white/10 bg-white/5"
               }`}
             >

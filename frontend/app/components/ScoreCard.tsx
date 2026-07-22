@@ -38,11 +38,11 @@ export default function ScoreCard({
     <div className="flex flex-col items-center gap-3">
       <canvas
         ref={canvasRef}
-        className="w-full max-w-[280px] rounded-2xl border border-[#b79ced]/25 shadow-xl"
+        className="w-full max-w-[280px] rounded-2xl border border-lavender/25 shadow-xl"
       />
       <button
         onClick={share}
-        className="brutal-sm brutal-press w-full rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e]"
+        className="brutal-sm brutal-press w-full rounded-xl bg-gold px-6 py-3 font-bold text-surface"
       >
         {done ? copiedLabel : `📤 ${label}`}
       </button>

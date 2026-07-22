@@ -32,7 +32,7 @@ export default function CountryOutline({ country, loadingLabel }: { country: str
   }, [feat]);
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20">
+    <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!d ? (
         <div className="h-[240px] flex items-center justify-center text-neutral-300 text-sm">{loadingLabel}</div>
       ) : (
@@ -40,7 +40,7 @@ export default function CountryOutline({ country, loadingLabel }: { country: str
           <path
             d={d}
             fill="rgba(183,156,237,0.35)"
-            stroke="#b79ced"
+            stroke="var(--lavender)"
             strokeWidth={1}
             vectorEffect="non-scaling-stroke"
             style={{ filter: "drop-shadow(0 0 8px rgba(183,156,237,0.45))" }}

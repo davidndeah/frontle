@@ -170,7 +170,7 @@ export default function PrivacyContent() {
           ))}
           <p>
             <b className="text-white">{d.contactTitle}</b> {d.contactPre}{" "}
-            <a href="mailto:appfrontle@gmail.com" className="text-[#fcff52] underline">appfrontle@gmail.com</a>{" "}
+            <a href="mailto:appfrontle@gmail.com" className="text-gold underline">appfrontle@gmail.com</a>{" "}
             {d.contactMid}{" "}
             <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">X @frontle_app</a>.
           </p>

@@ -133,10 +133,10 @@ export default function RegionMap({
   }
 
   const btn =
-    "w-7 h-7 rounded-md bg-[#1c0b3e]/80 border border-[#b79ced]/30 text-white text-base leading-none flex items-center justify-center active:scale-90 transition";
+    "w-7 h-7 rounded-md bg-surface/80 border border-lavender/30 text-white text-base leading-none flex items-center justify-center active:scale-90 transition";
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20">
+    <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!render ? (
         <div className="h-[220px] flex items-center justify-center text-neutral-300 text-sm">
           {loadingLabel}

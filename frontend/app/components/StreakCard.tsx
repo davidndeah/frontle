@@ -103,7 +103,7 @@ export default function StreakCard({ tr, onStreak }: { tr: ReturnType<typeof t>;
           <button
             onClick={onRepair}
             disabled={busy !== null}
-            className={`brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-2 text-xs font-bold text-[#1c0b3e] disabled:opacity-50 ${busy === "repair" ? "animate-pulse" : ""}`}
+            className={`brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-2 text-xs font-bold text-surface disabled:opacity-50 ${busy === "repair" ? "animate-pulse" : ""}`}
           >
             🛠️ {tr.streakCard.repair(quote.streakLen)} · {tr.coins.cost(quote.cost)}
           </button>

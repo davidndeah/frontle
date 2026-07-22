@@ -51,7 +51,7 @@ export default function RegionMapPreview({
   }, [features]);
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20">
+    <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!paths ? (
         <div className="h-[180px] flex items-center justify-center text-neutral-300 text-sm">
           {loadingLabel}

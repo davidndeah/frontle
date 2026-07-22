@@ -36,12 +36,12 @@ function EntityFlag({ regionId, code, size = 28 }: { regionId: string; code: str
   if (!ok || !code) {
     return (
       <span
-        className="inline-flex items-center justify-center rounded-[3px] border border-[#b79ced]/40 font-display font-bold text-[#e9d5ff] uppercase"
+        className="inline-flex items-center justify-center rounded-[3px] border border-lavender/40 font-display font-bold text-[#e9d5ff] uppercase"
         style={{
           width: size,
           height: Math.round(size * (2 / 3)),
           fontSize: Math.max(9, size * 0.3),
-          background: "linear-gradient(135deg, #2a1650 0%, #160833 100%)",
+          background: "linear-gradient(135deg, var(--surface) 0%, var(--bg) 100%)",
           letterSpacing: "0.05em",
         }}
       >
@@ -210,7 +210,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
       {/* volver */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
+        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`/flags/national/${regionId}.webp`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
         <span className="font-display font-semibold">{def.title}</span>
@@ -240,7 +240,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
       {started ? (
         <>
           <p className="text-center -my-1">
-            <span className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
+            <span className="inline-block text-lg font-mono font-bold bg-surface/60 border border-lavender/20 rounded-full px-4 py-1 tabular-nums">
               🕒 {formatTime(elapsedMs)}
             </span>
           </p>
@@ -275,13 +275,13 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={tr.region.placeholder(nounForms.one)}
                   autoComplete="off"
-                  className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
+                  className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                 />
-                <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
+                <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
               </form>
 
               {suggestions.length > 0 && (
-                <ul className="absolute z-20 top-14 w-full rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 overflow-hidden shadow-2xl">
+                <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
                   {suggestions.map((s) => (
                     <li key={s}>
                       <button type="button" onClick={() => submit(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
@@ -298,7 +298,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
               )}
 
               {showInitial && hintEntity && (
-                <p className="text-center text-sm text-[#fcff52]">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one)}</p>
+                <p className="text-center text-sm text-gold">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one)}</p>
               )}
               {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
                   lo valida el servidor; sin saldo, se abre la tienda. */}
@@ -323,7 +323,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
 
 function RChip({ regionId, name, code, kind }: { regionId: string; name: string; code: string; kind: Status }) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-xl border bg-[#1c0b3e]/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${CHIP[kind]}`}>
+    <div className={`flex flex-col items-center justify-center rounded-xl border bg-surface/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${CHIP[kind]}`}>
       <EntityFlag regionId={regionId} code={code} size={26} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
@@ -360,7 +360,7 @@ function RegionWin({
           copiedLabel={tr.copied}
         />
       </div>
-      <button onClick={onExit} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white">
+      <button onClick={onExit} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-surface px-6 py-3 font-bold text-white">
         {tr.region.chooseOtherMode}
       </button>
       <p className="text-[11px] text-neutral-400 mt-3">{tr.region.modeFooter(def.title)}</p>
@@ -374,7 +374,7 @@ function HintBtn({ onClick, active, label }: { onClick: () => void; active: bool
     <button
       onClick={onClick}
       disabled={active}
-      className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-1.5 text-xs text-white disabled:opacity-50"
+      className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-1.5 text-xs text-white disabled:opacity-50"
     >
       {label} {active ? "✓" : ""}
     </button>
