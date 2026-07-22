@@ -1487,16 +1487,23 @@ export default function Frontle() {
 
       {/* Bordy de esquina (mascota persistente; abre el tutorial completo).
           Oculto durante la partida activa para no tapar el input/OK. */}
-      {/* Bordy flotante. Durante la partida SÍ se queda (antes se escondía por
-          completo): es justo cuando tiene algo que decir con su reacción. Para
-          no estorbar mientras se escribe, ahí se encoge a la mitad y baja la
-          opacidad — sigue leyéndose el color del LED, que es lo informativo. */}
+      {/* Bordy flotante. Durante la partida SÍ se queda: es justo cuando tiene
+          algo que decir con su reacción. Para no estorbar mientras se escribe
+          se encoge a la mitad y baja la opacidad — PERO solo mientras está en
+          reposo. En cuanto reacciona vuelve a tamaño completo: a 40x48 px sus
+          brazos miden ~7 px y los ojos ~3 px, así que la expresión del rig era
+          literalmente invisible justo en el momento que importa. `transition-all`
+          hace que el cambio se lea como que se acerca a opinar. */}
       {!overlay && (
         <button
           onClick={() => setBordyMenu(true)}
           aria-label={tr.bordyMenu.open}
           className={`bordy-fab fixed right-2 z-30 active:scale-90 transition-all ${
-            jugando ? "w-[40px] h-[48px] opacity-65" : "w-[64px] h-[76px]"
+            bordyMood !== "idle"
+              ? "w-[96px] h-[114px]" // reaccionando: crece para que la cara se lea
+              : jugando
+                ? "w-[40px] h-[48px] opacity-65" // escribiendo: fuera del camino
+                : "w-[64px] h-[76px]"
           }`}
         >
           <Bordy mood={bordyMood} className="w-full h-full" imgClassName="drop-shadow-xl" />
