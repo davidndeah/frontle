@@ -140,16 +140,17 @@
   @keyframes cavila{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(-4.5deg)}}
   .cavila{animation:cavila 3.4s ease-in-out infinite}
 
-  /* ===== FUEGO de racha ("estás en llamas") ===== */
-  .fuego{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;
-    transition:opacity .25s ease}
-  .fuego.on{opacity:1}
-  @keyframes llama{
-    0%,100%{transform:scaleY(1) scaleX(1) translateY(0);opacity:.9}
-    30%{transform:scaleY(1.35) scaleX(.86) translateY(-4%);opacity:1}
-    55%{transform:scaleY(.86) scaleX(1.12) translateY(2%);opacity:.75}
-    78%{transform:scaleY(1.2) scaleX(.94) translateY(-2%);opacity:.95}}
-  .fuego g{transform-box:fill-box;transform-origin:50% 100%;animation:llama .5s ease-in-out infinite}
+  /* ===== OJOS EN LLAMAS (racha) =====
+     La gracia del despiece: como los ojos ya son vectoriales, en racha se
+     reemplazan por dos llamas que ondean. Cada una con su propio desfase
+     para que no bailen en espejo (eso las delataría como copia). */
+  @keyframes llamita{
+    0%,100%{transform:scale(1,1) rotate(0deg)}
+    22%    {transform:scale(.9,1.2) rotate(-4deg)}
+    48%    {transform:scale(1.1,.9) rotate(3deg)}
+    72%    {transform:scale(.94,1.12) rotate(-2deg)}}
+  .llama-ojo{transform-box:fill-box;transform-origin:50% 92%;
+    animation:llamita .36s ease-in-out infinite}
 
   /* puntitos de pensar */
   .puntos{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .25s}
@@ -178,22 +179,6 @@
 
   <div class="stage">
     <div class="bordy respira" id="root">
-      <!-- fuego detrás de todo -->
-      <svg class="fuego" id="fuego" viewBox="0 0 1280 1520" aria-hidden="true">
-        <defs>
-          <linearGradient id="gf" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stop-color="#ff3d00"/><stop offset="45%" stop-color="#ff8a00"/>
-            <stop offset="100%" stop-color="#ffe74a"/>
-          </linearGradient>
-        </defs>
-        <g style="animation-delay:0s"><path fill="url(#gf)" d="M420 1460 C 356 1370, 372 1272, 420 1196 C 468 1272, 484 1370, 420 1460 Z"/></g>
-        <g style="animation-delay:.12s"><path fill="url(#gf)" d="M560 1480 C 480 1364, 500 1230, 560 1130 C 620 1230, 640 1364, 560 1480 Z"/></g>
-        <g style="animation-delay:.26s"><path fill="url(#gf)" d="M710 1480 C 630 1364, 650 1230, 710 1130 C 770 1230, 790 1364, 710 1480 Z"/></g>
-        <g style="animation-delay:.38s"><path fill="url(#gf)" d="M850 1460 C 786 1370, 802 1272, 850 1196 C 898 1272, 914 1370, 850 1460 Z"/></g>
-        <g style="animation-delay:.2s"><path fill="url(#gf)" d="M330 1450 C 288 1392, 298 1330, 330 1284 C 362 1330, 372 1392, 330 1450 Z"/></g>
-        <g style="animation-delay:.32s"><path fill="url(#gf)" d="M945 1450 C 903 1392, 913 1330, 945 1284 C 977 1330, 987 1392, 945 1450 Z"/></g>
-      </svg>
-
       <img class="p-orejaI" id="orejaI" src="../../frontend/public/bordy/oreja-izq.png" alt="">
       <img class="p-orejaD" id="orejaD" src="../../frontend/public/bordy/oreja-der.png" alt="">
       <div class="p-antena" id="antena">
@@ -219,7 +204,7 @@
     <div class="label">Estados</div>
     <div class="row" id="btns"></div>
     <div class="hint">
-      <b>Racha</b> ahora es celebración: tres brincos con los brazos bombeando y <b>fuego</b> ("estás en llamas"), sin voltereta.<br>
+      <b>Racha</b>: los <b>ojos se vuelven llamas</b> 🔥 mientras festeja con tres brincos y los brazos bombeando.<br>
       <b>Pensando</b> reworkeado: cabeza ladeada, brazo en la barbilla, <b>los ojos barren de lado a lado</b> y vuelven los puntitos.<br>
       El <b>LED</b> cambia de color en todos los estados (desvío ahora es naranja, antes era idéntico al reposo).
     </div>
@@ -243,6 +228,22 @@ function ojoFeliz(o){return '<path d="M '+(o.cx-o.r-6)+' '+(o.cy+14)+' Q '+o.cx+
   '" stroke="'+TINTA+'" stroke-width="24" fill="none" stroke-linecap="round"/>';}
 function ojoX(o){var r=o.r;return '<path d="M '+(o.cx-r)+' '+(o.cy-r)+' L '+(o.cx+r)+' '+(o.cy+r)+' M '+(o.cx+r)+' '+(o.cy-r)+' L '+(o.cx-r)+' '+(o.cy+r)+
   '" stroke="'+TINTA+'" stroke-width="22" stroke-linecap="round"/>';}
+// racha: el ojo ES una llama. Base ancha sobre la cuenca, punta arriba, más
+// un núcleo amarillo interior que le da profundidad.
+function ojoLlama(o,delay){
+  var x=o.cx, y=o.cy;
+  var fuera='M '+x+' '+(y-92)+' C '+(x+40)+' '+(y-34)+', '+(x+50)+' '+(y+18)+', '+x+' '+(y+56)+
+            ' C '+(x-50)+' '+(y+18)+', '+(x-40)+' '+(y-34)+', '+x+' '+(y-92)+' Z';
+  var dentro='M '+x+' '+(y-46)+' C '+(x+22)+' '+(y-12)+', '+(x+27)+' '+(y+16)+', '+x+' '+(y+42)+
+             ' C '+(x-27)+' '+(y+16)+', '+(x-22)+' '+(y-12)+', '+x+' '+(y-46)+' Z';
+  return '<g class="llama-ojo" style="animation-delay:'+delay+'">'+
+         '<path d="'+fuera+'" fill="url(#gLlama)"/>'+
+         '<path d="'+dentro+'" fill="#ffe74a" opacity=".92"/></g>';
+}
+var DEFS_LLAMA='<defs><linearGradient id="gLlama" x1="0" y1="1" x2="0" y2="0">'+
+  '<stop offset="0%" stop-color="#ff3d00"/><stop offset="50%" stop-color="#ff8a00"/>'+
+  '<stop offset="100%" stop-color="#ffe74a"/></linearGradient></defs>';
+
 // pensando: ojo entrecerrado que BARRE de lado a lado (solo posible con ojos vectoriales)
 function ojoPiensa(o){
   return '<ellipse cx="'+o.cx+'" cy="'+(o.cy-6)+'" rx="'+o.r+'" ry="'+(o.r*0.5)+'" fill="'+TINTA+'">'+
@@ -268,7 +269,7 @@ var EST={
   acierto:{cuerpo:"salto",brazoI:"brazoI-arriba",brazoD:"brazoD-arriba",antena:"antena-latigazo",
           orejas:1,ojos:"feliz",boca:"grande",dur:900},
   racha:{cuerpo:"festeja",brazoI:"brazoI-bombea",brazoD:"brazoD-bombea",antena:"antena-vibra",
-          orejas:1,ojos:"feliz",boca:"grande",led:"led-rapido",fuego:1,dur:1700},
+          orejas:1,ojos:"llama",boca:"grande",led:"led-rapido",dur:1700},
   fallo:{cuerpo:"sacude",luego:"mareo",brazoI:"brazoI-cae",brazoD:"brazoD-cae",antena:"antena-triste",
           ojos:"x",boca:"mueca",dur:1800},
   desvio:{cuerpo:"sacude",brazoI:"brazoI-idle",brazoD:"brazoD-saluda",antena:"antena-latigazo",
@@ -283,13 +284,14 @@ var NOM={reposo:"reposo",acierto:"acierto",racha:"racha",fallo:"fallo",desvio:"d
 var root=document.getElementById("root"),cara=document.getElementById("cara"),boca=document.getElementById("boca"),
     est=document.getElementById("est"),brazoI=document.getElementById("brazoI"),brazoD=document.getElementById("brazoD"),
     antena=document.getElementById("antena"),orejaI=document.getElementById("orejaI"),orejaD=document.getElementById("orejaD"),
-    led=document.getElementById("led"),fuego=document.getElementById("fuego"),puntos=document.getElementById("puntos"),
+    led=document.getElementById("led"),puntos=document.getElementById("puntos"),
     chip=document.getElementById("chip"),ledName=document.getElementById("ledName");
 var t1=null,t2=null,tB=null;
 
 function pintaCara(o,b){
   var s="";
-  if(o==="feliz")s=ojoFeliz(OJO_I)+ojoFeliz(OJO_D);
+  if(o==="llama")s=DEFS_LLAMA+ojoLlama(OJO_I,"0s")+ojoLlama(OJO_D,".18s");
+  else if(o==="feliz")s=ojoFeliz(OJO_I)+ojoFeliz(OJO_D);
   else if(o==="x")s=ojoX(OJO_I)+ojoX(OJO_D);
   else if(o==="piensa")s=ojoPiensa(OJO_I)+ojoPiensa(OJO_D);
   else if(o==="grande")s=ojoNormal(OJO_I,54)+ojoNormal(OJO_D,54);
@@ -313,7 +315,6 @@ function set(e){
   led.style.setProperty("--led",LED[e]);
   led.className="led";void led.offsetWidth;if(c.led)led.className="led "+c.led;
   chip.style.background=LED[e];ledName.textContent=LEDNOM[e];
-  fuego.classList.toggle("on",!!c.fuego);
   puntos.classList.toggle("on",!!c.puntos);
   pintaCara(c.ojos,c.boca);
   est.textContent=NOM[e];
