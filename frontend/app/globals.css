@@ -153,11 +153,15 @@
 }
 .bordy-pose-sad { animation: bordy-dizzy 1.3s ease-in-out infinite; }
 
-@keyframes bordy-sway {
-  0%, 100% { transform: rotate(-1.6deg); }
-  50%      { transform: rotate(1.6deg); }
+/* Pensando: no un vaivén de metrónomo, sino que se ASOMA — se inclina y se
+   acerca un poco, como quien escudriña el tablero buscando la ruta. */
+@keyframes bordy-peek {
+  0%   { transform: rotate(-3deg) scale(1); }
+  35%  { transform: rotate(4deg) scale(1.04) translateY(-2px); }
+  65%  { transform: rotate(2.5deg) scale(1.04) translateY(-2px); }
+  100% { transform: rotate(-3deg) scale(1); }
 }
-.bordy-pose-think { animation: bordy-sway 2.6s ease-in-out infinite; }
+.bordy-pose-think { animation: bordy-peek 2.4s ease-in-out infinite; }
 
 /* LED semáforo sobre la bolita de la antena del render. Punto sólido pintado
    ENCIMA — nada de mix-blend: sobre el amarillo de la bolita, `screen` lava el
