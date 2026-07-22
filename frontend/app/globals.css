@@ -117,20 +117,6 @@
 }
 .bordy-hop { animation: bordy-hop 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
 
-/* Racha / victoria: voltereta completa. Se agacha para cargar impulso,
-   despega girando 360°, y aterriza aplastándose antes de reasentarse. Un
-   giro entero (no un ladeo) es lo que hace que se lea "vivo" como el 3D. */
-@keyframes bordy-hop-big {
-  0%   { transform: translateY(0) scale(1, 1) rotate(0deg); }
-  12%  { transform: translateY(5px) scale(1.09, 0.88) rotate(0deg); }      /* anticipación: carga */
-  40%  { transform: translateY(-54px) scale(0.94, 1.08) rotate(-205deg); } /* despega girando */
-  58%  { transform: translateY(-60px) scale(1, 1) rotate(-320deg); }       /* cima de la voltereta */
-  78%  { transform: translateY(0) scale(1.09, 0.89) rotate(-360deg); }     /* aterriza aplastado, giro completo */
-  90%  { transform: translateY(-11px) scale(0.98, 1.03) rotate(-360deg); } /* rebote */
-  100% { transform: translateY(0) scale(1, 1) rotate(-360deg); }
-}
-.bordy-hop-big { animation: bordy-hop-big 1.05s cubic-bezier(0.22, 1, 0.36, 1); }
-
 /* Fallo: sacudida corta. El ladeo que la sigue vive en .bordy-pose-sad. */
 @keyframes bordy-shake {
   0%   { transform: translateX(0); }
@@ -178,24 +164,10 @@
 }
 .bordy-pose-think { animation: bordy-cavila 3.4s ease-in-out infinite; }
 
-/* LED semáforo sobre la bolita de la antena del render. Punto sólido pintado
-   ENCIMA — nada de mix-blend: sobre el amarillo de la bolita, `screen` lava el
-   rojo hasta volverlo blanco y el estado de fallo se vuelve invisible. El halo
-   sale de box-shadow. Posición calibrada contra el render, no estimada. */
-.bordy-led {
-  position: absolute;
-  left: 52.5%;
-  top: 3.6%;
-  width: 21%;
-  max-width: 21px;
-  aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(circle at 38% 32%, rgba(255, 255, 255, 0.55) 0%, var(--led) 45%, color-mix(in srgb, var(--led) 72%, #000) 100%);
-  box-shadow: 0 0 16px 5px color-mix(in srgb, var(--led) 55%, transparent);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
-}
+/* El LED semáforo ahora vive en `.br-led`, DENTRO del grupo de la antena del
+   rig, para que rote con ella. Estas clases de pulso se siguen aplicando ahí.
+   (Nota que sigue valiendo: nada de mix-blend — sobre el amarillo de la
+   bolita, `screen` lava el rojo y el estado de fallo se vuelve invisible.) */
 @keyframes bordy-led-pulse {
   0%, 100% { opacity: 0.55; }
   50%      { opacity: 1; }
@@ -731,7 +703,6 @@ body {
      el estado con COLOR, que es la parte informativa. El ladeo de fallo se
      conserva (es pose, no movimiento) pero entra sin transición. */
   .bordy-hop,
-  .bordy-hop-big,
   .bordy-shake,
   .bordy-nope,
   .bordy-pose-think,
