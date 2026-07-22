@@ -28,6 +28,13 @@ export const metadata: Metadata = {
   other: {
     "talentapp:project_verification":
       "f6cbe89fff8ad187d423f134f841edf187b4f3842e330a413e7f9f65520276c66a797b8c53f2c666877bcf9cf6dcfe7c0c022aa62fc3b52defe66791302d4f36",
+    // Farcaster Mini App manifest and embed tags
+    "fc:frame": "vNext",
+    "fc:frame:image": "https://frontle.vercel.app/bordy-m2.webp",
+    "fc:frame:button:1": "🌍 Jugar",
+    "fc:frame:button:1:action": "launch_frame",
+    "fc:frame:button:1:target": "https://frontle.vercel.app",
+    "fc:miniapp": "https://frontle.vercel.app/.well-known/farcaster.json",
   },
 };
 
