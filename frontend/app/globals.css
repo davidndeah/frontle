@@ -101,16 +101,19 @@
      .bordy-float → el flote ambiental de siempre, ya definido arriba
    Solo transform y opacity: nada que provoque layout. */
 
-/* Acierto: salto con squash & stretch (se aplasta al impulsar y al aterrizar). */
+/* Acierto: salto con anticipación y follow-through. Se agacha para cargar,
+   despega alto con un ladeo alegre, se endereza en la cima y aterriza
+   aplastándose con un rebote — no un brinco plano, sino un salto "con ganas". */
 @keyframes bordy-hop {
   0%   { transform: translateY(0) scale(1, 1); }
-  18%  { transform: translateY(2px) scale(1.05, 0.92); }
-  45%  { transform: translateY(-30px) scale(0.97, 1.05); }
-  72%  { transform: translateY(0) scale(1.04, 0.94); }
-  86%  { transform: translateY(-8px) scale(1, 1.01); }
+  15%  { transform: translateY(5px) scale(1.08, 0.89); }                 /* anticipación: carga */
+  45%  { transform: translateY(-38px) scale(0.95, 1.06) rotate(-4deg); } /* despega alto y alegre */
+  62%  { transform: translateY(-40px) scale(0.98, 1.02) rotate(3deg); }  /* cima, se endereza */
+  80%  { transform: translateY(0) scale(1.07, 0.9); }                    /* aterriza aplastado */
+  90%  { transform: translateY(-6px) scale(0.99, 1.02); }                /* rebote */
   100% { transform: translateY(0) scale(1, 1); }
 }
-.bordy-hop { animation: bordy-hop 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+.bordy-hop { animation: bordy-hop 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* Racha / victoria: voltereta completa. Se agacha para cargar impulso,
    despega girando 360°, y aterriza aplastándose antes de reasentarse. Un
