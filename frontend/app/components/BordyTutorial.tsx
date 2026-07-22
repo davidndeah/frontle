@@ -11,12 +11,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TUTORIAL_MAP } from "../lib/tutorialMap";
 import { countryName, t, type Locale } from "../lib/i18n";
+import { STATUS_COLORS } from "../lib/theme";
 
 type Dict = ReturnType<typeof t>;
 
-const COLORS: Record<string, string> = {
-  start: "#22d3ee", end: "#e879f9", green: "#22c55e", yellow: "#eab308", red: "#ef4444", off: "transparent",
-};
+// El tablero de ejemplo tiene que enseñar los MISMOS colores que el juego
+// real, o el tutorial estaría entrenando con un semáforo que no existe.
+const COLORS: Record<string, string> = { ...STATUS_COLORS, off: "transparent" };
 
 type DemoStatus = Record<string, keyof typeof COLORS | "off">;
 

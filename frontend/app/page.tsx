@@ -73,8 +73,17 @@ import {
 } from "./lib/payments";
 import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
+import Sheet from "./components/Sheet";
+import Bordy, { useBordyMood } from "./components/Bordy";
+import { STATUS_COLORS } from "./lib/theme";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
+
+// Tutorial visto. Un solo flag para el recorrido completo (modal + coachmarks):
+// antes había dos y podían quedar en estados incoherentes — p. ej. ver el modal
+// para siempre porque nunca marcaste su checkbox, pero no volver a ver nunca los
+// coachmarks porque esos se marcaban solos.
+const TUTORIAL_KEY = "frontle-tutorial-visto";
 
 // El SDK de Privy (~1.27 MB) sale del bundle inicial. `ssr: false` porque solo
 // existe en cliente. Ojo: se monta únicamente DESPUÉS de comprobar si estamos
@@ -192,6 +201,9 @@ export default function Frontle() {
   }, []);
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // Menú de Bordy (lo que abre el FAB) + su estado de ánimo reactivo.
+  const [bordyMenu, setBordyMenu] = useState(false);
+  const [bordyMood, reactBordy] = useBordyMood();
   // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
   const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
   // Modo Regiones activo (id de región: "co", "us"…) — null = modo mundial
@@ -221,12 +233,26 @@ export default function Frontle() {
       setNameModal(true);
     }
   }, [myId]);
-  // Coachmarks de las pistas (1ª vez): el juego se muestra en "modo previo"
-  // (países ocultos, cronómetro congelado) mientras Bordy explica. El reloj
-  // arranca SOLO al terminar el coach → nadie gana ventaja.
+  // Segunda mitad del tutorial: los coachmarks sobre el juego real. El juego
+  // se muestra en "modo previo" (países ocultos, cronómetro congelado)
+  // mientras Bordy explica; el reloj arranca SOLO al terminar → nadie gana
+  // ventaja por leer.
+  //
+  // Antes esto era un tutorial APARTE del modal, y salían los dos seguidos en
+  // la primera partida repitiendo lo mismo. Ahora es un solo recorrido: el
+  // modal enseña la mecánica y el semáforo con el tablero de ejemplo, y aquí
+  // se señalan las dos cosas que solo tienen sentido sobre la pantalla real
+  // (el panel de pistas y el cronómetro). Un único flag para los dos tramos.
   const [coaching, setCoaching] = useState(false);
   function coachSeen(): boolean {
-    try { return localStorage.getItem("frontle-coach-hints") === "1"; } catch { return true; }
+    try {
+      if (localStorage.getItem(TUTORIAL_KEY) === "1") return true;
+      // Migración: a quien ya vio el tutorial viejo COMPLETO (modal marcado
+      // como "no mostrar" + coachmarks) no se le vuelve a mostrar nada.
+      return localStorage.getItem("frontle-coach-hints") === "1";
+    } catch {
+      return true;
+    }
   }
   function enterGame() {
     if (coachSeen()) startGame();
@@ -302,6 +328,9 @@ export default function Frontle() {
     const id = setTimeout(() => setJustWon(false), 2000);
     return () => clearTimeout(id);
   }, [justWon]);
+
+  // Partida en curso: Bordy se aparta y el tutorial no debe interrumpir.
+  const jugando = tab === "jugar" && started && !state.solved;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
@@ -639,6 +668,13 @@ export default function Frontle() {
     else if (result.quality === "green") sfxGood();
     else if (result.quality === "yellow") sfxLateral();
     else if (result.quality === "red") sfxFar();
+    // Bordy reacciona con el mismo criterio que el semáforo, para que
+    // sonido, color de la ficha y mascota digan todos lo mismo.
+    if (!result.ok) reactBordy("fallo");
+    else if (result.solved) reactBordy("racha");
+    else if (result.quality === "green") reactBordy("acierto");
+    else if (result.quality === "yellow") reactBordy("desvio");
+    else if (result.quality === "red") reactBordy("fallo");
     if (result.ok && result.country && result.quality) {
       const newChain = [...state.chain, { country: result.country, quality: result.quality }];
       const solved = result.solved;
@@ -1134,11 +1170,11 @@ export default function Frontle() {
           <>
             <div className="flex items-center justify-center -mt-2">
               <div className="flex items-center gap-3 text-[11px] text-white bg-[#1c0b3e]/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#b79ced]/20">
-                <Legend color="#22d3ee" label={tr.legend.origin} />
-                <Legend color="#e879f9" label={tr.legend.destination} />
-                <Legend color="#22c55e" label={tr.legend.good} />
-                <Legend color="#eab308" label={tr.legend.lateral} />
-                <Legend color="#ef4444" label={tr.legend.far} />
+                <Legend color={STATUS_COLORS.start} label={tr.legend.origin} />
+                <Legend color={STATUS_COLORS.end} label={tr.legend.destination} />
+                <Legend color={STATUS_COLORS.green} label={tr.legend.good} />
+                <Legend color={STATUS_COLORS.yellow} label={tr.legend.lateral} />
+                <Legend color={STATUS_COLORS.red} label={tr.legend.far} />
               </div>
             </div>
 
@@ -1444,14 +1480,19 @@ export default function Frontle() {
 
       {/* Bordy de esquina (mascota persistente; abre el tutorial completo).
           Oculto durante la partida activa para no tapar el input/OK. */}
-      {!overlay && !(tab === "jugar" && started && !state.solved) && (
+      {/* Bordy flotante. Durante la partida SÍ se queda (antes se escondía por
+          completo): es justo cuando tiene algo que decir con su reacción. Para
+          no estorbar mientras se escribe, ahí se encoge a la mitad y baja la
+          opacidad — sigue leyéndose el color del LED, que es lo informativo. */}
+      {!overlay && (
         <button
-          onClick={() => setOverlay("full")}
-          aria-label="Bordy"
-          className="bordy-fab fixed right-2 z-30 w-[64px] h-[76px] bordy-float-sm active:scale-90 transition"
+          onClick={() => setBordyMenu(true)}
+          aria-label={tr.bordyMenu.open}
+          className={`bordy-fab fixed right-2 z-30 active:scale-90 transition-all ${
+            jugando ? "w-[40px] h-[48px] opacity-65" : "w-[64px] h-[76px]"
+          }`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.webp" alt="Bordy" className="w-full h-full object-contain drop-shadow-xl" />
+          <Bordy mood={bordyMood} className="w-full h-full" imgClassName="drop-shadow-xl" />
         </button>
       )}
 
@@ -1543,9 +1584,21 @@ export default function Frontle() {
         />
       )}
 
-      {/* Tienda de monedas (compartida por Home y Perfil). Al cerrar refresca
-          el saldo por si hubo compra. */}
+      {/* Tienda de monedas (compartida por Home, Perfil y el menú de Bordy).
+          Al cerrar refresca el saldo por si hubo compra. */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => { setShopOpen(false); refreshCoins(); }} />
+
+      {/* Menú de Bordy (FAB): reusa la tienda real de arriba, no una propia. */}
+      {bordyMenu && (
+        <BordyMenuSheet
+          onClose={() => setBordyMenu(false)}
+          onTutorial={() => setOverlay("full")}
+          onProfile={() => setTab("perfil")}
+          onSettings={() => setSettingsOpen(true)}
+          onShop={() => setShopOpen(true)}
+          tr={tr}
+        />
+      )}
 
       {/* Prompt de nombre al registrarse */}
       {nameModal && (
@@ -1570,13 +1623,16 @@ export default function Frontle() {
       {coaching && (
         <Coachmarks
           steps={[
-            { target: "game-input", text: tr.coachSteps[0] },
-            { target: "hints-panel", text: tr.coachSteps[1] },
-            { target: "game-timer", text: tr.coachSteps[2] },
+            // Solo lo que gana con señalarse en la pantalla real. El paso
+            // del input se eliminó: el modal ya explicó que se escriben
+            // países vecinos, y repetirlo era la redundancia más obvia
+            // entre los dos tutoriales.
+            { target: "hints-panel", text: tr.coachSteps[0] },
+            { target: "game-timer", text: tr.coachSteps[1] },
           ]}
           labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
           onDone={() => {
-            try { localStorage.setItem("frontle-coach-hints", "1"); } catch {}
+            try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
             setCoaching(false);
             startGame();
           }}
@@ -1743,53 +1799,120 @@ function WalletSheet({
   tr: ReturnType<typeof t>;
 }) {
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
-        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-3">{tr.walletSheet.title}</h3>
-        {myId ? (
-          <div className="panel p-4">
-            <div className="text-[11px] text-neutral-400">{tr.walletSheet.connectedAs}</div>
-            {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
-                forma truncada, que MiniPay solo admite como pista secundaria. */}
-            <div className="text-white text-sm mt-0.5 break-all">
-              {alias || <span className="font-mono">{shortId(myId)}</span>}
-            </div>
-            {/* Salir solo se ofrece si la sesión vino del correo. Con la wallet
-                de MiniPay o de una extensión no hay nada que cerrar: la
-                inyecta el navegador y seguiría ahí al recargar. */}
-            {canSignOut && (
-              <div className="mt-4">
-                <button
-                  onClick={onSignOut}
-                  className="brutal-sm brutal-press w-full rounded-xl bg-[#fda4af] px-4 py-2.5 text-sm font-bold text-[#4c0519]"
-                >
-                  {tr.walletSheet.signOut}
-                </button>
-                <p className="mt-2 text-center text-[11px] text-neutral-400">
-                  {tr.walletSheet.signOutHint}
-                </p>
-              </div>
-            )}
+    <Sheet onClose={onClose} title={tr.walletSheet.title}>
+      {myId ? (
+        <div className="panel p-4">
+          <div className="text-[11px] text-neutral-400">{tr.walletSheet.connectedAs}</div>
+          {/* Nunca la dirección 0x cruda: alias primero, y si no hay, la
+              forma truncada, que MiniPay solo admite como pista secundaria. */}
+          <div className="text-white text-sm mt-0.5 break-all">
+            {alias || <span className="font-mono">{shortId(myId)}</span>}
           </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {/* Zero-click connect: dentro de MiniPay la wallet ya está
-                conectada, así que enseñar "Conectar" está prohibido. */}
-            {hasWallet && !inMiniPay && (
-              <button onClick={() => { onConnect(); onClose(); }} className="brutal-sm brutal-press rounded-2xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
-                {tr.connectWallet}
+          {/* Salir solo se ofrece si la sesión vino del correo. Con la wallet
+              de MiniPay o de una extensión no hay nada que cerrar: la
+              inyecta el navegador y seguiría ahí al recargar. */}
+          {canSignOut && (
+            <div className="mt-4">
+              <button
+                onClick={onSignOut}
+                className="brutal-sm brutal-press w-full rounded-xl bg-[#fda4af] px-4 py-2.5 text-sm font-bold text-[#4c0519]"
+              >
+                {tr.walletSheet.signOut}
               </button>
-            )}
-            {emailLogin && (
-              <EmailLoginButton label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
-            )}
-            <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
+              <p className="mt-2 text-center text-[11px] text-neutral-400">
+                {tr.walletSheet.signOutHint}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {/* Zero-click connect: dentro de MiniPay la wallet ya está
+              conectada, así que enseñar "Conectar" está prohibido. */}
+          {hasWallet && !inMiniPay && (
+            <button onClick={() => { onConnect(); onClose(); }} className="brutal-sm brutal-press rounded-2xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
+              {tr.connectWallet}
+            </button>
+          )}
+          {emailLogin && (
+            <EmailLoginButton label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
+          )}
+          <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+// Menú de Bordy: lo que abre el FAB. Antes iba directo al tutorial, que era
+// un solo destino para el elemento más visible de la pantalla. Ahora es la
+// puerta a lo que el jugador podría querer — todo ya existía, aquí solo se
+// junta en un sitio donde se encuentre. "Tienda" reusa el `CoinShop` real
+// (Santiago, plan v2 §5) por `onShop`, no una implementación propia.
+function BordyMenuSheet({
+  onClose,
+  onTutorial,
+  onProfile,
+  onSettings,
+  onShop,
+  tr,
+}: {
+  onClose: () => void;
+  onTutorial: () => void;
+  onProfile: () => void;
+  onSettings: () => void;
+  onShop: () => void;
+  tr: ReturnType<typeof t>;
+}) {
+  const items: { icon: string; label: string; hint: string; onClick: () => void }[] = [
+    { icon: "🎓", label: tr.bordyMenu.tutorial, hint: tr.bordyMenu.tutorialHint, onClick: onTutorial },
+    { icon: "🪙", label: tr.bordyMenu.shop, hint: tr.bordyMenu.shopHint, onClick: onShop },
+    { icon: "👤", label: tr.bordyMenu.profile, hint: tr.bordyMenu.profileHint, onClick: onProfile },
+    { icon: "⚙️", label: tr.bordyMenu.settings, hint: tr.bordyMenu.settingsHint, onClick: onSettings },
+  ];
+  return (
+    <Sheet
+      onClose={onClose}
+      label={tr.bordyMenu.title}
+      title={
+        <div className="flex items-center gap-3 mb-4">
+          <Bordy mood="idle" className="w-12 h-14 flex-none" />
+          <div>
+            <h3 className="font-display font-bold text-white text-lg leading-tight">{tr.bordyMenu.title}</h3>
+            <p className="text-xs text-neutral-300">{tr.bordyMenu.sub}</p>
           </div>
-        )}
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-2">
+        {items.map((it) => (
+          <button
+            key={it.label}
+            onClick={() => { it.onClick(); onClose(); }}
+            className="panel brutal-sm brutal-press flex items-center gap-3 p-3 text-left rounded-xl"
+          >
+            <span className="text-2xl w-8 text-center flex-none">{it.icon}</span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-bold text-white text-sm leading-tight">{it.label}</span>
+              <span className="block text-[11px] text-neutral-400">{it.hint}</span>
+            </span>
+            <span className="text-[#fcff52] text-xl flex-none">→</span>
+          </button>
+        ))}
+        <a
+          href={SUPPORT_MAILTO}
+          onClick={onClose}
+          className="panel brutal-sm brutal-press flex items-center gap-3 p-3 text-left rounded-xl"
+        >
+          <span className="text-2xl w-8 text-center flex-none">💬</span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-bold text-white text-sm leading-tight">{tr.bordyMenu.support}</span>
+            <span className="block text-[11px] text-neutral-400">{tr.bordyMenu.supportHint}</span>
+          </span>
+          <span className="text-[#fcff52] text-xl flex-none">→</span>
+        </a>
       </div>
-    </>
+    </Sheet>
   );
 }
 
@@ -1815,23 +1938,18 @@ function SettingsSheet({
   tr: ReturnType<typeof t>;
 }) {
   return (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
-        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
-        <h3 className="text-white font-bold text-base mb-4">{tr.settingsSheet.title}</h3>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-neutral-200 flex items-center gap-2">
-              <span>🌐</span>{tr.settingsSheet.language}
-            </span>
-            <LanguageSelect locale={locale} onChange={onChangeLocale} />
-          </div>
-          <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
-          <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
+    <Sheet onClose={onClose} title={tr.settingsSheet.title}>
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-neutral-200 flex items-center gap-2">
+            <span>🌐</span>{tr.settingsSheet.language}
+          </span>
+          <LanguageSelect locale={locale} onChange={onChangeLocale} />
         </div>
+        <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
+        <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
       </div>
-    </>
+    </Sheet>
   );
 }
 
@@ -1851,10 +1969,13 @@ function NamePrompt({
   const [draft, setDraft] = useState(initial);
   const clean = draft.trim();
   return (
-    <>
-      <div className="fixed inset-0 z-[65] bg-black/60" onClick={onSkip} />
-      <div className="fixed inset-x-0 bottom-0 z-[66] rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8 pop-in">
-        <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
+    // z alto: puede convivir con otros overlays y debe quedar encima.
+    <Sheet
+      onClose={onSkip}
+      label={tr.name.title}
+      z={65}
+      className="pop-in"
+      title={
         <div className="flex items-center gap-3 mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
@@ -1863,24 +1984,25 @@ function NamePrompt({
             <p className="text-xs text-neutral-300">{tr.name.sub}</p>
           </div>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            maxLength={16}
-            autoFocus
-            placeholder={tr.namePlaceholder}
-            className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
-          />
-          <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
-            {tr.name.save}
-          </button>
-        </form>
-        <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
-          {tr.name.skip}
+      }
+    >
+      <form onSubmit={(e) => { e.preventDefault(); if (clean) onSave(clean); }} className="flex gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          maxLength={16}
+          autoFocus
+          placeholder={tr.namePlaceholder}
+          className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
+        />
+        <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
+          {tr.name.save}
         </button>
-      </div>
-    </>
+      </form>
+      <button onClick={onSkip} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
+        {tr.name.skip}
+      </button>
+    </Sheet>
   );
 }
 

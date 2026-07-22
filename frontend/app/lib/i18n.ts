@@ -322,6 +322,15 @@ type Dict = {
   walletSheet: { title: string; connectedAs: string; signIn: string; signOut: string; signOutHint: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
   settingsSheet: { title: string; language: string };
+  // Menú de Bordy (lo que abre el FAB): atajos a lo que ya existe
+  bordyMenu: {
+    open: string; title: string; sub: string;
+    tutorial: string; tutorialHint: string;
+    shop: string; shopHint: string;
+    profile: string; profileHint: string;
+    settings: string; settingsHint: string;
+    support: string; supportHint: string;
+  };
   comingSoon: string;
   // Nombres de continente (pistas de los modos quiz)
   continents: Record<"AF" | "EU" | "AS" | "NA" | "SA" | "OC", string>;
@@ -575,6 +584,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
     walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Cerrar sesión", signOutHint: "Podrás volver a entrar con otro correo." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
+    bordyMenu: {
+      open: "Abrir el menú de Bordy", title: "¿En qué te ayudo?", sub: "Soy Bordy, tu guía",
+      tutorial: "Cómo se juega", tutorialHint: "Repasa las reglas conmigo",
+      shop: "Tienda", shopHint: "Compra monedas para pistas y reintentos",
+      profile: "Mi perfil", profileHint: "Nombre, logros y premios",
+      settings: "Ajustes", settingsHint: "Idioma, música y efectos",
+      support: "Soporte", supportHint: "Escríbenos si algo falla",
+    },
     continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
     quiz: {
       flagTitle: "Adivina la bandera", flagSub: "¿de qué país es? · gratis",
@@ -617,7 +634,7 @@ const STRINGS: Record<Locale, Dict> = {
       "Verde = ¡vas perfecto! España comparte frontera con Portugal y está en la ruta óptima hacia Alemania.",
       "Amarillo = desvío. Suiza te saca un poco del camino… no es grave, pero gastas países de más.",
       "Rojo = ¡te alejas! Marruecos va en dirección contraria a Alemania. Ojo con el semáforo.",
-      "Francia completa la ruta ✅ Menos países y menos tiempo = mejor puesto. ¡El mejor del día se lleva el pot!",
+      "Francia completa la ruta ✅ Cuantos MENOS países uses, mejor puesto. ¡El mejor del día se lleva el pot! Te muestro dos cosas más y arrancamos.",
     ],
     tutNext: "Siguiente →",
     tutPlay: "¡A jugar!",
@@ -627,9 +644,8 @@ const STRINGS: Record<Locale, Dict> = {
     go: "¡YA!",
     fullTutorial: "Ver tutorial completo",
     coachSteps: [
-      "Escribe aquí un país que comparta frontera con el origen (o con cualquiera revelado). Te autocompleto mientras escribes 😉",
-      "💡 ¿Atascado? Compra una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆",
-      "⏱️ El cronómetro desempata: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄",
+      "💡 ¿Atascado? Aquí compras una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆",
+      "⏱️ Y este es el desempate: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄",
     ],
     coachSkip: "Saltar",
     coachDone: "¡Entendido!",
@@ -858,6 +874,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
     walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as", signIn: "👤 Sign in", signOut: "Sign out", signOutHint: "You can sign back in with a different email." },
     settingsSheet: { title: "⚙️ Settings", language: "Language" },
+    bordyMenu: {
+      open: "Open Bordy's menu", title: "How can I help?", sub: "I'm Bordy, your guide",
+      tutorial: "How to play", tutorialHint: "Go over the rules with me",
+      shop: "Shop", shopHint: "Buy coins for hints and retries",
+      profile: "My profile", profileHint: "Name, achievements and prizes",
+      settings: "Settings", settingsHint: "Language, music and effects",
+      support: "Support", supportHint: "Write to us if something breaks",
+    },
     continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
     quiz: {
       flagTitle: "Guess the flag", flagSub: "which country is it? · free",
@@ -900,7 +924,7 @@ const STRINGS: Record<Locale, Dict> = {
       "Green = perfect! Spain shares a border with Portugal and is on the optimal route to Germany.",
       "Yellow = detour. Switzerland takes you a bit off track… not a big deal, but you spend extra countries.",
       "Red = you're drifting away! Morocco goes in the opposite direction from Germany. Watch the traffic light.",
-      "France completes the route ✅ Fewer countries and less time = higher rank. The day's best takes the pot!",
+      "France completes the route ✅ The FEWER countries you use, the higher you rank. The day's best takes the pot! Two more things and we're off.",
     ],
     tutNext: "Next →",
     tutPlay: "Let's play!",
@@ -910,9 +934,8 @@ const STRINGS: Record<Locale, Dict> = {
     go: "GO!",
     fullTutorial: "See the full tutorial",
     coachSteps: [
-      "Type a country here that shares a border with the start (or with any revealed country). I'll autocomplete as you type 😉",
-      "💡 Stuck? Buy a hint: the next country's INITIAL, its SILHOUETTE on the map, or all the silhouettes. They cost cents and 80% feeds the day's pot 🏆",
-      "⏱️ The timer breaks ties: with the same number of countries, the fastest wins. It starts when you tap Got it! — the challenge stays hidden, so nobody gets an edge 😄",
+      "💡 Stuck? This is where you buy a hint: the next country's INITIAL, its SILHOUETTE on the map, or all the silhouettes. They cost cents and 80% feeds the day's pot 🏆",
+      "⏱️ And this is the tiebreaker: with the same number of countries, the fastest wins. It starts when you tap Got it! — the challenge stays hidden, so nobody gets an edge 😄",
     ],
     coachSkip: "Skip",
     coachDone: "Got it!",
@@ -1141,6 +1164,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
     walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Sair da conta", signOutHint: "Você poderá entrar de novo com outro e-mail." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
+    bordyMenu: {
+      open: "Abrir o menu do Bordy", title: "Como posso ajudar?", sub: "Sou o Bordy, seu guia",
+      tutorial: "Como se joga", tutorialHint: "Revise as regras comigo",
+      shop: "Loja", shopHint: "Compre moedas para dicas e novas tentativas",
+      profile: "Meu perfil", profileHint: "Nome, conquistas e prêmios",
+      settings: "Ajustes", settingsHint: "Idioma, música e efeitos",
+      support: "Suporte", supportHint: "Escreva para nós se algo falhar",
+    },
     continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
     quiz: {
       flagTitle: "Adivinhe a bandeira", flagSub: "de que país é? · grátis",
@@ -1183,7 +1214,7 @@ const STRINGS: Record<Locale, Dict> = {
       "Verde = perfeito! A Espanha faz fronteira com Portugal e está na rota ótima para a Alemanha.",
       "Amarelo = desvio. A Suíça te tira um pouco do caminho… não é grave, mas você gasta países a mais.",
       "Vermelho = você está se afastando! O Marrocos vai na direção contrária à Alemanha. Olho no semáforo.",
-      "A França completa a rota ✅ Menos países e menos tempo = melhor posição. O melhor do dia leva o pot!",
+      "A França completa a rota ✅ Quanto MENOS países você usar, melhor a posição. O melhor do dia leva o pot! Mais duas coisas e começamos.",
     ],
     tutNext: "Próximo →",
     tutPlay: "Vamos jogar!",
@@ -1193,9 +1224,8 @@ const STRINGS: Record<Locale, Dict> = {
     go: "JÁ!",
     fullTutorial: "Ver o tutorial completo",
     coachSteps: [
-      "Escreva aqui um país que faça fronteira com a origem (ou com qualquer país revelado). Eu autocompleto enquanto você digita 😉",
-      "💡 Travou? Compre uma dica: a INICIAL do próximo país, sua SILHUETA no mapa, ou todas as silhuetas. Custam centavos e 80% alimenta o pot do dia 🏆",
-      "⏱️ O cronômetro desempata: com o mesmo número de países, ganha o mais rápido. Ele começa quando você tocar em Entendi! — o desafio segue oculto, então ninguém ganha vantagem 😄",
+      "💡 Travou? Aqui você compra uma dica: a INICIAL do próximo país, sua SILHUETA no mapa, ou todas as silhuetas. Custam centavos e 80% alimenta o pot do dia 🏆",
+      "⏱️ E este é o desempate: com o mesmo número de países, ganha o mais rápido. Ele começa quando você tocar em Entendi! — o desafio segue oculto, então ninguém ganha vantagem 😄",
     ],
     coachSkip: "Pular",
     coachDone: "Entendi!",
@@ -1424,6 +1454,14 @@ const STRINGS: Record<Locale, Dict> = {
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
     walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que", signIn: "👤 Se connecter", signOut: "Se déconnecter", signOutHint: "Tu pourras te reconnecter avec une autre adresse e-mail." },
     settingsSheet: { title: "⚙️ Réglages", language: "Langue" },
+    bordyMenu: {
+      open: "Ouvrir le menu de Bordy", title: "Comment puis-je t'aider ?", sub: "Je suis Bordy, ton guide",
+      tutorial: "Comment jouer", tutorialHint: "Revois les règles avec moi",
+      shop: "Boutique", shopHint: "Achète des pièces pour les indices et les reprises",
+      profile: "Mon profil", profileHint: "Nom, succès et prix",
+      settings: "Réglages", settingsHint: "Langue, musique et effets",
+      support: "Assistance", supportHint: "Écris-nous si quelque chose ne va pas",
+    },
     continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
     quiz: {
       flagTitle: "Devine le drapeau", flagSub: "de quel pays est-il ? · gratuit",
@@ -1466,7 +1504,7 @@ const STRINGS: Record<Locale, Dict> = {
       "Vert = parfait ! L'Espagne partage une frontière avec le Portugal et se trouve sur la route optimale vers l'Allemagne.",
       "Jaune = détour. La Suisse t'écarte un peu du chemin… pas grave, mais tu dépenses des pays en plus.",
       "Rouge = tu t'éloignes ! Le Maroc va dans la direction opposée à l'Allemagne. Attention au feu tricolore.",
-      "La France complète la route ✅ Moins de pays et moins de temps = meilleur classement. Le meilleur du jour remporte le pot !",
+      "La France complète la route ✅ MOINS tu utilises de pays, meilleur est ton classement. Le meilleur du jour remporte le pot ! Encore deux choses et on y va.",
     ],
     tutNext: "Suivant →",
     tutPlay: "C'est parti !",
@@ -1476,9 +1514,8 @@ const STRINGS: Record<Locale, Dict> = {
     go: "GO !",
     fullTutorial: "Voir le tutoriel complet",
     coachSteps: [
-      "Écris ici un pays qui partage une frontière avec le départ (ou avec un pays déjà révélé). Je complète pendant que tu écris 😉",
-      "💡 Bloqué ? Achète un indice : l'INITIALE du pays suivant, sa SILHOUETTE sur la carte, ou toutes les silhouettes. Quelques centimes, et 80 % alimentent le pot du jour 🏆",
-      "⏱️ Le chrono départage : à nombre de pays égal, le plus rapide gagne. Il démarre quand tu touches Compris ! — le défi reste caché, donc personne n'est avantagé 😄",
+      "💡 Bloqué ? C'est ici que tu achètes un indice : l'INITIALE du pays suivant, sa SILHOUETTE sur la carte, ou toutes les silhouettes. Quelques centimes, et 80 % alimentent le pot du jour 🏆",
+      "⏱️ Et voici le départage : à nombre de pays égal, le plus rapide gagne. Il démarre quand tu touches Compris ! — le défi reste caché, donc personne n'est avantagé 😄",
     ],
     coachSkip: "Passer",
     coachDone: "Compris !",

@@ -34,7 +34,10 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#020617",
+  // Tiene que ser el MISMO fondo que pinta la app (--background en
+  // globals.css). Estaba en un azul casi negro que no existe en la paleta,
+  // así que la barra del navegador no empalmaba con la pantalla.
+  themeColor: "#160833",
   // MiniPay dibuja la app a pantalla completa: sin esto, env(safe-area-inset-*)
   // siempre vale 0 y el header queda bajo el notch.
   viewportFit: "cover",
