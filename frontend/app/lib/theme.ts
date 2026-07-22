@@ -27,3 +27,41 @@ export const STATUS_COLORS: Record<Status, string> = {
   yellow: "#eab308",
   red: "#ef4444",
 };
+
+// ------------------------------------------------------------
+//  Tema de la app (paleta de MARCA). A diferencia del semáforo de arriba,
+//  esto sí cambia: `default` (Violeta Prisma) o `premium` (Violeta Premium).
+//  Los colores viven en globals.css bajo :root / :root[data-theme=premium];
+//  aquí solo se decide y persiste cuál está activo. Mismo patrón simple que
+//  i18n/music: localStorage con guard SSR + try/catch, sin contexto React.
+// ------------------------------------------------------------
+
+export type Theme = "default" | "premium";
+const THEME_KEY = "frontle-theme";
+
+export function savedTheme(): Theme {
+  if (typeof localStorage === "undefined") return "default";
+  try {
+    return localStorage.getItem(THEME_KEY) === "premium" ? "premium" : "default";
+  } catch {
+    return "default";
+  }
+}
+
+// Aplica el tema al <html> (data-theme) y lo persiste. `default` quita el
+// atributo para caer en :root a secas.
+export function applyTheme(theme: Theme): void {
+  if (typeof document !== "undefined") {
+    if (theme === "premium") document.documentElement.dataset.theme = "premium";
+    else delete document.documentElement.dataset.theme;
+  }
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {}
+}
+
+// Script que corre ANTES de pintar (inline en <head>): fija data-theme desde
+// localStorage para que no haya destello del tema equivocado en la 1ª carga.
+// Es una cadena porque se inyecta con dangerouslySetInnerHTML en el layout.
+export const THEME_INIT_SCRIPT =
+  `try{if(localStorage.getItem('${THEME_KEY}')==='premium')document.documentElement.dataset.theme='premium'}catch(e){}`;

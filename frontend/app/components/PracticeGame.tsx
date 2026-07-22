@@ -157,7 +157,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       {/* volver */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center">←</span>
+        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
         <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
       </button>
 
@@ -184,7 +184,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
             <button
               key={lv}
               onClick={() => { setLevel(lv); newRound(lv); }}
-              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-[#fcff52] text-[#1c0b3e]" : "bg-[#1c0b3e] text-white"}`}
+              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
             >
               {tr.levels[lv]}
             </button>
@@ -194,7 +194,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
 
       {!state.solved && (
         <p className="text-center -my-1">
-          <span className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
+          <span className="inline-block text-lg font-mono font-bold bg-surface/60 border border-lavender/20 rounded-full px-4 py-1 tabular-nums">
             🕒 {formatTime(elapsedMs)}
           </span>
         </p>
@@ -241,10 +241,10 @@ frontle.vercel.app`}
             />
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-6 py-3 font-bold text-[#1c0b3e]">
+            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
               🔄 {tr.practiceNextRound}
             </button>
-            <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white">
+            <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.practiceExit}
             </button>
           </div>
@@ -258,13 +258,13 @@ frontle.vercel.app`}
               onChange={(e) => setInput(e.target.value)}
               placeholder={tr.placeholder}
               autoComplete="off"
-              className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
+              className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
             />
-            <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
+            <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
           </form>
 
           {suggestions.length > 0 && (
-            <ul className="absolute z-20 top-14 w-full rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 overflow-hidden shadow-2xl">
+            <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
               {suggestions.map((s) => (
                 <li key={s}>
                   <button type="button" onClick={() => submit(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
@@ -281,7 +281,7 @@ frontle.vercel.app`}
           )}
 
           {showInitial && hintCountry && (
-            <p className="text-center text-sm text-[#fcff52]">💡 {tr.hintNextInitial(countryName(hintCountry, locale).charAt(0))}</p>
+            <p className="text-center text-sm text-gold">💡 {tr.hintNextInitial(countryName(hintCountry, locale).charAt(0))}</p>
           )}
 
           {/* Pistas de la liga: se pagan con monedas (v2 §5.2). */}
@@ -298,7 +298,7 @@ frontle.vercel.app`}
 
 function PChip({ name, raw, kind }: { name: string; raw: string; kind: Status }) {
   return (
-    <div className={`flex flex-col items-center justify-center rounded-xl border bg-[#1c0b3e]/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${CHIP[kind]}`}>
+    <div className={`flex flex-col items-center justify-center rounded-xl border bg-surface/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${CHIP[kind]}`}>
       <CFlag name={raw} size={26} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
@@ -311,7 +311,7 @@ function PHintBtn({ onClick, active, label }: { onClick: () => void; active: boo
     <button
       onClick={onClick}
       disabled={active}
-      className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-1.5 text-xs text-white disabled:opacity-50"
+      className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-1.5 text-xs text-white disabled:opacity-50"
     >
       {label} {active ? "✓" : ""}
     </button>

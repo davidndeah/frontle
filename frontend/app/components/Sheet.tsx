@@ -97,7 +97,7 @@ export default function Sheet({
         aria-label={nombreAccesible}
         tabIndex={-1}
         style={{ zIndex: z + 1 }}
-        className={`fixed inset-x-0 bottom-0 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8 outline-none max-h-[85vh] overflow-y-auto ${className}`}
+        className={`fixed inset-x-0 bottom-0 rounded-t-3xl bg-surface border-t border-lavender/25 px-5 pt-3 pb-8 outline-none max-h-[85vh] overflow-y-auto ${className}`}
       >
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
         {tituloPlano !== null ? (

@@ -134,7 +134,7 @@ export default function StatsView() {
                   </div>
                   <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#a855f7] to-[#fcff52]"
+                      className="h-full rounded-full bg-gradient-to-r from-[#a855f7] to-gold"
                       style={{ width: maxPlays > 0 ? `${(c.plays / maxPlays) * 100}%` : "0%" }}
                     />
                   </div>
@@ -239,15 +239,15 @@ export default function StatsView() {
         <div className="flex flex-col gap-2 mt-1">
           <a
             href={SUPPORT_MAILTO}
-            className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-2 text-[13px] text-white"
+            className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-2 text-[13px] text-white"
           >
-            ✉️ {tr.supportEmail} · <span className="text-[#fcff52]">{SUPPORT_EMAIL}</span>
+            ✉️ {tr.supportEmail} · <span className="text-gold">{SUPPORT_EMAIL}</span>
           </a>
           <a
             href={SUPPORT_X_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="brutal-sm brutal-press rounded-lg bg-[#1c0b3e] px-3 py-2 text-[13px] text-white"
+            className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-2 text-[13px] text-white"
           >
             𝕏 · <span className="text-[#c4b5fd]">@{SUPPORT_X}</span>
           </a>
@@ -357,10 +357,10 @@ function ContractRow({
   accent?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-white/[0.03] border border-[#b79ced]/15 p-2.5">
+    <div className="flex items-start gap-3 rounded-lg bg-white/[0.03] border border-lavender/15 p-2.5">
       <span
         className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold font-display ${
-          accent ? "bg-[#fcff52]/15 text-[#fcff52]" : "bg-white/10 text-neutral-400"
+          accent ? "bg-gold/15 text-gold" : "bg-white/10 text-neutral-400"
         }`}
       >
         {tag}
@@ -381,7 +381,7 @@ function ContractRow({
           target="_blank"
           rel="noopener noreferrer"
           className={`underline font-mono text-[11px] break-all leading-tight ${
-            accent ? "text-[#fcff52]" : "text-[#c4b5fd]"
+            accent ? "text-gold" : "text-[#c4b5fd]"
           }`}
         >
           {address}

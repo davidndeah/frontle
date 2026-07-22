@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import "./globals.css";
+import { THEME_INIT_SCRIPT } from "./lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,6 +56,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
     >
+      <head>
+        {/* Fija el tema (data-theme) ANTES de pintar, para que no haya destello
+            del tema equivocado en la primera carga. Lee localStorage directo. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       {/* Sin Providers: el PrivyProvider ya no envuelve la app. Vive dentro de
           PrivyGate, que page.tsx carga aparte y solo fuera de MiniPay. Antes,
           envolverlo aquí metía el SDK de Privy en TODAS las rutas — /terms

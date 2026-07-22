@@ -23,7 +23,7 @@ export function CoinShopCard({
   onOpen: () => void;
 }) {
   return (
-    <section className="brutal rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3">
+    <section className="brutal rounded-2xl bg-surface p-4 flex items-center gap-3">
       <span className="text-3xl" aria-hidden>🪙</span>
       <div className="flex-1 min-w-0">
         <div className="font-display font-bold text-white text-lg leading-tight">{tr.coins.shop}</div>
@@ -33,7 +33,7 @@ export function CoinShopCard({
       </div>
       <button
         onClick={onOpen}
-        className="brutal-sm brutal-press rounded-lg bg-[#fcff52] px-4 py-2 text-xs font-bold text-[#1c0b3e] flex-none"
+        className="brutal-sm brutal-press rounded-lg bg-gold px-4 py-2 text-xs font-bold text-surface flex-none"
       >
         {tr.coins.buy}
       </button>
@@ -87,7 +87,7 @@ export default function CoinShop({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/55" onClick={onClose} />
-      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-[#1c0b3e] border-t border-[#b79ced]/25 px-5 pt-3 pb-8">
+      <div className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-surface border-t border-lavender/25 px-5 pt-3 pb-8">
         <div className="w-10 h-1 rounded-full bg-white/25 mx-auto mb-4" />
         <div className="flex items-baseline justify-between gap-2 mb-1">
           <h3 className="text-white font-bold text-base">🪙 {tr.coins.shop}</h3>
@@ -103,7 +103,7 @@ export default function CoinShop({
               key={p.coins}
               onClick={() => buy(i)}
               disabled={buying !== null}
-              className={`brutal-sm brutal-press rounded-xl bg-[#fcff52] px-4 py-3 font-bold text-[#1c0b3e] flex items-center justify-between ${
+              className={`brutal-sm brutal-press rounded-xl bg-gold px-4 py-3 font-bold text-surface flex items-center justify-between ${
                 buying === i ? "animate-pulse" : buying !== null ? "opacity-50" : ""
               }`}
             >

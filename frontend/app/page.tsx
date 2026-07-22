@@ -75,7 +75,7 @@ import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
 import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
-import { STATUS_COLORS } from "./lib/theme";
+import { STATUS_COLORS, savedTheme, applyTheme, type Theme } from "./lib/theme";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
 
@@ -404,6 +404,13 @@ export default function Frontle() {
   // Toggles de audio para los botones de mute.
   const onToggleMusic = useCallback(() => setMusicMuted(toggleMusic()), []);
   const onToggleSfx = useCallback(() => setSfxMuted(toggleSfx()), []);
+
+  // Tema de color (default / premium). El layout ya lo fijó en <html> antes de
+  // pintar; aquí solo lo leemos para reflejar el estado del control y lo
+  // cambiamos cuando el usuario elige.
+  const [theme, setThemeState] = useState<Theme>("default");
+  useEffect(() => setThemeState(savedTheme()), []);
+  const onChangeTheme = useCallback((t: Theme) => { applyTheme(t); setThemeState(t); }, []);
   useEffect(() => {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
@@ -857,13 +864,13 @@ export default function Frontle() {
       )}
 
       {/* Header fijo: logo + racha + monedas + ajustes + wallet */}
-      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1 px-2.5 bg-[#160833]/85 backdrop-blur-md border-b border-[#b79ced]/15">
+      <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1 px-2.5 bg-base/85 backdrop-blur-md border-b border-lavender/15">
         <span className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</span>
         <div className="flex-1" />
         {/* El premio del día ya NO va en la barra: vive en el tab Ranking. */}
         {/* Racha: solo si la tiene (≥1). Indicador, no botón. */}
         {streak > 0 && (
-          <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-white/5 border border-[#b79ced]/25 px-2 py-1 text-[11px] font-bold text-white whitespace-nowrap" aria-label={`${streak} ${tr.home.streak}`}>
+          <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-white/5 border border-lavender/25 px-2 py-1 text-[11px] font-bold text-white whitespace-nowrap" aria-label={`${streak} ${tr.home.streak}`}>
             🔥<span className="tabular-nums">{streak}</span>
           </span>
         )}
@@ -872,7 +879,7 @@ export default function Frontle() {
           <button
             onClick={() => setShopOpen(true)}
             aria-label={tr.coins.shop}
-            className="shrink-0 flex items-center gap-0.5 rounded-full bg-[#fcff52]/12 border border-[#fcff52]/35 px-2 py-1 text-[11px] font-bold text-[#fcff52] whitespace-nowrap active:scale-95 transition"
+            className="shrink-0 flex items-center gap-0.5 rounded-full bg-gold/12 border border-gold/35 px-2 py-1 text-[11px] font-bold text-gold whitespace-nowrap active:scale-95 transition"
           >
             🪙<span className="tabular-nums">{coinBalance}</span>
           </button>
@@ -883,7 +890,7 @@ export default function Frontle() {
         <button
           onClick={() => setSettingsOpen(true)}
           aria-label={tr.a11y.settings}
-          className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-white/5 border border-[#b79ced]/25 text-base active:scale-90 transition"
+          className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-white/5 border border-lavender/25 text-base active:scale-90 transition"
         >
           ⚙️
         </button>
@@ -892,7 +899,7 @@ export default function Frontle() {
             el chip se salía del viewport y aplastaba el botón de ajustes. */}
         <button
           onClick={() => setWalletOpen(true)}
-          className="min-w-0 min-h-11 truncate rounded-full bg-white/5 border border-[#b79ced]/25 px-2.5 text-xs font-semibold text-white active:scale-95 transition"
+          className="min-w-0 min-h-11 truncate rounded-full bg-white/5 border border-lavender/25 px-2.5 text-xs font-semibold text-white active:scale-95 transition"
         >
           {alias || (myId ? shortId(myId) : tr.walletSheet.signIn)}
         </button>
@@ -918,7 +925,7 @@ export default function Frontle() {
         {!started && (
           <div className="flex flex-col items-center gap-2 pt-2">
             <h2 className="font-display text-2xl font-bold text-white text-center leading-tight">
-              {tr.home.titlePre} <span className="text-[#fcff52]">{tr.home.titleWord}</span>
+              {tr.home.titlePre} <span className="text-gold">{tr.home.titleWord}</span>
             </h2>
             {/* Strip de gamificación: racha + nivel (XP) */}
             <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
@@ -934,7 +941,7 @@ export default function Frontle() {
                   <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-[#fcff52]" style={{ width: `${xpPct}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-gold" style={{ width: `${xpPct}%` }} />
                 </div>
               </div>
             </div>
@@ -956,14 +963,14 @@ export default function Frontle() {
                   <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
                   <span className="text-xs text-white/80">{tr.modes.dailySub}</span>
                 </span>
-                <span className="text-[#fcff52] text-2xl">{modeOpen === "daily" ? "▾" : "→"}</span>
+                <span className="text-gold text-2xl">{modeOpen === "daily" ? "▾" : "→"}</span>
               </button>
               {modeOpen === "daily" && (
                 <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
               )}
             </div>
             {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa */}
-            <div className="brutal rounded-2xl bg-[#1c0b3e] p-4 flex flex-col gap-3">
+            <div className="brutal rounded-2xl bg-surface p-4 flex flex-col gap-3">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
                 className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
@@ -988,10 +995,10 @@ export default function Frontle() {
                   value={regionPick}
                   onChange={(e) => setRegionPick(e.target.value)}
                   aria-label={tr.a11y.country}
-                  className="w-full appearance-none rounded-xl border border-[#b79ced]/25 bg-[#160833]/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-[#fcff52]/50"
+                  className="w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
                 >
                   {REGION_IDS.map((rid) => (
-                    <option key={rid} value={rid} style={{ background: "#1c0b3e", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
+                    <option key={rid} value={rid} style={{ background: "var(--surface)", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
                   ))}
                 </select>
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 text-xs">▾</span>
@@ -1000,7 +1007,7 @@ export default function Frontle() {
               <RegionMapPreview regionId={regionPick} loadingLabel={tr.loadingMap} />
               <button
                 onClick={() => setRegionMode(regionPick)}
-                className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-[#fcff52] text-[#1c0b3e] font-display font-black py-2.5"
+                className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-gold text-surface font-display font-black py-2.5"
               >
                 ▶ {tr.modes.play(REGIONS[regionPick].title)}
               </button>
@@ -1010,7 +1017,7 @@ export default function Frontle() {
             {/* Modos quiz: adivina la bandera / el contorno (gratis) */}
             <button
               onClick={() => setQuizMode("flag")}
-              className="brutal brutal-press rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3 text-left"
+              className="brutal brutal-press rounded-2xl bg-surface p-4 flex items-center gap-3 text-left"
             >
               <span className="text-3xl">🏳️</span>
               <span className="flex-1">
@@ -1021,7 +1028,7 @@ export default function Frontle() {
             </button>
             <button
               onClick={() => setQuizMode("outline")}
-              className="brutal brutal-press rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3 text-left"
+              className="brutal brutal-press rounded-2xl bg-surface p-4 flex items-center gap-3 text-left"
             >
               <span className="text-3xl">🗺️</span>
               <span className="flex-1">
@@ -1033,14 +1040,14 @@ export default function Frontle() {
             {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
             <button
               onClick={() => { setTab("aprender"); setPracticeOn(true); }}
-              className="brutal brutal-press rounded-2xl bg-[#1c0b3e] p-4 flex items-center gap-3 text-left"
+              className="brutal brutal-press rounded-2xl bg-surface p-4 flex items-center gap-3 text-left"
             >
               <span className="text-3xl">🎓</span>
               <span className="flex-1">
                 <span className="font-display font-bold text-white text-lg block leading-tight">{tr.practiceMode}</span>
                 <span className="text-xs text-neutral-300">{tr.practiceFree}</span>
               </span>
-              <span className="text-[#fcff52] text-2xl">→</span>
+              <span className="text-gold text-2xl">→</span>
             </button>
             {/* Tienda de monedas: entrada desde el home */}
             <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
@@ -1098,7 +1105,7 @@ export default function Frontle() {
         {/* Cronómetro (visible al jugar; congelado en 00:00 durante el coach) */}
         {(started || coaching) && (
           <p className="text-center -my-2">
-            <span id="game-timer" className="inline-block text-lg font-mono font-bold bg-[#1c0b3e]/60 border border-[#b79ced]/20 rounded-full px-4 py-1 tabular-nums">
+            <span id="game-timer" className="inline-block text-lg font-mono font-bold bg-surface/60 border border-lavender/20 rounded-full px-4 py-1 tabular-nums">
               🕒 {formatTime(coaching ? 0 : elapsedMs)}
             </span>
           </p>
@@ -1108,7 +1115,7 @@ export default function Frontle() {
             Devuelve exactamente el tiempo que la red se llevó — y nada más
             (con el mapa visible, la espera sería análisis gratis). */}
         {paying !== null && started && !state.solved && (
-          <div className="fixed inset-0 z-[60] bg-[#160833]/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 px-8">
+          <div className="fixed inset-0 z-[60] bg-base/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 px-8">
             <span className="text-4xl" aria-hidden>⏸️</span>
             <span className="text-lg font-mono font-bold tabular-nums text-white">🕒 {formatTime(elapsedMs)}</span>
             <p className="font-bold text-white animate-pulse">{tr.paying}</p>
@@ -1169,7 +1176,7 @@ export default function Frontle() {
         {(started || coaching) && (
           <>
             <div className="flex items-center justify-center -mt-2">
-              <div className="flex items-center gap-3 text-[11px] text-white bg-[#1c0b3e]/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-[#b79ced]/20">
+              <div className="flex items-center gap-3 text-[11px] text-white bg-surface/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-lavender/20">
                 <Legend color={STATUS_COLORS.start} label={tr.legend.origin} />
                 <Legend color={STATUS_COLORS.end} label={tr.legend.destination} />
                 <Legend color={STATUS_COLORS.green} label={tr.legend.good} />
@@ -1221,13 +1228,13 @@ export default function Frontle() {
                     placeholder={tr.placeholder}
                     autoComplete="off"
                     autoCapitalize="off"
-                    className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/30 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70 transition"
+                    className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                   />
-                  <button type="submit" className="brutal-sm brutal-press rounded-xl bg-[#fcff52] px-5 py-3 font-bold text-[#1c0b3e]">OK</button>
+                  <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
                 </form>
 
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-20 top-14 w-full rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 overflow-hidden shadow-2xl">
+                  <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
                     {suggestions.map((s) => (
                       <li key={s}>
                         <button type="button" onClick={() => submitCountry(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
@@ -1279,7 +1286,7 @@ export default function Frontle() {
         {tab === "ranking" && (
           <>
             {/* Segmented control: Diario (marca+tiempo) vs Semanal (XP) */}
-            <div className="flex gap-1 p-1 rounded-2xl bg-[#160833] border border-[#b79ced]/20">
+            <div className="flex gap-1 p-1 rounded-2xl bg-base border border-lavender/20">
               {(["daily", "weekly"] as const).map((rt) => (
                 <button
                   key={rt}
@@ -1328,7 +1335,7 @@ export default function Frontle() {
         {tab === "perfil" && (
           <>
             <section className="panel p-4 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-[#160833] border border-[#b79ced]/30 flex items-center justify-center overflow-hidden">
+              <div className="w-11 h-11 rounded-xl bg-base border border-lavender/30 flex items-center justify-center overflow-hidden">
                 {ipCountry ? <Flag code={ipCountry} size={30} /> : <span className="text-xl">👤</span>}
               </div>
               <div className="flex-1 min-w-0">
@@ -1348,9 +1355,9 @@ export default function Frontle() {
                       maxLength={16}
                       autoFocus
                       placeholder={tr.namePlaceholder}
-                      className="w-full min-w-0 rounded-lg bg-[#160833] border border-[#b79ced]/40 px-2 py-1 text-sm text-white outline-none focus:border-[#fcff52]/70"
+                      className="w-full min-w-0 rounded-lg bg-base border border-lavender/40 px-2 py-1 text-sm text-white outline-none focus:border-gold/70"
                     />
-                    <button type="submit" className="brutal-sm brutal-press rounded-lg bg-[#fcff52] text-[#1c0b3e] font-bold text-xs px-2.5">OK</button>
+                    <button type="submit" className="brutal-sm brutal-press rounded-lg bg-gold text-surface font-bold text-xs px-2.5">OK</button>
                   </form>
                 ) : (
                   <button
@@ -1376,7 +1383,7 @@ export default function Frontle() {
               <WalletCard tr={tr} address={myId} usdt={balances.usdt} fmt={fmt} showAddress={!inMiniPay} />
             )}
             <div className="grid grid-cols-3 gap-2">
-              <StatCard v={daysPlayed} k={tr.statDays} color="#fcff52" />
+              <StatCard v={daysPlayed} k={tr.statDays} color="var(--gold)" />
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
               <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
@@ -1419,7 +1426,7 @@ export default function Frontle() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="X"
-                className="w-9 h-9 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center text-base text-white active:scale-90 transition"
+                className="w-9 h-9 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center text-base text-white active:scale-90 transition"
               >
                 𝕏
               </a>
@@ -1445,7 +1452,7 @@ export default function Frontle() {
               <p className="text-xs text-neutral-300 max-w-[16rem]">{tr.learnBubbles[0]}</p>
               <button
                 onClick={() => setOverlay("full")}
-                className="brutal brutal-press w-full rounded-2xl bg-[#fcff52] text-[#1c0b3e] font-black px-6 py-3"
+                className="brutal brutal-press w-full rounded-2xl bg-gold text-surface font-black px-6 py-3"
               >
                 ✨ {tr.fullTutorial}
               </button>
@@ -1460,7 +1467,7 @@ export default function Frontle() {
                 <span className="font-display font-bold text-white text-lg block leading-tight">{tr.practiceMode}</span>
                 <span className="text-xs text-neutral-300">{tr.practiceFree}</span>
               </span>
-              <span className="text-[#fcff52] text-2xl">→</span>
+              <span className="text-gold text-2xl">→</span>
             </button>
             {/* Ir a jugar: lleva al tab Jugar para elegir modo */}
             <button
@@ -1472,7 +1479,7 @@ export default function Frontle() {
                 <span className="font-display font-bold text-white text-lg block leading-tight">{tr.tabs.jugar}</span>
                 <span className="text-xs text-neutral-300">{tr.modes.moreModesSub}</span>
               </span>
-              <span className="text-[#fcff52] text-2xl">→</span>
+              <span className="text-gold text-2xl">→</span>
             </button>
           </>
         )}
@@ -1499,14 +1506,14 @@ export default function Frontle() {
       {/* Aviso de Bordy: bono de bienvenida recién otorgado */}
       {bonus && (
         <div className="fixed inset-x-0 bottom-24 z-40 flex justify-center px-4">
-          <div className="panel flex items-start gap-3 max-w-sm w-full p-3 border-[#fcff52]/40 shadow-xl">
+          <div className="panel flex items-start gap-3 max-w-sm w-full p-3 border-gold/40 shadow-xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain shrink-0 bordy-talk" />
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white leading-snug">{tr.welcomeBonus(fmt(Number(bonus)))}</p>
               <button
                 onClick={() => setBonus(null)}
-                className="brutal-sm brutal-press mt-2 rounded-lg bg-[#fcff52] px-3 py-1.5 text-xs font-bold text-[#1c0b3e]"
+                className="brutal-sm brutal-press mt-2 rounded-lg bg-gold px-3 py-1.5 text-xs font-bold text-surface"
               >
                 {tr.bonusDismiss}
               </button>
@@ -1580,6 +1587,8 @@ export default function Frontle() {
           onToggleMusic={onToggleMusic}
           sfxMuted={sfxMuted}
           onToggleSfx={onToggleSfx}
+          theme={theme}
+          onChangeTheme={onChangeTheme}
           tr={tr}
         />
       )}
@@ -1689,7 +1698,7 @@ function WalletCard({
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
-          className="brutal-sm brutal-press mt-2 w-full truncate rounded-lg bg-[#160833] px-2 py-1.5 text-[11px] font-mono text-neutral-300"
+          className="brutal-sm brutal-press mt-2 w-full truncate rounded-lg bg-base px-2 py-1.5 text-[11px] font-mono text-neutral-300"
           title={address}
         >
           {copied ? tr.addressCopied : `${address} 📋`}
@@ -1735,7 +1744,7 @@ function TabBar({
     { id: "aprender", label: tr.tabs.aprender },
   ];
   return (
-    <nav className="app-nav fixed bottom-0 inset-x-0 z-30 flex bg-[#130729]/85 backdrop-blur-md border-t border-[#b79ced]/15">
+    <nav className="app-nav fixed bottom-0 inset-x-0 z-30 flex bg-base/85 backdrop-blur-md border-t border-lavender/15">
       {items.map((it) => {
         const on = tab === it.id;
         return (
@@ -1896,7 +1905,7 @@ function BordyMenuSheet({
               <span className="block font-bold text-white text-sm leading-tight">{it.label}</span>
               <span className="block text-[11px] text-neutral-400">{it.hint}</span>
             </span>
-            <span className="text-[#fcff52] text-xl flex-none">→</span>
+            <span className="text-gold text-xl flex-none">→</span>
           </button>
         ))}
         <a
@@ -1909,7 +1918,7 @@ function BordyMenuSheet({
             <span className="block font-bold text-white text-sm leading-tight">{tr.bordyMenu.support}</span>
             <span className="block text-[11px] text-neutral-400">{tr.bordyMenu.supportHint}</span>
           </span>
-          <span className="text-[#fcff52] text-xl flex-none">→</span>
+          <span className="text-gold text-xl flex-none">→</span>
         </a>
       </div>
     </Sheet>
@@ -1926,6 +1935,8 @@ function SettingsSheet({
   onToggleMusic,
   sfxMuted,
   onToggleSfx,
+  theme,
+  onChangeTheme,
   tr,
 }: {
   onClose: () => void;
@@ -1935,6 +1946,8 @@ function SettingsSheet({
   onToggleMusic: () => void;
   sfxMuted: boolean;
   onToggleSfx: () => void;
+  theme: Theme;
+  onChangeTheme: (t: Theme) => void;
   tr: ReturnType<typeof t>;
 }) {
   return (
@@ -1945,6 +1958,27 @@ function SettingsSheet({
             <span>🌐</span>{tr.settingsSheet.language}
           </span>
           <LanguageSelect locale={locale} onChange={onChangeLocale} />
+        </div>
+        {/* Tema de color: segmentado de 2 opciones. El activo usa el propio oro
+            del tema (que cambia con él), así el control se ve dentro de su tema. */}
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm text-neutral-200 flex items-center gap-2">
+            <span>🎨</span>{tr.settingsSheet.theme}
+          </span>
+          <div className="flex gap-1.5">
+            {(["default", "premium"] as Theme[]).map((th) => (
+              <button
+                key={th}
+                onClick={() => onChangeTheme(th)}
+                aria-pressed={theme === th}
+                className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-bold ${
+                  theme === th ? "bg-gold text-surface" : "bg-surface text-neutral-300"
+                }`}
+              >
+                {tr.settingsSheet.themes[th]}
+              </button>
+            ))}
+          </div>
         </div>
         <AudioToggle label={tr.music} icon="🎵" on={!musicMuted} onToggle={onToggleMusic} />
         <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
@@ -1993,7 +2027,7 @@ function NamePrompt({
           maxLength={16}
           autoFocus
           placeholder={tr.namePlaceholder}
-          className="flex-1 rounded-xl bg-[#160833] border border-[#b79ced]/40 px-4 py-3 text-base text-white outline-none focus:border-[#fcff52]/70"
+          className="flex-1 rounded-xl bg-base border border-lavender/40 px-4 py-3 text-base text-white outline-none focus:border-gold/70"
         />
         <button type="submit" disabled={!clean} className="btn-3d font-display font-bold text-base px-6 disabled:opacity-40">
           {tr.name.save}
@@ -2009,7 +2043,7 @@ function NamePrompt({
 function BackRow({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button onClick={onClick} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-      <span className="w-7 h-7 rounded-full bg-white/5 border border-[#b79ced]/25 flex items-center justify-center text-base leading-none">←</span>
+      <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center text-base leading-none">←</span>
       <span className="font-display font-semibold">{label}</span>
     </button>
   );
@@ -2035,10 +2069,10 @@ function HintButton({ active, busy, locked, onClick, label, price, fmt }: { acti
       disabled={active || busy || locked}
       className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${
         active
-          ? "bg-amber-300 text-[#1c0b3e]"
+          ? "bg-amber-300 text-surface"
           : busy
-            ? "bg-[#1c0b3e] text-white animate-pulse"
-            : `bg-[#1c0b3e] text-white hover:bg-[#2a1257] ${locked ? "opacity-50" : ""}`
+            ? "bg-surface text-white animate-pulse"
+            : `bg-surface text-white hover:bg-surface ${locked ? "opacity-50" : ""}`
       }`}
     >
       {label} {active ? "✓" : busy ? "⏳" : <span className="opacity-70">· {fmt(price)}</span>}
@@ -2054,7 +2088,7 @@ function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; 
       <select
         value={currency}
         onChange={(e) => onChange(e.target.value as DisplayCurrency)}
-        className="rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
+        className="rounded-md border border-lavender/25 bg-surface/70 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-gold/50"
       >
         <option value="USDT">USDT</option>
         <option value="COPM">COPm</option>
@@ -2076,14 +2110,14 @@ function LanguageSelect({ locale, onChange, compact }: { locale: Locale; onChang
         aria-label="Language"
         className={
           compact
-            ? "appearance-none h-11 rounded-full bg-white/5 border border-[#b79ced]/25 pl-5 pr-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50 active:scale-95 transition"
-            : "appearance-none rounded-md border border-[#b79ced]/25 bg-[#1c0b3e]/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-[#fcff52]/50"
+            ? "appearance-none h-11 rounded-full bg-white/5 border border-lavender/25 pl-5 pr-1.5 text-xs font-semibold text-white outline-none focus:border-gold/50 active:scale-95 transition"
+            : "appearance-none rounded-md border border-lavender/25 bg-surface/70 pl-7 pr-3 py-1.5 text-xs font-semibold text-white outline-none focus:border-gold/50"
         }
       >
         {/* Colores explícitos en cada option: el popup nativo hereda fondo
             claro en algunos navegadores y el texto blanco quedaba ilegible. */}
         {LOCALES.map((l) => (
-          <option key={l} value={l} style={{ background: "#1c0b3e", color: "#fff" }}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
+          <option key={l} value={l} style={{ background: "var(--surface)", color: "#fff" }}>{compact ? l.toUpperCase() : LOCALE_LABELS[l]}</option>
         ))}
       </select>
     </div>
@@ -2102,9 +2136,9 @@ function AudioToggle({ label, icon, on, onToggle }: { label: string; icon: strin
         role="switch"
         aria-checked={on}
         aria-label={label}
-        className={`relative w-12 h-7 rounded-full border transition ${on ? "bg-[#fcff52]/80 border-[#fcff52]" : "bg-[#160833] border-[#b79ced]/30"}`}
+        className={`relative w-12 h-7 rounded-full border transition ${on ? "bg-gold/80 border-gold" : "bg-base border-lavender/30"}`}
       >
-        <span className={`absolute top-1 w-5 h-5 rounded-full transition-all ${on ? "left-6 bg-[#1c0b3e]" : "left-1 bg-neutral-400"}`} />
+        <span className={`absolute top-1 w-5 h-5 rounded-full transition-all ${on ? "left-6 bg-surface" : "left-1 bg-neutral-400"}`} />
       </button>
     </div>
   );
@@ -2124,7 +2158,7 @@ function LevelSelect({
   // Cada nivel con su identidad: icono + color (estética Violeta Prisma)
   const META: Record<Difficulty, { icon: string; color: string }> = {
     easy: { icon: "🌱", color: "#22c55e" },
-    medium: { icon: "⚡", color: "#fcff52" },
+    medium: { icon: "⚡", color: "var(--gold)" },
     hard: { icon: "💀", color: "#e879f9" },
   };
   const opts: Difficulty[] = ["easy", "medium", "hard"];
@@ -2142,7 +2176,7 @@ function LevelSelect({
               onClick={() => onChange(l)}
               aria-pressed={on}
               className={`brutal-shadow brutal-press flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 backdrop-blur-sm ${
-                on ? "bg-[#1c0b3e]/80" : "bg-[#1c0b3e]/35 opacity-60"
+                on ? "bg-surface/80" : "bg-surface/35 opacity-60"
               }`}
               style={{ borderColor: on ? m.color : "rgba(183,156,237,0.2)" }}
             >
@@ -2168,7 +2202,7 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
     red: "border-rose-400/50 text-rose-100",
   };
   return (
-    <div className={`flex flex-col items-center justify-center rounded-xl border bg-[#1c0b3e]/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}>
+    <div className={`flex flex-col items-center justify-center rounded-xl border bg-surface/55 backdrop-blur-sm px-3 py-2 min-w-[84px] ${styles[kind]}`}>
       <Flag code={code} size={30} />
       <span className="text-[11px] font-medium mt-1 text-center leading-tight">{name}</span>
     </div>
@@ -2255,7 +2289,7 @@ function WinnersCard({
                 {mine && !w.claimed && (
                   <button
                     onClick={onGoToProfile}
-                    className="brutal-sm brutal-press rounded-lg bg-amber-300 px-2.5 py-1 text-[11px] font-bold text-[#1c0b3e]"
+                    className="brutal-sm brutal-press rounded-lg bg-amber-300 px-2.5 py-1 text-[11px] font-bold text-surface"
                   >
                     {tr.claimInProfile}
                   </button>
@@ -2322,7 +2356,7 @@ function PrizesCard({
               <button
                 onClick={() => onClaim(p.day, p.level)}
                 disabled={claimingKey !== null || celebrating}
-                className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-[#1c0b3e] disabled:opacity-60 disabled:cursor-not-allowed"
+                className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-surface disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {celebrating ? `✓ ${tr.prizeClaimedLabel}` : claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
               </button>
@@ -2486,7 +2520,7 @@ function WinCard({
       <p className="text-neutral-300 mt-1 font-mono">⏱️ {tr.timeLabel}: {formatTime(timeMs)}</p>
       {/* Puntos Frontle (GAM-5): se ganan por resolver, aunque no ganes el
           pot. El total vive en Perfil (vista player_progress). */}
-      <p className="pop-in mt-2 inline-block rounded-full border border-[#fcff52]/40 bg-[#fcff52]/10 px-3 py-1 text-xs font-semibold text-[#fcff52]">
+      <p className="pop-in mt-2 inline-block rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
         ✨ {tr.points.earned(POINTS_PER_SOLVE)}
       </p>
       <div className="mt-4">
@@ -2508,7 +2542,7 @@ function WinCard({
         <button
           onClick={onRetry}
           disabled={retryBusy}
-          className={`brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-white ${retryBusy ? "animate-pulse" : ""}`}
+          className={`brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white ${retryBusy ? "animate-pulse" : ""}`}
         >
           {retryBusy ? <>⏳ {tr.paying}</> : <>{tr.retry} <span className="opacity-70 text-sm">· {fmt(retryPrice)}</span></>}
         </button>
@@ -2520,7 +2554,7 @@ function WinCard({
           </div>
         )}
         {/* Volver a la selección de nivel: jugar otro nivel (o revisar este). */}
-        <button onClick={onHome} className="brutal-sm brutal-press rounded-xl bg-[#1c0b3e] px-6 py-3 font-bold text-[#c4b5fd]">
+        <button onClick={onHome} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-[#c4b5fd]">
           🎮 {tr.chooseLevel}
         </button>
         {!inRanking && hasWallet && (

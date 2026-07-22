@@ -321,7 +321,7 @@ type Dict = {
   // MiniPay la inyecta el navegador y la dapp no puede desconectarla.
   walletSheet: { title: string; connectedAs: string; signIn: string; signOut: string; signOutHint: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
-  settingsSheet: { title: string; language: string };
+  settingsSheet: { title: string; language: string; theme: string; themes: { default: string; premium: string } };
   // Menú de Bordy (lo que abre el FAB): atajos a lo que ya existe
   bordyMenu: {
     open: string; title: string; sub: string;
@@ -583,7 +583,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
     walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Cerrar sesión", signOutHint: "Podrás volver a entrar con otro correo." },
-    settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
+    settingsSheet: { title: "⚙️ Ajustes", language: "Idioma", theme: "Tema", themes: { default: "Clásico", premium: "Premium" } },
     bordyMenu: {
       open: "Abrir el menú de Bordy", title: "¿En qué te ayudo?", sub: "Soy Bordy, tu guía",
       tutorial: "Cómo se juega", tutorialHint: "Repasa las reglas conmigo",
@@ -873,7 +873,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
     walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as", signIn: "👤 Sign in", signOut: "Sign out", signOutHint: "You can sign back in with a different email." },
-    settingsSheet: { title: "⚙️ Settings", language: "Language" },
+    settingsSheet: { title: "⚙️ Settings", language: "Language", theme: "Theme", themes: { default: "Classic", premium: "Premium" } },
     bordyMenu: {
       open: "Open Bordy's menu", title: "How can I help?", sub: "I'm Bordy, your guide",
       tutorial: "How to play", tutorialHint: "Go over the rules with me",
@@ -1163,7 +1163,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
     walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Sair da conta", signOutHint: "Você poderá entrar de novo com outro e-mail." },
-    settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
+    settingsSheet: { title: "⚙️ Ajustes", language: "Idioma", theme: "Tema", themes: { default: "Clássico", premium: "Premium" } },
     bordyMenu: {
       open: "Abrir o menu do Bordy", title: "Como posso ajudar?", sub: "Sou o Bordy, seu guia",
       tutorial: "Como se joga", tutorialHint: "Revise as regras comigo",
@@ -1453,7 +1453,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
     walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que", signIn: "👤 Se connecter", signOut: "Se déconnecter", signOutHint: "Tu pourras te reconnecter avec une autre adresse e-mail." },
-    settingsSheet: { title: "⚙️ Réglages", language: "Langue" },
+    settingsSheet: { title: "⚙️ Réglages", language: "Langue", theme: "Thème", themes: { default: "Classique", premium: "Premium" } },
     bordyMenu: {
       open: "Ouvrir le menu de Bordy", title: "Comment puis-je t'aider ?", sub: "Je suis Bordy, ton guide",
       tutorial: "Comment jouer", tutorialHint: "Revois les règles avec moi",

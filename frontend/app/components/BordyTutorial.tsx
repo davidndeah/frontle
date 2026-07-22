@@ -140,7 +140,7 @@ function DemoBoard({ status, locale }: { status: DemoStatus; locale: Locale }) {
         <span className="text-[13px] font-bold text-fuchsia-300">{countryName("Germany", locale)}</span>
       </div>
       {/* mapa */}
-      <div className="rounded-xl overflow-hidden bg-[#0f0524] border border-[#b79ced]/20">
+      <div className="rounded-xl overflow-hidden bg-panel border border-lavender/20">
         <svg viewBox={TUTORIAL_MAP.viewBox} className="w-full h-auto">
           <path d={TUTORIAL_MAP.grat} fill="none" stroke="rgba(183,156,237,0.16)" strokeWidth={0.5} />
           {TUTORIAL_MAP.all.map((d, i) => (
@@ -168,7 +168,7 @@ function DemoBoard({ status, locale }: { status: DemoStatus; locale: Locale }) {
         {revealed.map((p) => {
           const c = COLORS[status[p.name] as keyof typeof COLORS];
           return (
-            <span key={p.name} className="pop-in flex items-center gap-1 rounded-lg border bg-[#1c0b3e]/60 px-1.5 py-0.5" style={{ borderColor: c }}>
+            <span key={p.name} className="pop-in flex items-center gap-1 rounded-lg border bg-surface/60 px-1.5 py-0.5" style={{ borderColor: c }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`https://flagcdn.com/${p.code}.svg`} alt="" className="w-4 rounded-[2px]" />
               <span className="text-[9px] text-white font-semibold">{countryName(p.name, locale)}</span>
@@ -196,7 +196,7 @@ function InputDemo({ text, locale, placeholder }: { text: string; locale: Locale
     : undefined;
   return (
     <div className="w-full max-w-sm">
-      <div className="rounded-xl bg-[#160833] border border-[#b79ced]/30 px-3.5 py-2.5 text-[13.5px] text-white min-h-[40px]">
+      <div className="rounded-xl bg-base border border-lavender/30 px-3.5 py-2.5 text-[13.5px] text-white min-h-[40px]">
         {text ? (
           <>
             {text}
@@ -209,7 +209,7 @@ function InputDemo({ text, locale, placeholder }: { text: string; locale: Locale
       {/* espacio RESERVADO para la sugerencia: aparece sin tapar a Bordy ni la burbuja */}
       <div className="h-[46px] mt-1.5">
         {match && (
-          <div className="pop-in rounded-xl bg-[#1c0b3e] border border-[#b79ced]/30 px-3.5 py-2.5 flex items-center gap-2">
+          <div className="pop-in rounded-xl bg-surface border border-lavender/30 px-3.5 py-2.5 flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={`https://flagcdn.com/${match.code}.svg`} alt="" className="w-5 rounded-[2px]" />
             <span className="text-[13px] text-white">{match.name}</span>
@@ -292,14 +292,14 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
 
   return (
     <div className="fixed inset-0 z-[60] bg-grid flex flex-col items-center justify-center px-5 gap-3 overflow-y-auto py-6"
-      style={{ background: "radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%)" }}>
+      style={{ background: "var(--body-grad)" }}>
       {/* progreso */}
       <div className="absolute top-0 inset-x-0 h-1 bg-white/10">
-        <div className="h-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-[#fcff52] transition-all duration-500"
+        <div className="h-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-gold transition-all duration-500"
           style={{ width: `${((step + (typing ? 0.4 : 1)) / STEPS.length) * 100}%` }} />
       </div>
       <button onClick={toggle} aria-label={tr.a11y.sound}
-        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/5 border border-[#b79ced]/25 text-base active:scale-90 transition">
+        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/5 border border-lavender/25 text-base active:scale-90 transition">
         {muted ? "🔇" : "🔊"}
       </button>
 
@@ -328,7 +328,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
       {/* dots */}
       <div className="flex gap-2">
         {STEPS.map((_, i) => (
-          <span key={i} className={`w-2 h-2 rounded-full transition ${i === step ? "bg-[#fcff52] scale-125" : i < step ? "bg-[#b79ced]" : "bg-white/20"}`} />
+          <span key={i} className={`w-2 h-2 rounded-full transition ${i === step ? "bg-gold scale-125" : i < step ? "bg-lavender" : "bg-white/20"}`} />
         ))}
       </div>
 
@@ -339,7 +339,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
 
       <label className="flex items-center gap-2 text-[11.5px] text-neutral-300 cursor-pointer select-none">
         <input type="checkbox" checked={hideNext} onChange={(e) => setHideNext(e.target.checked)}
-          className="w-3.5 h-3.5 accent-[#fcff52]" />
+          className="w-3.5 h-3.5 accent-gold" />
         {tr.dontShowAgain}
       </label>
       <button onClick={finish} className="text-[11px] text-neutral-400 underline active:scale-95 transition -mt-1">
@@ -362,13 +362,13 @@ export function QuickStart({ tr, onDone, onFull }: { tr: Dict; onDone: () => voi
   }, [n]);
   return (
     <div className="fixed inset-0 z-[60] bg-grid flex flex-col items-center justify-center gap-4"
-      style={{ background: "radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%)" }}>
+      style={{ background: "var(--body-grad)" }}>
       <div className="w-[96px] h-[112px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/bordy-m2.webp" alt="Bordy" className="bordy-talk w-full h-full object-contain drop-shadow-xl" />
       </div>
       <p className="font-display font-bold text-white text-xl">{tr.ready}</p>
-      <div key={n} className="pop-in font-display font-bold text-7xl text-[#fcff52] tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
+      <div key={n} className="pop-in font-display font-bold text-7xl text-gold tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
         {n > 0 ? n : tr.go}
       </div>
       <button onClick={onFull} className="text-[11px] text-neutral-400 underline mt-2">{tr.fullTutorial}</button>

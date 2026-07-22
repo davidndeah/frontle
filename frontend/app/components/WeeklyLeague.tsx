@@ -82,7 +82,7 @@ export default function WeeklyLeague({ tr, onConnect }: { tr: ReturnType<typeof 
             return (
               <li
                 key={e.playerId}
-                className={`flex items-center gap-2 py-1.5 px-2 rounded-lg ${mine ? "bg-[#fcff52]/10 border border-[#fcff52]/30" : ""}`}
+                className={`flex items-center gap-2 py-1.5 px-2 rounded-lg ${mine ? "bg-gold/10 border border-gold/30" : ""}`}
               >
                 <span className="w-7 text-center text-sm flex-none">{medals[i] ?? `${i + 1}`}</span>
                 <span className={`flex-1 truncate text-sm ${mine ? "text-amber-100 font-semibold" : "text-neutral-200"}`}>
@@ -99,7 +99,7 @@ export default function WeeklyLeague({ tr, onConnect }: { tr: ReturnType<typeof 
 
       {/* Tu fila, si no estás en el top visible */}
       {myIndex >= 10 && (
-        <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-[#fcff52]/10 border border-[#fcff52]/30">
+        <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-gold/10 border border-gold/30">
           <span className="w-7 text-center text-sm flex-none">{myIndex + 1}</span>
           <span className="flex-1 truncate text-sm text-amber-100 font-semibold">{tr.liga.you}</span>
           <span className="font-mono tabular-nums text-sm text-white flex-none">
