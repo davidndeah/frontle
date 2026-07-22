@@ -22,6 +22,7 @@ export const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID || "";
 export const PRIVY_ENABLED = Boolean(PRIVY_APP_ID);
 
 const LOGIN_EVENT = "frontle:email-login";
+const LOGOUT_EVENT = "frontle:logout";
 
 // Lo llama cualquier botón de "Entrar con correo". No necesita hooks ni
 // contexto: si no hay nadie escuchando (p. ej. dentro de MiniPay, donde
@@ -35,4 +36,21 @@ export function onEmailLoginRequest(handler: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   window.addEventListener(LOGIN_EVENT, handler);
   return () => window.removeEventListener(LOGIN_EVENT, handler);
+}
+
+// Salir de la sesión de correo. Mismo bus que el login y por la misma razón:
+// `usePrivy().logout` exige el provider de ancestro, y el provider vive
+// aislado en PrivyGate para no arrastrar 1.27 MB al árbol de la partida.
+//
+// Solo aplica a Privy: la wallet de MiniPay o de una extensión la inyecta el
+// navegador y la dapp no puede (ni debe) desconectarla.
+export function requestLogout(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(LOGOUT_EVENT));
+}
+
+// Lo usa PrivyGate. Devuelve la función para desuscribirse.
+export function onLogoutRequest(handler: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(LOGOUT_EVENT, handler);
+  return () => window.removeEventListener(LOGOUT_EVENT, handler);
 }

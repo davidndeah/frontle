@@ -316,8 +316,10 @@ type Dict = {
     lockedLabel: string;
     items: Record<"firstWin" | "optimalRoute" | "twoContinents" | "streak3" | "streak7" | "hardSolved", { title: string; desc: string }>;
   };
-  // `signIn` es el chip del header cuando aún no hay wallet ni alias
-  walletSheet: { title: string; connectedAs: string; signIn: string };
+  // `signIn` es el chip del header cuando aún no hay wallet ni alias.
+  // `signOut` solo se ofrece a las sesiones de correo (Privy): la wallet de
+  // MiniPay la inyecta el navegador y la dapp no puede desconectarla.
+  walletSheet: { title: string; connectedAs: string; signIn: string; signOut: string; signOutHint: string };
   // Sheet del header que agrupa idioma + audio (botón ⚙️)
   settingsSheet: { title: string; language: string };
   comingSoon: string;
@@ -571,7 +573,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Acercar", zoomOut: "Alejar", recenter: "Reencuadrar", settings: "Ajustes",
     },
     name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
-    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar" },
+    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Cerrar sesión", signOutHint: "Podrás volver a entrar con otro correo." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
     continents: { AF: "África", EU: "Europa", AS: "Asia", NA: "Norteamérica", SA: "Sudamérica", OC: "Oceanía" },
     quiz: {
@@ -854,7 +856,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Zoom in", zoomOut: "Zoom out", recenter: "Recenter", settings: "Settings",
     },
     name: { title: "Choose your name!", sub: "This is how you appear in the ranking (instead of your wallet).", save: "Save", skip: "Use my wallet" },
-    walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as", signIn: "👤 Sign in" },
+    walletSheet: { title: "💰 Your wallet", connectedAs: "Connected as", signIn: "👤 Sign in", signOut: "Sign out", signOutHint: "You can sign back in with a different email." },
     settingsSheet: { title: "⚙️ Settings", language: "Language" },
     continents: { AF: "Africa", EU: "Europe", AS: "Asia", NA: "North America", SA: "South America", OC: "Oceania" },
     quiz: {
@@ -1137,7 +1139,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Aproximar", zoomOut: "Afastar", recenter: "Reenquadrar", settings: "Ajustes",
     },
     name: { title: "Escolha seu nome!", sub: "É assim que você aparece no ranking (em vez da sua carteira).", save: "Salvar", skip: "Usar minha carteira" },
-    walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como", signIn: "👤 Entrar" },
+    walletSheet: { title: "💰 Sua carteira", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Sair da conta", signOutHint: "Você poderá entrar de novo com outro e-mail." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma" },
     continents: { AF: "África", EU: "Europa", AS: "Ásia", NA: "América do Norte", SA: "América do Sul", OC: "Oceania" },
     quiz: {
@@ -1420,7 +1422,7 @@ const STRINGS: Record<Locale, Dict> = {
       zoomIn: "Zoom avant", zoomOut: "Zoom arrière", recenter: "Recadrer", settings: "Réglages",
     },
     name: { title: "Choisis ton nom !", sub: "C'est ainsi que tu apparais dans le classement (au lieu de ton portefeuille).", save: "Enregistrer", skip: "Utiliser mon portefeuille" },
-    walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que", signIn: "👤 Se connecter" },
+    walletSheet: { title: "💰 Ton portefeuille", connectedAs: "Connecté en tant que", signIn: "👤 Se connecter", signOut: "Se déconnecter", signOutHint: "Tu pourras te reconnecter avec une autre adresse e-mail." },
     settingsSheet: { title: "⚙️ Réglages", language: "Langue" },
     continents: { AF: "Afrique", EU: "Europe", AS: "Asie", NA: "Amérique du Nord", SA: "Amérique du Sud", OC: "Océanie" },
     quiz: {

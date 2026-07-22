@@ -71,7 +71,7 @@ import {
   type LastCycle,
   type PayResult,
 } from "./lib/payments";
-import { PRIVY_ENABLED } from "./lib/privy";
+import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
@@ -163,6 +163,10 @@ export default function Frontle() {
   const [ipCountry, setIpCountry] = useState("");
   const [ranking, setRanking] = useState<ScoreEntry[]>([]);
   const [myId, setMyId] = useState("");
+  // ¿La identidad actual vino del login por correo? Solo esas sesiones se
+  // pueden cerrar: la wallet de MiniPay o de una extensión la inyecta el
+  // navegador, y ofrecer "cerrar sesión" ahí sería un botón que no hace nada.
+  const [viaEmail, setViaEmail] = useState(false);
 
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
@@ -548,8 +552,10 @@ export default function Frontle() {
     setPrizes(await getClaimablePrizes(entries, addr));
   }, []);
 
+  // Sin `myId` (nunca entró, o cerró sesión) `loadPrizes` vacía la lista: los
+  // premios de la cuenta anterior no pueden quedar en pantalla.
   useEffect(() => {
-    if (myId) loadPrizes(myId);
+    loadPrizes(myId);
   }, [myId, loadPrizes]);
 
   // Ganadores del último día CERRADO (tab Ranking). El contrato es la fuente de
@@ -701,7 +707,28 @@ export default function Frontle() {
     if (!addr) return;
     setHasWallet(true);
     setMyId(addr);
+    setViaEmail(true);
     if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
+  }
+
+  // Cerrar la sesión de correo. Privy borra su estado persistido (por eso el
+  // usuario no vuelve a aparecer logueado al recargar); aquí soltamos lo que
+  // era de esa cuenta: identidad, alias y premios ya cargados.
+  //
+  // El id anónimo del navegador (`frontle-player-id`) NO se toca: es del
+  // dispositivo, no de la cuenta, y las partidas guardadas del día siguen
+  // siendo válidas para quien entre después en este mismo navegador.
+  function handleLogout() {
+    requestLogout();
+    setMyId("");
+    setViaEmail(false);
+    setAlias("");
+    setAliasState("");
+    setBalances(null);
+    // Que el siguiente en entrar reciba el prompt de nombre en vez de heredar
+    // el "ya se lo preguntamos" de la cuenta que se acaba de ir.
+    try { localStorage.removeItem("frontle-name-asked"); } catch {}
+    setWalletOpen(false);
   }
 
   // ¿El pago falló porque no alcanzaba el saldo? (ni para el precio, ni para
@@ -1496,6 +1523,8 @@ export default function Frontle() {
           inMiniPay={inMiniPay}
           emailLogin={privyActive}
           onConnect={connectForRanking}
+          canSignOut={viaEmail}
+          onSignOut={handleLogout}
           tr={tr}
         />
       )}
@@ -1698,6 +1727,8 @@ function WalletSheet({
   inMiniPay,
   emailLogin,
   onConnect,
+  canSignOut,
+  onSignOut,
   tr,
 }: {
   onClose: () => void;
@@ -1707,6 +1738,8 @@ function WalletSheet({
   inMiniPay: boolean;
   emailLogin: boolean;
   onConnect: () => void;
+  canSignOut: boolean;
+  onSignOut: () => void;
   tr: ReturnType<typeof t>;
 }) {
   return (
@@ -1723,6 +1756,22 @@ function WalletSheet({
             <div className="text-white text-sm mt-0.5 break-all">
               {alias || <span className="font-mono">{shortId(myId)}</span>}
             </div>
+            {/* Salir solo se ofrece si la sesión vino del correo. Con la wallet
+                de MiniPay o de una extensión no hay nada que cerrar: la
+                inyecta el navegador y seguiría ahí al recargar. */}
+            {canSignOut && (
+              <div className="mt-4">
+                <button
+                  onClick={onSignOut}
+                  className="brutal-sm brutal-press w-full rounded-xl bg-[#fda4af] px-4 py-2.5 text-sm font-bold text-[#4c0519]"
+                >
+                  {tr.walletSheet.signOut}
+                </button>
+                <p className="mt-2 text-center text-[11px] text-neutral-400">
+                  {tr.walletSheet.signOutHint}
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2">

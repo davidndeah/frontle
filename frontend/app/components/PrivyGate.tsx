@@ -18,7 +18,7 @@ import { useEffect, useRef } from "react";
 import { PrivyProvider, useLogin, useWallets, usePrivy } from "@privy-io/react-auth";
 import { celo } from "viem/chains";
 import { setEmbeddedProvider } from "../lib/payments";
-import { onEmailLoginRequest, PRIVY_APP_ID } from "../lib/privy";
+import { onEmailLoginRequest, onLogoutRequest, PRIVY_APP_ID } from "../lib/privy";
 
 // Celo con Forno como RPC: la wallet embebida de Privy transmite con esta
 // config de cadena. Forno es gratis y siempre disponible.
@@ -77,7 +77,13 @@ function IdentityBridge({
   useEffect(() => {
     if (!ready) return;
     const embedded = wallets.find((w) => w.walletClientType === "privy");
-    if (!embedded) return;
+    if (!embedded) {
+      // Ya listo y sin wallet embebida = sesión cerrada. Hay que soltar la
+      // marca de "ya registrada": si no, volver a entrar CON EL MISMO correo
+      // daría la dirección por registrada y `myId` se quedaría vacío.
+      registeredFor.current = null;
+      return;
+    }
     const addr = embedded.address?.toLowerCase();
     if (!addr) return;
 
@@ -127,6 +133,19 @@ function LoginListener() {
   return null;
 }
 
+// Cierra la sesión de correo cuando el botón de la UI lanza el evento del bus.
+// Privy borra su propio estado persistido; el resto de la limpieza (identidad,
+// alias, premios) la hace page.tsx, que es quien la tiene.
+function LogoutListener() {
+  const { logout } = usePrivy();
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+
+  useEffect(() => onLogoutRequest(() => void logoutRef.current()), []);
+
+  return null;
+}
+
 export default function PrivyGate({
   onIdentity,
   onWelcomeBonus,
@@ -151,6 +170,7 @@ export default function PrivyGate({
     >
       <IdentityBridge onIdentity={onIdentity} onWelcomeBonus={onWelcomeBonus} />
       <LoginListener />
+      <LogoutListener />
     </PrivyProvider>
   );
 }
