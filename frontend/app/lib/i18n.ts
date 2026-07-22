@@ -326,6 +326,7 @@ type Dict = {
   bordyMenu: {
     open: string; title: string; sub: string;
     tutorial: string; tutorialHint: string;
+    shop: string; shopHint: string;
     profile: string; profileHint: string;
     settings: string; settingsHint: string;
     support: string; supportHint: string;
@@ -586,6 +587,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Abrir el menú de Bordy", title: "¿En qué te ayudo?", sub: "Soy Bordy, tu guía",
       tutorial: "Cómo se juega", tutorialHint: "Repasa las reglas conmigo",
+      shop: "Tienda", shopHint: "Compra monedas para pistas y reintentos",
       profile: "Mi perfil", profileHint: "Nombre, logros y premios",
       settings: "Ajustes", settingsHint: "Idioma, música y efectos",
       support: "Soporte", supportHint: "Escríbenos si algo falla",
@@ -875,6 +877,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Open Bordy's menu", title: "How can I help?", sub: "I'm Bordy, your guide",
       tutorial: "How to play", tutorialHint: "Go over the rules with me",
+      shop: "Shop", shopHint: "Buy coins for hints and retries",
       profile: "My profile", profileHint: "Name, achievements and prizes",
       settings: "Settings", settingsHint: "Language, music and effects",
       support: "Support", supportHint: "Write to us if something breaks",
@@ -1164,6 +1167,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Abrir o menu do Bordy", title: "Como posso ajudar?", sub: "Sou o Bordy, seu guia",
       tutorial: "Como se joga", tutorialHint: "Revise as regras comigo",
+      shop: "Loja", shopHint: "Compre moedas para dicas e novas tentativas",
       profile: "Meu perfil", profileHint: "Nome, conquistas e prêmios",
       settings: "Ajustes", settingsHint: "Idioma, música e efeitos",
       support: "Suporte", supportHint: "Escreva para nós se algo falhar",
@@ -1453,6 +1457,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Ouvrir le menu de Bordy", title: "Comment puis-je t'aider ?", sub: "Je suis Bordy, ton guide",
       tutorial: "Comment jouer", tutorialHint: "Revois les règles avec moi",
+      shop: "Boutique", shopHint: "Achète des pièces pour les indices et les reprises",
       profile: "Mon profil", profileHint: "Nom, succès et prix",
       settings: "Réglages", settingsHint: "Langue, musique et effets",
       support: "Assistance", supportHint: "Écris-nous si quelque chose ne va pas",
