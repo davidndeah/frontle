@@ -39,19 +39,75 @@ const DURACION: Partial<Record<BordyMood, number>> = {
   racha: 1150, // voltereta completa (1.05s) + margen para reasentarse
 };
 
+// Coordenadas medidas sobre el arte fuente (1280x1520): los ojos son los
+// óvalos que se recortaron del visor, la boca donde estaba la sonrisa.
+const OJO_I = { cx: 416, cy: 536, r: 44 };
+const OJO_D = { cx: 723, cy: 534, r: 44 };
+const BOCA = { cx: 582, cy: 764 };
+const TINTA = "#0b0a14";
+const MORADO = "#a855f7";
+
+/** Ojos vectoriales. Cambiar de forma es lo que el raster no permitía. */
+function Ojos({ forma }: { forma: string }) {
+  if (forma === "feliz") {
+    // Arcos "^ ^": el ojo cerrado de alegría.
+    const arco = (o: typeof OJO_I) =>
+      `M ${o.cx - o.r - 6} ${o.cy + 14} Q ${o.cx} ${o.cy - 42} ${o.cx + o.r + 6} ${o.cy + 14}`;
+    return (
+      <>
+        <path d={arco(OJO_I)} stroke={TINTA} strokeWidth={24} fill="none" strokeLinecap="round" />
+        <path d={arco(OJO_D)} stroke={TINTA} strokeWidth={24} fill="none" strokeLinecap="round" />
+      </>
+    );
+  }
+  return (
+    <>
+      <ellipse cx={OJO_I.cx} cy={OJO_I.cy} rx={OJO_I.r} ry={OJO_I.r} fill={TINTA} />
+      <ellipse cx={OJO_D.cx} cy={OJO_D.cy} rx={OJO_D.r} ry={OJO_D.r} fill={TINTA} />
+    </>
+  );
+}
+
+/** Bocas alternativas. "real" = se usa el recorte del arte original. */
+function Boca({ forma }: { forma: string }) {
+  const { cx: x, cy: y } = BOCA;
+  if (forma === "grande") {
+    return (
+      <path
+        d={`M ${x - 78} ${y - 18} Q ${x} ${y + 72} ${x + 78} ${y - 18} Q ${x} ${y + 16} ${x - 78} ${y - 18} Z`}
+        fill={MORADO}
+      />
+    );
+  }
+  return null;
+}
+
 // Animación POR PIEZA según el estado. El rig permite que cada parte tenga
 // su propia vida; este mapa se va llenando estado por estado.
 const RIG: Partial<Record<BordyMood, {
   brazoI?: string;
   brazoD?: string;
   antena?: string;
+  orejas?: boolean;
   ojos?: string;
+  /** forma de los ojos (Ojos) */
+  cara?: string;
+  /** forma de la boca; "real" usa el recorte del arte */
+  boca?: string;
 }>> = {
   idle: {
     brazoI: "br-brazoI-idle",
     brazoD: "br-brazoD-idle",
     antena: "br-antena-idle",
     ojos: "br-ojos-parpadean",
+  },
+  acierto: {
+    brazoI: "br-brazoI-arriba",
+    brazoD: "br-brazoD-arriba",
+    antena: "br-antena-latigazo",
+    orejas: true,
+    cara: "feliz",
+    boca: "grande",
   },
 };
 
@@ -117,8 +173,8 @@ export default function Bordy({
                   la sombra sea del conjunto y no una por pieza. */}
               <div className={`bordy-rig ${imgClassName}`} role="img" aria-label={alt}>
                 {/* eslint-disable @next/next/no-img-element */}
-                <img className="br-orejaI" src="/bordy/oreja-izq.webp" alt="" />
-                <img className="br-orejaD" src="/bordy/oreja-der.webp" alt="" />
+                <img className={`br-orejaI ${rig.orejas ? "br-orejaI-tiembla" : ""}`} src="/bordy/oreja-izq.webp" alt="" />
+                <img className={`br-orejaD ${rig.orejas ? "br-orejaD-tiembla" : ""}`} src="/bordy/oreja-der.webp" alt="" />
                 <div className={`br-antena ${rig.antena ?? ""}`}>
                   <img src="/bordy/antena.webp" alt="" />
                   <span
@@ -129,14 +185,16 @@ export default function Bordy({
                 <img className="br-base" src="/bordy/base.webp" alt="" />
                 <img className={`br-brazoI ${rig.brazoI ?? ""}`} src="/bordy/brazo-izq.webp" alt="" />
                 <img className={`br-brazoD ${rig.brazoD ?? ""}`} src="/bordy/brazo-der.webp" alt="" />
-                <img className="br-boca" src="/bordy/boca.webp" alt="" />
+                {(rig.boca ?? "real") === "real" && (
+                  <img className="br-boca" src="/bordy/boca.webp" alt="" />
+                )}
                 {/* eslint-enable @next/next/no-img-element */}
                 {/* Los ojos se recortaron del visor y se reconstruyó el
                     degradado debajo, así que ahora son vectoriales y pueden
                     cambiar de forma. Coordenadas del arte fuente. */}
                 <svg className={`br-cara ${rig.ojos ?? ""}`} viewBox="0 0 1280 1520" aria-hidden="true">
-                  <ellipse cx="416" cy="536" rx="44" ry="44" fill="#0b0a14" />
-                  <ellipse cx="723" cy="534" rx="44" ry="44" fill="#0b0a14" />
+                  <Ojos forma={rig.cara ?? "normal"} />
+                  <Boca forma={rig.boca ?? "real"} />
                 </svg>
               </div>
               {mood === "racha" && (
