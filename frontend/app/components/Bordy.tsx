@@ -33,10 +33,10 @@ const LED: Record<BordyMood, string> = {
 // Cuánto dura el one-shot de cada estado antes de volver a idle. null = la
 // pose se sostiene hasta que el estado cambie desde fuera.
 const DURACION: Partial<Record<BordyMood, number>> = {
-  acierto: 700,
+  acierto: 850, // salto con anticipación (0.8s) + margen
   desvio: 550,
   fallo: 1600, // sacudida (550) + un rato ladeado, para que se lea
-  racha: 900,
+  racha: 1150, // voltereta completa (1.05s) + margen para reasentarse
 };
 
 export default function Bordy({
@@ -71,7 +71,8 @@ export default function Bordy({
   const shot =
     mood === "acierto" ? "bordy-hop"
     : mood === "racha" ? "bordy-hop-big"
-    : mood === "fallo" || mood === "desvio" ? "bordy-shake"
+    : mood === "fallo" ? "bordy-shake"
+    : mood === "desvio" ? "bordy-nope"
     : "";
 
   const pose =
@@ -82,6 +83,7 @@ export default function Bordy({
   const ledPulse =
     mood === "racha" ? "bordy-led-fast"
     : mood === "pensando" ? "bordy-led-slow"
+    : mood === "idle" ? "bordy-led-blink"
     : "";
 
   return (

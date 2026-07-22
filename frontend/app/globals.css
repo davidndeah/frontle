@@ -69,17 +69,19 @@
   font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Bordy flotando (hero) */
+/* Bordy flotando (hero). Al subir "respira": un squash & stretch lento y
+   sutil que hace que el reposo se sienta vivo en vez de un deslizamiento rígido. */
 @keyframes bordy-float {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-14px) rotate(1deg); }
+  0%, 100% { transform: translateY(0) rotate(-1deg) scale(1, 1); }
+  50% { transform: translateY(-14px) rotate(1deg) scale(1.015, 0.985); }
 }
 .bordy-float { animation: bordy-float 4.5s ease-in-out infinite; }
 
-/* Flote suave para Bordy pequeño (junto a la burbuja / esquina) */
+/* Flote suave para Bordy pequeño (junto a la burbuja / esquina), con la
+   misma respiración a menor escala. */
 @keyframes bordy-float-sm {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-5px) scale(1.012, 0.99); }
 }
 .bordy-float-sm { animation: bordy-float-sm 3.5s ease-in-out infinite; }
 
@@ -101,27 +103,33 @@
      .bordy-float → el flote ambiental de siempre, ya definido arriba
    Solo transform y opacity: nada que provoque layout. */
 
-/* Acierto: salto con squash & stretch (se aplasta al impulsar y al aterrizar). */
+/* Acierto: salto con anticipación y follow-through. Se agacha para cargar,
+   despega alto con un ladeo alegre, se endereza en la cima y aterriza
+   aplastándose con un rebote — no un brinco plano, sino un salto "con ganas". */
 @keyframes bordy-hop {
   0%   { transform: translateY(0) scale(1, 1); }
-  18%  { transform: translateY(2px) scale(1.05, 0.92); }
-  45%  { transform: translateY(-30px) scale(0.97, 1.05); }
-  72%  { transform: translateY(0) scale(1.04, 0.94); }
-  86%  { transform: translateY(-8px) scale(1, 1.01); }
+  15%  { transform: translateY(5px) scale(1.08, 0.89); }                 /* anticipación: carga */
+  45%  { transform: translateY(-38px) scale(0.95, 1.06) rotate(-4deg); } /* despega alto y alegre */
+  62%  { transform: translateY(-40px) scale(0.98, 1.02) rotate(3deg); }  /* cima, se endereza */
+  80%  { transform: translateY(0) scale(1.07, 0.9); }                    /* aterriza aplastado */
+  90%  { transform: translateY(-6px) scale(0.99, 1.02); }                /* rebote */
   100% { transform: translateY(0) scale(1, 1); }
 }
-.bordy-hop { animation: bordy-hop 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
+.bordy-hop { animation: bordy-hop 0.8s cubic-bezier(0.22, 1, 0.36, 1); }
 
-/* Racha / victoria: el mismo salto, más alto y con giro. */
+/* Racha / victoria: voltereta completa. Se agacha para cargar impulso,
+   despega girando 360°, y aterriza aplastándose antes de reasentarse. Un
+   giro entero (no un ladeo) es lo que hace que se lea "vivo" como el 3D. */
 @keyframes bordy-hop-big {
-  0%   { transform: translateY(0) scale(1, 1); }
-  15%  { transform: translateY(3px) scale(1.07, 0.9); }
-  42%  { transform: translateY(-44px) scale(0.96, 1.07) rotate(-3deg); }
-  70%  { transform: translateY(0) scale(1.06, 0.92); }
-  84%  { transform: translateY(-12px) scale(0.99, 1.02) rotate(2deg); }
-  100% { transform: translateY(0) scale(1, 1); }
+  0%   { transform: translateY(0) scale(1, 1) rotate(0deg); }
+  12%  { transform: translateY(5px) scale(1.09, 0.88) rotate(0deg); }      /* anticipación: carga */
+  40%  { transform: translateY(-54px) scale(0.94, 1.08) rotate(-205deg); } /* despega girando */
+  58%  { transform: translateY(-60px) scale(1, 1) rotate(-320deg); }       /* cima de la voltereta */
+  78%  { transform: translateY(0) scale(1.09, 0.89) rotate(-360deg); }     /* aterriza aplastado, giro completo */
+  90%  { transform: translateY(-11px) scale(0.98, 1.03) rotate(-360deg); } /* rebote */
+  100% { transform: translateY(0) scale(1, 1) rotate(-360deg); }
 }
-.bordy-hop-big { animation: bordy-hop-big 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+.bordy-hop-big { animation: bordy-hop-big 1.05s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* Fallo: sacudida corta. El ladeo que la sigue vive en .bordy-pose-sad. */
 @keyframes bordy-shake {
@@ -135,16 +143,40 @@
 }
 .bordy-shake { animation: bordy-shake 0.55s ease-out; }
 
+/* Desvío (cerca, pero dirección equivocada): un "no-no" suave de cabeza —
+   más leve que la sacudida del fallo. Comunica "casi, pero no" sin castigar. */
+@keyframes bordy-nope {
+  0%, 100% { transform: rotate(0deg); }
+  25%      { transform: rotate(-5deg); }
+  50%      { transform: rotate(4deg); }
+  75%      { transform: rotate(-2deg); }
+}
+.bordy-nope { animation: bordy-nope 0.5s ease-in-out; }
+
 /* Poses sostenidas. La transición hace que entrar y salir del estado sea
    suave en vez de un corte seco. */
 .bordy-pose { transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
-.bordy-pose-sad { transform: rotate(-7deg) translateY(3px); }
-
-@keyframes bordy-sway {
-  0%, 100% { transform: rotate(-1.6deg); }
-  50%      { transform: rotate(1.6deg); }
+/* Fallo: tras la sacudida no se queda inclinado y quieto, sino mareado —
+   un balanceo woozy alrededor del ladeo triste. Lee como "¡uf!", no como
+   una foto congelada. */
+@keyframes bordy-dizzy {
+  0%   { transform: rotate(-7deg) translateY(3px); }
+  25%  { transform: rotate(-11deg) translateY(2px); }
+  50%  { transform: rotate(-3deg) translateY(4px); }
+  75%  { transform: rotate(-9deg) translateY(2px); }
+  100% { transform: rotate(-7deg) translateY(3px); }
 }
-.bordy-pose-think { animation: bordy-sway 2.6s ease-in-out infinite; }
+.bordy-pose-sad { animation: bordy-dizzy 1.3s ease-in-out infinite; }
+
+/* Pensando: no un vaivén de metrónomo, sino que se ASOMA — se inclina y se
+   acerca un poco, como quien escudriña el tablero buscando la ruta. */
+@keyframes bordy-peek {
+  0%   { transform: rotate(-3deg) scale(1); }
+  35%  { transform: rotate(4deg) scale(1.04) translateY(-2px); }
+  65%  { transform: rotate(2.5deg) scale(1.04) translateY(-2px); }
+  100% { transform: rotate(-3deg) scale(1); }
+}
+.bordy-pose-think { animation: bordy-peek 2.4s ease-in-out infinite; }
 
 /* LED semáforo sobre la bolita de la antena del render. Punto sólido pintado
    ENCIMA — nada de mix-blend: sobre el amarillo de la bolita, `screen` lava el
@@ -170,6 +202,18 @@
 }
 .bordy-led-fast { animation: bordy-led-pulse 0.5s ease-in-out infinite; }
 .bordy-led-slow { animation: bordy-led-pulse 1.4s ease-in-out infinite; }
+
+/* Idle: el LED no se queda muerto — cada pocos segundos hace un doble
+   parpadeo, como quien está despierto y observando. Le da vida al reposo
+   sin robar atención. */
+@keyframes bordy-led-blink {
+  0%, 86%, 100% { opacity: 0.9; }
+  89%           { opacity: 0.12; }
+  91%           { opacity: 0.9; }
+  93%           { opacity: 0.12; }
+  95%           { opacity: 0.9; }
+}
+.bordy-led-blink { animation: bordy-led-blink 5.5s ease-in-out infinite; }
 
 /* Chispas de racha. */
 @keyframes bordy-sparkle {
@@ -510,10 +554,14 @@ body {
   .bordy-hop,
   .bordy-hop-big,
   .bordy-shake,
+  .bordy-nope,
   .bordy-pose-think,
   .bordy-led-fast,
-  .bordy-led-slow { animation: none; }
+  .bordy-led-slow,
+  .bordy-led-blink { animation: none; }
   .bordy-pose { transition: none; }
+  /* El ladeo de fallo se conserva como pose fija (sin el balanceo woozy). */
+  .bordy-pose-sad { animation: none; transform: rotate(-7deg) translateY(3px); }
   .bordy-spark { display: none; }
   .bordy-think-dot { animation: none; opacity: 0.7; }
 
