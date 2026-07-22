@@ -371,6 +371,17 @@
   animation: br-llamita 0.36s ease-in-out infinite;
 }
 
+/* --- FALLO: se desinfla. Los brazos CAEN y la antena se dobla hacia
+       adelante — el lenguaje corporal de "se me bajó la energía", que un
+       raster entero solo podía insinuar ladeándose. --- */
+@keyframes br-brazoI-cae { to { transform: rotate(28deg) translateY(6%); } }
+@keyframes br-brazoD-cae { to { transform: rotate(-28deg) translateY(6%); } }
+.br-brazoI-cae { animation: br-brazoI-cae 0.45s ease-out forwards; }
+.br-brazoD-cae { animation: br-brazoD-cae 0.45s ease-out forwards; }
+
+@keyframes br-antena-triste { to { transform: rotate(-30deg) translateY(4%); } }
+.br-antena-triste { animation: br-antena-triste 0.5s ease-out forwards; }
+
 .br-led {
   position: absolute;
   left: 50%; top: 29%;

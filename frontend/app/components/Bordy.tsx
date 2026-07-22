@@ -83,6 +83,18 @@ function Ojos({ forma }: { forma: string }) {
       </>
     );
   }
+  if (forma === "x") {
+    // Aspas de mareo. Negro sobre el visor de colores: contrasta igual que
+    // los óvalos originales, así que se lee sin ambigüedad.
+    const aspa = (o: typeof OJO_I) =>
+      `M ${o.cx - o.r} ${o.cy - o.r} L ${o.cx + o.r} ${o.cy + o.r} M ${o.cx + o.r} ${o.cy - o.r} L ${o.cx - o.r} ${o.cy + o.r}`;
+    return (
+      <>
+        <path d={aspa(OJO_I)} stroke={TINTA} strokeWidth={22} strokeLinecap="round" />
+        <path d={aspa(OJO_D)} stroke={TINTA} strokeWidth={22} strokeLinecap="round" />
+      </>
+    );
+  }
   if (forma === "feliz") {
     // Arcos "^ ^": el ojo cerrado de alegría.
     const arco = (o: typeof OJO_I) =>
@@ -110,6 +122,18 @@ function Boca({ forma }: { forma: string }) {
       <path
         d={`M ${x - 78} ${y - 18} Q ${x} ${y + 72} ${x + 78} ${y - 18} Q ${x} ${y + 16} ${x - 78} ${y - 18} Z`}
         fill={MORADO}
+      />
+    );
+  }
+  if (forma === "mueca") {
+    // La sonrisa invertida: mismo trazo, curvatura al revés.
+    return (
+      <path
+        d={`M ${x - 62} ${y + 30} Q ${x} ${y - 34} ${x + 62} ${y + 30}`}
+        stroke={MORADO}
+        strokeWidth={24}
+        fill="none"
+        strokeLinecap="round"
       />
     );
   }
@@ -150,6 +174,13 @@ const RIG: Partial<Record<BordyMood, {
     orejas: true,
     cara: "llama",
     boca: "grande",
+  },
+  fallo: {
+    brazoI: "br-brazoI-cae",
+    brazoD: "br-brazoD-cae",
+    antena: "br-antena-triste",
+    cara: "x",
+    boca: "mueca",
   },
 };
 
