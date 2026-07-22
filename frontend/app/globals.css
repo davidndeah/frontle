@@ -168,15 +168,15 @@
 }
 .bordy-pose-sad { animation: bordy-dizzy 1.3s ease-in-out infinite; }
 
-/* Pensando: no un vaivén de metrónomo, sino que se ASOMA — se inclina y se
-   acerca un poco, como quien escudriña el tablero buscando la ruta. */
-@keyframes bordy-peek {
-  0%   { transform: rotate(-3deg) scale(1); }
-  35%  { transform: rotate(4deg) scale(1.04) translateY(-2px); }
-  65%  { transform: rotate(2.5deg) scale(1.04) translateY(-2px); }
-  100% { transform: rotate(-3deg) scale(1); }
+/* Pensando: cabeza ladeada y quieta, contemplativa. Antes se "asomaba"
+   escalando hacia el tablero; se cambió porque el zoom leía como acercarse
+   a mirar, no como cavilar. Ahora la vida la ponen los ojos (que barren) y
+   el brazo en la barbilla, no el tamaño del cuerpo. */
+@keyframes bordy-cavila {
+  0%, 100% { transform: rotate(-7deg); }
+  50%      { transform: rotate(-4.5deg); }
 }
-.bordy-pose-think { animation: bordy-peek 2.4s ease-in-out infinite; }
+.bordy-pose-think { animation: bordy-cavila 3.4s ease-in-out infinite; }
 
 /* LED semáforo sobre la bolita de la antena del render. Punto sólido pintado
    ENCIMA — nada de mix-blend: sobre el amarillo de la bolita, `screen` lava el
@@ -390,6 +390,17 @@
   100%{transform:rotate(0)}
 }
 .br-brazoD-saluda { animation: br-brazoD-saluda 1.4s ease-in-out; }
+
+/* --- PENSANDO: un brazo sube a la "barbilla" y se queda ahí. El gesto
+       clásico de cavilar, imposible sin brazos separados. --- */
+@keyframes br-brazoD-piensa { to { transform: rotate(74deg) translate(-16%, -14%); } }
+.br-brazoD-piensa { animation: br-brazoD-piensa 0.55s ease-out forwards; }
+@keyframes br-brazoI-quieto { to { transform: rotate(3deg); } }
+.br-brazoI-quieto { animation: br-brazoI-quieto 0.5s ease-out forwards; }
+
+/* La antena se ladea y queda "procesando". */
+@keyframes br-antena-piensa { 0%, 100% { transform: rotate(12deg); } 50% { transform: rotate(20deg); } }
+.br-antena-piensa { animation: br-antena-piensa 2.8s ease-in-out infinite; }
 
 .br-led {
   position: absolute;

@@ -85,6 +85,26 @@ function Ojos({ forma }: { forma: string }) {
       </>
     );
   }
+  if (forma === "piensa") {
+    // Entrecerrado y BARRIENDO de lado a lado. El barrido es lo que más
+    // vende el "está procesando", y solo se puede con ojos vectoriales.
+    const ojo = (o: typeof OJO_I) => (
+      <ellipse cx={o.cx} cy={o.cy - 6} rx={o.r} ry={o.r * 0.5} fill={TINTA}>
+        <animate
+          attributeName="cx"
+          values={`${o.cx - 14};${o.cx + 16};${o.cx - 14}`}
+          dur="3.2s"
+          repeatCount="indefinite"
+        />
+      </ellipse>
+    );
+    return (
+      <>
+        {ojo(OJO_I)}
+        {ojo(OJO_D)}
+      </>
+    );
+  }
   if (forma === "x") {
     // Aspas de mareo. Negro sobre el visor de colores: contrasta igual que
     // los óvalos originales, así que se lee sin ambigüedad.
@@ -126,6 +146,10 @@ function Boca({ forma }: { forma: string }) {
         fill={MORADO}
       />
     );
+  }
+  if (forma === "chica") {
+    // Boca pequeña y ladeada: concentración, no emoción.
+    return <ellipse cx={x + 6} cy={y + 8} rx={26} ry={17} fill={MORADO} />;
   }
   if (forma === "plana") {
     // Boca neutra: ni premia ni castiga un casi-acierto.
@@ -194,6 +218,13 @@ const RIG: Partial<Record<BordyMood, {
     antena: "br-antena-latigazo",
     orejas: true,
     boca: "plana",
+  },
+  pensando: {
+    brazoI: "br-brazoI-quieto",
+    brazoD: "br-brazoD-piensa",
+    antena: "br-antena-piensa",
+    cara: "piensa",
+    boca: "chica",
   },
 };
 
