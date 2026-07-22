@@ -233,11 +233,13 @@ function ojoX(o){var r=o.r;return '<path d="M '+(o.cx-r)+' '+(o.cy-r)+' L '+(o.c
 function ojoLlama(o,delay){
   var x=o.cx, y=o.cy;
   // Ancha a propósito: la llama debe DESBORDAR la cuenca del ojo (88px de
-  // ancho), si no se lee como un ojo raro en vez de fuego. ~145px de ancho.
-  var fuera='M '+x+' '+(y-140)+' C '+(x+64)+' '+(y-62)+', '+(x+100)+' '+(y+12)+', '+x+' '+(y+70)+
-            ' C '+(x-100)+' '+(y+12)+', '+(x-64)+' '+(y-62)+', '+x+' '+(y-140)+' Z';
-  var dentro='M '+x+' '+(y-76)+' C '+(x+36)+' '+(y-26)+', '+(x+56)+' '+(y+24)+', '+x+' '+(y+54)+
-             ' C '+(x-56)+' '+(y+24)+', '+(x-36)+' '+(y-26)+', '+x+' '+(y-76)+' Z';
+  // ancho), si no se lee como un ojo raro en vez de fuego. ~245px de ancho
+  // (2.8x el ojo). Aun así las dos llamas no se tocan ni con el pico del
+  // parpadeo, y se mantienen dentro del visor.
+  var fuera='M '+x+' '+(y-140)+' C '+(x+109)+' '+(y-62)+', '+(x+170)+' '+(y+12)+', '+x+' '+(y+70)+
+            ' C '+(x-170)+' '+(y+12)+', '+(x-109)+' '+(y-62)+', '+x+' '+(y-140)+' Z';
+  var dentro='M '+x+' '+(y-76)+' C '+(x+61)+' '+(y-26)+', '+(x+95)+' '+(y+24)+', '+x+' '+(y+54)+
+             ' C '+(x-95)+' '+(y+24)+', '+(x-61)+' '+(y-26)+', '+x+' '+(y-76)+' Z';
   return '<g class="llama-ojo" style="animation-delay:'+delay+'">'+
          '<path d="'+fuera+'" fill="url(#gLlama)"/>'+
          '<path d="'+dentro+'" fill="#ffe74a" opacity=".92"/></g>';
