@@ -82,6 +82,7 @@ export default function Bordy({
   const ledPulse =
     mood === "racha" ? "bordy-led-fast"
     : mood === "pensando" ? "bordy-led-slow"
+    : mood === "idle" ? "bordy-led-blink"
     : "";
 
   return (
