@@ -88,20 +88,12 @@ function Ojos({ forma }: { forma: string }) {
   if (forma === "piensa") {
     // Entrecerrado y BARRIENDO de lado a lado. El barrido es lo que más
     // vende el "está procesando", y solo se puede con ojos vectoriales.
-    const ojo = (o: typeof OJO_I) => (
-      <ellipse cx={o.cx} cy={o.cy - 6} rx={o.r} ry={o.r * 0.5} fill={TINTA}>
-        <animate
-          attributeName="cx"
-          values={`${o.cx - 14};${o.cx + 16};${o.cx - 14}`}
-          dur="3.2s"
-          repeatCount="indefinite"
-        />
-      </ellipse>
-    );
+    // El barrido se anima por CSS (clase br-ojos-piensan en el <svg>) y no
+    // con <animate> de SMIL: SMIL ignora prefers-reduced-motion.
     return (
       <>
-        {ojo(OJO_I)}
-        {ojo(OJO_D)}
+        <ellipse cx={OJO_I.cx} cy={OJO_I.cy - 6} rx={OJO_I.r} ry={OJO_I.r * 0.5} fill={TINTA} />
+        <ellipse cx={OJO_D.cx} cy={OJO_D.cy - 6} rx={OJO_D.r} ry={OJO_D.r * 0.5} fill={TINTA} />
       </>
     );
   }
@@ -223,6 +215,7 @@ const RIG: Partial<Record<BordyMood, {
     brazoI: "br-brazoI-quieto",
     brazoD: "br-brazoD-piensa",
     antena: "br-antena-piensa",
+    ojos: "br-ojos-piensan",
     cara: "piensa",
     boca: "chica",
   },

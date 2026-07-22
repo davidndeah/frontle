@@ -402,6 +402,17 @@
 @keyframes br-antena-piensa { 0%, 100% { transform: rotate(12deg); } 50% { transform: rotate(20deg); } }
 .br-antena-piensa { animation: br-antena-piensa 2.8s ease-in-out infinite; }
 
+/* El barrido de los ojos va por CSS (no con <animate> de SMIL, que ignora
+   prefers-reduced-motion). Las unidades son del viewBox, no px de pantalla. */
+@keyframes br-ojo-barre {
+  0%, 100% { transform: translateX(-14px); }
+  50%      { transform: translateX(16px); }
+}
+.br-ojos-piensan ellipse {
+  transform-box: fill-box;
+  animation: br-ojo-barre 3.2s ease-in-out infinite;
+}
+
 .br-led {
   position: absolute;
   left: 50%; top: 29%;
@@ -730,6 +741,33 @@ body {
   .bordy-pose { transition: none; }
   /* El ladeo de fallo se conserva como pose fija (sin el balanceo woozy). */
   .bordy-pose-sad { animation: none; transform: rotate(-7deg) translateY(3px); }
+
+  /* --- Bordy riggeado ---
+     Se apaga el MOVIMIENTO pero se conservan las POSES finales: los brazos
+     arriba al celebrar o caídos al fallar son información sobre el estado,
+     igual que el color del LED. Quitarlas dejaría a Bordy inexpresivo en
+     vez de solo quieto. */
+  .bordy-festeja,
+  .br-brazoI-idle, .br-brazoD-idle,
+  .br-antena-idle, .br-antena-latigazo, .br-antena-vibra, .br-antena-piensa,
+  .br-orejaI-tiembla, .br-orejaD-tiembla,
+  .br-brazoD-saluda { animation: none; }
+
+  .br-brazoI-arriba { animation: none; transform: rotate(-108deg); }
+  .br-brazoD-arriba { animation: none; transform: rotate(108deg); }
+  .br-brazoI-bombea { animation: none; transform: rotate(-112deg); }
+  .br-brazoD-bombea { animation: none; transform: rotate(112deg); }
+  .br-brazoI-cae    { animation: none; transform: rotate(28deg) translateY(6%); }
+  .br-brazoD-cae    { animation: none; transform: rotate(-28deg) translateY(6%); }
+  .br-brazoD-piensa { animation: none; transform: rotate(74deg) translate(-16%, -14%); }
+  .br-brazoI-quieto { animation: none; transform: rotate(3deg); }
+  .br-antena-triste { animation: none; transform: rotate(-30deg) translateY(4%); }
+
+  /* Ojos: la FORMA se conserva (feliz, aspas, llama son expresión); solo
+     se detiene el parpadeo, el barrido y el ondear del fuego. */
+  .br-ojos-parpadean ellipse,
+  .br-ojos-piensan ellipse,
+  .br-llama-ojo { animation: none; }
   .bordy-spark { display: none; }
   .bordy-think-dot { animation: none; opacity: 0.7; }
 
