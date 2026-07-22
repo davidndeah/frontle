@@ -45,7 +45,7 @@ for nom, m in masks.items():
     ys, xs = np.where(m)
     x0,y0,x1,y1 = xs.min(), ys.min(), xs.max()+1, ys.max()+1
     rec = a[y0:y1, x0:x1].copy(); rec[~m[y0:y1, x0:x1]] = 0
-    Image.fromarray(rec).save(f"{OUT}/{nom}.png")
+    Image.fromarray(rec).save(f"{OUT}/{nom}.webp","WEBP",quality=90,method=6)
     meta[nom] = {"x":int(x0),"y":int(y0),"w":int(x1-x0),"h":int(y1-y0)}
     print(f"  -> {nom}.png ({x0},{y0}) {x1-x0}x{y1-y0}")
 
@@ -67,13 +67,13 @@ for nom in ["oreja-izq","oreja-der"]:
         col = a[borde][:, :3].mean(axis=0).astype(int)
         solapa = m & ndimage.binary_dilation(cabeza_op, iterations=6)
         base[solapa,0],base[solapa,1],base[solapa,2],base[solapa,3] = col[0],col[1],col[2],255
-Image.fromarray(base).save(f"{OUT}/base.png")
+Image.fromarray(base).save(f"{OUT}/base.webp","WEBP",quality=90,method=6)
 meta["base"]={"x":0,"y":0,"w":W,"h":H}; meta["_src"]={"w":W,"h":H}
 
 # --- verificacion de reensamblaje ---
 recon = Image.fromarray(base).convert("RGBA")
 for nom in ["oreja-izq","oreja-der","antena","brazo-izq","brazo-der","boca"]:
-    recon.alpha_composite(Image.open(f"{OUT}/{nom}.png").convert("RGBA"), (meta[nom]["x"], meta[nom]["y"]))
+    recon.alpha_composite(Image.open(f"{OUT}/{nom}.webp").convert("RGBA"), (meta[nom]["x"], meta[nom]["y"]))
 recon.save(f"{OUT}/_verificacion.png")
 ra=np.array(recon).astype(int); oa=a.astype(int)
 vis=(ra[:,:,3]>20)|(oa[:,:,3]>20); dif=np.abs(ra[:,:,:3]-oa[:,:,:3]).max(axis=2)[vis]
@@ -83,7 +83,7 @@ json.dump(meta, open(f"{OUT}/piezas.json","w"), indent=2)
 
 # ===== ojos: recorte + inpaint del degradado del visor =====
 OUT = "frontend/public/bordy"
-base = np.array(Image.open(f"{OUT}/base.png").convert("RGBA"))
+base = np.array(Image.open(f"{OUT}/base.webp").convert("RGBA"))
 meta = json.load(open(f"{OUT}/piezas.json"))
 rgb = base[:,:,:3].astype(int); al = base[:,:,3]
 
@@ -126,7 +126,7 @@ for y in range(VY0, VY1):
             base[y,x,:3] = (ca*(1-f) + cb*f).astype(int)
             base[y,x,3] = 255
 
-Image.fromarray(base).save(f"{OUT}/base.png")
+Image.fromarray(base).save(f"{OUT}/base.webp","WEBP",quality=90,method=6)
 meta["_ojos"] = [{"cx":int((o[0]+o[2])//2), "cy":int((o[1]+o[3])//2),
                   "rx":int((o[2]-o[0])//2), "ry":int((o[3]-o[1])//2)} for o in ojos]
 json.dump(meta, open(f"{OUT}/piezas.json","w"), indent=2)
