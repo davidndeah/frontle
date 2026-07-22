@@ -36,7 +36,7 @@ const DURACION: Partial<Record<BordyMood, number>> = {
   acierto: 700,
   desvio: 550,
   fallo: 1600, // sacudida (550) + un rato ladeado, para que se lea
-  racha: 900,
+  racha: 1150, // voltereta completa (1.05s) + margen para reasentarse
 };
 
 export default function Bordy({

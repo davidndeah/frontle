@@ -112,16 +112,19 @@
 }
 .bordy-hop { animation: bordy-hop 0.7s cubic-bezier(0.22, 1, 0.36, 1); }
 
-/* Racha / victoria: el mismo salto, más alto y con giro. */
+/* Racha / victoria: voltereta completa. Se agacha para cargar impulso,
+   despega girando 360°, y aterriza aplastándose antes de reasentarse. Un
+   giro entero (no un ladeo) es lo que hace que se lea "vivo" como el 3D. */
 @keyframes bordy-hop-big {
-  0%   { transform: translateY(0) scale(1, 1); }
-  15%  { transform: translateY(3px) scale(1.07, 0.9); }
-  42%  { transform: translateY(-44px) scale(0.96, 1.07) rotate(-3deg); }
-  70%  { transform: translateY(0) scale(1.06, 0.92); }
-  84%  { transform: translateY(-12px) scale(0.99, 1.02) rotate(2deg); }
-  100% { transform: translateY(0) scale(1, 1); }
+  0%   { transform: translateY(0) scale(1, 1) rotate(0deg); }
+  12%  { transform: translateY(5px) scale(1.09, 0.88) rotate(0deg); }      /* anticipación: carga */
+  40%  { transform: translateY(-54px) scale(0.94, 1.08) rotate(-205deg); } /* despega girando */
+  58%  { transform: translateY(-60px) scale(1, 1) rotate(-320deg); }       /* cima de la voltereta */
+  78%  { transform: translateY(0) scale(1.09, 0.89) rotate(-360deg); }     /* aterriza aplastado, giro completo */
+  90%  { transform: translateY(-11px) scale(0.98, 1.03) rotate(-360deg); } /* rebote */
+  100% { transform: translateY(0) scale(1, 1) rotate(-360deg); }
 }
-.bordy-hop-big { animation: bordy-hop-big 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+.bordy-hop-big { animation: bordy-hop-big 1.05s cubic-bezier(0.22, 1, 0.36, 1); }
 
 /* Fallo: sacudida corta. El ladeo que la sigue vive en .bordy-pose-sad. */
 @keyframes bordy-shake {
