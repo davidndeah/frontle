@@ -39,6 +39,22 @@ const DURACION: Partial<Record<BordyMood, number>> = {
   racha: 1150, // voltereta completa (1.05s) + margen para reasentarse
 };
 
+// Animación POR PIEZA según el estado. El rig permite que cada parte tenga
+// su propia vida; este mapa se va llenando estado por estado.
+const RIG: Partial<Record<BordyMood, {
+  brazoI?: string;
+  brazoD?: string;
+  antena?: string;
+  ojos?: string;
+}>> = {
+  idle: {
+    brazoI: "br-brazoI-idle",
+    brazoD: "br-brazoD-idle",
+    antena: "br-antena-idle",
+    ojos: "br-ojos-parpadean",
+  },
+};
+
 export default function Bordy({
   mood = "idle",
   className = "",
@@ -80,6 +96,9 @@ export default function Bordy({
     : mood === "pensando" ? "bordy-pose-think"
     : "";
 
+  // Animaciones por pieza del estado actual (vacío = pieza en reposo).
+  const rig = RIG[mood] ?? {};
+
   const ledPulse =
     mood === "racha" ? "bordy-led-fast"
     : mood === "pensando" ? "bordy-led-slow"
@@ -100,7 +119,7 @@ export default function Bordy({
                 {/* eslint-disable @next/next/no-img-element */}
                 <img className="br-orejaI" src="/bordy/oreja-izq.webp" alt="" />
                 <img className="br-orejaD" src="/bordy/oreja-der.webp" alt="" />
-                <div className="br-antena">
+                <div className={`br-antena ${rig.antena ?? ""}`}>
                   <img src="/bordy/antena.webp" alt="" />
                   <span
                     className={`br-led ${ledPulse}`}
@@ -108,14 +127,14 @@ export default function Bordy({
                   />
                 </div>
                 <img className="br-base" src="/bordy/base.webp" alt="" />
-                <img className="br-brazoI" src="/bordy/brazo-izq.webp" alt="" />
-                <img className="br-brazoD" src="/bordy/brazo-der.webp" alt="" />
+                <img className={`br-brazoI ${rig.brazoI ?? ""}`} src="/bordy/brazo-izq.webp" alt="" />
+                <img className={`br-brazoD ${rig.brazoD ?? ""}`} src="/bordy/brazo-der.webp" alt="" />
                 <img className="br-boca" src="/bordy/boca.webp" alt="" />
                 {/* eslint-enable @next/next/no-img-element */}
                 {/* Los ojos se recortaron del visor y se reconstruyó el
                     degradado debajo, así que ahora son vectoriales y pueden
                     cambiar de forma. Coordenadas del arte fuente. */}
-                <svg className="br-cara" viewBox="0 0 1280 1520" aria-hidden="true">
+                <svg className={`br-cara ${rig.ojos ?? ""}`} viewBox="0 0 1280 1520" aria-hidden="true">
                   <ellipse cx="416" cy="536" rx="44" ry="44" fill="#0b0a14" />
                   <ellipse cx="723" cy="534" rx="44" ry="44" fill="#0b0a14" />
                 </svg>
