@@ -9,8 +9,11 @@ export {
   getCountry,
   areNeighbors,
   flagToCode,
+  usesExoticEdge,
   type Country,
 } from "./countries.js";
+
+export { CONTINENT_OF, continentOf, type ContinentCode } from "./continents.js";
 
 export {
   // grafo / rutas
