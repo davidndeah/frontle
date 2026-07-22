@@ -69,17 +69,19 @@
   font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
 }
 
-/* Bordy flotando (hero) */
+/* Bordy flotando (hero). Al subir "respira": un squash & stretch lento y
+   sutil que hace que el reposo se sienta vivo en vez de un deslizamiento rígido. */
 @keyframes bordy-float {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(-14px) rotate(1deg); }
+  0%, 100% { transform: translateY(0) rotate(-1deg) scale(1, 1); }
+  50% { transform: translateY(-14px) rotate(1deg) scale(1.015, 0.985); }
 }
 .bordy-float { animation: bordy-float 4.5s ease-in-out infinite; }
 
-/* Flote suave para Bordy pequeño (junto a la burbuja / esquina) */
+/* Flote suave para Bordy pequeño (junto a la burbuja / esquina), con la
+   misma respiración a menor escala. */
 @keyframes bordy-float-sm {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(-5px) scale(1.012, 0.99); }
 }
 .bordy-float-sm { animation: bordy-float-sm 3.5s ease-in-out infinite; }
 
