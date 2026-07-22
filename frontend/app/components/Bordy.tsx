@@ -92,16 +92,34 @@ export default function Bordy({
         <div className={`bordy-pose ${pose}`}>
           <div key={tick} className={shot}>
             <div className="relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/bordy-m2.webp"
-                alt={alt}
-                className={`w-full h-full object-contain ${imgClassName}`}
-              />
-              <span
-                className={`bordy-led ${ledPulse}`}
-                style={{ ["--led" as string]: LED[mood] }}
-              />
+              {/* Bordy ya no es UNA imagen: son capas reensambladas. El orden
+                  importa — orejas y antena detrás de la cabeza, brazos, boca
+                  y ojos delante. `drop-shadow` va en el contenedor para que
+                  la sombra sea del conjunto y no una por pieza. */}
+              <div className={`bordy-rig ${imgClassName}`} role="img" aria-label={alt}>
+                {/* eslint-disable @next/next/no-img-element */}
+                <img className="br-orejaI" src="/bordy/oreja-izq.webp" alt="" />
+                <img className="br-orejaD" src="/bordy/oreja-der.webp" alt="" />
+                <div className="br-antena">
+                  <img src="/bordy/antena.webp" alt="" />
+                  <span
+                    className={`br-led ${ledPulse}`}
+                    style={{ ["--led" as string]: LED[mood] }}
+                  />
+                </div>
+                <img className="br-base" src="/bordy/base.webp" alt="" />
+                <img className="br-brazoI" src="/bordy/brazo-izq.webp" alt="" />
+                <img className="br-brazoD" src="/bordy/brazo-der.webp" alt="" />
+                <img className="br-boca" src="/bordy/boca.webp" alt="" />
+                {/* eslint-enable @next/next/no-img-element */}
+                {/* Los ojos se recortaron del visor y se reconstruyó el
+                    degradado debajo, así que ahora son vectoriales y pueden
+                    cambiar de forma. Coordenadas del arte fuente. */}
+                <svg className="br-cara" viewBox="0 0 1280 1520" aria-hidden="true">
+                  <ellipse cx="416" cy="536" rx="44" ry="44" fill="#0b0a14" />
+                  <ellipse cx="723" cy="534" rx="44" ry="44" fill="#0b0a14" />
+                </svg>
+              </div>
               {mood === "racha" && (
                 <>
                   <span className="bordy-spark" style={{ left: "8%", top: "14%" }} />
