@@ -25,6 +25,9 @@ import ScoreCard from "./ScoreCard";
 import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import LevelSelect from "./LevelSelect";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { awardPracticeSolve } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
@@ -46,11 +49,13 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function PracticeGame({
-  locale, onExit, reactBordy,
+  locale, onExit, reactBordy, coachSignal = 0,
 }: {
   locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
 }) {
   const tr = t(locale);
   const [state, setState] = useState<PlayState | null>(null);
@@ -60,6 +65,8 @@ export default function PracticeGame({
   const [elapsedMs, setElapsedMs] = useState(0);
   // Dificultad elegible (UX-5) + las 3 pistas del reto diario, gratis:
   const [level, setLevel] = useState<Difficulty>("easy");
+  // Nivel con el que se generó la ronda EN CURSO (ver el bloque de dificultad).
+  const [roundLevel, setRoundLevel] = useState<Difficulty>("easy");
   const [showInitial, setShowInitial] = useState(false);
   const [showNextSil, setShowNextSil] = useState(false);
   const [round, setRound] = useState(0);
@@ -76,6 +83,7 @@ export default function PracticeGame({
 
   // Reto aleatorio nuevo (arranca en cliente para no romper la hidratación).
   function newRound(lv: Difficulty = level) {
+    setRoundLevel(lv);
     setState({ challenge: randomChallenge(lv), chain: [], solved: false });
     setInput("");
     setMessage(null);
@@ -87,10 +95,27 @@ export default function PracticeGame({
     setRound((r) => r + 1);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
+  // Pantalla previa: se elige la dificultad antes de la primera ronda (como
+  // el reto diario). Antes Práctica arrancaba sola al montar, en "fácil".
+  const [started, setStarted] = useState(false);
+  // Recorrido de bienvenida del modo (1 vez). Se dispara al empezar, no al
+  // montar: señala elementos del tablero, que aún no existen en la previa.
+  const [coach, setCoach] = useState(false);
+
+  function begin() {
+    newRound(level);
+    setStarted(true);
+    if (!modeCoachSeen("practice")) setCoach(true);
+  }
+
+  // Reproducir el tutorial a pedido del menú de Bordy (ver CountryQuizGame).
+  const lastSignal = useRef(coachSignal);
   useEffect(() => {
-    newRound();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && state && !state.solved) setCoach(true);
+    }
+  }, [coachSignal, started, state]);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
@@ -149,6 +174,29 @@ export default function PracticeGame({
     inputRef.current?.focus();
   }
 
+  // Pantalla previa: elegir dificultad antes de la primera ronda (como el diario).
+  if (!started) {
+    return (
+      <div className="flex flex-col gap-5">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+        </button>
+        <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+          <span className="text-5xl">🎓</span>
+          <div>
+            <h2 className="font-display text-xl font-bold text-white">{tr.practiceMode}</h2>
+            <p className="text-xs text-neutral-300 mt-0.5">{tr.practiceFree}</p>
+          </div>
+          <LevelSelect tr={tr} level={level} onChange={setLevel} />
+          <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
+            {tr.play}
+          </button>
+        </section>
+      </div>
+    );
+  }
+
   if (!state) {
     return <div className="py-10 text-center text-neutral-300 text-sm">{tr.loadingMap}</div>;
   }
@@ -161,12 +209,22 @@ export default function PracticeGame({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* volver */}
+      {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
-      <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-        <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+        </button>
+        <button
+          onClick={() => setCoach(true)}
+          aria-label={tr.coachReplay}
+          title={tr.coachReplay}
+          className="w-8 h-8 rounded-full bg-white/5 border border-lavender/25 text-neutral-300 active:scale-90 transition flex items-center justify-center"
+        >
+          ?
+        </button>
+      </div>
 
       {/* reto */}
       <section className="panel p-4">
@@ -185,17 +243,26 @@ export default function PracticeGame({
           </div>
         </div>
         <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(optimal)}</p>
-        {/* Dificultad: cambiarla arranca una ronda nueva de ese nivel */}
-        <div className="flex justify-center gap-2 mt-3">
-          {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
-            <button
-              key={lv}
-              onClick={() => { setLevel(lv); newRound(lv); }}
-              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
-            >
-              {tr.levels[lv]}
-            </button>
-          ))}
+        {/* Dificultad. Mismo arreglo que en el quiz: NO rerollea la ronda en
+            curso. Antes hacía newRound(lv), y aunque Práctica sea entrenamiento
+            libre también otorga XP (awardPracticeSolve), así que el selector
+            servía igual para saltar retos hasta dar con uno fácil. El nivel
+            elegido entra en la siguiente ronda. */}
+        <div id="practice-level" className="flex flex-col items-center gap-1.5 mt-3">
+          <div className="flex justify-center gap-2">
+            {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
+              <button
+                key={lv}
+                onClick={() => setLevel(lv)}
+                className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
+              >
+                {tr.levels[lv]}
+              </button>
+            ))}
+          </div>
+          {level !== roundLevel && !state.solved && (
+            <p className="text-[11px] text-neutral-400">↻ {tr.quiz.levelNextRound}</p>
+          )}
         </div>
       </section>
 
@@ -207,15 +274,24 @@ export default function PracticeGame({
         </p>
       )}
 
-      {/* mapa con TODOS los contornos visibles (para aprender) */}
-      <WorldMap
-        statusByCountry={statusByCountry}
-        loadingLabel={tr.loadingMap}
-        silhouettes={showNextSil && hintCountry ? [hintCountry] : []}
-        showAllOutlines
-        resetKey={`${challenge.start}->${challenge.end}`}
-        controls={tr.a11y}
-      />
+      {/* mapa con TODOS los contornos visibles (para aprender). Sigue montado
+          bajo el velo mientras el tutorial está abierto, para no revelar el
+          reto de fondo antes de que el jugador termine de leerlo. */}
+      <div id="practice-map" className="relative">
+        <WorldMap
+          statusByCountry={statusByCountry}
+          loadingLabel={tr.loadingMap}
+          silhouettes={showNextSil && hintCountry ? [hintCountry] : []}
+          showAllOutlines
+          resetKey={`${challenge.start}->${challenge.end}`}
+          controls={tr.a11y}
+        />
+        {coach && (
+          <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+            <span className="text-6xl opacity-30" aria-hidden>🌍</span>
+          </div>
+        )}
+      </div>
 
       {/* chips de la ruta */}
       <section className="flex flex-wrap justify-center gap-2">
@@ -298,6 +374,17 @@ frontle.vercel.app`}
           </div>
           <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.used(guessCount)}</p>
         </section>
+      )}
+
+      {coach && (
+        <Coachmarks
+          steps={[
+            { target: "practice-map", text: tr.modeCoach.practice[0] },
+            { target: "practice-level", text: tr.modeCoach.practice[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen("practice"); setCoach(false); }}
+        />
       )}
     </div>
   );

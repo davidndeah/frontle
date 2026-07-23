@@ -32,6 +32,8 @@ import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDay
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
+import LevelSelect from "./components/LevelSelect";
+import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
 import NavIcon from "./components/NavIcons";
 import Achievements from "./components/Achievements";
@@ -217,6 +219,10 @@ export default function Frontle() {
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
+  // Señal para pedirle a un modo que reproduzca su recorrido (coachmarks).
+  // Es un nonce: al incrementarlo, el componente del modo activo lo detecta y
+  // muestra su tutorial. Lo dispara el menú de Bordy según el modo en curso.
+  const [coachSignal, setCoachSignal] = useState(0);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
   const [alias, setAliasState] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -915,12 +921,12 @@ export default function Frontle() {
       <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "jugar" && regionMode && (
-          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} />
+          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} />
         )}
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
         {tab === "jugar" && !regionMode && quizMode && (
-          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} />
+          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} />
         )}
 
         {tab === "jugar" && !regionMode && !quizMode && (
@@ -1443,7 +1449,7 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} />
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} coachSignal={coachSignal} />
         )}
 
         {tab === "aprender" && !practiceOn && (
@@ -1555,8 +1561,15 @@ export default function Frontle() {
         <BordyTutorial
           tr={tr}
           locale={locale}
-          onDone={() => {
+          onDone={(completo) => {
             setOverlay(null);
+            // Saltar el tutorial salta TODO el onboarding. Antes, quien le daba
+            // a "saltar" se topaba enseguida con los coachmarks — se sentía
+            // como que la app le colaba un segundo tutorial después de haber
+            // dicho explícitamente que no quería el primero.
+            if (!completo) {
+              try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
+            }
             if (!started) enterGame();
           }}
         />
@@ -1612,7 +1625,40 @@ export default function Frontle() {
       {bordyMenu && (
         <BordyMenuSheet
           onClose={() => setBordyMenu(false)}
-          onTutorial={() => setOverlay("full")}
+          // Modo en curso: el menú de Bordy usa esto para decidir si reproduce
+          // el tutorial de ESTE modo o muestra la lista para elegir cuál aprender.
+          currentMode={
+            regionMode ? "region"
+            : quizMode === "flag" ? "flag"
+            : quizMode === "outline" ? "outline"
+            : tab === "aprender" && practiceOn ? "practice"
+            : tab === "jugar" && started && !regionMode && !quizMode ? "daily"
+            : null
+          }
+          // Reproducir el tutorial del modo activo. El diario tiene su propio
+          // modal; los demás muestran sus coachmarks vía la señal.
+          onReplayTutorial={(m) => {
+            if (m === "daily") setOverlay("full");
+            else setCoachSignal((n) => n + 1);
+          }}
+          // Elegir un modo para aprenderlo desde la pantalla de inicio: borra
+          // la marca de "ya visto" de ese modo y navega. Al entrar, el modo
+          // muestra su recorrido solo (como si fuera la primera vez), sin
+          // forzarlo desde fuera. El diario tiene su propio modal.
+          onLearn={(m) => {
+            if (m === "daily") { setOverlay("full"); return; }
+            if (m === "flag" || m === "outline") clearModeCoachSeen(m);
+            else if (m === "practice") clearModeCoachSeen("practice");
+            else if (m === "region") clearModeCoachSeen("region");
+            if (m === "flag") setQuizMode("flag");
+            else if (m === "outline") setQuizMode("outline");
+            else if (m === "practice") { setTab("aprender"); setPracticeOn(true); }
+            // Región necesita un país además del modo: sin esto, `onLearn`
+            // solo cambiaba de pestaña (si ya estabas en "jugar", ni eso) y
+            // el tutorial nunca llegaba a dispararse porque RegionGame no
+            // se llegaba a montar.
+            else if (m === "region") { setRegionMode(regionPick); setTab("jugar"); }
+          }}
           onProfile={() => setTab("perfil")}
           onSettings={() => setSettingsOpen(true)}
           onShop={() => setShopOpen(true)}
@@ -1651,6 +1697,11 @@ export default function Frontle() {
             { target: "game-timer", text: tr.coachSteps[1] },
           ]}
           labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          // El contador continúa desde el modal (5 pasos) en vez de reiniciar
+          // en 1/2: es el mismo recorrido, y reiniciarlo lo hacía parecer un
+          // segundo tutorial.
+          offset={5}
+          total={7}
           onDone={() => {
             try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
             setCoaching(false);
@@ -1869,23 +1920,40 @@ function WalletSheet({
 // puerta a lo que el jugador podría querer — todo ya existía, aquí solo se
 // junta en un sitio donde se encuentre. "Tienda" reusa el `CoinShop` real
 // (Santiago, plan v2 §5) por `onShop`, no una implementación propia.
+type LearnMode = "daily" | "region" | "flag" | "outline" | "practice";
 function BordyMenuSheet({
   onClose,
-  onTutorial,
+  currentMode,
+  onReplayTutorial,
+  onLearn,
   onProfile,
   onSettings,
   onShop,
   tr,
 }: {
   onClose: () => void;
-  onTutorial: () => void;
+  /** Modo que se está jugando ahora, o null si se está en el inicio. */
+  currentMode: LearnMode | null;
+  onReplayTutorial: (m: LearnMode) => void;
+  onLearn: (m: LearnMode) => void;
   onProfile: () => void;
   onSettings: () => void;
   onShop: () => void;
   tr: ReturnType<typeof t>;
 }) {
+  // Nombre legible de cada modo, para el título del tutorial y la lista.
+  const MODE_NAME: Record<LearnMode, string> = {
+    daily: tr.modes.dailyTitle,
+    region: tr.modes.regionsTitle,
+    flag: tr.quiz.flagTitle,
+    outline: tr.quiz.outlineTitle,
+    practice: tr.practiceMode,
+  };
+  const MODE_ICON: Record<LearnMode, string> = {
+    daily: "🌍", region: "🗺️", flag: "🏳️", outline: "🗺️", practice: "🎓",
+  };
+  const learnList: LearnMode[] = ["daily", "region", "flag", "outline", "practice"];
   const items: { icon: string; label: string; hint: string; onClick: () => void }[] = [
-    { icon: "🎓", label: tr.bordyMenu.tutorial, hint: tr.bordyMenu.tutorialHint, onClick: onTutorial },
     { icon: "🪙", label: tr.bordyMenu.shop, hint: tr.bordyMenu.shopHint, onClick: onShop },
     { icon: "👤", label: tr.bordyMenu.profile, hint: tr.bordyMenu.profileHint, onClick: onProfile },
     { icon: "⚙️", label: tr.bordyMenu.settings, hint: tr.bordyMenu.settingsHint, onClick: onSettings },
@@ -1905,6 +1973,41 @@ function BordyMenuSheet({
       }
     >
       <div className="flex flex-col gap-2">
+        {/* Tutorial CONTEXTUAL: si se está jugando un modo, Bordy ofrece el
+            tutorial de ESE modo; si se está en el inicio, deja elegir cuál
+            aprender de una lista. */}
+        {currentMode ? (
+          <button
+            onClick={() => { onReplayTutorial(currentMode); onClose(); }}
+            className="panel brutal-sm brutal-press flex items-center gap-3 p-3 text-left rounded-xl border border-gold/30"
+          >
+            <span className="text-2xl w-8 text-center flex-none">🎓</span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-bold text-white text-sm leading-tight">{tr.bordyMenu.replayTutorial}</span>
+              <span className="block text-[11px] text-neutral-400">{MODE_NAME[currentMode]}</span>
+            </span>
+            <span className="text-gold text-xl flex-none">→</span>
+          </button>
+        ) : (
+          <div className="panel p-3 rounded-xl flex flex-col gap-2">
+            <span className="text-[11px] uppercase tracking-[0.14em] text-neutral-400 flex items-center gap-1.5">
+              🎓 {tr.bordyMenu.learnTitle}
+            </span>
+            <div className="grid grid-cols-1 gap-1.5">
+              {learnList.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { onLearn(m); onClose(); }}
+                  className="brutal-sm brutal-press flex items-center gap-3 p-2.5 text-left rounded-lg bg-surface/60"
+                >
+                  <span className="text-xl w-7 text-center flex-none">{MODE_ICON[m]}</span>
+                  <span className="flex-1 min-w-0 font-semibold text-white text-sm leading-tight">{MODE_NAME[m]}</span>
+                  <span className="text-gold text-lg flex-none">→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {items.map((it) => (
           <button
             key={it.label}
@@ -2157,51 +2260,8 @@ function AudioToggle({ label, icon, on, onToggle }: { label: string; icon: strin
 
 // Selector de nivel: control segmentado Fácil / Medio / Difícil. Cambiar de
 // nivel carga el reto y el ranking de ese nivel (cada uno es independiente).
-function LevelSelect({
-  tr,
-  level,
-  onChange,
-}: {
-  tr: ReturnType<typeof t>;
-  level: Difficulty;
-  onChange: (l: Difficulty) => void;
-}) {
-  // Cada nivel con su identidad: icono + color (estética Violeta Prisma)
-  const META: Record<Difficulty, { icon: string; color: string }> = {
-    easy: { icon: "🌱", color: "#22c55e" },
-    medium: { icon: "⚡", color: "var(--gold)" },
-    hard: { icon: "💀", color: "#e879f9" },
-  };
-  const opts: Difficulty[] = ["easy", "medium", "hard"];
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <span className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">{tr.chooseLevel}</span>
-      <div className="grid grid-cols-3 gap-2 w-full">
-        {opts.map((l) => {
-          const on = level === l;
-          const m = META[l];
-          return (
-            <button
-              key={l}
-              type="button"
-              onClick={() => onChange(l)}
-              aria-pressed={on}
-              className={`brutal-shadow brutal-press flex flex-col items-center gap-0.5 rounded-2xl border-2 px-2 py-2.5 backdrop-blur-sm ${
-                on ? "bg-surface/80" : "bg-surface/35 opacity-60"
-              }`}
-              style={{ borderColor: on ? m.color : "rgba(183,156,237,0.2)" }}
-            >
-              <span className="text-xl leading-none">{m.icon}</span>
-              <span className="font-display text-[12.5px] font-bold" style={{ color: on ? m.color : "#c3cbdd" }}>
-                {tr.levels[l]}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// LevelSelect se movió a ./components/LevelSelect para compartirlo con las
+// pantallas previas de Bandera/Contorno y Práctica.
 
 type ChipKind = Status;
 function CountryChip({ code, name, kind }: { code: string; name: string; kind: ChipKind }) {

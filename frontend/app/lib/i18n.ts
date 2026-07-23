@@ -330,6 +330,10 @@ type Dict = {
   bordyMenu: {
     open: string; title: string; sub: string;
     tutorial: string; tutorialHint: string;
+    /** Botón para repetir el tutorial del modo que se está jugando. */
+    replayTutorial: string;
+    /** Encabezado de la lista de modos para aprender (desde el inicio). */
+    learnTitle: string;
     shop: string; shopHint: string;
     profile: string; profileHint: string;
     settings: string; settingsHint: string;
@@ -352,6 +356,8 @@ type Dict = {
     tries: (n: number) => string;
     wrong: string;
     correct: (name: string) => string;
+    /** Aviso al cambiar de nivel a mitad de ronda: no se rerollea el reto. */
+    levelNextRound: string;
   };
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
   subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
@@ -366,6 +372,10 @@ type Dict = {
   coachSteps: string[];
   coachSkip: string;
   coachDone: string;
+  /** Botón de ayuda que reproduce el recorrido del modo. */
+  coachReplay: string;
+  /** Recorrido corto propio de cada modo (2 pasos), sobre la pantalla real. */
+  modeCoach: { region: string[]; practice: string[]; quiz: string[] };
   rankingTitle: string;
   // Sub-tabs del ranking: reto diario (marca+tiempo) vs liga semanal (XP).
   rankTabs: { daily: string; weekly: string };
@@ -593,6 +603,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Abrir el menú de Bordy", title: "¿En qué te ayudo?", sub: "Soy Bordy, tu guía",
       tutorial: "Cómo se juega", tutorialHint: "Repasa las reglas conmigo",
+      replayTutorial: "Ver cómo se juega", learnTitle: "Aprende un modo",
       shop: "Tienda", shopHint: "Compra monedas para pistas y reintentos",
       profile: "Mi perfil", profileHint: "Nombre, logros y premios",
       settings: "Ajustes", settingsHint: "Idioma, música y efectos",
@@ -612,6 +623,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Intentos: ${n}`,
       wrong: "No es ese, ¡sigue intentando!",
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
+      levelNextRound: "Se aplica en la próxima ronda",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
@@ -653,8 +665,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 ¿Atascado? Aquí compras una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆",
       "⏱️ Y este es el desempate: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄",
     ],
+    modeCoach: {
+      region: [
+        "Aquí conectas subdivisiones del mismo país: de la de arriba a la de abajo, vecina por vecina.",
+        "Estas pistas cuestan monedas. El reto es diario y gratis: no gastas nada por jugar.",
+      ],
+      practice: [
+        "Entrenamiento libre: retos infinitos, sin premios ni ranking. Los contornos se ven todos, para aprender.",
+        "Cambia la dificultad cuando quieras — se aplica en la ronda siguiente, no en la que estás jugando.",
+      ],
+      quiz: [
+        "Mira la imagen y escribe de qué país es. Aquí no hay cadena: es un país por ronda.",
+        "Cada pista que abras te resta estrellas, así que intenta primero sin ellas.",
+      ],
+    },
     coachSkip: "Saltar",
     coachDone: "¡Entendido!",
+    coachReplay: "Cómo se juega",
     rankingTitle: "Ranking diario",
     rankTabs: { daily: "Diario", weekly: "Semanal" },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
@@ -885,6 +912,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Open Bordy's menu", title: "How can I help?", sub: "I'm Bordy, your guide",
       tutorial: "How to play", tutorialHint: "Go over the rules with me",
+      replayTutorial: "See how to play", learnTitle: "Learn a mode",
       shop: "Shop", shopHint: "Buy coins for hints and retries",
       profile: "My profile", profileHint: "Name, achievements and prizes",
       settings: "Settings", settingsHint: "Language, music and effects",
@@ -904,6 +932,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Tries: ${n}`,
       wrong: "Not that one, keep trying!",
       correct: (n) => `Correct! It was ${n} 🎉`,
+      levelNextRound: "Applies to the next round",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
@@ -945,8 +974,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Stuck? This is where you buy a hint: the next country's INITIAL, its SILHOUETTE on the map, or all the silhouettes. They cost cents and 80% feeds the day's pot 🏆",
       "⏱️ And this is the tiebreaker: with the same number of countries, the fastest wins. It starts when you tap Got it! — the challenge stays hidden, so nobody gets an edge 😄",
     ],
+    modeCoach: {
+      region: [
+        "Here you connect subdivisions within one country: from the top one to the bottom one, neighbor by neighbor.",
+        "These hints cost coins. The challenge itself is daily and free: playing costs you nothing.",
+      ],
+      practice: [
+        "Free training: endless challenges, no prizes or ranking. Every outline is visible, so you can learn.",
+        "Change the difficulty anytime — it applies to the next round, not the one you're playing.",
+      ],
+      quiz: [
+        "Look at the image and type which country it is. No chain here: one country per round.",
+        "Every hint you open costs you stars, so try without them first.",
+      ],
+    },
     coachSkip: "Skip",
     coachDone: "Got it!",
+    coachReplay: "How to play",
     rankingTitle: "Daily ranking",
     rankTabs: { daily: "Daily", weekly: "Weekly" },
     bestToday: (n) => `Your best today: ${n} countries`,
@@ -1177,6 +1221,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Abrir o menu do Bordy", title: "Como posso ajudar?", sub: "Sou o Bordy, seu guia",
       tutorial: "Como se joga", tutorialHint: "Revise as regras comigo",
+      replayTutorial: "Ver como se joga", learnTitle: "Aprenda um modo",
       shop: "Loja", shopHint: "Compre moedas para dicas e novas tentativas",
       profile: "Meu perfil", profileHint: "Nome, conquistas e prêmios",
       settings: "Ajustes", settingsHint: "Idioma, música e efeitos",
@@ -1196,6 +1241,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Tentativas: ${n}`,
       wrong: "Não é esse, continue tentando!",
       correct: (n) => `Correto! Era ${n} 🎉`,
+      levelNextRound: "Vale para a próxima rodada",
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
@@ -1237,8 +1283,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Travou? Aqui você compra uma dica: a INICIAL do próximo país, sua SILHUETA no mapa, ou todas as silhuetas. Custam centavos e 80% alimenta o pot do dia 🏆",
       "⏱️ E este é o desempate: com o mesmo número de países, ganha o mais rápido. Ele começa quando você tocar em Entendi! — o desafio segue oculto, então ninguém ganha vantagem 😄",
     ],
+    modeCoach: {
+      region: [
+        "Aqui você conecta subdivisões do mesmo país: da de cima até a de baixo, vizinha por vizinha.",
+        "Estas dicas custam moedas. O desafio é diário e grátis: jogar não custa nada.",
+      ],
+      practice: [
+        "Treino livre: desafios infinitos, sem prêmios nem ranking. Todos os contornos ficam visíveis, para aprender.",
+        "Mude a dificuldade quando quiser — vale para a próxima rodada, não para a que você está jogando.",
+      ],
+      quiz: [
+        "Olhe a imagem e escreva de que país é. Aqui não há cadeia: é um país por rodada.",
+        "Cada dica que abrir tira estrelas, então tente primeiro sem elas.",
+      ],
+    },
     coachSkip: "Pular",
     coachDone: "Entendi!",
+    coachReplay: "Como se joga",
     rankingTitle: "Ranking diário",
     rankTabs: { daily: "Diário", weekly: "Semanal" },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
@@ -1469,6 +1530,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Ouvrir le menu de Bordy", title: "Comment puis-je t'aider ?", sub: "Je suis Bordy, ton guide",
       tutorial: "Comment jouer", tutorialHint: "Revois les règles avec moi",
+      replayTutorial: "Voir comment jouer", learnTitle: "Apprends un mode",
       shop: "Boutique", shopHint: "Achète des pièces pour les indices et les reprises",
       profile: "Mon profil", profileHint: "Nom, succès et prix",
       settings: "Réglages", settingsHint: "Langue, musique et effets",
@@ -1488,6 +1550,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Essais : ${n}`,
       wrong: "Ce n'est pas ça, continue !",
       correct: (n) => `Correct ! C'était ${n} 🎉`,
+      levelNextRound: "S'applique au tour suivant",
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
@@ -1529,8 +1592,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Bloqué ? C'est ici que tu achètes un indice : l'INITIALE du pays suivant, sa SILHOUETTE sur la carte, ou toutes les silhouettes. Quelques centimes, et 80 % alimentent le pot du jour 🏆",
       "⏱️ Et voici le départage : à nombre de pays égal, le plus rapide gagne. Il démarre quand tu touches Compris ! — le défi reste caché, donc personne n'est avantagé 😄",
     ],
+    modeCoach: {
+      region: [
+        "Ici tu relies des subdivisions d'un même pays : de celle du haut à celle du bas, voisine par voisine.",
+        "Ces indices coûtent des pièces. Le défi est quotidien et gratuit : jouer ne te coûte rien.",
+      ],
+      practice: [
+        "Entraînement libre : défis infinis, sans prix ni classement. Tous les contours sont visibles, pour apprendre.",
+        "Change la difficulté quand tu veux — elle s'applique au tour suivant, pas à celui en cours.",
+      ],
+      quiz: [
+        "Regarde l'image et écris de quel pays il s'agit. Pas de chaîne ici : un pays par tour.",
+        "Chaque indice ouvert te coûte des étoiles, alors essaie d'abord sans.",
+      ],
+    },
     coachSkip: "Passer",
     coachDone: "Compris !",
+    coachReplay: "Comment jouer",
     rankingTitle: "Classement du jour",
     rankTabs: { daily: "Quotidien", weekly: "Hebdo" },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,

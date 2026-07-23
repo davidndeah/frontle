@@ -19,6 +19,9 @@ import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import ScoreCard from "./ScoreCard";
 import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import LevelSelect from "./LevelSelect";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
@@ -45,14 +48,20 @@ function BigFlag({ name }: { name: string }) {
 }
 
 export default function CountryQuizGame({
-  mode, locale, onExit, reactBordy,
+  mode, locale, onExit, reactBordy, coachSignal = 0,
 }: {
   mode: QuizMode; locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
 }) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
+  // Nivel con el que se generó la ronda EN CURSO. Se separa de `level` porque
+  // cambiar el selector ya no rerollea el reto (ver el bloque de dificultad):
+  // sirve para avisar que el nivel nuevo entra en la próxima ronda.
+  const [roundLevel, setRoundLevel] = useState<Difficulty>("easy");
   const [country, setCountry] = useState<string>(() => randomQuizCountry("easy", undefined, mode));
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -69,6 +78,34 @@ export default function CountryQuizGame({
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // Pantalla previa: se elige la dificultad ANTES de ver el primer reto, como
+  // el reto diario. Antes el modo te metía directo a "fácil" y recién dentro
+  // te pedía cambiar de nivel.
+  const [started, setStarted] = useState(false);
+  // Recorrido de bienvenida del modo (1 vez). Bandera y contorno comparten el
+  // TEXTO (mismo loop, solo cambia el estímulo) pero cada uno tiene su propia
+  // marca de "ya visto" (`mode`, no un "quiz" genérico): son dos tarjetas
+  // separadas en el inicio, y saltar el tutorial de una no debe apagar el de
+  // la otra. Se dispara al empezar (no al montar): el recorrido señala
+  // elementos del tablero, que no existen en la pantalla de elegir dificultad.
+  const [coach, setCoach] = useState(false);
+
+  function begin() {
+    newRound(level);
+    setStarted(true);
+    if (!modeCoachSeen(mode)) setCoach(true);
+  }
+
+  // Reproducir el tutorial a pedido del menú de Bordy. El ref evita que
+  // re-montar el componente lo dispare: solo cuenta un cambio de la señal
+  // mientras ya está montado y en juego.
+  const lastSignal = useRef(coachSignal);
+  useEffect(() => {
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && !solved) setCoach(true);
+    }
+  }, [coachSignal, started, solved]);
 
   const hints = useMemo(
     () =>
@@ -86,6 +123,7 @@ export default function CountryQuizGame({
   }, [input, locale]);
 
   function newRound(lv: Difficulty = level) {
+    setRoundLevel(lv);
     setCountry(randomQuizCountry(lv, country, mode));
     setInput("");
     setSuggestions([]);
@@ -123,31 +161,88 @@ export default function CountryQuizGame({
   // Estrellas: sin pistas = 3 · 1–2 pistas = 2 · más = 1
   const stars = solved ? (revealed === 0 ? 3 : revealed <= 2 ? 2 : 1) : 0;
   const title = mode === "flag" ? tr.quiz.flagTitle : tr.quiz.outlineTitle;
+  const sub = mode === "flag" ? tr.quiz.flagSub : tr.quiz.outlineSub;
+
+  // Pantalla previa: elegir dificultad antes del primer reto (como el diario).
+  if (!started) {
+    return (
+      <div className="flex flex-col gap-5">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
+        </button>
+        <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+          <span className="text-5xl">{mode === "flag" ? "🏳️" : "🗺️"}</span>
+          <div>
+            <h2 className="font-display text-xl font-bold text-white">{title}</h2>
+            <p className="text-xs text-neutral-300 mt-0.5">{sub}</p>
+          </div>
+          <LevelSelect tr={tr} level={level} onChange={setLevel} />
+          <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
+            {tr.play}
+          </button>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* volver */}
+      {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
-      <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-        <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
-      </button>
-
-      {/* dificultad */}
-      <div className="flex justify-center gap-2">
-        {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
-          <button
-            key={lv}
-            onClick={() => { setLevel(lv); newRound(lv); }}
-            className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
-          >
-            {tr.levels[lv]}
-          </button>
-        ))}
+      <div className="flex items-center justify-between">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
+        </button>
+        {/* Ayuda: reproduce el recorrido del modo cuando el jugador quiera,
+            sin depender de que sea su primera vez. */}
+        <button
+          onClick={() => setCoach(true)}
+          aria-label={tr.coachReplay}
+          title={tr.coachReplay}
+          className="w-8 h-8 rounded-full bg-white/5 border border-lavender/25 text-neutral-300 active:scale-90 transition flex items-center justify-center"
+        >
+          ?
+        </button>
       </div>
 
-      {/* estímulo */}
-      {mode === "flag" ? <BigFlag name={country} /> : <CountryOutline country={country} loadingLabel={tr.loadingMap} />}
+      {/* Dificultad. NO rerollea la ronda en curso: antes hacía newRound(lv),
+          que sorteaba un país nuevo Y reseteaba intentos y pistas a cero. Eso
+          convertía el selector en un "saltar reto" infinito y gratis — si no
+          te sabías la bandera, cambiabas de nivel hasta que saliera una que sí,
+          y la resolvías con 0 intentos (3 estrellas + XP). Como el botón de
+          "otra ronda" solo existe tras resolver, este era el único escape.
+          Ahora el nivel elegido entra en la SIGUIENTE ronda. */}
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="flex justify-center gap-2">
+          {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
+            <button
+              key={lv}
+              onClick={() => setLevel(lv)}
+              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
+            >
+              {tr.levels[lv]}
+            </button>
+          ))}
+        </div>
+        {level !== roundLevel && !solved && (
+          <p className="text-[11px] text-neutral-400">↻ {tr.quiz.levelNextRound}</p>
+        )}
+      </div>
+
+      {/* estímulo. Sigue montado bajo el velo (mismo tamaño real, así el
+          coachmark no reubica nada al cerrarse) para que el tutorial no
+          revele la bandera/silueta de la ronda antes de que el jugador
+          termine de leer las instrucciones. */}
+      <div id="quiz-stimulus" className="relative">
+        {mode === "flag" ? <BigFlag name={country} /> : <CountryOutline country={country} loadingLabel={tr.loadingMap} />}
+        {coach && (
+          <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+            <span className="text-6xl opacity-30" aria-hidden>{mode === "flag" ? "🏳️" : "🗺️"}</span>
+          </div>
+        )}
+      </div>
       <p className="text-center text-sm font-semibold text-white -mt-1">{tr.quiz.whichCountry}</p>
 
       {/* pistas reveladas */}
@@ -222,7 +317,7 @@ frontle.vercel.app`}
             <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
           )}
 
-          <div className="flex items-center justify-center gap-3">
+          <div id="quiz-hints" className="flex items-center justify-center gap-3">
             <button
               onClick={() => void paidReveal()}
               disabled={revealed >= hints.length}
@@ -233,6 +328,17 @@ frontle.vercel.app`}
             <span className="text-xs text-neutral-400">{tr.quiz.tries(tries)}</span>
           </div>
         </section>
+      )}
+
+      {coach && !solved && (
+        <Coachmarks
+          steps={[
+            { target: "quiz-stimulus", text: tr.modeCoach.quiz[0] },
+            { target: "quiz-hints", text: tr.modeCoach.quiz[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen(mode); setCoach(false); }}
+        />
       )}
     </div>
   );

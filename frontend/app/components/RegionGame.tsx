@@ -27,6 +27,8 @@ import ScoreCard from "./ScoreCard";
 import type { Square } from "../lib/scoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -70,11 +72,13 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function RegionGame({
-  regionId, locale, onExit, reactBordy,
+  regionId, locale, onExit, reactBordy, coachSignal = 0,
 }: {
   regionId: string; locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
 }) {
   const def = REGIONS[regionId];
   const tr = t(locale);
@@ -111,6 +115,9 @@ export default function RegionGame({
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // Recorrido de bienvenida del modo (1 vez). Arranca solo cuando la partida
+  // ya empezó, porque señala las pistas, que no existen en la pantalla previa.
+  const [coach, setCoach] = useState(false);
 
   const { challenge } = state;
 
@@ -155,7 +162,17 @@ export default function RegionGame({
     setStarted(true);
     save({ started: true, solved: false, chain: [] });
     setTimeout(() => inputRef.current?.focus(), 50);
+    if (!modeCoachSeen("region")) setCoach(true);
   }
+
+  // Reproducir el tutorial a pedido del menú de Bordy (ver CountryQuizGame).
+  const lastSignal = useRef(coachSignal);
+  useEffect(() => {
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && !state.solved) setCoach(true);
+    }
+  }, [coachSignal, started, state.solved]);
 
   const statusByEntity = useMemo(() => {
     const m: Record<string, Status> = { [challenge.start]: "start", [challenge.end]: "end" };
@@ -214,17 +231,31 @@ export default function RegionGame({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* volver */}
+      {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
-      <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/flags/national/${regionId}.webp`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
-        <span className="font-display font-semibold">{def.title}</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`/flags/national/${regionId}.webp`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
+          <span className="font-display font-semibold">{def.title}</span>
+        </button>
+        {/* Solo durante la partida: el 2º paso del recorrido señala el panel
+            de pistas, que no existe en la pantalla previa al "Jugar". */}
+        {started && (
+          <button
+            onClick={() => setCoach(true)}
+            aria-label={tr.coachReplay}
+            title={tr.coachReplay}
+            className="w-8 h-8 rounded-full bg-white/5 border border-lavender/25 text-neutral-300 active:scale-90 transition flex items-center justify-center"
+          >
+            ?
+          </button>
+        )}
+      </div>
 
       {/* reto */}
-      <section className="panel p-4">
+      <section id="region-challenge" className="panel p-4">
         <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
           {tr.region.challengeOfDay} · {noun}
         </p>
@@ -252,15 +283,25 @@ export default function RegionGame({
             </span>
           </p>
 
-          <RegionMap
-            regionId={regionId}
-            statusByEntity={statusByEntity}
-            loadingLabel={tr.loadingMap}
-            controls={tr.a11y}
-            silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
-            showAllOutlines={showAllSil}
-            resetKey={`${challenge.start}->${challenge.end}`}
-          />
+          {/* Sigue montado bajo el velo mientras el tutorial está abierto,
+              para no revelar el mapa de fondo antes de que el jugador
+              termine de leerlo. */}
+          <div className="relative">
+            <RegionMap
+              regionId={regionId}
+              statusByEntity={statusByEntity}
+              loadingLabel={tr.loadingMap}
+              controls={tr.a11y}
+              silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
+              showAllOutlines={showAllSil}
+              resetKey={`${challenge.start}->${challenge.end}`}
+            />
+            {coach && (
+              <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+                <span className="text-6xl opacity-30" aria-hidden>🗺️</span>
+              </div>
+            )}
+          </div>
 
           {/* chips de la ruta */}
           <section className="flex flex-wrap justify-center gap-2">
@@ -309,7 +350,7 @@ export default function RegionGame({
               )}
               {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
                   lo valida el servidor; sin saldo, se abre la tienda. */}
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div id="region-hints" className="flex flex-wrap items-center justify-center gap-2">
                 <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)} · ${tr.coins.cost(3)}`} />
                 <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)} · ${tr.coins.cost(3)}`} />
                 <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)} · ${tr.coins.cost(5)}`} />
@@ -323,6 +364,17 @@ export default function RegionGame({
           <button onClick={start} className="btn-3d font-display font-bold text-2xl px-12 py-4">{tr.play}</button>
           {best !== null && <p className="text-xs text-neutral-400">{tr.region.bestToday(best, noun)}</p>}
         </div>
+      )}
+
+      {coach && (
+        <Coachmarks
+          steps={[
+            { target: "region-challenge", text: tr.modeCoach.region[0] },
+            { target: "region-hints", text: tr.modeCoach.region[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen("region"); setCoach(false); }}
+        />
       )}
     </div>
   );
