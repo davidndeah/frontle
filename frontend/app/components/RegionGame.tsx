@@ -180,7 +180,7 @@ export default function RegionGame({
     });
     if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
     else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
-    else if (res.quality === "green") sfxGood();
+    else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
     else if (res.quality === "yellow") sfxLateral();
     else if (res.quality === "red") sfxFar();
 
