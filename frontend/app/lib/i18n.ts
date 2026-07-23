@@ -364,6 +364,8 @@ type Dict = {
   coachSteps: string[];
   coachSkip: string;
   coachDone: string;
+  /** Recorrido corto propio de cada modo (2 pasos), sobre la pantalla real. */
+  modeCoach: { region: string[]; practice: string[]; quiz: string[] };
   rankingTitle: string;
   // Sub-tabs del ranking: reto diario (marca+tiempo) vs liga semanal (XP).
   rankTabs: { daily: string; weekly: string };
@@ -650,6 +652,20 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 ¿Atascado? Aquí compras una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆",
       "⏱️ Y este es el desempate: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄",
     ],
+    modeCoach: {
+      region: [
+        "Aquí conectas subdivisiones del mismo país: de la de arriba a la de abajo, vecina por vecina.",
+        "Estas pistas cuestan monedas. El reto es diario y gratis: no gastas nada por jugar.",
+      ],
+      practice: [
+        "Entrenamiento libre: retos infinitos, sin premios ni ranking. Los contornos se ven todos, para aprender.",
+        "Cambia la dificultad cuando quieras — se aplica en la ronda siguiente, no en la que estás jugando.",
+      ],
+      quiz: [
+        "Mira la imagen y escribe de qué país es. Aquí no hay cadena: es un país por ronda.",
+        "Cada pista que abras te resta estrellas, así que intenta primero sin ellas.",
+      ],
+    },
     coachSkip: "Saltar",
     coachDone: "¡Entendido!",
     rankingTitle: "Ranking diario",
@@ -941,6 +957,20 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Stuck? This is where you buy a hint: the next country's INITIAL, its SILHOUETTE on the map, or all the silhouettes. They cost cents and 80% feeds the day's pot 🏆",
       "⏱️ And this is the tiebreaker: with the same number of countries, the fastest wins. It starts when you tap Got it! — the challenge stays hidden, so nobody gets an edge 😄",
     ],
+    modeCoach: {
+      region: [
+        "Here you connect subdivisions within one country: from the top one to the bottom one, neighbor by neighbor.",
+        "These hints cost coins. The challenge itself is daily and free: playing costs you nothing.",
+      ],
+      practice: [
+        "Free training: endless challenges, no prizes or ranking. Every outline is visible, so you can learn.",
+        "Change the difficulty anytime — it applies to the next round, not the one you're playing.",
+      ],
+      quiz: [
+        "Look at the image and type which country it is. No chain here: one country per round.",
+        "Every hint you open costs you stars, so try without them first.",
+      ],
+    },
     coachSkip: "Skip",
     coachDone: "Got it!",
     rankingTitle: "Daily ranking",
@@ -1232,6 +1262,20 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Travou? Aqui você compra uma dica: a INICIAL do próximo país, sua SILHUETA no mapa, ou todas as silhuetas. Custam centavos e 80% alimenta o pot do dia 🏆",
       "⏱️ E este é o desempate: com o mesmo número de países, ganha o mais rápido. Ele começa quando você tocar em Entendi! — o desafio segue oculto, então ninguém ganha vantagem 😄",
     ],
+    modeCoach: {
+      region: [
+        "Aqui você conecta subdivisões do mesmo país: da de cima até a de baixo, vizinha por vizinha.",
+        "Estas dicas custam moedas. O desafio é diário e grátis: jogar não custa nada.",
+      ],
+      practice: [
+        "Treino livre: desafios infinitos, sem prêmios nem ranking. Todos os contornos ficam visíveis, para aprender.",
+        "Mude a dificuldade quando quiser — vale para a próxima rodada, não para a que você está jogando.",
+      ],
+      quiz: [
+        "Olhe a imagem e escreva de que país é. Aqui não há cadeia: é um país por rodada.",
+        "Cada dica que abrir tira estrelas, então tente primeiro sem elas.",
+      ],
+    },
     coachSkip: "Pular",
     coachDone: "Entendi!",
     rankingTitle: "Ranking diário",
@@ -1523,6 +1567,20 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Bloqué ? C'est ici que tu achètes un indice : l'INITIALE du pays suivant, sa SILHOUETTE sur la carte, ou toutes les silhouettes. Quelques centimes, et 80 % alimentent le pot du jour 🏆",
       "⏱️ Et voici le départage : à nombre de pays égal, le plus rapide gagne. Il démarre quand tu touches Compris ! — le défi reste caché, donc personne n'est avantagé 😄",
     ],
+    modeCoach: {
+      region: [
+        "Ici tu relies des subdivisions d'un même pays : de celle du haut à celle du bas, voisine par voisine.",
+        "Ces indices coûtent des pièces. Le défi est quotidien et gratuit : jouer ne te coûte rien.",
+      ],
+      practice: [
+        "Entraînement libre : défis infinis, sans prix ni classement. Tous les contours sont visibles, pour apprendre.",
+        "Change la difficulté quand tu veux — elle s'applique au tour suivant, pas à celui en cours.",
+      ],
+      quiz: [
+        "Regarde l'image et écris de quel pays il s'agit. Pas de chaîne ici : un pays par tour.",
+        "Chaque indice ouvert te coûte des étoiles, alors essaie d'abord sans.",
+      ],
+    },
     coachSkip: "Passer",
     coachDone: "Compris !",
     rankingTitle: "Classement du jour",
