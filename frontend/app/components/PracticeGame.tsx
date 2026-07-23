@@ -25,6 +25,8 @@ import ScoreCard from "./ScoreCard";
 import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { awardPracticeSolve } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
@@ -90,8 +92,14 @@ export default function PracticeGame({
     setRound((r) => r + 1);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
+  // Recorrido de bienvenida del modo (1 vez). A diferencia de Regiones, aquí
+  // no hay pantalla previa de "Jugar": la partida arranca sola al montar, así
+  // que el recorrido se dispara junto con la primera ronda.
+  const [coach, setCoach] = useState(false);
+
   useEffect(() => {
     newRound();
+    if (!modeCoachSeen("practice")) setCoach(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -193,7 +201,7 @@ export default function PracticeGame({
             libre también otorga XP (awardPracticeSolve), así que el selector
             servía igual para saltar retos hasta dar con uno fácil. El nivel
             elegido entra en la siguiente ronda. */}
-        <div className="flex flex-col items-center gap-1.5 mt-3">
+        <div id="practice-level" className="flex flex-col items-center gap-1.5 mt-3">
           <div className="flex justify-center gap-2">
             {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
               <button
@@ -220,14 +228,16 @@ export default function PracticeGame({
       )}
 
       {/* mapa con TODOS los contornos visibles (para aprender) */}
-      <WorldMap
-        statusByCountry={statusByCountry}
-        loadingLabel={tr.loadingMap}
-        silhouettes={showNextSil && hintCountry ? [hintCountry] : []}
-        showAllOutlines
-        resetKey={`${challenge.start}->${challenge.end}`}
-        controls={tr.a11y}
-      />
+      <div id="practice-map">
+        <WorldMap
+          statusByCountry={statusByCountry}
+          loadingLabel={tr.loadingMap}
+          silhouettes={showNextSil && hintCountry ? [hintCountry] : []}
+          showAllOutlines
+          resetKey={`${challenge.start}->${challenge.end}`}
+          controls={tr.a11y}
+        />
+      </div>
 
       {/* chips de la ruta */}
       <section className="flex flex-wrap justify-center gap-2">
@@ -310,6 +320,17 @@ frontle.vercel.app`}
           </div>
           <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.used(guessCount)}</p>
         </section>
+      )}
+
+      {coach && (
+        <Coachmarks
+          steps={[
+            { target: "practice-map", text: tr.modeCoach.practice[0] },
+            { target: "practice-level", text: tr.modeCoach.practice[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen("practice"); setCoach(false); }}
+        />
       )}
     </div>
   );
