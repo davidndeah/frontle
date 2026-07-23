@@ -198,12 +198,22 @@ export default function PracticeGame({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* volver */}
+      {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
-      <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-        <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+        </button>
+        <button
+          onClick={() => setCoach(true)}
+          aria-label={tr.coachReplay}
+          title={tr.coachReplay}
+          className="w-8 h-8 rounded-full bg-white/5 border border-lavender/25 text-neutral-300 active:scale-90 transition flex items-center justify-center"
+        >
+          ?
+        </button>
+      </div>
 
       {/* reto */}
       <section className="panel p-4">

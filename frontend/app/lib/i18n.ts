@@ -364,6 +364,8 @@ type Dict = {
   coachSteps: string[];
   coachSkip: string;
   coachDone: string;
+  /** Botón de ayuda que reproduce el recorrido del modo. */
+  coachReplay: string;
   /** Recorrido corto propio de cada modo (2 pasos), sobre la pantalla real. */
   modeCoach: { region: string[]; practice: string[]; quiz: string[] };
   rankingTitle: string;
@@ -668,6 +670,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coachSkip: "Saltar",
     coachDone: "¡Entendido!",
+    coachReplay: "Cómo se juega",
     rankingTitle: "Ranking diario",
     rankTabs: { daily: "Diario", weekly: "Semanal" },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
@@ -973,6 +976,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coachSkip: "Skip",
     coachDone: "Got it!",
+    coachReplay: "How to play",
     rankingTitle: "Daily ranking",
     rankTabs: { daily: "Daily", weekly: "Weekly" },
     bestToday: (n) => `Your best today: ${n} countries`,
@@ -1278,6 +1282,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coachSkip: "Pular",
     coachDone: "Entendi!",
+    coachReplay: "Como se joga",
     rankingTitle: "Ranking diário",
     rankTabs: { daily: "Diário", weekly: "Semanal" },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
@@ -1583,6 +1588,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     coachSkip: "Passer",
     coachDone: "Compris !",
+    coachReplay: "Comment jouer",
     rankingTitle: "Classement du jour",
     rankTabs: { daily: "Quotidien", weekly: "Hebdo" },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
