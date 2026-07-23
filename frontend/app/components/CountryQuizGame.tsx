@@ -18,6 +18,7 @@ import { awardQuizCorrect } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import ScoreCard from "./ScoreCard";
+import type { BordyMood } from "./Bordy";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
@@ -43,7 +44,13 @@ function BigFlag({ name }: { name: string }) {
   );
 }
 
-export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMode; locale: Locale; onExit: () => void }) {
+export default function CountryQuizGame({
+  mode, locale, onExit, reactBordy,
+}: {
+  mode: QuizMode; locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+}) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
   const [country, setCountry] = useState<string>(() => randomQuizCountry("easy", undefined, mode));

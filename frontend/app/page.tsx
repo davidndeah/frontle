@@ -916,7 +916,7 @@ export default function Frontle() {
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
         {tab === "jugar" && !regionMode && quizMode && (
-          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} />
+          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} />
         )}
 
         {tab === "jugar" && !regionMode && !quizMode && (
