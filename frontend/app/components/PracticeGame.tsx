@@ -26,6 +26,7 @@ import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
+import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { awardPracticeSolve } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
@@ -92,16 +93,18 @@ export default function PracticeGame({
     setRound((r) => r + 1);
     setTimeout(() => inputRef.current?.focus(), 50);
   }
-  // Recorrido de bienvenida del modo (1 vez). A diferencia de Regiones, aquí
-  // no hay pantalla previa de "Jugar": la partida arranca sola al montar, así
-  // que el recorrido se dispara junto con la primera ronda.
+  // Pantalla previa: se elige la dificultad antes de la primera ronda (como
+  // el reto diario). Antes Práctica arrancaba sola al montar, en "fácil".
+  const [started, setStarted] = useState(false);
+  // Recorrido de bienvenida del modo (1 vez). Se dispara al empezar, no al
+  // montar: señala elementos del tablero, que aún no existen en la previa.
   const [coach, setCoach] = useState(false);
 
-  useEffect(() => {
-    newRound();
+  function begin() {
+    newRound(level);
+    setStarted(true);
     if (!modeCoachSeen("practice")) setCoach(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
@@ -158,6 +161,29 @@ export default function PracticeGame({
     setInput("");
     setSuggestions([]);
     inputRef.current?.focus();
+  }
+
+  // Pantalla previa: elegir dificultad antes de la primera ronda (como el diario).
+  if (!started) {
+    return (
+      <div className="flex flex-col gap-5">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+        </button>
+        <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+          <span className="text-5xl">🎓</span>
+          <div>
+            <h2 className="font-display text-xl font-bold text-white">{tr.practiceMode}</h2>
+            <p className="text-xs text-neutral-300 mt-0.5">{tr.practiceFree}</p>
+          </div>
+          <LevelSelect tr={tr} level={level} onChange={setLevel} />
+          <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
+            {tr.play}
+          </button>
+        </section>
+      </div>
+    );
   }
 
   if (!state) {
