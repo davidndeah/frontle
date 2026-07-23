@@ -181,8 +181,8 @@ export default function RegionGame({
     if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
     else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
     else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
-    else if (res.quality === "yellow") sfxLateral();
-    else if (res.quality === "red") sfxFar();
+    else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
+    else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
     if (res.ok && res.entity && res.quality) {
       const chain = [...state.chain, { entity: res.entity, quality: res.quality }];
