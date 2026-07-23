@@ -129,8 +129,8 @@ export default function PracticeGame({
     if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
     else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
     else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
-    else if (res.quality === "yellow") sfxLateral();
-    else if (res.quality === "red") sfxFar();
+    else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
+    else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
     if (res.ok && res.country && res.quality) {
       const chain = [...state.chain, { country: res.country, quality: res.quality }];
