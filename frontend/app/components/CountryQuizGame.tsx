@@ -19,6 +19,8 @@ import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import ScoreCard from "./ScoreCard";
 import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
@@ -73,6 +75,10 @@ export default function CountryQuizGame({
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // Recorrido de bienvenida del modo (1 vez). Bandera y contorno comparten
+  // marca: el loop es el mismo y solo cambia el estímulo, así que repetirlo
+  // al entrar al segundo sería justo el tipo de tutorial invasivo a evitar.
+  const [coach, setCoach] = useState(!modeCoachSeen("quiz"));
 
   const hints = useMemo(
     () =>
@@ -163,7 +169,9 @@ export default function CountryQuizGame({
       </div>
 
       {/* estímulo */}
-      {mode === "flag" ? <BigFlag name={country} /> : <CountryOutline country={country} loadingLabel={tr.loadingMap} />}
+      <div id="quiz-stimulus">
+        {mode === "flag" ? <BigFlag name={country} /> : <CountryOutline country={country} loadingLabel={tr.loadingMap} />}
+      </div>
       <p className="text-center text-sm font-semibold text-white -mt-1">{tr.quiz.whichCountry}</p>
 
       {/* pistas reveladas */}
@@ -238,7 +246,7 @@ frontle.vercel.app`}
             <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
           )}
 
-          <div className="flex items-center justify-center gap-3">
+          <div id="quiz-hints" className="flex items-center justify-center gap-3">
             <button
               onClick={() => void paidReveal()}
               disabled={revealed >= hints.length}
@@ -249,6 +257,17 @@ frontle.vercel.app`}
             <span className="text-xs text-neutral-400">{tr.quiz.tries(tries)}</span>
           </div>
         </section>
+      )}
+
+      {coach && !solved && (
+        <Coachmarks
+          steps={[
+            { target: "quiz-stimulus", text: tr.modeCoach.quiz[0] },
+            { target: "quiz-hints", text: tr.modeCoach.quiz[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen("quiz"); setCoach(false); }}
+        />
       )}
     </div>
   );
