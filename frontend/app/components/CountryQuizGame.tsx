@@ -20,6 +20,7 @@ import CoinShop from "./CoinShop";
 import ScoreCard from "./ScoreCard";
 import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
+import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 
 function BigFlag({ name }: { name: string }) {
@@ -75,10 +76,22 @@ export default function CountryQuizGame({
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // Pantalla previa: se elige la dificultad ANTES de ver el primer reto, como
+  // el reto diario. Antes el modo te metía directo a "fácil" y recién dentro
+  // te pedía cambiar de nivel.
+  const [started, setStarted] = useState(false);
   // Recorrido de bienvenida del modo (1 vez). Bandera y contorno comparten
   // marca: el loop es el mismo y solo cambia el estímulo, así que repetirlo
   // al entrar al segundo sería justo el tipo de tutorial invasivo a evitar.
-  const [coach, setCoach] = useState(!modeCoachSeen("quiz"));
+  // Se dispara al empezar (no al montar): el recorrido señala elementos del
+  // tablero, que no existen en la pantalla de elegir dificultad.
+  const [coach, setCoach] = useState(false);
+
+  function begin() {
+    newRound(level);
+    setStarted(true);
+    if (!modeCoachSeen("quiz")) setCoach(true);
+  }
 
   const hints = useMemo(
     () =>
@@ -134,6 +147,30 @@ export default function CountryQuizGame({
   // Estrellas: sin pistas = 3 · 1–2 pistas = 2 · más = 1
   const stars = solved ? (revealed === 0 ? 3 : revealed <= 2 ? 2 : 1) : 0;
   const title = mode === "flag" ? tr.quiz.flagTitle : tr.quiz.outlineTitle;
+  const sub = mode === "flag" ? tr.quiz.flagSub : tr.quiz.outlineSub;
+
+  // Pantalla previa: elegir dificultad antes del primer reto (como el diario).
+  if (!started) {
+    return (
+      <div className="flex flex-col gap-5">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
+        </button>
+        <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+          <span className="text-5xl">{mode === "flag" ? "🏳️" : "🗺️"}</span>
+          <div>
+            <h2 className="font-display text-xl font-bold text-white">{title}</h2>
+            <p className="text-xs text-neutral-300 mt-0.5">{sub}</p>
+          </div>
+          <LevelSelect tr={tr} level={level} onChange={setLevel} />
+          <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
+            {tr.play}
+          </button>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
