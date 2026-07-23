@@ -911,7 +911,7 @@ export default function Frontle() {
       <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "jugar" && regionMode && (
-          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} />
+          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} />
         )}
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}

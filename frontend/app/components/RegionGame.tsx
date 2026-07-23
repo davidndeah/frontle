@@ -26,6 +26,7 @@ import RegionMap from "./RegionMap";
 import ScoreCard from "./ScoreCard";
 import type { Square } from "../lib/scoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import type { BordyMood } from "./Bordy";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -68,7 +69,13 @@ const CHIP: Record<Status, string> = {
   red: "border-rose-400/50 text-rose-100",
 };
 
-export default function RegionGame({ regionId, locale, onExit }: { regionId: string; locale: Locale; onExit: () => void }) {
+export default function RegionGame({
+  regionId, locale, onExit, reactBordy,
+}: {
+  regionId: string; locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+}) {
   const def = REGIONS[regionId];
   const tr = t(locale);
   // Sustantivo localizado de las subdivisiones (departamento/state/província…)
