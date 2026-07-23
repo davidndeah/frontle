@@ -178,7 +178,7 @@ export default function RegionGame({
       }),
       ok: res.ok,
     });
-    if (!res.ok) sfxInvalid();
+    if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
     else if (res.solved) sfxWin();
     else if (res.quality === "green") sfxGood();
     else if (res.quality === "yellow") sfxLateral();
