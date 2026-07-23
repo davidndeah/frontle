@@ -16,12 +16,32 @@ import { purchaseCoinPack, type PayResult } from "./payments";
 import { xpPlayerId } from "./xp";
 import { ensureSecret, localSecret, rpc } from "./secret";
 
+// Precio unitario del plan §5.1. Los paquetes grandes traen bonus; comprar
+// suelto siempre sale a esta tarifa, sin recargo ni descuento.
+export const COIN_UNIT_USDT = 0.01;
+
+// Un lote comprable: cuántas monedas y cuánto cuesta.
+export interface CoinLot {
+  coins: number;
+  usdt: number;
+}
+
 // Paquetes del plan §5.1 (1 🪙 = $0.01; los grandes traen bonus).
-export const COIN_PACKS = [
+export const COIN_PACKS: readonly CoinLot[] = [
   { coins: 50, usdt: 0.5 },
   { coins: 110, usdt: 1.0 },
   { coins: 300, usdt: 2.5 },
-] as const;
+];
+
+// Compra suelta, para quien solo necesita una pista y no un paquete. Sin
+// bonus: sale a tarifa plana. `credit-coins` ya acredita cualquier monto a
+// 1 🪙 = $0.01 (su fallback), así que el servidor no necesita cambios.
+export const COIN_UNITS: readonly CoinLot[] = [1, 2, 5, 10].map((coins) => ({
+  coins,
+  // Redondeo a 2 decimales: 3*0.01 en coma flotante da 0.030000000000000002,
+  // y ese sobrante llegaría a parseUnits como monto no representable.
+  usdt: Math.round(coins * COIN_UNIT_USDT * 100) / 100,
+}));
 
 // Ítems de gasto (deben coincidir con el check `coin_shape` de la 0009).
 export const COIN_COSTS = {
@@ -86,7 +106,7 @@ export type BuyCoinsResult = { res: PayResult | "credit_pending"; coins?: number
 // queda en localStorage y se reintenta en la próxima consulta de saldo.
 const PENDING_KEY = "frontle-coins-pending-tx";
 
-export async function buyCoinPack(pack: (typeof COIN_PACKS)[number]): Promise<BuyCoinsResult> {
+export async function buyCoinPack(pack: CoinLot): Promise<BuyCoinsResult> {
   const { res, txHash } = await purchaseCoinPack(pack.usdt);
   if (res !== "success" || !txHash) return { res };
   const credited = await creditTx(txHash);

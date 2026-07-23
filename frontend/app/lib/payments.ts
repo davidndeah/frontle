@@ -763,7 +763,27 @@ const weeklyAbi = [
   },
   { type: "function", name: "currentWeek", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "pot", inputs: [{ name: "week", type: "uint256" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "minPurchase", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
 ] as const;
+
+// Compra mínima que acepta el contrato (revierte con AmountTooSmall por debajo).
+// La tienda la consulta para no ofrecer lotes que la transacción rechazaría.
+// null = no hay contrato configurado: se usa el camino interino (transfer
+// directo), que no impone mínimo alguno.
+export async function getWeeklyMinPurchase(): Promise<number | null> {
+  if (!WEEKLY_ADDRESS) return null;
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const min = await publicClient.readContract({
+      address: WEEKLY_ADDRESS,
+      abi: weeklyAbi,
+      functionName: "minPurchase",
+    });
+    return Number(formatUnits(min, TOKEN_DECIMALS));
+  } catch {
+    return null;
+  }
+}
 
 export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayResult; txHash?: string; account?: string }> {
   const active = getProvider();

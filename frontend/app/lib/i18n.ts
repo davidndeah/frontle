@@ -213,6 +213,9 @@ type Dict = {
     failed: string;
     noFunds: string;
     cost: (n: number) => string;
+    // Compra suelta (1/2/5/10) y aviso del mínimo por transacción.
+    units: string;
+    minNote: (amount: string) => string;
   };
   // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
   streakCard: {
@@ -506,6 +509,8 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "No se pudo completar la compra. Intenta de nuevo.",
       noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
       cost: (n) => `${n} 🪙`,
+      units: "O compra sueltas",
+      minNote: (a) => `Las compras de menos de ${a} USDT no están disponibles por ahora.`,
     },
     streakCard: {
       days: "días seguidos",
@@ -815,6 +820,8 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "The purchase didn't go through. Please try again.",
       noFunds: "Not enough balance for this pack. Deposit a little and come back.",
       cost: (n) => `${n} 🪙`,
+      units: "Or buy single coins",
+      minNote: (a) => `Purchases under ${a} USDT aren't available right now.`,
     },
     streakCard: {
       days: "days in a row",
@@ -1124,6 +1131,8 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "A compra não foi concluída. Tente de novo.",
       noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
       cost: (n) => `${n} 🪙`,
+      units: "Ou compre avulsas",
+      minNote: (a) => `Compras abaixo de ${a} USDT não estão disponíveis por enquanto.`,
     },
     streakCard: {
       days: "dias seguidos",
@@ -1433,6 +1442,8 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "L'achat n'a pas abouti. Réessayez.",
       noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
       cost: (n) => `${n} 🪙`,
+      units: "Ou achetez à l'unité",
+      minNote: (a) => `Les achats de moins de ${a} USDT ne sont pas disponibles pour l'instant.`,
     },
     streakCard: {
       days: "jours d'affilée",
