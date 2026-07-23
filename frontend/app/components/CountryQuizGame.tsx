@@ -231,9 +231,17 @@ export default function CountryQuizGame({
         )}
       </div>
 
-      {/* estímulo */}
-      <div id="quiz-stimulus">
+      {/* estímulo. Sigue montado bajo el velo (mismo tamaño real, así el
+          coachmark no reubica nada al cerrarse) para que el tutorial no
+          revele la bandera/silueta de la ronda antes de que el jugador
+          termine de leer las instrucciones. */}
+      <div id="quiz-stimulus" className="relative">
         {mode === "flag" ? <BigFlag name={country} /> : <CountryOutline country={country} loadingLabel={tr.loadingMap} />}
+        {coach && (
+          <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+            <span className="text-6xl opacity-30" aria-hidden>{mode === "flag" ? "🏳️" : "🗺️"}</span>
+          </div>
+        )}
       </div>
       <p className="text-center text-sm font-semibold text-white -mt-1">{tr.quiz.whichCountry}</p>
 

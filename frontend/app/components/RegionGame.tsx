@@ -283,15 +283,25 @@ export default function RegionGame({
             </span>
           </p>
 
-          <RegionMap
-            regionId={regionId}
-            statusByEntity={statusByEntity}
-            loadingLabel={tr.loadingMap}
-            controls={tr.a11y}
-            silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
-            showAllOutlines={showAllSil}
-            resetKey={`${challenge.start}->${challenge.end}`}
-          />
+          {/* Sigue montado bajo el velo mientras el tutorial está abierto,
+              para no revelar el mapa de fondo antes de que el jugador
+              termine de leerlo. */}
+          <div className="relative">
+            <RegionMap
+              regionId={regionId}
+              statusByEntity={statusByEntity}
+              loadingLabel={tr.loadingMap}
+              controls={tr.a11y}
+              silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
+              showAllOutlines={showAllSil}
+              resetKey={`${challenge.start}->${challenge.end}`}
+            />
+            {coach && (
+              <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+                <span className="text-6xl opacity-30" aria-hidden>🗺️</span>
+              </div>
+            )}
+          </div>
 
           {/* chips de la ruta */}
           <section className="flex flex-wrap justify-center gap-2">

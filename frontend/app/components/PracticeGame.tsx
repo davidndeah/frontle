@@ -274,8 +274,10 @@ export default function PracticeGame({
         </p>
       )}
 
-      {/* mapa con TODOS los contornos visibles (para aprender) */}
-      <div id="practice-map">
+      {/* mapa con TODOS los contornos visibles (para aprender). Sigue montado
+          bajo el velo mientras el tutorial está abierto, para no revelar el
+          reto de fondo antes de que el jugador termine de leerlo. */}
+      <div id="practice-map" className="relative">
         <WorldMap
           statusByCountry={statusByCountry}
           loadingLabel={tr.loadingMap}
@@ -284,6 +286,11 @@ export default function PracticeGame({
           resetKey={`${challenge.start}->${challenge.end}`}
           controls={tr.a11y}
         />
+        {coach && (
+          <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+            <span className="text-6xl opacity-30" aria-hidden>🌍</span>
+          </div>
+        )}
       </div>
 
       {/* chips de la ruta */}
