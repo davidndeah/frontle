@@ -348,6 +348,8 @@ type Dict = {
     tries: (n: number) => string;
     wrong: string;
     correct: (name: string) => string;
+    /** Aviso al cambiar de nivel a mitad de ronda: no se rerollea el reto. */
+    levelNextRound: string;
   };
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
   subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
@@ -606,6 +608,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Intentos: ${n}`,
       wrong: "No es ese, ¡sigue intentando!",
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
+      levelNextRound: "Se aplica en la próxima ronda",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
@@ -896,6 +899,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Tries: ${n}`,
       wrong: "Not that one, keep trying!",
       correct: (n) => `Correct! It was ${n} 🎉`,
+      levelNextRound: "Applies to the next round",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
@@ -1186,6 +1190,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Tentativas: ${n}`,
       wrong: "Não é esse, continue tentando!",
       correct: (n) => `Correto! Era ${n} 🎉`,
+      levelNextRound: "Vale para a próxima rodada",
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
@@ -1476,6 +1481,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Essais : ${n}`,
       wrong: "Ce n'est pas ça, continue !",
       correct: (n) => `Correct ! C'était ${n} 🎉`,
+      levelNextRound: "S'applique au tour suivant",
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },

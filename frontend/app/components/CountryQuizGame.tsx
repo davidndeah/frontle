@@ -53,6 +53,10 @@ export default function CountryQuizGame({
 }) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
+  // Nivel con el que se generó la ronda EN CURSO. Se separa de `level` porque
+  // cambiar el selector ya no rerollea el reto (ver el bloque de dificultad):
+  // sirve para avisar que el nivel nuevo entra en la próxima ronda.
+  const [roundLevel, setRoundLevel] = useState<Difficulty>("easy");
   const [country, setCountry] = useState<string>(() => randomQuizCountry("easy", undefined, mode));
   const [input, setInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -86,6 +90,7 @@ export default function CountryQuizGame({
   }, [input, locale]);
 
   function newRound(lv: Difficulty = level) {
+    setRoundLevel(lv);
     setCountry(randomQuizCountry(lv, country, mode));
     setInput("");
     setSuggestions([]);
@@ -133,17 +138,28 @@ export default function CountryQuizGame({
         <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
       </button>
 
-      {/* dificultad */}
-      <div className="flex justify-center gap-2">
-        {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
-          <button
-            key={lv}
-            onClick={() => { setLevel(lv); newRound(lv); }}
-            className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
-          >
-            {tr.levels[lv]}
-          </button>
-        ))}
+      {/* Dificultad. NO rerollea la ronda en curso: antes hacía newRound(lv),
+          que sorteaba un país nuevo Y reseteaba intentos y pistas a cero. Eso
+          convertía el selector en un "saltar reto" infinito y gratis — si no
+          te sabías la bandera, cambiabas de nivel hasta que saliera una que sí,
+          y la resolvías con 0 intentos (3 estrellas + XP). Como el botón de
+          "otra ronda" solo existe tras resolver, este era el único escape.
+          Ahora el nivel elegido entra en la SIGUIENTE ronda. */}
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="flex justify-center gap-2">
+          {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
+            <button
+              key={lv}
+              onClick={() => setLevel(lv)}
+              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
+            >
+              {tr.levels[lv]}
+            </button>
+          ))}
+        </div>
+        {level !== roundLevel && !solved && (
+          <p className="text-[11px] text-neutral-400">↻ {tr.quiz.levelNextRound}</p>
+        )}
       </div>
 
       {/* estímulo */}
