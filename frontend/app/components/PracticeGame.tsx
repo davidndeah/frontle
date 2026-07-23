@@ -60,6 +60,8 @@ export default function PracticeGame({
   const [elapsedMs, setElapsedMs] = useState(0);
   // Dificultad elegible (UX-5) + las 3 pistas del reto diario, gratis:
   const [level, setLevel] = useState<Difficulty>("easy");
+  // Nivel con el que se generó la ronda EN CURSO (ver el bloque de dificultad).
+  const [roundLevel, setRoundLevel] = useState<Difficulty>("easy");
   const [showInitial, setShowInitial] = useState(false);
   const [showNextSil, setShowNextSil] = useState(false);
   const [round, setRound] = useState(0);
@@ -76,6 +78,7 @@ export default function PracticeGame({
 
   // Reto aleatorio nuevo (arranca en cliente para no romper la hidratación).
   function newRound(lv: Difficulty = level) {
+    setRoundLevel(lv);
     setState({ challenge: randomChallenge(lv), chain: [], solved: false });
     setInput("");
     setMessage(null);
@@ -185,17 +188,26 @@ export default function PracticeGame({
           </div>
         </div>
         <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(optimal)}</p>
-        {/* Dificultad: cambiarla arranca una ronda nueva de ese nivel */}
-        <div className="flex justify-center gap-2 mt-3">
-          {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
-            <button
-              key={lv}
-              onClick={() => { setLevel(lv); newRound(lv); }}
-              className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
-            >
-              {tr.levels[lv]}
-            </button>
-          ))}
+        {/* Dificultad. Mismo arreglo que en el quiz: NO rerollea la ronda en
+            curso. Antes hacía newRound(lv), y aunque Práctica sea entrenamiento
+            libre también otorga XP (awardPracticeSolve), así que el selector
+            servía igual para saltar retos hasta dar con uno fácil. El nivel
+            elegido entra en la siguiente ronda. */}
+        <div className="flex flex-col items-center gap-1.5 mt-3">
+          <div className="flex justify-center gap-2">
+            {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => (
+              <button
+                key={lv}
+                onClick={() => setLevel(lv)}
+                className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${level === lv ? "bg-gold text-surface" : "bg-surface text-white"}`}
+              >
+                {tr.levels[lv]}
+              </button>
+            ))}
+          </div>
+          {level !== roundLevel && !state.solved && (
+            <p className="text-[11px] text-neutral-400">↻ {tr.quiz.levelNextRound}</p>
+          )}
         </div>
       </section>
 
