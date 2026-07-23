@@ -1330,7 +1330,7 @@ export default function Frontle() {
             )}
 
             {rankTab === "weekly" && (
-              <WeeklyLeague tr={tr} onConnect={hasWallet && !inMiniPay ? connectForRanking : undefined} />
+              <WeeklyLeague tr={tr} fmt={fmt} onConnect={hasWallet && !inMiniPay ? connectForRanking : undefined} />
             )}
           </>
         )}

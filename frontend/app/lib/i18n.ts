@@ -196,6 +196,10 @@ type Dict = {
     you: string;
     closes: (time: string) => string;
     needWallet: string;
+    // Premio de la semana. Solo se muestran cuando el pot on-chain existe;
+    // si no, sigue mandando `dry` ("los premios llegan pronto").
+    prize: (amount: string) => string;
+    split: string;
   };
   // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
   coins: {
@@ -478,6 +482,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Tú",
       closes: (time) => `Cierra en ${time}`,
       needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
+      prize: (a) => `🏆 Premio de la semana: ${a}`,
+      split: "Se reparte entre los 3 primeros: 50% · 30% · 10%.",
     },
     coins: {
       shop: "Tienda de monedas",
@@ -768,6 +774,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "You",
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
+      prize: (a) => `🏆 This week's prize: ${a}`,
+      split: "Split among the top 3: 50% · 30% · 10%.",
     },
     coins: {
       shop: "Coin shop",
@@ -1058,6 +1066,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Você",
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
+      prize: (a) => `🏆 Prêmio da semana: ${a}`,
+      split: "Dividido entre os 3 primeiros: 50% · 30% · 10%.",
     },
     coins: {
       shop: "Loja de moedas",
@@ -1348,6 +1358,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Vous",
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
+      prize: (a) => `🏆 Prix de la semaine : ${a}`,
+      split: "Réparti entre les 3 premiers : 50 % · 30 % · 10 %.",
     },
     coins: {
       shop: "Boutique de pièces",

@@ -841,6 +841,13 @@ export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayRe
   }
 }
 
+// Reparto del pot semanal entre el podio, igual que `_computeShares` del
+// contrato: 50% al 1º, 30% al 2º, 10% al 3º (el 10% restante es recaudo).
+// Un puesto vacante NO se redistribuye: rueda al pot de la semana siguiente,
+// así que estos porcentajes son exactos, no un mínimo (a diferencia del
+// BASE_SHARE del reto diario).
+export const WEEKLY_PODIUM_SHARE = [50, 30, 10] as const;
+
 // --- Lectura: pot de la semana en curso (para la UI de la liga) ---------
 export async function getWeeklyPot(): Promise<number | null> {
   if (!WEEKLY_ADDRESS) return null;
