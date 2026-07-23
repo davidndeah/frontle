@@ -1851,7 +1851,7 @@ function WalletSheet({
             </button>
           )}
           {emailLogin && (
-            <EmailLoginButton label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
+            <EmailLoginButton onBeforeLogin={onClose} label={tr.emailLogin} className="brutal-sm brutal-press rounded-2xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]" />
           )}
           <p className="text-center text-[11px] text-neutral-400">{tr.connectBenefit}</p>
         </div>
