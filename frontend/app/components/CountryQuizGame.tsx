@@ -82,17 +82,18 @@ export default function CountryQuizGame({
   // el reto diario. Antes el modo te metía directo a "fácil" y recién dentro
   // te pedía cambiar de nivel.
   const [started, setStarted] = useState(false);
-  // Recorrido de bienvenida del modo (1 vez). Bandera y contorno comparten
-  // marca: el loop es el mismo y solo cambia el estímulo, así que repetirlo
-  // al entrar al segundo sería justo el tipo de tutorial invasivo a evitar.
-  // Se dispara al empezar (no al montar): el recorrido señala elementos del
-  // tablero, que no existen en la pantalla de elegir dificultad.
+  // Recorrido de bienvenida del modo (1 vez). Bandera y contorno comparten el
+  // TEXTO (mismo loop, solo cambia el estímulo) pero cada uno tiene su propia
+  // marca de "ya visto" (`mode`, no un "quiz" genérico): son dos tarjetas
+  // separadas en el inicio, y saltar el tutorial de una no debe apagar el de
+  // la otra. Se dispara al empezar (no al montar): el recorrido señala
+  // elementos del tablero, que no existen en la pantalla de elegir dificultad.
   const [coach, setCoach] = useState(false);
 
   function begin() {
     newRound(level);
     setStarted(true);
-    if (!modeCoachSeen("quiz")) setCoach(true);
+    if (!modeCoachSeen(mode)) setCoach(true);
   }
 
   // Reproducir el tutorial a pedido del menú de Bordy. El ref evita que
@@ -328,7 +329,7 @@ frontle.vercel.app`}
             { target: "quiz-hints", text: tr.modeCoach.quiz[1] },
           ]}
           labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
-          onDone={() => { markModeCoachSeen("quiz"); setCoach(false); }}
+          onDone={() => { markModeCoachSeen(mode); setCoach(false); }}
         />
       )}
     </div>

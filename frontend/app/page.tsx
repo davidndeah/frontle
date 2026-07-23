@@ -1647,13 +1647,17 @@ export default function Frontle() {
           // forzarlo desde fuera. El diario tiene su propio modal.
           onLearn={(m) => {
             if (m === "daily") { setOverlay("full"); return; }
-            if (m === "flag" || m === "outline") clearModeCoachSeen("quiz");
+            if (m === "flag" || m === "outline") clearModeCoachSeen(m);
             else if (m === "practice") clearModeCoachSeen("practice");
             else if (m === "region") clearModeCoachSeen("region");
             if (m === "flag") setQuizMode("flag");
             else if (m === "outline") setQuizMode("outline");
             else if (m === "practice") { setTab("aprender"); setPracticeOn(true); }
-            else if (m === "region") setTab("jugar"); // ahí se elige la región
+            // Región necesita un país además del modo: sin esto, `onLearn`
+            // solo cambiaba de pestaña (si ya estabas en "jugar", ni eso) y
+            // el tutorial nunca llegaba a dispararse porque RegionGame no
+            // se llegaba a montar.
+            else if (m === "region") { setRegionMode(regionPick); setTab("jugar"); }
           }}
           onProfile={() => setTab("perfil")}
           onSettings={() => setSettingsOpen(true)}

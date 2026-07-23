@@ -11,8 +11,14 @@
 //  coachmarks sobre la pantalla real, no un modal a pantalla completa.
 // ============================================================
 
-/** Modos con recorrido propio. El reto diario usa su propio flujo (más largo). */
-export type CoachMode = "region" | "practice" | "quiz";
+/**
+ * Modos con recorrido propio. El reto diario usa su propio flujo (más largo).
+ * Bandera y contorno son dos tarjetas separadas en el inicio (cada una con
+ * su propio "NUEVO"), así que aunque compartan el TEXTO del recorrido (mismo
+ * loop, solo cambia el estímulo), cada una necesita su propia marca de "ya
+ * visto": saltar el tutorial de una no debe apagar el de la otra.
+ */
+export type CoachMode = "region" | "practice" | "flag" | "outline";
 
 // Prefijo propio para no chocar con `frontle-coach-hints`, la marca del
 // tutorial viejo del reto diario que todavía se lee para migración.
