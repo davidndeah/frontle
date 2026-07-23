@@ -1658,6 +1658,11 @@ export default function Frontle() {
             { target: "game-timer", text: tr.coachSteps[1] },
           ]}
           labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          // El contador continúa desde el modal (5 pasos) en vez de reiniciar
+          // en 1/2: es el mismo recorrido, y reiniciarlo lo hacía parecer un
+          // segundo tutorial.
+          offset={5}
+          total={7}
           onDone={() => {
             try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
             setCoaching(false);

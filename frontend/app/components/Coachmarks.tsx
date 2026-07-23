@@ -12,7 +12,20 @@ import { useEffect, useState } from "react";
 export type CoachStep = { target: string; text: string };
 export type CoachLabels = { skip: string; next: string; done: string };
 
-export default function Coachmarks({ steps, labels, onDone }: { steps: CoachStep[]; labels: CoachLabels; onDone: () => void }) {
+export default function Coachmarks({
+  steps, labels, onDone, offset = 0, total,
+}: {
+  steps: CoachStep[]; labels: CoachLabels; onDone: () => void;
+  /**
+   * Pasos ya recorridos ANTES de estos coachmarks. Cuando vienen encadenados
+   * tras el tutorial modal, el contador debe continuar (6/7) en vez de
+   * reiniciar en 1/2: si reinicia, se lee como "otro tutorial" aunque sea el
+   * mismo recorrido.
+   */
+  offset?: number;
+  /** Total del recorrido completo. Por defecto, solo estos pasos. */
+  total?: number;
+}) {
   const [i, setI] = useState(0);
   const [rect, setRect] = useState<{ left: number; top: number; width: number; height: number; bottom: number } | null>(null);
 
@@ -60,7 +73,7 @@ export default function Coachmarks({ steps, labels, onDone }: { steps: CoachStep
           <div className="panel px-3.5 py-3 flex-1">
             <p className="text-white text-[13px] leading-relaxed">{steps[i].text}</p>
             <div className="flex items-center justify-between mt-2.5">
-              <span className="text-[10px] text-neutral-400 tabular-nums">{i + 1}/{steps.length}</span>
+              <span className="text-[10px] text-neutral-400 tabular-nums">{offset + i + 1}/{total ?? steps.length}</span>
               <div className="flex items-center gap-3">
                 <button onClick={onDone} className="text-[11px] text-neutral-400 underline active:scale-95 transition">
                   {labels.skip}
