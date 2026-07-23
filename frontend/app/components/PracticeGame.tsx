@@ -24,6 +24,7 @@ import WorldMap from "./WorldMap";
 import ScoreCard from "./ScoreCard";
 import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import type { BordyMood } from "./Bordy";
 import { awardPracticeSolve } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
@@ -44,7 +45,13 @@ const CHIP: Record<Status, string> = {
   red: "border-rose-400/50 text-rose-100",
 };
 
-export default function PracticeGame({ locale, onExit }: { locale: Locale; onExit: () => void }) {
+export default function PracticeGame({
+  locale, onExit, reactBordy,
+}: {
+  locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+}) {
   const tr = t(locale);
   const [state, setState] = useState<PlayState | null>(null);
   const [input, setInput] = useState("");
@@ -62,7 +69,7 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
   async function paidHint(already: boolean, apply: () => void) {
     if (already) return;
     const r = await spendCoins("spend_hint", "practice");
-    if (r === "ok") apply();
+    if (r === "ok") { apply(); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
@@ -119,11 +126,11 @@ export default function PracticeGame({ locale, onExit }: { locale: Locale; onExi
       }),
       ok: res.ok,
     });
-    if (!res.ok) sfxInvalid();
-    else if (res.solved) sfxWin();
-    else if (res.quality === "green") sfxGood();
-    else if (res.quality === "yellow") sfxLateral();
-    else if (res.quality === "red") sfxFar();
+    if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
+    else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
+    else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
+    else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
+    else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
     if (res.ok && res.country && res.quality) {
       const chain = [...state.chain, { country: res.country, quality: res.quality }];

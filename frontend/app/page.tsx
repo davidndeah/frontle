@@ -844,6 +844,10 @@ export default function Frontle() {
     if (kind === "next") setShowNextSil(true);
     if (kind === "all") setShowAllSil(true);
     sfxHint();
+    // Pedir una pista es el momento exacto de "estoy pensando" — el mood
+    // existía en el rig (cabeza ladeada, ojos que barren) pero nadie lo
+    // disparaba nunca, ni siquiera aquí en el desafío diario.
+    reactBordy("pensando");
   }
 
   const startC = getCountry(challenge.start)!;
@@ -911,12 +915,12 @@ export default function Frontle() {
       <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "jugar" && regionMode && (
-          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} />
+          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} />
         )}
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
         {tab === "jugar" && !regionMode && quizMode && (
-          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} />
+          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} />
         )}
 
         {tab === "jugar" && !regionMode && !quizMode && (
@@ -1439,7 +1443,7 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} />
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} />
         )}
 
         {tab === "aprender" && !practiceOn && (

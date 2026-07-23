@@ -18,6 +18,7 @@ import { awardQuizCorrect } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import ScoreCard from "./ScoreCard";
+import type { BordyMood } from "./Bordy";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
@@ -43,7 +44,13 @@ function BigFlag({ name }: { name: string }) {
   );
 }
 
-export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMode; locale: Locale; onExit: () => void }) {
+export default function CountryQuizGame({
+  mode, locale, onExit, reactBordy,
+}: {
+  mode: QuizMode; locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+}) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
   const [country, setCountry] = useState<string>(() => randomQuizCountry("easy", undefined, mode));
@@ -58,7 +65,7 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
   async function paidReveal() {
     if (revealed >= hints.length) return;
     const r = await spendCoins("spend_hint", `quiz:${mode}`);
-    if (r === "ok") setRevealed((n) => Math.min(hints.length, n + 1));
+    if (r === "ok") { setRevealed((n) => Math.min(hints.length, n + 1)); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
@@ -96,12 +103,17 @@ export default function CountryQuizGame({ mode, locale, onExit }: { mode: QuizMo
       setSolved(true);
       setMessage({ text: tr.quiz.correct(countryName(country, locale)), ok: true });
       sfxWin();
+      // Cada ronda ES un reto completo (no hay pasos intermedios como en el
+      // mundial), así que el acierto aquí equivale al "solved" de los otros
+      // modos, no a un paso verde: reacciona con la celebración grande.
+      reactBordy?.("racha");
       // Liga v2: acierto de quiz da XP (tope diario en el servidor).
       awardQuizCorrect(mode);
     } else {
       setTries((n) => n + 1);
       setMessage({ text: canonical ? tr.quiz.wrong : tr.feedback("unknown", { end: "", input: value }), ok: false });
       if (canonical) sfxInvalid(); else sfxInvalid();
+      reactBordy?.("fallo");
     }
     setInput("");
     setSuggestions([]);

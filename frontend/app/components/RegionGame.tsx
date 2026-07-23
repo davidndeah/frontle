@@ -26,6 +26,7 @@ import RegionMap from "./RegionMap";
 import ScoreCard from "./ScoreCard";
 import type { Square } from "../lib/scoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import type { BordyMood } from "./Bordy";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -68,7 +69,13 @@ const CHIP: Record<Status, string> = {
   red: "border-rose-400/50 text-rose-100",
 };
 
-export default function RegionGame({ regionId, locale, onExit }: { regionId: string; locale: Locale; onExit: () => void }) {
+export default function RegionGame({
+  regionId, locale, onExit, reactBordy,
+}: {
+  regionId: string; locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+}) {
   const def = REGIONS[regionId];
   const tr = t(locale);
   // Sustantivo localizado de las subdivisiones (departamento/state/província…)
@@ -100,7 +107,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
   async function paidHint(kind: "spend_hint" | "spend_hint_strong", already: boolean, apply: () => void) {
     if (already) return;
     const r = await spendCoins(kind, `region:${regionId}`);
-    if (r === "ok") apply();
+    if (r === "ok") { apply(); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
@@ -171,11 +178,11 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
       }),
       ok: res.ok,
     });
-    if (!res.ok) sfxInvalid();
-    else if (res.solved) sfxWin();
-    else if (res.quality === "green") sfxGood();
-    else if (res.quality === "yellow") sfxLateral();
-    else if (res.quality === "red") sfxFar();
+    if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
+    else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
+    else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
+    else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
+    else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
     if (res.ok && res.entity && res.quality) {
       const chain = [...state.chain, { entity: res.entity, quality: res.quality }];
