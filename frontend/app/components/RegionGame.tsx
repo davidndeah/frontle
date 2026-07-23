@@ -107,7 +107,7 @@ export default function RegionGame({
   async function paidHint(kind: "spend_hint" | "spend_hint_strong", already: boolean, apply: () => void) {
     if (already) return;
     const r = await spendCoins(kind, `region:${regionId}`);
-    if (r === "ok") apply();
+    if (r === "ok") { apply(); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
