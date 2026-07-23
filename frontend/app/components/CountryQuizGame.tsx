@@ -103,6 +103,10 @@ export default function CountryQuizGame({
       setSolved(true);
       setMessage({ text: tr.quiz.correct(countryName(country, locale)), ok: true });
       sfxWin();
+      // Cada ronda ES un reto completo (no hay pasos intermedios como en el
+      // mundial), así que el acierto aquí equivale al "solved" de los otros
+      // modos, no a un paso verde: reacciona con la celebración grande.
+      reactBordy?.("racha");
       // Liga v2: acierto de quiz da XP (tope diario en el servidor).
       awardQuizCorrect(mode);
     } else {
