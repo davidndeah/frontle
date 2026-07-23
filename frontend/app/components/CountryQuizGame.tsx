@@ -113,6 +113,7 @@ export default function CountryQuizGame({
       setTries((n) => n + 1);
       setMessage({ text: canonical ? tr.quiz.wrong : tr.feedback("unknown", { end: "", input: value }), ok: false });
       if (canonical) sfxInvalid(); else sfxInvalid();
+      reactBordy?.("fallo");
     }
     setInput("");
     setSuggestions([]);
