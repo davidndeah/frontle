@@ -1439,7 +1439,7 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} />
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} />
         )}
 
         {tab === "aprender" && !practiceOn && (

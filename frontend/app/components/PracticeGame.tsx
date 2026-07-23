@@ -24,6 +24,7 @@ import WorldMap from "./WorldMap";
 import ScoreCard from "./ScoreCard";
 import PrecisionStars from "./PrecisionStars";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import type { BordyMood } from "./Bordy";
 import { awardPracticeSolve } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
@@ -44,7 +45,13 @@ const CHIP: Record<Status, string> = {
   red: "border-rose-400/50 text-rose-100",
 };
 
-export default function PracticeGame({ locale, onExit }: { locale: Locale; onExit: () => void }) {
+export default function PracticeGame({
+  locale, onExit, reactBordy,
+}: {
+  locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+}) {
   const tr = t(locale);
   const [state, setState] = useState<PlayState | null>(null);
   const [input, setInput] = useState("");
