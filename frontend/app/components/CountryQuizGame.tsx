@@ -48,11 +48,13 @@ function BigFlag({ name }: { name: string }) {
 }
 
 export default function CountryQuizGame({
-  mode, locale, onExit, reactBordy,
+  mode, locale, onExit, reactBordy, coachSignal = 0,
 }: {
   mode: QuizMode; locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
 }) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
@@ -92,6 +94,17 @@ export default function CountryQuizGame({
     setStarted(true);
     if (!modeCoachSeen("quiz")) setCoach(true);
   }
+
+  // Reproducir el tutorial a pedido del menú de Bordy. El ref evita que
+  // re-montar el componente lo dispare: solo cuenta un cambio de la señal
+  // mientras ya está montado y en juego.
+  const lastSignal = useRef(coachSignal);
+  useEffect(() => {
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && !solved) setCoach(true);
+    }
+  }, [coachSignal, started, solved]);
 
   const hints = useMemo(
     () =>

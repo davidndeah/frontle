@@ -33,6 +33,7 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import Coachmarks from "./components/Coachmarks";
 import LevelSelect from "./components/LevelSelect";
+import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
 import NavIcon from "./components/NavIcons";
 import Achievements from "./components/Achievements";
@@ -218,6 +219,10 @@ export default function Frontle() {
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
+  // Señal para pedirle a un modo que reproduzca su recorrido (coachmarks).
+  // Es un nonce: al incrementarlo, el componente del modo activo lo detecta y
+  // muestra su tutorial. Lo dispara el menú de Bordy según el modo en curso.
+  const [coachSignal, setCoachSignal] = useState(0);
   // Nombre de perfil (alias): local + viaja con cada score al ranking
   const [alias, setAliasState] = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -916,12 +921,12 @@ export default function Frontle() {
       <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "jugar" && regionMode && (
-          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} />
+          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} />
         )}
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
         {tab === "jugar" && !regionMode && quizMode && (
-          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} />
+          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} />
         )}
 
         {tab === "jugar" && !regionMode && !quizMode && (
@@ -1444,7 +1449,7 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} />
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} coachSignal={coachSignal} />
         )}
 
         {tab === "aprender" && !practiceOn && (
@@ -1620,7 +1625,36 @@ export default function Frontle() {
       {bordyMenu && (
         <BordyMenuSheet
           onClose={() => setBordyMenu(false)}
-          onTutorial={() => setOverlay("full")}
+          // Modo en curso: el menú de Bordy usa esto para decidir si reproduce
+          // el tutorial de ESTE modo o muestra la lista para elegir cuál aprender.
+          currentMode={
+            regionMode ? "region"
+            : quizMode === "flag" ? "flag"
+            : quizMode === "outline" ? "outline"
+            : tab === "aprender" && practiceOn ? "practice"
+            : tab === "jugar" && started && !regionMode && !quizMode ? "daily"
+            : null
+          }
+          // Reproducir el tutorial del modo activo. El diario tiene su propio
+          // modal; los demás muestran sus coachmarks vía la señal.
+          onReplayTutorial={(m) => {
+            if (m === "daily") setOverlay("full");
+            else setCoachSignal((n) => n + 1);
+          }}
+          // Elegir un modo para aprenderlo desde la pantalla de inicio: borra
+          // la marca de "ya visto" de ese modo y navega. Al entrar, el modo
+          // muestra su recorrido solo (como si fuera la primera vez), sin
+          // forzarlo desde fuera. El diario tiene su propio modal.
+          onLearn={(m) => {
+            if (m === "daily") { setOverlay("full"); return; }
+            if (m === "flag" || m === "outline") clearModeCoachSeen("quiz");
+            else if (m === "practice") clearModeCoachSeen("practice");
+            else if (m === "region") clearModeCoachSeen("region");
+            if (m === "flag") setQuizMode("flag");
+            else if (m === "outline") setQuizMode("outline");
+            else if (m === "practice") { setTab("aprender"); setPracticeOn(true); }
+            else if (m === "region") setTab("jugar"); // ahí se elige la región
+          }}
           onProfile={() => setTab("perfil")}
           onSettings={() => setSettingsOpen(true)}
           onShop={() => setShopOpen(true)}
@@ -1882,23 +1916,40 @@ function WalletSheet({
 // puerta a lo que el jugador podría querer — todo ya existía, aquí solo se
 // junta en un sitio donde se encuentre. "Tienda" reusa el `CoinShop` real
 // (Santiago, plan v2 §5) por `onShop`, no una implementación propia.
+type LearnMode = "daily" | "region" | "flag" | "outline" | "practice";
 function BordyMenuSheet({
   onClose,
-  onTutorial,
+  currentMode,
+  onReplayTutorial,
+  onLearn,
   onProfile,
   onSettings,
   onShop,
   tr,
 }: {
   onClose: () => void;
-  onTutorial: () => void;
+  /** Modo que se está jugando ahora, o null si se está en el inicio. */
+  currentMode: LearnMode | null;
+  onReplayTutorial: (m: LearnMode) => void;
+  onLearn: (m: LearnMode) => void;
   onProfile: () => void;
   onSettings: () => void;
   onShop: () => void;
   tr: ReturnType<typeof t>;
 }) {
+  // Nombre legible de cada modo, para el título del tutorial y la lista.
+  const MODE_NAME: Record<LearnMode, string> = {
+    daily: tr.modes.dailyTitle,
+    region: tr.modes.regionsTitle,
+    flag: tr.quiz.flagTitle,
+    outline: tr.quiz.outlineTitle,
+    practice: tr.practiceMode,
+  };
+  const MODE_ICON: Record<LearnMode, string> = {
+    daily: "🌍", region: "🗺️", flag: "🏳️", outline: "🗺️", practice: "🎓",
+  };
+  const learnList: LearnMode[] = ["daily", "region", "flag", "outline", "practice"];
   const items: { icon: string; label: string; hint: string; onClick: () => void }[] = [
-    { icon: "🎓", label: tr.bordyMenu.tutorial, hint: tr.bordyMenu.tutorialHint, onClick: onTutorial },
     { icon: "🪙", label: tr.bordyMenu.shop, hint: tr.bordyMenu.shopHint, onClick: onShop },
     { icon: "👤", label: tr.bordyMenu.profile, hint: tr.bordyMenu.profileHint, onClick: onProfile },
     { icon: "⚙️", label: tr.bordyMenu.settings, hint: tr.bordyMenu.settingsHint, onClick: onSettings },
@@ -1918,6 +1969,41 @@ function BordyMenuSheet({
       }
     >
       <div className="flex flex-col gap-2">
+        {/* Tutorial CONTEXTUAL: si se está jugando un modo, Bordy ofrece el
+            tutorial de ESE modo; si se está en el inicio, deja elegir cuál
+            aprender de una lista. */}
+        {currentMode ? (
+          <button
+            onClick={() => { onReplayTutorial(currentMode); onClose(); }}
+            className="panel brutal-sm brutal-press flex items-center gap-3 p-3 text-left rounded-xl border border-gold/30"
+          >
+            <span className="text-2xl w-8 text-center flex-none">🎓</span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-bold text-white text-sm leading-tight">{tr.bordyMenu.replayTutorial}</span>
+              <span className="block text-[11px] text-neutral-400">{MODE_NAME[currentMode]}</span>
+            </span>
+            <span className="text-gold text-xl flex-none">→</span>
+          </button>
+        ) : (
+          <div className="panel p-3 rounded-xl flex flex-col gap-2">
+            <span className="text-[11px] uppercase tracking-[0.14em] text-neutral-400 flex items-center gap-1.5">
+              🎓 {tr.bordyMenu.learnTitle}
+            </span>
+            <div className="grid grid-cols-1 gap-1.5">
+              {learnList.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { onLearn(m); onClose(); }}
+                  className="brutal-sm brutal-press flex items-center gap-3 p-2.5 text-left rounded-lg bg-surface/60"
+                >
+                  <span className="text-xl w-7 text-center flex-none">{MODE_ICON[m]}</span>
+                  <span className="flex-1 min-w-0 font-semibold text-white text-sm leading-tight">{MODE_NAME[m]}</span>
+                  <span className="text-gold text-lg flex-none">→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {items.map((it) => (
           <button
             key={it.label}

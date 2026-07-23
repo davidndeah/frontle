@@ -72,11 +72,13 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function RegionGame({
-  regionId, locale, onExit, reactBordy,
+  regionId, locale, onExit, reactBordy, coachSignal = 0,
 }: {
   regionId: string; locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
 }) {
   const def = REGIONS[regionId];
   const tr = t(locale);
@@ -162,6 +164,15 @@ export default function RegionGame({
     setTimeout(() => inputRef.current?.focus(), 50);
     if (!modeCoachSeen("region")) setCoach(true);
   }
+
+  // Reproducir el tutorial a pedido del menú de Bordy (ver CountryQuizGame).
+  const lastSignal = useRef(coachSignal);
+  useEffect(() => {
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && !state.solved) setCoach(true);
+    }
+  }, [coachSignal, started, state.solved]);
 
   const statusByEntity = useMemo(() => {
     const m: Record<string, Status> = { [challenge.start]: "start", [challenge.end]: "end" };

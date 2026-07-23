@@ -36,3 +36,15 @@ export function markModeCoachSeen(mode: CoachMode): void {
     localStorage.setItem(KEY(mode), "1");
   } catch {}
 }
+
+/**
+ * Olvida que el modo ya se vio, para que su recorrido vuelva a salir la
+ * próxima vez que se entre. Lo usa "Aprende un modo" del menú de Bordy:
+ * navegar al modo con la marca borrada hace que su tutorial salga solo al
+ * empezar, sin necesidad de forzarlo desde fuera.
+ */
+export function clearModeCoachSeen(mode: CoachMode): void {
+  try {
+    localStorage.removeItem(KEY(mode));
+  } catch {}
+}

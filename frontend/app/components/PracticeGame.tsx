@@ -49,11 +49,13 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function PracticeGame({
-  locale, onExit, reactBordy,
+  locale, onExit, reactBordy, coachSignal = 0,
 }: {
   locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
 }) {
   const tr = t(locale);
   const [state, setState] = useState<PlayState | null>(null);
@@ -105,6 +107,15 @@ export default function PracticeGame({
     setStarted(true);
     if (!modeCoachSeen("practice")) setCoach(true);
   }
+
+  // Reproducir el tutorial a pedido del menú de Bordy (ver CountryQuizGame).
+  const lastSignal = useRef(coachSignal);
+  useEffect(() => {
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && state && !state.solved) setCoach(true);
+    }
+  }, [coachSignal, started, state]);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
