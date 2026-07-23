@@ -43,6 +43,16 @@ export default function Sheet({
   // ¿El gesto de cierre empezó sobre el overlay? (ver comentario abajo)
   const presionadoAqui = useRef(false);
 
+  // `onClose` llega como arrow inline desde page.tsx, así que cambia de
+  // identidad en CADA render — y page.tsx re-renderiza varias veces por segundo
+  // (reloj de la partida a 250ms, cuenta atrás a 1s). Si el efecto de abajo
+  // dependiera de él, se limpiaría y re-ejecutaría a ese ritmo, y cada pasada
+  // volvería a llamar panelRef.focus(): el input de dentro perdía el foco y en
+  // móvil el teclado se abría y se cerraba al instante. En un ref, el efecto
+  // corre UNA vez y aun así siempre ve el callback vigente.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   // Un título de texto plano ya sirve de nombre accesible; si es un nodo
   // (icono + subtítulo), hace falta el `label` explícito.
   const tituloPlano = typeof title === "string" ? title : null;
@@ -52,10 +62,12 @@ export default function Sheet({
     // Quién tenía el foco antes de abrir: hay que devolvérselo al cerrar, o el
     // foco cae al principio de la página y el usuario de teclado se pierde.
     const abridor = document.activeElement as HTMLElement | null;
-    panelRef.current?.focus();
+    // Solo si el contenido no se llevó ya el foco: el prompt de nombre trae un
+    // input con autoFocus, y enfocar el panel encima lo dejaba sin teclado.
+    if (!panelRef.current?.contains(document.activeElement)) panelRef.current?.focus();
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCloseRef.current();
     };
     document.addEventListener("keydown", onKey);
 
@@ -68,7 +80,9 @@ export default function Sheet({
       document.body.style.overflow = overflowPrevio;
       abridor?.focus?.();
     };
-  }, [onClose]);
+    // Deliberadamente vacío: montar/desmontar, nada más. Ver onCloseRef arriba.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
