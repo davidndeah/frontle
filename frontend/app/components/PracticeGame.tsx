@@ -69,7 +69,7 @@ export default function PracticeGame({
   async function paidHint(already: boolean, apply: () => void) {
     if (already) return;
     const r = await spendCoins("spend_hint", "practice");
-    if (r === "ok") apply();
+    if (r === "ok") { apply(); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
