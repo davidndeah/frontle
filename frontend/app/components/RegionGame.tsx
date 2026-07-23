@@ -27,6 +27,8 @@ import ScoreCard from "./ScoreCard";
 import type { Square } from "../lib/scoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -111,6 +113,9 @@ export default function RegionGame({
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // Recorrido de bienvenida del modo (1 vez). Arranca solo cuando la partida
+  // ya empezó, porque señala las pistas, que no existen en la pantalla previa.
+  const [coach, setCoach] = useState(false);
 
   const { challenge } = state;
 
@@ -155,6 +160,7 @@ export default function RegionGame({
     setStarted(true);
     save({ started: true, solved: false, chain: [] });
     setTimeout(() => inputRef.current?.focus(), 50);
+    if (!modeCoachSeen("region")) setCoach(true);
   }
 
   const statusByEntity = useMemo(() => {
@@ -224,7 +230,7 @@ export default function RegionGame({
       </button>
 
       {/* reto */}
-      <section className="panel p-4">
+      <section id="region-challenge" className="panel p-4">
         <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
           {tr.region.challengeOfDay} · {noun}
         </p>
@@ -309,7 +315,7 @@ export default function RegionGame({
               )}
               {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
                   lo valida el servidor; sin saldo, se abre la tienda. */}
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div id="region-hints" className="flex flex-wrap items-center justify-center gap-2">
                 <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)} · ${tr.coins.cost(3)}`} />
                 <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)} · ${tr.coins.cost(3)}`} />
                 <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)} · ${tr.coins.cost(5)}`} />
@@ -323,6 +329,17 @@ export default function RegionGame({
           <button onClick={start} className="btn-3d font-display font-bold text-2xl px-12 py-4">{tr.play}</button>
           {best !== null && <p className="text-xs text-neutral-400">{tr.region.bestToday(best, noun)}</p>}
         </div>
+      )}
+
+      {coach && (
+        <Coachmarks
+          steps={[
+            { target: "region-challenge", text: tr.modeCoach.region[0] },
+            { target: "region-hints", text: tr.modeCoach.region[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen("region"); setCoach(false); }}
+        />
       )}
     </div>
   );
