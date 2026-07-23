@@ -221,7 +221,18 @@ function InputDemo({ text, locale, placeholder }: { text: string; locale: Locale
 }
 
 // --- Tutorial completo ---
-export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale: Locale; onDone: () => void }) {
+export default function BordyTutorial({
+  tr, locale, onDone,
+}: {
+  tr: Dict; locale: Locale;
+  /**
+   * `completo` distingue TERMINAR de SALTAR, y esa diferencia importa: quien
+   * salta está diciendo "no me expliques nada", así que tampoco debe recibir
+   * los coachmarks después. Antes ambos casos eran indistinguibles y el
+   * usuario que saltaba se topaba con un segundo tutorial.
+   */
+  onDone: (completo: boolean) => void;
+}) {
   const [step, setStep] = useState(0);
   const [chars, setChars] = useState(0);
   const [status, setStatus] = useState<DemoStatus>({});
@@ -278,16 +289,16 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
     return () => timers.forEach(clearTimeout);
   }, [step, mutedRef, STEPS]);
 
-  function finish() {
+  function finish(completo: boolean) {
     try { if (hideNext) localStorage.setItem("frontle-tutorial-hide", "1"); } catch {}
-    onDone();
+    onDone(completo);
   }
 
   function next() {
     chime(mutedRef.current);
     if (typing) { setChars(full.length); return; }
     if (step < STEPS.length - 1) setStep(step + 1);
-    else finish();
+    else finish(true);
   }
 
   return (
@@ -342,7 +353,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
           className="w-3.5 h-3.5 accent-gold" />
         {tr.dontShowAgain}
       </label>
-      <button onClick={finish} className="text-[11px] text-neutral-400 underline active:scale-95 transition -mt-1">
+      <button onClick={() => finish(false)} className="text-[11px] text-neutral-400 underline active:scale-95 transition -mt-1">
         {tr.skipTutorial}
       </button>
     </div>

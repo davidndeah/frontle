@@ -1555,8 +1555,15 @@ export default function Frontle() {
         <BordyTutorial
           tr={tr}
           locale={locale}
-          onDone={() => {
+          onDone={(completo) => {
             setOverlay(null);
+            // Saltar el tutorial salta TODO el onboarding. Antes, quien le daba
+            // a "saltar" se topaba enseguida con los coachmarks — se sentía
+            // como que la app le colaba un segundo tutorial después de haber
+            // dicho explícitamente que no quería el primero.
+            if (!completo) {
+              try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch {}
+            }
             if (!started) enterGame();
           }}
         />
