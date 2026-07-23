@@ -844,6 +844,10 @@ export default function Frontle() {
     if (kind === "next") setShowNextSil(true);
     if (kind === "all") setShowAllSil(true);
     sfxHint();
+    // Pedir una pista es el momento exacto de "estoy pensando" — el mood
+    // existía en el rig (cabeza ladeada, ojos que barren) pero nadie lo
+    // disparaba nunca, ni siquiera aquí en el desafío diario.
+    reactBordy("pensando");
   }
 
   const startC = getCountry(challenge.start)!;
