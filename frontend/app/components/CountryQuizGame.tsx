@@ -65,7 +65,7 @@ export default function CountryQuizGame({
   async function paidReveal() {
     if (revealed >= hints.length) return;
     const r = await spendCoins("spend_hint", `quiz:${mode}`);
-    if (r === "ok") setRevealed((n) => Math.min(hints.length, n + 1));
+    if (r === "ok") { setRevealed((n) => Math.min(hints.length, n + 1)); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
