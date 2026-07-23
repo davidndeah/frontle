@@ -42,6 +42,12 @@ export const viewport: Viewport = {
   // MiniPay dibuja la app a pantalla completa: sin esto, env(safe-area-inset-*)
   // siempre vale 0 y el header queda bajo el notch.
   viewportFit: "cover",
+  // En móvil el teclado virtual tapaba el input: el modal de correo de Privy
+  // (position:fixed centrado) y el campo de países quedaban debajo del teclado.
+  // Con el default "resizes-visual" el layout viewport no se encoge. "resizes-content"
+  // reduce el layout viewport (y el 100dvh del body) al abrir el teclado, así el
+  // input queda visible por encima.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
