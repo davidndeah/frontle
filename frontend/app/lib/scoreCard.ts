@@ -7,6 +7,7 @@
 // ============================================================
 
 import { STATUS_COLORS } from "./theme";
+import { SITE_HOST } from "./site";
 
 export type Square = "green" | "yellow" | "red" | "start" | "end";
 
@@ -141,7 +142,7 @@ export function drawScoreCard(canvas: HTMLCanvasElement, d: ScoreCardData) {
   // Pie
   ctx.fillStyle = "#8b7bb8";
   ctx.font = "500 36px system-ui, sans-serif";
-  ctx.fillText("frontle.vercel.app", S / 2, S - 60);
+  ctx.fillText(SITE_HOST, S / 2, S - 60);
 }
 
 function toBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {

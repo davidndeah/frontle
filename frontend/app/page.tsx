@@ -31,6 +31,7 @@ import {
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, type ScoreEntry } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
+import { SITE_HOST } from "./lib/site";
 import Coachmarks from "./components/Coachmarks";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
@@ -2568,7 +2569,7 @@ function WinCard({
   const stars: 1 | 2 | 3 = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
 
   // Texto que acompaña a la imagen — spoiler-free (sin las banderas de la ruta).
-  const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
+  const shareText = `🌍 Frontle · ${tr.modes.dailyTitle}\n${tr.winText(guesses, optimal, perfect)} · ${formatTime(timeMs)}\n${SITE_HOST}`;
 
   // Piezas de confeti del gradiente prisma: dispersión determinista por índice
   // (nada aleatorio en render — consistencia SSR/cliente).

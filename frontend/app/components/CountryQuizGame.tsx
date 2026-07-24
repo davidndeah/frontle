@@ -24,6 +24,7 @@ import Coachmarks from "./Coachmarks";
 import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { winMood } from "../lib/streakMood";
+import { SITE_HOST } from "../lib/site";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
@@ -295,7 +296,7 @@ export default function CountryQuizGame({
               }}
               shareText={`Frontle · ${mode === "flag" ? tr.quiz.flagTitle : tr.quiz.outlineTitle}
 ${"⭐".repeat(stars)}
-frontle.vercel.app`}
+${SITE_HOST}`}
               label={tr.share}
               copiedLabel={tr.copied}
             />

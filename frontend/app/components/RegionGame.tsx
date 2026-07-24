@@ -32,6 +32,7 @@ import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { winMood, greenGuessMood } from "../lib/streakMood";
+import { SITE_HOST } from "../lib/site";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -464,7 +465,7 @@ function RegionWin({
 }) {
   const perfect = guesses <= optimal;
   const stars = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
-  const shareText = `🌍 Frontle ${def.flag} ${def.title}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
+  const shareText = `🌍 Frontle ${def.flag} ${def.title}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ${formatTime(timeMs)}\n${SITE_HOST}`;
 
   return (
     <section className="panel p-5 text-center">
