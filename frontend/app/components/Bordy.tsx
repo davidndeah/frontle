@@ -47,7 +47,9 @@ const OJO_I = { cx: 416, cy: 536, r: 44 };
 const OJO_D = { cx: 723, cy: 534, r: 44 };
 const BOCA = { cx: 582, cy: 764 };
 const TINTA = "#0b0a14";
-const MORADO = "#a855f7";
+// Vive en globals.css (--bordy-purple) para que el tema Premium lo retinte
+// a champagne sin tocar este archivo — igual que brazos/orejas (CSS puro).
+const MORADO = "var(--bordy-purple)";
 
 /** Ojos vectoriales. Cambiar de forma es lo que el raster no permitía. */
 function Ojos({ forma }: { forma: string }) {

@@ -25,6 +25,9 @@
   --panel-brd: rgba(183, 156, 237, 0.28);
   --grid-line: rgba(183, 156, 237, 0.10);
   --prism-grad: linear-gradient(100deg, #c084fc 0%, #a855f7 28%, #ffffff 52%, #fcff52 100%);
+  /* Morado de Bordy (brazos/orejas/boca — ver Bordy.tsx). Vive aquí, no
+     hardcodeado, para que el tema Premium pueda retintarlo sin tocar el JS. */
+  --bordy-purple: #a855f7;
 }
 
 /* Violeta Premium: mismos roles, tonos apagados + champagne en vez de oro.
@@ -44,6 +47,8 @@
   --panel-brd: rgba(255, 255, 255, 0.10);
   --grid-line: rgba(143, 130, 196, 0.09);
   --prism-grad: linear-gradient(100deg, #b7a3e0 0%, #8f82c4 30%, #ffffff 55%, #d9b45a 100%);
+  /* Champagne en vez de morado: mismo criterio que --gold. */
+  --bordy-purple: #d9b45a;
 }
 
 /* `inline` para que las utilidades referencien mis vars themeables (y la
@@ -236,6 +241,18 @@
 .br-brazoD { left: 77.27%; top: 63.09%; width: 12.27%; transform-origin: 15% 12%; }
 .br-boca   { left: 38.44%; top: 47.37%; width: 14.06%; }
 .br-cara   { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* Tema Premium (EXP-Premium): brazos y orejas son renders morados
+   (#a855f7) horneados en el PNG, no se pueden recolorear como la boca
+   (que es SVG y ya usa --bordy-purple). hue-rotate los lleva del morado
+   al dorado champagne del tema; los valores se ajustaron a ojo comparando
+   con --bordy-purple en ambos temas, no hay fórmula exacta para un raster. */
+:root[data-theme="premium"] .br-brazoI,
+:root[data-theme="premium"] .br-brazoD,
+:root[data-theme="premium"] .br-orejaI,
+:root[data-theme="premium"] .br-orejaD {
+  filter: hue-rotate(132deg) saturate(0.6) brightness(1.12);
+}
 
 /* La antena es un GRUPO (imagen + LED) para que el semáforo rote CON ella.
    El LED sigue siendo información del juego, no decoración. */
