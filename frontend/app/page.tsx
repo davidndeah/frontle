@@ -58,6 +58,7 @@ import { getCoinBalance, retryPendingCredit } from "./lib/coins";
 import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
+import { winMood, greenGuessMood } from "./lib/streakMood";
 import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
@@ -684,8 +685,8 @@ export default function Frontle() {
     // Bordy reacciona con el mismo criterio que el semáforo, para que
     // sonido, color de la ficha y mascota digan todos lo mismo.
     if (!result.ok) reactBordy("fallo");
-    else if (result.solved) reactBordy("racha");
-    else if (result.quality === "green") reactBordy("acierto");
+    else if (result.solved) reactBordy(winMood(streak));
+    else if (result.quality === "green") reactBordy(greenGuessMood(state.chain[state.chain.length - 1]?.quality));
     else if (result.quality === "yellow") reactBordy("desvio");
     else if (result.quality === "red") reactBordy("fallo");
     if (result.ok && result.country && result.quality) {
@@ -921,12 +922,12 @@ export default function Frontle() {
       <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "jugar" && regionMode && (
-          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} />
+          <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
         )}
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
         {tab === "jugar" && !regionMode && quizMode && (
-          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} />
+          <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
         )}
 
         {tab === "jugar" && !regionMode && !quizMode && (
@@ -1449,7 +1450,7 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} coachSignal={coachSignal} />
+          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
         )}
 
         {tab === "aprender" && !practiceOn && (
