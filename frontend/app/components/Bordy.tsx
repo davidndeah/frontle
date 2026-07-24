@@ -226,6 +226,7 @@ export default function Bordy({
   className = "",
   imgClassName = "",
   float = true,
+  talking = false,
   alt = "Bordy",
 }: {
   mood?: BordyMood;
@@ -235,6 +236,8 @@ export default function Bordy({
   imgClassName?: string;
   /** Flote ambiental. Apagarlo si el contenedor ya se mueve por su cuenta. */
   float?: boolean;
+  /** Squash & stretch de habla (BordyTutorial). Tiene prioridad sobre `float`. */
+  talking?: boolean;
   alt?: string;
 }) {
   // `key` re-monta la capa del one-shot para que la animación vuelva a correr
@@ -273,7 +276,7 @@ export default function Bordy({
 
   return (
     <div className={`relative ${className}`}>
-      <div className={float ? "bordy-float-sm" : ""}>
+      <div className={talking ? "bordy-talk" : float ? "bordy-float-sm" : ""}>
         <div className={`bordy-pose ${pose}`}>
           <div key={tick} className={shot}>
             <div className="relative">
