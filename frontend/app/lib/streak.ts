@@ -6,10 +6,13 @@
 //  desde el cliente. Aquí solo llamamos a las funciones y traducimos.
 // ============================================================
 
+import { COIN_COSTS } from "./coins";
 import { ensureSecret, localSecret, rpc } from "./secret";
 import { xpPlayerId } from "./xp";
 
-export const FREEZE_COST = 5;
+// Se deriva de COIN_COSTS en vez de repetir el número: eran dos fuentes de
+// verdad y ya habían divergido (aquí 5, allá 15) cuando el precio bajó.
+export const FREEZE_COST = COIN_COSTS.spend_freeze;
 export const MAX_FREEZES = 2;
 
 // Consume congeladores por los días perdidos y devuelve la racha vigente.
@@ -46,7 +49,8 @@ function translate(code: string): StreakActionResult {
   return "error";
 }
 
-// Compra un congelador (15 🪙, máx 2 en reserva).
+// Compra un congelador (FREEZE_COST 🪙, máx 2 en reserva). El precio lo fija
+// `buy_streak_freeze` en el servidor; aquí solo se muestra.
 export async function buyFreeze(): Promise<{ res: StreakActionResult; freezes?: number }> {
   if (!(await ensureSecret())) return { res: "identity" };
   const r = await rpc<number>("buy_streak_freeze", { p_player: xpPlayerId(), p_secret: localSecret() });

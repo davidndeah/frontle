@@ -43,12 +43,15 @@ export const COIN_UNITS: readonly CoinLot[] = [1, 2, 5, 10].map((coins) => ({
   usdt: Math.round(coins * COIN_UNIT_USDT * 100) / 100,
 }));
 
-// Ítems de gasto (deben coincidir con el check `coin_shape` de la 0009).
+// Ítems de gasto. Deben coincidir con el check `coin_shape` de coin_ledger,
+// hoy en la 0015 — NO en la 0009, que es donde nacieron: el congelador bajó de
+// 15 a 5 🪙 en la 0015 y aquí se quedó en 15. El servidor manda (fija el precio
+// en `buy_streak_freeze`), así que el desajuste solo mentía en pantalla.
 export const COIN_COSTS = {
   spend_hint: 3,
   spend_hint_strong: 5,
   spend_attempt: 5,
-  spend_freeze: 15,
+  spend_freeze: 5,
   spend_repair: 25,
   spend_repair_long: 50,
 } as const;
