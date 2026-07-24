@@ -224,6 +224,33 @@ export default function StatsView() {
             <Stat label={tr.failedRate} value={pct(activity.failedRate)} done={done} />
           </div>
 
+          {/* Transacciones por periodo: el total de por vida no deja ver si la
+              app sigue viva. */}
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            <Stat label={tr.txDay} value={num(activity.txDay)} done={done} />
+            <Stat label={tr.txWeek} value={num(activity.txWeek)} done={done} />
+            <Stat label={tr.txMonth} value={num(activity.txMonth)} done={done} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <Stat
+              label={tr.volume}
+              value={usdt(activity.volume)}
+              unit={activity.volumeToken}
+              hint={tr.volumeHint}
+              done={done}
+            />
+            {/* Sin precio del token nativo no hay conversión honesta: se
+                muestra el hueco en vez de una cifra a ojo. */}
+            <Stat
+              label={tr.feesUsd}
+              value={activity.feesUsd === null ? null : usdt(activity.feesUsd)}
+              unit="USD"
+              hint={tr.feesUsdHint}
+              done={done}
+            />
+          </div>
+
           <div className="panel p-3 mt-2 flex flex-col gap-1.5">
             <span className="text-[10px] uppercase tracking-wider text-neutral-400">{tr.byAction}</span>
             {activity.byMethod.map((m) => (
