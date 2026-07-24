@@ -6,7 +6,7 @@
 //  desde el cliente. Aquí solo llamamos a las funciones y traducimos.
 // ============================================================
 
-import { COIN_COSTS } from "./coins";
+import { COIN_COSTS, notifyCoinsChanged } from "./coins";
 import { ensureSecret, localSecret, rpc } from "./secret";
 import { xpPlayerId } from "./xp";
 
@@ -54,6 +54,7 @@ function translate(code: string): StreakActionResult {
 export async function buyFreeze(): Promise<{ res: StreakActionResult; freezes?: number }> {
   if (!(await ensureSecret())) return { res: "identity" };
   const r = await rpc<number>("buy_streak_freeze", { p_player: xpPlayerId(), p_secret: localSecret() });
+  if (r.ok) notifyCoinsChanged(); // el contador del header no se entera solo
   return r.ok ? { res: "ok", freezes: Number(r.data ?? 0) } : { res: translate(r.code) };
 }
 
@@ -81,5 +82,6 @@ export async function repairStreak(day: number): Promise<{ res: StreakActionResu
     p_secret: localSecret(),
     p_day: day,
   });
+  if (r.ok) notifyCoinsChanged();
   return r.ok ? { res: "ok", streak: Number(r.data ?? 0) } : { res: translate(r.code) };
 }

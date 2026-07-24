@@ -237,6 +237,13 @@ function getProvider(): ActiveProvider | undefined {
   return undefined;
 }
 
+// ¿Hay wallet con la que firmar? La tienda lo consulta ANTES de ofrecer la
+// compra: sin proveedor, purchaseCoinPack devuelve un "error" genérico y el
+// jugador ve "intenta de nuevo" cuando lo que le falta es conectar.
+export function hasWalletProvider(): boolean {
+  return getProvider() !== undefined;
+}
+
 // La wallet embebida de Privy solo firma tx estándar (legacy/eip1559...):
 // una tx CIP-64 (type 0x7b, la que genera viem al incluir feeCurrency) lanza
 // "Unsupported transaction type". Para ella se omite feeCurrency y el gas se

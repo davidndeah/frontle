@@ -216,6 +216,8 @@ type Dict = {
     // Compra suelta (1/2/5/10) y aviso del mínimo por transacción.
     units: string;
     minNote: (amount: string) => string;
+    // La tienda se puede abrir sin billetera; comprar, no.
+    needWallet: string;
   };
   // Aviso de XP al ganar en los modos libres (Regiones, Quiz, Práctica).
   xpWin: {
@@ -529,6 +531,7 @@ const STRINGS: Record<Locale, Dict> = {
       cost: (n) => `${n} 🪙`,
       units: "O compra sueltas",
       minNote: (a) => `Las compras de menos de ${a} USDT no están disponibles por ahora.`,
+      needWallet: "Necesitas una billetera para comprar monedas. Entra con tu correo y te creamos una.",
     },
     xpWin: {
       title: "XP ganado",
@@ -855,6 +858,7 @@ const STRINGS: Record<Locale, Dict> = {
       cost: (n) => `${n} 🪙`,
       units: "Or buy single coins",
       minNote: (a) => `Purchases under ${a} USDT aren't available right now.`,
+      needWallet: "You need a wallet to buy coins. Sign in with your email and we'll create one for you.",
     },
     xpWin: {
       title: "XP earned",
@@ -1181,6 +1185,7 @@ const STRINGS: Record<Locale, Dict> = {
       cost: (n) => `${n} 🪙`,
       units: "Ou compre avulsas",
       minNote: (a) => `Compras abaixo de ${a} USDT não estão disponíveis por enquanto.`,
+      needWallet: "Você precisa de uma carteira para comprar moedas. Entre com seu e-mail e criamos uma para você.",
     },
     xpWin: {
       title: "XP ganho",
@@ -1507,6 +1512,7 @@ const STRINGS: Record<Locale, Dict> = {
       cost: (n) => `${n} 🪙`,
       units: "Ou achetez à l'unité",
       minNote: (a) => `Les achats de moins de ${a} USDT ne sont pas disponibles pour l'instant.`,
+      needWallet: "Il vous faut un portefeuille pour acheter des pièces. Connectez-vous avec votre e-mail et nous en créons un.",
     },
     xpWin: {
       title: "XP gagné",

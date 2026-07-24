@@ -67,6 +67,24 @@ const HEADERS = () => ({
   Authorization: `Bearer ${SUPA_KEY}`,
 });
 
+// --- Aviso de "el saldo cambió" ---------------------------------------------
+// El contador del header vive en page.tsx, pero se gasta desde dentro de los
+// modos (pistas, reintentos) y desde la tarjeta de racha, que no lo conocen.
+// Un evento de ventana evita pasar callbacks por tres niveles de props: quien
+// mueva monedas avisa, y quien muestre saldo se entera. Mismo patrón que el
+// bus de lib/privy.ts.
+const COINS_EVENT = "frontle:coins";
+
+export function notifyCoinsChanged(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(COINS_EVENT));
+}
+
+export function onCoinsChanged(cb: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(COINS_EVENT, cb);
+  return () => window.removeEventListener(COINS_EVENT, cb);
+}
+
 // Saldo actual del jugador (0 si no tiene movimientos o no hay backend).
 export async function getCoinBalance(): Promise<number> {
   if (!useSupabase) return 0;
@@ -96,7 +114,10 @@ export async function spendCoins(kind: SpendKind, ref?: string): Promise<SpendRe
     p_kind: kind,
     p_ref: ref ?? null,
   });
-  if (r.ok) return "ok";
+  if (r.ok) {
+    notifyCoinsChanged();
+    return "ok";
+  }
   if (r.code === "P0001") return "insufficient";
   if (r.code === "P0002") return "identity";
   return "error";
@@ -119,6 +140,7 @@ export async function buyCoinPack(pack: CoinLot): Promise<BuyCoinsResult> {
     } catch {}
     return { res: "credit_pending" };
   }
+  notifyCoinsChanged();
   return { res: "success", coins: credited };
 }
 
@@ -134,6 +156,7 @@ export async function retryPendingCredit(): Promise<void> {
     try {
       localStorage.removeItem(PENDING_KEY);
     } catch {}
+    notifyCoinsChanged();
   }
 }
 

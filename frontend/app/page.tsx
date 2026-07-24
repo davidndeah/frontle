@@ -53,7 +53,7 @@ import WorldMap from "./components/WorldMap";
 import WeeklyLeague from "./components/WeeklyLeague";
 import StreakCard from "./components/StreakCard";
 import CoinShop, { CoinShopCard } from "./components/CoinShop";
-import { getCoinBalance, retryPendingCredit } from "./lib/coins";
+import { getCoinBalance, onCoinsChanged, retryPendingCredit } from "./lib/coins";
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
 import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
@@ -428,8 +428,17 @@ export default function Frontle() {
     if (myId) {
       bindXpIdentity(myId);
       refreshCoins();
+    } else {
+      // Sin identidad no hay saldo que consultar, pero el contador SÍ debe
+      // verse: escondiéndolo, el jugador nuevo —justo al que hay que
+      // convertir— nunca descubría que existen las monedas.
+      setCoinBalance(0);
     }
   }, [myId, refreshCoins]);
+
+  // El saldo se gasta desde dentro de los modos y de la tarjeta de racha, que
+  // no conocen este contador. Ellos avisan por el bus y aquí se relee.
+  useEffect(() => onCoinsChanged(refreshCoins), [refreshCoins]);
 
   // Privy solo tiene sentido fuera de MiniPay: allí el wallet ya viene
   // inyectado y el SDK sería más de un megabyte de código muerto.
