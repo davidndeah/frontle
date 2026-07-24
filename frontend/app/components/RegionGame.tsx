@@ -29,6 +29,7 @@ import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
+import { winMood, greenGuessMood } from "../lib/streakMood";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -72,13 +73,15 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function RegionGame({
-  regionId, locale, onExit, reactBordy, coachSignal = 0,
+  regionId, locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0,
 }: {
   regionId: string; locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
   /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
   coachSignal?: number;
+  /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
+  dailyStreak?: number;
 }) {
   const def = REGIONS[regionId];
   const tr = t(locale);
@@ -196,8 +199,8 @@ export default function RegionGame({
       ok: res.ok,
     });
     if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
-    else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
-    else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
+    else if (res.solved) { sfxWin(); reactBordy?.(winMood(dailyStreak)); }
+    else if (res.quality === "green") { sfxGood(); reactBordy?.(greenGuessMood(state.chain[state.chain.length - 1]?.quality)); }
     else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
     else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
