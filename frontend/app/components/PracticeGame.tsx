@@ -28,6 +28,7 @@ import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
 import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
+import { winMood, greenGuessMood } from "../lib/streakMood";
 import { awardPracticeSolve } from "../lib/xp";
 import { spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
@@ -49,13 +50,15 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function PracticeGame({
-  locale, onExit, reactBordy, coachSignal = 0,
+  locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0,
 }: {
   locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
   /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
   coachSignal?: number;
+  /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
+  dailyStreak?: number;
 }) {
   const tr = t(locale);
   const [state, setState] = useState<PlayState | null>(null);
@@ -70,6 +73,9 @@ export default function PracticeGame({
   const [showInitial, setShowInitial] = useState(false);
   const [showNextSil, setShowNextSil] = useState(false);
   const [round, setRound] = useState(0);
+  // Rondas ganadas SEGUIDAS en esta sesión (Práctica es repetible vía "otra
+  // ronda"): la 1ª es acierto, la 2ª en adelante es racha — ver lib/streakMood.
+  const [roundsWon, setRoundsWon] = useState(0);
   const startRef = useRef(0);
   // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
   const [shopOpen, setShopOpen] = useState(false);
@@ -152,8 +158,12 @@ export default function PracticeGame({
       ok: res.ok,
     });
     if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
-    else if (res.solved) { sfxWin(); reactBordy?.("racha"); }
-    else if (res.quality === "green") { sfxGood(); reactBordy?.("acierto"); }
+    else if (res.solved) {
+      sfxWin();
+      reactBordy?.(winMood(dailyStreak, roundsWon));
+      setRoundsWon((n) => n + 1);
+    }
+    else if (res.quality === "green") { sfxGood(); reactBordy?.(greenGuessMood(state.chain[state.chain.length - 1]?.quality)); }
     else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
     else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
