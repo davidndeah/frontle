@@ -14,9 +14,10 @@ import { countryName, t, type Locale } from "../lib/i18n";
 import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCountries, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
-import { awardQuizCorrect } from "../lib/xp";
-import { spendCoins } from "../lib/coins";
+import { awardQuizCorrect, freeRoundsLeft, quizSource } from "../lib/xp";
+import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
+import XpGainPopup, { useXpWin } from "./XpGainPopup";
 import ScoreCard from "./ScoreCard";
 import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
@@ -75,6 +76,18 @@ export default function CountryQuizGame({
     if (revealed >= hints.length) return;
     const r = await spendCoins("spend_hint", `quiz:${mode}`);
     if (r === "ok") { setRevealed((n) => Math.min(hints.length, n + 1)); reactBordy?.("pensando"); }
+    else setShopOpen(true);
+  }
+  // Aviso de XP + puesto en la liga al acertar.
+  const { win, celebrate, close: closeWin } = useXpWin();
+  // Rondas con XP que quedan hoy. Se recalcula en cada render: `solved` cambia
+  // justo después de otorgar, así que el botón ya refleja el cupo consumido.
+  const freeLeft = freeRoundsLeft(quizSource(mode));
+  // Volver a jugar: gratis mientras queden rondas con XP; después, con monedas.
+  async function playAgain() {
+    if (freeLeft > 0) { newRound(); return; }
+    const r = await spendCoins("spend_attempt", `quiz:${mode}`);
+    if (r === "ok") newRound();
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,8 +158,9 @@ export default function CountryQuizGame({
       // mundial), así que el acierto aquí equivale al "solved" de los otros
       // modos, no a un paso verde: reacciona con la celebración grande.
       reactBordy?.("racha");
-      // Liga v2: acierto de quiz da XP (tope diario en el servidor).
-      awardQuizCorrect(mode);
+      // Liga v2: acierto de quiz da XP (tope diario en el servidor). El aviso
+      // espera al insert para poder mostrar el puesto ya actualizado.
+      celebrate(awardQuizCorrect(mode));
     } else {
       setTries((n) => n + 1);
       setMessage({ text: canonical ? tr.quiz.wrong : tr.feedback("unknown", { end: "", input: value }), ok: false });
@@ -190,6 +204,7 @@ export default function CountryQuizGame({
     <div className="flex flex-col gap-4">
       {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
+      <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
           <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
@@ -279,9 +294,12 @@ frontle.vercel.app`}
             />
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-              🔄 {tr.practiceNextRound}
+            <button onClick={() => void playAgain()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
+              🔄 {freeLeft > 0 ? tr.practiceNextRound : tr.replay.paid(COIN_COSTS.spend_attempt)}
             </button>
+            <p className="text-[11px] text-neutral-400">
+              {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : tr.replay.paidNote}
+            </p>
             <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.region.chooseOtherMode}
             </button>

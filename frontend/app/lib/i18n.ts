@@ -217,6 +217,24 @@ type Dict = {
     units: string;
     minNote: (amount: string) => string;
   };
+  // Aviso de XP al ganar en los modos libres (Regiones, Quiz, Práctica).
+  xpWin: {
+    title: string;
+    loading: string;
+    gained: (n: number) => string;
+    capped: string;
+    rank: (pos: number, players: number) => string;
+    total: (xp: number) => string;
+    needWallet: string;
+    close: string;
+  };
+  // Volver a jugar en los modos libres: gratis mientras queden rondas con XP,
+  // y con monedas a partir de ahí.
+  replay: {
+    freeLeft: (n: number) => string;
+    paid: (coins: number) => string;
+    paidNote: string;
+  };
   // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
   streakCard: {
     days: string;
@@ -511,6 +529,21 @@ const STRINGS: Record<Locale, Dict> = {
       cost: (n) => `${n} 🪙`,
       units: "O compra sueltas",
       minNote: (a) => `Las compras de menos de ${a} USDT no están disponibles por ahora.`,
+    },
+    xpWin: {
+      title: "XP ganado",
+      loading: "Calculando tu puesto…",
+      gained: (n) => `+${n} XP`,
+      capped: "Ya sumaste todo el XP que da este modo hoy. Puedes seguir jugando para practicar: vuelve mañana para más XP.",
+      rank: (pos, players) => `Vas #${pos} de ${players} en la liga`,
+      total: (xp) => `${xp} XP esta semana`,
+      needWallet: "Conecta tu billetera para competir en la liga semanal.",
+      close: "Seguir",
+    },
+    replay: {
+      freeLeft: (n) => `Te quedan ${n} con XP hoy`,
+      paid: (coins) => `Jugar otra vez · ${coins} 🪙`,
+      paidNote: "Ya no suma XP: es solo para practicar.",
     },
     streakCard: {
       days: "días seguidos",
@@ -823,6 +856,21 @@ const STRINGS: Record<Locale, Dict> = {
       units: "Or buy single coins",
       minNote: (a) => `Purchases under ${a} USDT aren't available right now.`,
     },
+    xpWin: {
+      title: "XP earned",
+      loading: "Working out your place…",
+      gained: (n) => `+${n} XP`,
+      capped: "You've earned all the XP this mode gives today. Keep playing to practise: come back tomorrow for more XP.",
+      rank: (pos, players) => `You're #${pos} of ${players} in the league`,
+      total: (xp) => `${xp} XP this week`,
+      needWallet: "Connect your wallet to compete in the weekly league.",
+      close: "Continue",
+    },
+    replay: {
+      freeLeft: (n) => `${n} left with XP today`,
+      paid: (coins) => `Play again · ${coins} 🪙`,
+      paidNote: "No XP from here on: practice only.",
+    },
     streakCard: {
       days: "days in a row",
       freezeHint: "A freeze covers one day you can't play and keeps your streak alive. You can hold up to 2.",
@@ -1134,6 +1182,21 @@ const STRINGS: Record<Locale, Dict> = {
       units: "Ou compre avulsas",
       minNote: (a) => `Compras abaixo de ${a} USDT não estão disponíveis por enquanto.`,
     },
+    xpWin: {
+      title: "XP ganho",
+      loading: "Calculando sua posição…",
+      gained: (n) => `+${n} XP`,
+      capped: "Você já somou todo o XP que este modo dá hoje. Pode continuar jogando para treinar: volte amanhã para mais XP.",
+      rank: (pos, players) => `Você está em #${pos} de ${players} na liga`,
+      total: (xp) => `${xp} XP esta semana`,
+      needWallet: "Conecte sua carteira para competir na liga semanal.",
+      close: "Continuar",
+    },
+    replay: {
+      freeLeft: (n) => `Faltam ${n} com XP hoje`,
+      paid: (coins) => `Jogar de novo · ${coins} 🪙`,
+      paidNote: "Não soma mais XP: é só para treinar.",
+    },
     streakCard: {
       days: "dias seguidos",
       freezeHint: "Um congelador cobre um dia que você não puder jogar e mantém sua sequência viva. Dá para guardar até 2.",
@@ -1444,6 +1507,21 @@ const STRINGS: Record<Locale, Dict> = {
       cost: (n) => `${n} 🪙`,
       units: "Ou achetez à l'unité",
       minNote: (a) => `Les achats de moins de ${a} USDT ne sont pas disponibles pour l'instant.`,
+    },
+    xpWin: {
+      title: "XP gagné",
+      loading: "Calcul de votre place…",
+      gained: (n) => `+${n} XP`,
+      capped: "Vous avez gagné tout l'XP que ce mode donne aujourd'hui. Continuez à jouer pour vous entraîner : revenez demain pour plus d'XP.",
+      rank: (pos, players) => `Vous êtes #${pos} sur ${players} dans la ligue`,
+      total: (xp) => `${xp} XP cette semaine`,
+      needWallet: "Connectez votre portefeuille pour jouer la ligue hebdo.",
+      close: "Continuer",
+    },
+    replay: {
+      freeLeft: (n) => `Il en reste ${n} avec XP aujourd'hui`,
+      paid: (coins) => `Rejouer · ${coins} 🪙`,
+      paidNote: "Plus d'XP à partir d'ici : entraînement seulement.",
     },
     streakCard: {
       days: "jours d'affilée",
