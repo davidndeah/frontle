@@ -33,6 +33,7 @@ import { awardPracticeSolve, freeRoundsLeft } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
+import { SITE_HOST } from "../lib/site";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
 function CFlag({ name, size = 28 }: { name: string; size?: number }) {
@@ -341,7 +342,7 @@ export default function PracticeGame({
               }}
               shareText={`🌍 Frontle · ${tr.practiceMode}
 ${"⭐".repeat(stars)}
-frontle.vercel.app`}
+${SITE_HOST}`}
               label={tr.share}
               copiedLabel={tr.copied}
             />

@@ -230,12 +230,12 @@ body { background:#130729; width:1280px; height:720px; overflow:hidden; font-fam
   <div class="abs" id="cta">
     <div id="ctaT">Play for free</div>
     <div id="ctaS">or sign in with your wallet to <b>earn</b></div>
-    <div id="ctaBtn">&#9654;&nbsp; frontle.vercel.app</div>
+    <div id="ctaBtn">&#9654;&nbsp; www.frontle.earth</div>
   </div>
   <div class="abs" id="tease">
     <div id="teaseT">New modes coming soon...</div>
     <div id="qrBox"><img src="qr.png"></div>
-    <div id="teaseU">Scan to play &#183; frontle.vercel.app</div>
+    <div id="teaseU">Scan to play &#183; www.frontle.earth</div>
   </div>
   <div class="abs" id="fade"></div>
 </div>

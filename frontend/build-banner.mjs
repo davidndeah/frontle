@@ -134,7 +134,7 @@ const svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http
 
   <text x="720" y="330" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="900" fill="#ffffff" letter-spacing="2">FRONTLE</text>
   <text x="722" y="374" font-family="Arial, Helvetica, sans-serif" font-size="23" fill="#c3cbdd">Putting Colombia on the map &#8212; literally &#127757;</text>
-  <text x="722" y="412" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#8791a8">frontle.vercel.app</text>
+  <text x="722" y="412" font-family="Arial, Helvetica, sans-serif" font-size="20" fill="#8791a8">www.frontle.earth</text>
 </svg>
 `;
 

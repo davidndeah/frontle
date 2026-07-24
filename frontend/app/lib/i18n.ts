@@ -465,6 +465,14 @@ type Dict = {
     playerFundsHint: string;
     protocolFees: string;
     protocolFeesHint: string;
+    // Métricas on-chain que exige el formulario de listado.
+    txDay: string;
+    txWeek: string;
+    txMonth: string;
+    volume: string;
+    volumeHint: string;
+    feesUsd: string;
+    feesUsdHint: string;
     // Liga semanal (v2) y monedas: la otra mitad de la economía.
     weeklyTitle: string;
     weeklyThisWeek: string;
@@ -806,6 +814,13 @@ const STRINGS: Record<Locale, Dict> = {
       playerFundsHint: "premio de hoy + premios sin reclamar",
       protocolFees: "Comisión de plataforma",
       protocolFeesHint: "el 20% de mantenimiento, aparte del premio",
+      txDay: "24 h",
+      txWeek: "7 días",
+      txMonth: "30 días",
+      volume: "Volumen movido",
+      volumeHint: "entradas y salidas de los contratos",
+      feesUsd: "Comisiones de red",
+      feesUsdHint: "pagadas por los jugadores, estimadas en USD",
       weeklyTitle: "Liga semanal",
       weeklyThisWeek: "esta semana",
       weeklyPot: "Premio de la semana",
@@ -1149,6 +1164,13 @@ const STRINGS: Record<Locale, Dict> = {
       protocolFees: "Platform fee",
       protocolFeesHint: "the 20% for upkeep, kept apart from the prize",
       moneyTitle: "Where your money goes",
+      txDay: "24 h",
+      txWeek: "7 days",
+      txMonth: "30 days",
+      volume: "Volume moved",
+      volumeHint: "in and out of the contracts",
+      feesUsd: "Network fees",
+      feesUsdHint: "paid by players, estimated in USD",
       weeklyTitle: "Weekly league",
       weeklyThisWeek: "this week",
       weeklyPot: "This week's prize",
@@ -1490,6 +1512,13 @@ const STRINGS: Record<Locale, Dict> = {
       playerFundsHint: "prêmio de hoje + prêmios não resgatados",
       protocolFees: "Taxa da plataforma",
       protocolFeesHint: "os 20% de manutenção, à parte do prêmio",
+      txDay: "24 h",
+      txWeek: "7 dias",
+      txMonth: "30 dias",
+      volume: "Volume movimentado",
+      volumeHint: "entradas e saídas dos contratos",
+      feesUsd: "Taxas de rede",
+      feesUsdHint: "pagas pelos jogadores, estimadas em USD",
       weeklyTitle: "Liga semanal",
       weeklyThisWeek: "esta semana",
       weeklyPot: "Prêmio da semana",
@@ -1832,6 +1861,13 @@ const STRINGS: Record<Locale, Dict> = {
       playerFundsHint: "cagnotte du jour + gains non réclamés",
       protocolFees: "Commission de la plateforme",
       protocolFeesHint: "les 20 % d'entretien, à part de la cagnotte",
+      txDay: "24 h",
+      txWeek: "7 jours",
+      txMonth: "30 jours",
+      volume: "Volume déplacé",
+      volumeHint: "entrées et sorties des contrats",
+      feesUsd: "Frais de réseau",
+      feesUsdHint: "payés par les joueurs, estimés en USD",
       weeklyTitle: "Ligue hebdo",
       weeklyThisWeek: "cette semaine",
       weeklyPot: "Prix de la semaine",
