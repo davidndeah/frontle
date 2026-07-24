@@ -29,9 +29,10 @@ import Coachmarks from "./Coachmarks";
 import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { winMood, greenGuessMood } from "../lib/streakMood";
-import { awardPracticeSolve } from "../lib/xp";
-import { spendCoins } from "../lib/coins";
+import { awardPracticeSolve, freeRoundsLeft } from "../lib/xp";
+import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
+import XpGainPopup, { useXpWin } from "./XpGainPopup";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
 function CFlag({ name, size = 28 }: { name: string; size?: number }) {
@@ -83,6 +84,16 @@ export default function PracticeGame({
     if (already) return;
     const r = await spendCoins("spend_hint", "practice");
     if (r === "ok") { apply(); reactBordy?.("pensando"); }
+    else setShopOpen(true);
+  }
+  // Aviso de XP + puesto en la liga al resolver.
+  const { win, celebrate, close: closeWin } = useXpWin();
+  // Rondas con XP que quedan hoy; después, la ronda extra se paga.
+  const freeLeft = freeRoundsLeft("practice");
+  async function playAgain() {
+    if (freeLeft > 0) { newRound(); return; }
+    const r = await spendCoins("spend_attempt", "practice");
+    if (r === "ok") newRound();
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
@@ -176,7 +187,8 @@ export default function PracticeGame({
       if (solved) {
         setElapsedMs(Date.now() - startRef.current);
         // Liga v2: reto de práctica resuelto da XP (tope diario en el servidor).
-        awardPracticeSolve();
+        // El aviso espera al insert para mostrar el puesto ya actualizado.
+        celebrate(awardPracticeSolve());
       }
     }
     setInput("");
@@ -221,6 +233,7 @@ export default function PracticeGame({
     <div className="flex flex-col gap-4">
       {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
+      <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
           <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
@@ -334,9 +347,12 @@ frontle.vercel.app`}
             />
           </div>
           <div className="flex flex-col gap-2 mt-4">
-            <button onClick={() => newRound()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-              🔄 {tr.practiceNextRound}
+            <button onClick={() => void playAgain()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
+              🔄 {freeLeft > 0 ? tr.practiceNextRound : tr.replay.paid(COIN_COSTS.spend_attempt)}
             </button>
+            <p className="text-[11px] text-neutral-400">
+              {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : tr.replay.paidNote}
+            </p>
             <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.practiceExit}
             </button>

@@ -19,7 +19,8 @@
 //  paga una animación que no pidió.
 // ============================================================
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export default function Sheet({
   onClose,
@@ -53,12 +54,29 @@ export default function Sheet({
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
+  // La hoja se pinta SIEMPRE colgando de <body>, no donde se declara. Los
+  // sheets abiertos desde dentro de un modo viven bajo el contenedor de la
+  // pestaña (`app-content tab-fade relative z-10`), que rompe ambas cosas:
+  //  · `relative z-10` crea contexto de apilamiento, así que la nav (z-30, al
+  //    nivel de arriba) tapaba la hoja por mucho z-index que pidiera;
+  //  · `.tab-fade` deja un `transform` aplicado (animation ... both), y un
+  //    transform convierte al div en bloque contenedor de los `fixed` hijos:
+  //    el `bottom-0` se anclaba a él y el `overflow-hidden` de <main> lo
+  //    recortaba por abajo.
+  // Colgando de <body> no hay ancestro que la atrape.
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
+
   // Un título de texto plano ya sirve de nombre accesible; si es un nodo
   // (icono + subtítulo), hace falta el `label` explícito.
   const tituloPlano = typeof title === "string" ? title : null;
   const nombreAccesible = label ?? tituloPlano ?? undefined;
 
   useEffect(() => {
+    // Depende de `montado` porque en la primera pasada el panel aún no existe
+    // (vive en el portal). Sigue corriendo UNA sola vez: montado va de false a
+    // true y ya no cambia.
+    if (!montado) return;
     // Quién tenía el foco antes de abrir: hay que devolvérselo al cerrar, o el
     // foco cae al principio de la página y el usuario de teclado se pierde.
     const abridor = document.activeElement as HTMLElement | null;
@@ -80,11 +98,13 @@ export default function Sheet({
       document.body.style.overflow = overflowPrevio;
       abridor?.focus?.();
     };
-    // Deliberadamente vacío: montar/desmontar, nada más. Ver onCloseRef arriba.
+    // Solo `montado`: nada de onClose aquí. Ver onCloseRef arriba.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [montado]);
 
-  return (
+  if (!montado) return null;
+
+  return createPortal(
     <>
       {/* El overlay cierra solo si el gesto EMPEZÓ y TERMINÓ sobre él.
           Sin esto pasan dos cosas feas:
@@ -121,6 +141,7 @@ export default function Sheet({
         )}
         {children}
       </div>
-    </>
+    </>,
+    document.body
   );
 }
