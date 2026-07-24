@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Bordy from "./Bordy";
 
 export type CoachStep = { target: string; text: string };
 export type CoachLabels = { skip: string; next: string; done: string };
@@ -103,8 +104,7 @@ export default function Coachmarks({
         style={below ? { top: rect.bottom + pad + 14 } : { bottom: (typeof window !== "undefined" ? window.innerHeight : 800) - rect.top + pad + 14 }}
       >
         <div className="flex items-center gap-2 pop-in">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm drop-shadow-xl" />
+          <Bordy mood="idle" className="w-12 h-14 flex-none" imgClassName="drop-shadow-xl" />
           <div className="panel px-3.5 py-3 flex-1">
             <p className="text-white text-[13px] leading-relaxed">{steps[i].text}</p>
             <div className="flex items-center justify-between mt-2.5">
