@@ -456,20 +456,37 @@ type Dict = {
     topCountries: string;
     last30d: string;
     economy: string;
-    bothContracts: string;
+    // Antes decía "contratos v1 + v2": con FrontleWeekly ya son tres, y estas
+    // secciones suman los tres.
+    allContracts: string;
     prizesPaid: string;
     daysClosed: string;
     playerFunds: string;
     playerFundsHint: string;
     protocolFees: string;
     protocolFeesHint: string;
+    // Liga semanal (v2) y monedas: la otra mitad de la economía.
+    weeklyTitle: string;
+    weeklyThisWeek: string;
+    weeklyPot: string;
+    weeklyPlayers: string;
+    weeklyPrizes: string;
+    weeksClosed: string;
+    weeklySplit: string;
+    coinsTitle: string;
+    coinsSold: string;
+    coinsSpent: string;
+    coinsHolders: string;
+    coinsNote: string;
     moneyTitle: string;
     money1: string;
     money2: (pot: string, fee: string) => string;
     money3: string;
+    money4: string;
     contractsTitle: string;
     contractInUse: string;
     contractLegacy: string;
+    contractWeekly: string;
     contractsNote: string;
     verified: string;
     unverified: string;
@@ -782,24 +799,39 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top países",
       last30d: "últimos 30 días",
       economy: "Economía",
-      bothContracts: "contratos v1 + v2",
+      allContracts: "los tres contratos",
       prizesPaid: "Premios repartidos",
       daysClosed: "Días cerrados",
       playerFunds: "Fondos de los jugadores",
       playerFundsHint: "premio de hoy + premios sin reclamar",
       protocolFees: "Comisión de plataforma",
       protocolFeesHint: "el 20% de mantenimiento, aparte del premio",
+      weeklyTitle: "Liga semanal",
+      weeklyThisWeek: "esta semana",
+      weeklyPot: "Premio de la semana",
+      weeklyPlayers: "Compitiendo",
+      weeklyPrizes: "Premios repartidos",
+      weeksClosed: "Semanas cerradas",
+      weeklySplit: "Se reparte 50% · 30% · 10% entre los tres primeros por XP. El XP se gana jugando: no se puede comprar.",
+      coinsTitle: "Monedas",
+      coinsSold: "Compradas",
+      coinsSpent: "Gastadas",
+      coinsHolders: "Con saldo",
+      coinsNote: "Las monedas pagan pistas y rondas extra. No son un token: son saldo de juego, y su compra alimenta el premio semanal.",
       moneyTitle: "A dónde va tu dinero",
       money1: "El primer intento de cada reto diario es gratis. Las pistas y los reintentos son compras opcionales en USDT.",
       money2: (pot, fee) =>
         `De cada compra, el ${pot} alimenta el premio del día y el ${fee} cubre el mantenimiento de la plataforma. Al cierre del día (UTC) el premio se reparte entre los mejores de cada nivel, y los ganadores lo reclaman desde la app.`,
       money3:
         "Frontle nunca guarda tu dinero: los pagos van directo de tu billetera al contrato inteligente. La comisión se contabiliza aparte y no toca el premio.",
+      money4:
+        "La liga semanal es una economía aparte: el 100% de cada compra de monedas entra al premio de la semana, del que la plataforma retiene un 10% al cerrarla. Competir es gratis — el XP se gana jugando y nunca se compra.",
       contractsTitle: "Los contratos",
       contractInUse: "En uso · premio por nivel",
       contractLegacy: "Histórico · ganador único",
+      contractWeekly: "En uso · pot de la liga semanal",
       contractsNote:
-        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los dos. Puedes auditar cada transacción en el explorador.",
+        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los tres. Puedes auditar cada transacción en el explorador.",
       verified: "verificado",
       unverified: "sin verificar",
       sourceOpen: "Ver el código en GitHub",
@@ -1109,7 +1141,7 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top countries",
       last30d: "last 30 days",
       economy: "Economy",
-      bothContracts: "contracts v1 + v2",
+      allContracts: "all three contracts",
       prizesPaid: "Prizes paid out",
       daysClosed: "Days closed",
       playerFunds: "Player funds",
@@ -1117,16 +1149,31 @@ const STRINGS: Record<Locale, Dict> = {
       protocolFees: "Platform fee",
       protocolFeesHint: "the 20% for upkeep, kept apart from the prize",
       moneyTitle: "Where your money goes",
+      weeklyTitle: "Weekly league",
+      weeklyThisWeek: "this week",
+      weeklyPot: "This week's prize",
+      weeklyPlayers: "Competing",
+      weeklyPrizes: "Prizes paid out",
+      weeksClosed: "Weeks closed",
+      weeklySplit: "Split 50% · 30% · 10% among the top three by XP. XP is earned by playing: it can't be bought.",
+      coinsTitle: "Coins",
+      coinsSold: "Bought",
+      coinsSpent: "Spent",
+      coinsHolders: "Holding a balance",
+      coinsNote: "Coins pay for hints and extra rounds. They aren't a token: they're in-game balance, and buying them feeds the weekly prize.",
       money1: "The first attempt at each daily challenge is free. Hints and retries are optional purchases in USDT.",
       money2: (pot, fee) =>
         `Of every purchase, ${pot} feeds the day's prize and ${fee} covers platform upkeep. When the day closes (UTC) the prize is split among the best of each level, and winners claim it from the app.`,
       money3:
         "Frontle never holds your funds: payments go straight from your wallet to the smart contract. The fee is accounted for separately and never touches the prize.",
+      money4:
+        "The weekly league is a separate economy: 100% of every coin purchase goes into that week's prize, of which the platform keeps 10% when the week closes. Competing is free — XP is earned by playing and is never for sale.",
       contractsTitle: "The contracts",
       contractInUse: "In use · prize per level",
       contractLegacy: "Historical · single winner",
+      contractWeekly: "In use · weekly league pot",
       contractsNote:
-        "v1 no longer takes payments and its prizes were all claimed; the figures above add up both. You can audit every transaction on the explorer.",
+        "v1 no longer takes payments and its prizes were all claimed; the figures above add up all three. You can audit every transaction on the explorer.",
       verified: "verified",
       unverified: "unverified",
       sourceOpen: "See the code on GitHub",
@@ -1436,22 +1483,37 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top países",
       last30d: "últimos 30 dias",
       economy: "Economia",
-      bothContracts: "contratos v1 + v2",
+      allContracts: "os três contratos",
       prizesPaid: "Prêmios distribuídos",
       daysClosed: "Dias encerrados",
       playerFunds: "Fundos dos jogadores",
       playerFundsHint: "prêmio de hoje + prêmios não resgatados",
       protocolFees: "Taxa da plataforma",
       protocolFeesHint: "os 20% de manutenção, à parte do prêmio",
+      weeklyTitle: "Liga semanal",
+      weeklyThisWeek: "esta semana",
+      weeklyPot: "Prêmio da semana",
+      weeklyPlayers: "Competindo",
+      weeklyPrizes: "Prêmios distribuídos",
+      weeksClosed: "Semanas encerradas",
+      weeklySplit: "Dividido 50% · 30% · 10% entre os três primeiros por XP. O XP se ganha jogando: não dá para comprar.",
+      coinsTitle: "Moedas",
+      coinsSold: "Compradas",
+      coinsSpent: "Gastas",
+      coinsHolders: "Com saldo",
+      coinsNote: "As moedas pagam dicas e rodadas extras. Não são um token: são saldo de jogo, e comprá-las alimenta o prêmio semanal.",
       moneyTitle: "Para onde vai seu dinheiro",
       money1: "A primeira tentativa de cada desafio diário é grátis. Dicas e novas tentativas são compras opcionais em USDT.",
       money2: (pot, fee) =>
         `De cada compra, ${pot} alimenta o prêmio do dia e ${fee} cobre a manutenção da plataforma. Ao encerrar o dia (UTC) o prêmio é dividido entre os melhores de cada nível, e os vencedores o resgatam pelo app.`,
       money3:
         "O Frontle nunca guarda seus fundos: os pagamentos vão direto da sua carteira para o contrato inteligente. A taxa é contabilizada à parte e não toca no prêmio.",
+      money4:
+        "A liga semanal é uma economia à parte: 100% de cada compra de moedas entra no prêmio da semana, do qual a plataforma retém 10% ao encerrá-la. Competir é grátis — o XP se ganha jogando e nunca se compra.",
       contractsTitle: "Os contratos",
       contractInUse: "Em uso · prêmio por nível",
       contractLegacy: "Histórico · vencedor único",
+      contractWeekly: "Em uso · pot da liga semanal",
       contractsNote:
         "O v1 já não recebe pagamentos e seus prêmios foram resgatados; os números acima somam os dois. Você pode auditar cada transação no explorador.",
       verified: "verificado",
@@ -1763,13 +1825,25 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top pays",
       last30d: "30 derniers jours",
       economy: "Économie",
-      bothContracts: "contrats v1 + v2",
+      allContracts: "les trois contrats",
       prizesPaid: "Gains distribués",
       daysClosed: "Jours clôturés",
       playerFunds: "Fonds des joueurs",
       playerFundsHint: "cagnotte du jour + gains non réclamés",
       protocolFees: "Commission de la plateforme",
       protocolFeesHint: "les 20 % d'entretien, à part de la cagnotte",
+      weeklyTitle: "Ligue hebdo",
+      weeklyThisWeek: "cette semaine",
+      weeklyPot: "Prix de la semaine",
+      weeklyPlayers: "En lice",
+      weeklyPrizes: "Prix distribués",
+      weeksClosed: "Semaines clôturées",
+      weeklySplit: "Réparti 50 % · 30 % · 10 % entre les trois premiers à l'XP. L'XP se gagne en jouant : il ne s'achète pas.",
+      coinsTitle: "Pièces",
+      coinsSold: "Achetées",
+      coinsSpent: "Dépensées",
+      coinsHolders: "Avec un solde",
+      coinsNote: "Les pièces paient les indices et les manches supplémentaires. Ce n'est pas un jeton : c'est un solde de jeu, et leur achat alimente le prix hebdomadaire.",
       moneyTitle: "Où va votre argent",
       money1: "Le premier essai de chaque défi quotidien est gratuit. Les indices et les essais supplémentaires sont des achats optionnels en USDT.",
       money2: (pot, fee) =>
@@ -1777,10 +1851,13 @@ const STRINGS: Record<Locale, Dict> = {
       money3:
         "Frontle ne détient jamais vos fonds : les paiements vont directement de votre portefeuille au contrat intelligent. La commission est comptabilisée à part et ne touche pas la cagnotte.",
       contractsTitle: "Les contrats",
+      money4:
+        "La ligue hebdo est une économie à part : 100 % de chaque achat de pièces entre dans le prix de la semaine, dont la plateforme retient 10 % à la clôture. Concourir est gratuit — l'XP se gagne en jouant et ne s'achète jamais.",
       contractInUse: "En service · gain par niveau",
       contractLegacy: "Historique · gagnant unique",
+      contractWeekly: "En service · cagnotte de la ligue hebdo",
       contractsNote:
-        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les deux. Vous pouvez auditer chaque transaction sur l'explorateur.",
+        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les trois. Vous pouvez auditer chaque transaction sur l'explorateur.",
       verified: "vérifié",
       unverified: "non vérifié",
       sourceOpen: "Voir le code sur GitHub",

@@ -100,6 +100,59 @@ export async function getCoinBalance(): Promise<number> {
   }
 }
 
+// --- Agregados públicos para /stats -----------------------------------------
+
+export interface CoinStats {
+  sold: number; // monedas compradas (no incluye las regaladas)
+  spent: number; // monedas gastadas en pistas, reintentos y escudos
+  holders: number; // jugadores con saldo > 0
+  /** El ledger no cupo en una página: los totales son un mínimo, no el total. */
+  truncated: boolean;
+}
+
+// Techo de filas por petición. PostgREST corta en algún punto de todos modos;
+// pedir un límite explícito permite DETECTAR el corte comparándolo con el
+// total exacto de la cabecera, en vez de publicar una suma incompleta como si
+// fuera definitiva — en una página de transparencia eso sería mentir.
+const LEDGER_PAGE = 5000;
+
+export async function getCoinStats(): Promise<CoinStats | null> {
+  if (!useSupabase) return null;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/coin_ledger?select=kind,amount&limit=${LEDGER_PAGE}`, {
+      headers: { ...HEADERS(), Prefer: "count=exact" },
+    });
+    const rows: Array<{ kind: string; amount: number }> = await r.json();
+    if (!Array.isArray(rows)) return null;
+    const totalStr = r.headers.get("content-range")?.split("/")[1];
+    const total = totalStr && totalStr !== "*" ? Number(totalStr) : rows.length;
+
+    let sold = 0;
+    let spent = 0;
+    for (const row of rows) {
+      const n = Number(row.amount ?? 0);
+      if (row.kind === "purchase") sold += n;
+      else if (n < 0) spent += -n;
+    }
+
+    // Los tenedores salen de la vista de saldos, no del ledger: ahí ya está
+    // hecha la resta de compras menos gastos por jugador.
+    const h = await fetch(`${SUPA_URL}/rest/v1/coin_balance?coins=gt.0&select=player_id&limit=1`, {
+      headers: { ...HEADERS(), Prefer: "count=exact", Range: "0-0" },
+    });
+    const holdersStr = h.headers.get("content-range")?.split("/")[1];
+
+    return {
+      sold,
+      spent,
+      holders: holdersStr && holdersStr !== "*" ? Number(holdersStr) : 0,
+      truncated: total > rows.length,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export type SpendResult = "ok" | "insufficient" | "identity" | "error";
 
 // Gasta un ítem. Pasa por `spend_coins` en el servidor: verifica la identidad

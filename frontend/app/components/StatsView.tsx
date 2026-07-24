@@ -12,6 +12,8 @@ import {
   type RetentionWindow,
 } from "../lib/ranking";
 import { getChainActivity, type ChainActivity } from "../lib/onchain";
+import { getCoinStats, type CoinStats } from "../lib/coins";
+import { getWeeklyPlayers } from "../lib/xp";
 import { SUPPORT_EMAIL, SUPPORT_MAILTO, SUPPORT_X, SUPPORT_X_URL } from "../lib/support";
 import { codeToFlag, detectLocale, regionName, t, type Locale } from "../lib/i18n";
 
@@ -25,23 +27,35 @@ export default function StatsView() {
   const [countries, setCountries] = useState<CountryStat[]>([]);
   const [retention, setRetention] = useState<RetentionWindow[]>([]);
   const [activity, setActivity] = useState<ChainActivity | null>(null);
+  const [coins, setCoins] = useState<CoinStats | null>(null);
+  const [ligaPlayers, setLigaPlayers] = useState<number | null>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => setLocale(detectLocale()), []);
 
   useEffect(() => {
+    // La actividad on-chain tiene que incluir el contrato semanal: las compras
+    // de monedas viven ahí y, sin él, las transacciones y los usuarios únicos
+    // salían por debajo de lo real.
+    const contratos = [CONTRACT_INFO.address, CONTRACT_INFO.addressV1];
+    if (CONTRACT_INFO.addressWeekly) contratos.push(CONTRACT_INFO.addressWeekly);
+
     Promise.all([
       getPublicStats(),
       getCommunityStats(),
       getTopCountries(),
       getRetention(),
-      getChainActivity([CONTRACT_INFO.address, CONTRACT_INFO.addressV1]),
-    ]).then(([c, s, top, ret, act]) => {
+      getChainActivity(contratos),
+      getCoinStats(),
+      getWeeklyPlayers(),
+    ]).then(([c, s, top, ret, act, coin, liga]) => {
       setChain(c);
       setCommunity(s);
       setCountries(top);
       setRetention(ret);
       setActivity(act);
+      setCoins(coin);
+      setLigaPlayers(liga);
       setDone(true);
     });
   }, []);
@@ -145,7 +159,44 @@ export default function StatsView() {
         </section>
       )}
 
-      <Section title={tr.economy} aside={tr.bothContracts}>
+      {/* Liga semanal: la otra competencia y el otro pot. Solo si el contrato
+          está configurado — sin él no hay nada real que enseñar. */}
+      {CONTRACT_INFO.addressWeekly && (
+        <section>
+          <SectionHead title={tr.weeklyTitle} aside={tr.weeklyThisWeek} />
+          <div className="grid grid-cols-2 gap-2">
+            <Stat label={tr.weeklyPot} value={chain && usdt(chain.weeklyPot)} unit={CONTRACT_INFO.token} done={done} />
+            <Stat label={tr.weeklyPlayers} value={ligaPlayers === null ? null : num(ligaPlayers)} done={done} />
+            <Stat
+              label={tr.weeklyPrizes}
+              value={chain && usdt(chain.weeklyPrizes)}
+              unit={CONTRACT_INFO.token}
+              done={done}
+            />
+            <Stat label={tr.weeksClosed} value={chain && num(chain.weeksClosed)} done={done} />
+          </div>
+          <p className="text-[10px] text-neutral-400 mt-1.5 px-0.5 leading-relaxed">{tr.weeklySplit}</p>
+        </section>
+      )}
+
+      {/* Monedas: saldo de juego, no un token. Es la vía de ingresos nueva, así
+          que la página de transparencia tiene que declararla. */}
+      {coins && (
+        <section>
+          <SectionHead title={tr.coinsTitle} />
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label={tr.coinsSold} value={num(coins.sold)} done={done} />
+            <Stat label={tr.coinsSpent} value={num(coins.spent)} done={done} />
+            <Stat label={tr.coinsHolders} value={num(coins.holders)} done={done} />
+          </div>
+          <p className="text-[10px] text-neutral-400 mt-1.5 px-0.5 leading-relaxed">{tr.coinsNote}</p>
+          {coins.truncated && (
+            <p className="text-[10px] text-neutral-400 mt-1 px-0.5 leading-relaxed">{tr.partialData}</p>
+          )}
+        </section>
+      )}
+
+      <Section title={tr.economy} aside={tr.allContracts}>
         <Stat label={tr.prizesPaid} value={chain && usdt(chain.prizesPaid)} unit={CONTRACT_INFO.token} done={done} />
         <Stat label={tr.daysClosed} value={chain && num(chain.daysClosed)} done={done} />
         <Stat
@@ -166,7 +217,7 @@ export default function StatsView() {
 
       {activity && (
         <section>
-          <SectionHead title={tr.onchain} aside={tr.bothContracts} />
+          <SectionHead title={tr.onchain} aside={tr.allContracts} />
           <div className="grid grid-cols-3 gap-2">
             <Stat label={tr.txTotal} value={num(activity.txTotal)} done={done} />
             <Stat label={tr.onchainUsers} value={num(activity.uniqueUsers)} done={done} />
@@ -194,6 +245,7 @@ export default function StatsView() {
         <p>{tr.money1}</p>
         <p>{tr.money2("80%", "20%")}</p>
         <p>{tr.money3}</p>
+        {CONTRACT_INFO.addressWeekly && <p>{tr.money4}</p>}
       </section>
 
       <section className="panel p-4 flex flex-col gap-3 text-sm">
@@ -208,6 +260,20 @@ export default function StatsView() {
           unverifiedLabel={tr.unverified}
           accent
         />
+        {/* Custodia el pot de la liga: omitirlo dejaba dinero de jugadores
+            fuera de la página que promete enseñarlo todo. */}
+        {CONTRACT_INFO.addressWeekly && (
+          <ContractRow
+            tag="liga"
+            role={tr.contractWeekly}
+            address={CONTRACT_INFO.addressWeekly}
+            href={CONTRACT_INFO.explorerWeekly}
+            verified={CONTRACT_INFO.verifiedWeekly}
+            verifiedLabel={tr.verified}
+            unverifiedLabel={tr.unverified}
+            accent
+          />
+        )}
         <ContractRow
           tag="v1"
           role={tr.contractLegacy}

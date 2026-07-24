@@ -39,6 +39,11 @@ const FIRST_DAY = 20621;
 const TOKEN_ADDRESS: Address = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // USDT (USD₮)
 const TOKEN_DECIMALS = 6; // USDT usa 6 decimales
 
+// Contrato del pot semanal (liga v2). Se declara AQUÍ, con las otras
+// direcciones, y no junto a la compra de monedas: CONTRACT_INFO lo lee al
+// inicializar el módulo, y declararlo después lo dejaría en zona muerta.
+const WEEKLY_ADDRESS = (process.env.NEXT_PUBLIC_WEEKLY_ADDRESS ?? "") as `0x${string}` | "";
+
 // feeCurrency (CIP-64): adapter de USDT → el usuario paga el "network fee" en USDT
 // y nunca ve "gas" ni CELO (requisito MiniPay). Para USDT/USDC se usa el ADAPTER, no el token.
 const FEE_CURRENCY: Address | undefined = "0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72";
@@ -326,6 +331,12 @@ export const CONTRACT_INFO = {
   explorerV1: `${explorerUrl}/address/${GAME_V1_ADDRESS}`,
   verifiedV2: true,
   verifiedV1: true,
+  // Contrato del pot semanal (liga v2). Custodia dinero de jugadores, así que
+  // tiene que aparecer en la página de transparencia como los otros dos.
+  // Vacío = sin desplegar/configurar: entonces no se anuncia.
+  addressWeekly: WEEKLY_ADDRESS,
+  explorerWeekly: WEEKLY_ADDRESS ? `${explorerUrl}/address/${WEEKLY_ADDRESS}` : "",
+  verifiedWeekly: true,
 } as const;
 
 export interface PublicStats {
@@ -335,6 +346,79 @@ export interface PublicStats {
   daysClosed: number; // días cerrados desde FIRST_DAY, v1 + v2
   playerFunds: number; // USDT de los jugadores (pot de hoy + premios sin reclamar)
   protocolFees: number; // comisión de plataforma acumulada — NO es de los jugadores
+  // Liga semanal (FrontleWeekly). En 0 si el contrato no está configurado.
+  weeklyPot: number; // pot de la semana en curso
+  weeklyPrizes: number; // premios asignados en todas las semanas cerradas
+  weeksClosed: number;
+}
+
+// Historial on-chain de la liga semanal: pot en curso, premios asignados en
+// las semanas ya cerradas, recaudo y saldo. Todo en ceros si el contrato no
+// está configurado, para que /stats siga funcionando sin él.
+async function getWeeklyChainStats(): Promise<{
+  pot: bigint;
+  prizes: bigint;
+  weeksClosed: number;
+  accrued: bigint;
+  balance: bigint;
+}> {
+  const cero = BigInt(0);
+  const vacio = { pot: cero, prizes: cero, weeksClosed: 0, accrued: cero, balance: cero };
+  if (!WEEKLY_ADDRESS) return vacio;
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const [weekRaw, accrued, balance] = await publicClient.multicall({
+      allowFailure: false,
+      contracts: [
+        { address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "currentWeek" },
+        { address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "protocolAccrued" },
+        { address: TOKEN_ADDRESS, abi: erc20Abi, functionName: "balanceOf", args: [WEEKLY_ADDRESS] },
+      ],
+    });
+
+    const past: bigint[] = [];
+    for (let w = FIRST_WEEK; w < Number(weekRaw); w++) past.push(BigInt(w));
+
+    const rolled = past.length
+      ? await publicClient.multicall({
+          allowFailure: false,
+          contracts: past.map(
+            (w) => ({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "rolled", args: [w] }) as const
+          ),
+        })
+      : [];
+    const closed = past.filter((_, i) => rolled[i]);
+
+    // Un premio por puesto del podio (1º, 2º, 3º) en cada semana cerrada.
+    const prizeList = closed.length
+      ? await publicClient.multicall({
+          allowFailure: false,
+          contracts: closed.flatMap((w) =>
+            [1, 2, 3].map(
+              (p) => ({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "prize", args: [w, p] }) as const
+            )
+          ),
+        })
+      : [];
+
+    const pot = await publicClient.readContract({
+      address: WEEKLY_ADDRESS,
+      abi: weeklyAbi,
+      functionName: "pot",
+      args: [weekRaw],
+    });
+
+    return {
+      pot,
+      prizes: prizeList.reduce((acc, p) => acc + p, BigInt(0)),
+      weeksClosed: closed.length,
+      accrued,
+      balance,
+    };
+  } catch (err) {
+    console.error("[stats] no se pudo leer el contrato semanal:", err);
+    return vacio;
+  }
 }
 
 // Lee el histórico completo de ambos contratos (v1 + v2) desde FIRST_DAY.
@@ -401,8 +485,14 @@ export async function getPublicStats(): Promise<PublicStats | null> {
     // Días cerrados distintos entre ambos contratos (no se cuenta dos veces).
     const daysClosed = new Set([...closedV1, ...closedV2].map(Number)).size;
 
-    const protocolFees = accruedV1 + accruedV2;
-    const playerFunds = balV1 + balV2 - protocolFees;
+    // 4) Liga semanal. Mismo tratamiento que el diario: su saldo también
+    //    incluye el recaudo, así que se resta antes de llamarlo "de los
+    //    jugadores". Sin contrato configurado queda todo en cero y la sección
+    //    simplemente no tiene nada que contar.
+    const weekly = await getWeeklyChainStats();
+
+    const protocolFees = accruedV1 + accruedV2 + weekly.accrued;
+    const playerFunds = balV1 + balV2 + weekly.balance - protocolFees;
     const usdt = (v: bigint) => Number(formatUnits(v, TOKEN_DECIMALS));
 
     return {
@@ -412,6 +502,9 @@ export async function getPublicStats(): Promise<PublicStats | null> {
       daysClosed,
       playerFunds: usdt(playerFunds),
       protocolFees: usdt(protocolFees),
+      weeklyPot: usdt(weekly.pot),
+      weeklyPrizes: usdt(weekly.prizes),
+      weeksClosed: weekly.weeksClosed,
     };
   } catch (err) {
     console.error("[stats] no se pudieron leer los datos del contrato:", err);
@@ -758,8 +851,6 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
 // operador, que siembra el pot a mano. El edge function acepta ambos.
 export const COIN_TREASURY = "0x54E83C8D7B7A77cbf0a2842c1a82d51be8814DD0" as const;
 
-const WEEKLY_ADDRESS = (process.env.NEXT_PUBLIC_WEEKLY_ADDRESS ?? "") as `0x${string}` | "";
-
 const weeklyAbi = [
   {
     type: "function",
@@ -771,7 +862,20 @@ const weeklyAbi = [
   { type: "function", name: "currentWeek", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "pot", inputs: [{ name: "week", type: "uint256" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "minPurchase", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "protocolAccrued", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "rolled", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }], stateMutability: "view" },
+  {
+    type: "function",
+    name: "prize",
+    inputs: [{ type: "uint256" }, { type: "uint8" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
 ] as const;
+
+// Semana UTC en que se desplegó FrontleWeekly (2026-07-20): inicio de su
+// historial, igual que FIRST_DAY para el contrato diario.
+const FIRST_WEEK = 2951;
 
 // Compra mínima que acepta el contrato (revierte con AmountTooSmall por debajo).
 // La tienda la consulta para no ofrecer lotes que la transacción rechazaría.

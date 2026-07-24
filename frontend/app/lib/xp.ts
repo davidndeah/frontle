@@ -280,6 +280,12 @@ export async function getWeeklyStanding(): Promise<WeeklyStanding | null> {
   return { xp, rank, players: Math.max(players, rank) };
 }
 
+// Cuántos jugadores compiten en la liga esta semana (para /stats).
+export async function getWeeklyPlayers(): Promise<number | null> {
+  if (!useSupabase) return null;
+  return countWeekly(`week=eq.${weekStartUTC()}`);
+}
+
 // XP semanal del propio jugador (0 si aún no tiene eventos esta semana).
 export async function getMyWeeklyXp(): Promise<number> {
   if (!useSupabase || !hasLeagueIdentity()) return 0;
