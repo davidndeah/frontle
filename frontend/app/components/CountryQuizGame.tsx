@@ -22,6 +22,7 @@ import type { BordyMood } from "./Bordy";
 import Coachmarks from "./Coachmarks";
 import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
+import { winMood } from "../lib/streakMood";
 
 function BigFlag({ name }: { name: string }) {
   const c = quizCountryInfo(name);
@@ -48,13 +49,15 @@ function BigFlag({ name }: { name: string }) {
 }
 
 export default function CountryQuizGame({
-  mode, locale, onExit, reactBordy, coachSignal = 0,
+  mode, locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0,
 }: {
   mode: QuizMode; locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
   reactBordy?: (m: BordyMood) => void;
   /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
   coachSignal?: number;
+  /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
+  dailyStreak?: number;
 }) {
   const tr = t(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
@@ -69,6 +72,9 @@ export default function CountryQuizGame({
   const [revealed, setRevealed] = useState(0); // nº de pistas mostradas
   const [tries, setTries] = useState(0);
   const [solved, setSolved] = useState(false);
+  // Rondas ganadas SEGUIDAS en esta sesión (bandera/contorno son repetibles
+  // vía "otra ronda"): la 1ª es acierto, la 2ª en adelante es racha.
+  const [roundsWon, setRoundsWon] = useState(0);
   // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
   const [shopOpen, setShopOpen] = useState(false);
   async function paidReveal() {
@@ -142,9 +148,10 @@ export default function CountryQuizGame({
       setMessage({ text: tr.quiz.correct(countryName(country, locale)), ok: true });
       sfxWin();
       // Cada ronda ES un reto completo (no hay pasos intermedios como en el
-      // mundial), así que el acierto aquí equivale al "solved" de los otros
-      // modos, no a un paso verde: reacciona con la celebración grande.
-      reactBordy?.("racha");
+      // mundial): el mood usa winMood (racha si la racha diaria está activa
+      // o si ya se ganó otra ronda antes en esta sesión), no un "racha" fijo.
+      reactBordy?.(winMood(dailyStreak, roundsWon));
+      setRoundsWon((n) => n + 1);
       // Liga v2: acierto de quiz da XP (tope diario en el servidor).
       awardQuizCorrect(mode);
     } else {
