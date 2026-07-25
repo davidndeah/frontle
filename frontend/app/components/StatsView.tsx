@@ -70,14 +70,24 @@ export default function StatsView() {
   // Ojo: el ancho va en CSS crudo, sin toLocaleString (en es daría "45 %").
   const maxPlays = countries.reduce((a, c) => Math.max(a, c.plays), 0);
 
+  // Mismo criterio para el desglose por acción: la barra se mide contra el
+  // método más usado. Igual que arriba, el ancho va en CSS crudo.
+  const maxMethod = (activity?.byMethod ?? []).reduce((a, m) => Math.max(a, m.count), 0);
+
   return (
     <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-6">
       <header>
-        <Link href="/" className="text-sm text-[#c4b5fd] underline">
+        {/* El "volver" era un enlace subrayado suelto: a 14px sobre el fondo
+            violeta, el único control de navegación de la página costaba de
+            ver. Pasa a botón con la misma física que los del juego. */}
+        <Link
+          href="/"
+          className="brutal-sm brutal-press inline-block rounded-lg bg-surface px-3 py-1.5 text-xs font-bold text-[#c4b5fd]"
+        >
           {tr.back}
         </Link>
-        <h1 className="font-display text-3xl font-bold mt-3">{tr.title}</h1>
-        <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{tr.subtitle(CONTRACT_INFO.chainName)}</p>
+        <h1 className="font-display text-4xl font-black mt-3 leading-none">{tr.title}</h1>
+        <p className="text-xs text-neutral-400 mt-2 leading-relaxed">{tr.subtitle(CONTRACT_INFO.chainName)}</p>
       </header>
 
       <Section title={tr.today} aside={chain ? tr.dayNo(chain.day) : undefined} cols={3}>
@@ -101,31 +111,47 @@ export default function StatsView() {
         <section>
           <SectionHead title={tr.retention} aside={tr.retentionHint} />
           <div className="grid grid-cols-3 gap-2">
-            {retention.map((r) => (
-              <div key={r.windowDays} className="panel p-3 flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">
-                  D{r.windowDays}
-                </span>
-                {/* Sin cohorte madura no hay porcentaje que mostrar: un 0%
-                    ahí significaría "nadie volvió", y lo cierto es que aún
-                    nadie ha tenido tantos días para volver. */}
-                {r.cohort > 0 ? (
-                  <>
-                    <span className="font-display text-2xl font-bold text-white tabular-nums leading-none">
-                      {pct(r.retained / r.cohort)}
-                    </span>
-                    <span className="text-[10px] text-neutral-400 leading-tight tabular-nums">
-                      {num(r.retained)}/{num(r.cohort)}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-display text-2xl font-bold text-neutral-600 leading-none">—</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">{tr.noCohort}</span>
-                  </>
-                )}
-              </div>
-            ))}
+            {retention.map((r) => {
+              // OJO: la fracción cruda para el ancho CSS. `pct()` es para
+              // LEER (en es sale "45 %", con espacio duro) y como width no
+              // es válida — es la trampa documentada en CLAUDE.md.
+              const ratio = r.cohort > 0 ? r.retained / r.cohort : 0;
+              return (
+                <div key={r.windowDays} className="brutal-sm flex flex-col gap-1 rounded-lg bg-surface p-3">
+                  <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">
+                    D{r.windowDays}
+                  </span>
+                  {/* Sin cohorte madura no hay porcentaje que mostrar: un 0%
+                      ahí significaría "nadie volvió", y lo cierto es que aún
+                      nadie ha tenido tantos días para volver. */}
+                  {r.cohort > 0 ? (
+                    <>
+                      <span className="font-display text-2xl font-black text-white tabular-nums leading-none">
+                        {pct(ratio)}
+                      </span>
+                      {/* Barra del sistema: canal hundido con borde y relleno
+                          macizo. Da la comparación entre D1/D7/D30 de un
+                          vistazo, que con tres números sueltos no se veía. */}
+                      <div
+                        className="h-2 w-full overflow-hidden rounded-sm border-2 border-deep bg-deep"
+                        role="img"
+                        aria-label={pct(ratio)}
+                      >
+                        <div className="h-full bg-gold" style={{ width: `${Math.round(ratio * 100)}%` }} />
+                      </div>
+                      <span className="text-[10px] text-neutral-400 leading-tight tabular-nums">
+                        {num(r.retained)}/{num(r.cohort)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-display text-2xl font-black text-neutral-600 leading-none">—</span>
+                      <span className="text-[10px] text-neutral-400 leading-tight">{tr.noCohort}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
@@ -133,29 +159,44 @@ export default function StatsView() {
       {countries.length > 0 && (
         <section>
           <SectionHead title={tr.topCountries} aside={tr.last30d} />
-          <div className="panel p-3 flex flex-col gap-2.5">
-            {countries.map((c) => (
-              <div key={c.code} className="flex items-center gap-2.5">
-                <span className="text-lg leading-none w-6 shrink-0" aria-hidden="true">
+          {/* Una card por país en vez de una lista dentro de un panel: con el
+              borde grueso cada país es una unidad y la barra deja de parecer
+              un separador entre renglones. */}
+          <ol className="flex flex-col gap-1.5">
+            {countries.map((c, i) => (
+              <li key={c.code} className="brutal-sm flex items-center gap-2.5 rounded-lg bg-surface px-2.5 py-2">
+                {/* Puesto en bloque macizo, como los círculos del podio. */}
+                <span
+                  className={`grid h-5 w-5 flex-none place-items-center rounded-full border-2 border-deep font-display text-[10px] font-black text-surface ${
+                    i === 0 ? "bg-gold" : "bg-lavender"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <span className="w-6 shrink-0 text-lg leading-none" aria-hidden="true">
                   {codeToFlag(c.code)}
                 </span>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[13px] text-neutral-200 truncate">{regionName(c.code, locale)}</span>
-                    <span className="text-[11px] text-neutral-400 tabular-nums shrink-0">
+                    <span className="truncate text-[13px] font-semibold text-neutral-100">
+                      {regionName(c.code, locale)}
+                    </span>
+                    <span className="shrink-0 text-[11px] tabular-nums text-neutral-400">
                       {num(c.plays)} · {num(c.players)} {tr.players.toLowerCase()}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  {/* Se mide contra el LÍDER, no contra el total: así el
+                      primero llena la barra y la comparación se lee sola. */}
+                  <div className="mt-1 h-2 overflow-hidden rounded-sm border-2 border-deep bg-deep">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#a855f7] to-gold"
-                      style={{ width: maxPlays > 0 ? `${(c.plays / maxPlays) * 100}%` : "0%" }}
+                      className={i === 0 ? "h-full bg-gold" : "h-full bg-lavender"}
+                      style={{ width: maxPlays > 0 ? `${Math.round((c.plays / maxPlays) * 100)}%` : "0%" }}
                     />
                   </div>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </section>
       )}
 
@@ -251,12 +292,23 @@ export default function StatsView() {
             />
           </div>
 
-          <div className="panel p-3 mt-2 flex flex-col gap-1.5">
+          {/* Desglose por acción. El reparto entre métodos era invisible: dos
+              columnas de números sin escala común. Cada fila lleva ahora su
+              barra contra la acción más usada. */}
+          <div className="brutal-sm mt-2 flex flex-col gap-2 rounded-lg bg-surface p-3">
             <span className="text-[10px] uppercase tracking-wider text-neutral-400">{tr.byAction}</span>
             {activity.byMethod.map((m) => (
-              <div key={m.method} className="flex items-baseline justify-between gap-2 text-[13px]">
-                <span className="text-neutral-200 truncate">{m.method}</span>
-                <span className="text-neutral-400 tabular-nums shrink-0">{num(m.count)}</span>
+              <div key={m.method} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                  <span className="truncate font-semibold text-neutral-100">{m.method}</span>
+                  <span className="shrink-0 tabular-nums text-neutral-400">{num(m.count)}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-sm border border-deep bg-deep">
+                  <div
+                    className="h-full bg-lavender"
+                    style={{ width: maxMethod > 0 ? `${Math.round((m.count / maxMethod) * 100)}%` : "0%" }}
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -267,8 +319,10 @@ export default function StatsView() {
         </section>
       )}
 
+      {/* Usa SectionHead como el resto: era el único título de la página
+          escrito a mano, y se quedó atrás cuando la cabecera cambió. */}
       <section className="panel p-4 flex flex-col gap-3 text-sm text-neutral-200 leading-relaxed">
-        <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">{tr.moneyTitle}</h2>
+        <SectionHead title={tr.moneyTitle} bare />
         <p>{tr.money1}</p>
         <p>{tr.money2("80%", "20%")}</p>
         <p>{tr.money3}</p>
@@ -366,11 +420,20 @@ function fmtDate(iso: string, locale: Locale): string {
     : d.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+// Cabecera de sección. `bare` = va dentro de un panel que ya tiene su propio
+// aire, así que no añade margen inferior.
 function SectionHead({ title, aside, bare = false }: { title: string; aside?: string; bare?: boolean }) {
   return (
-    <div className={`flex items-baseline justify-between gap-3 ${bare ? "" : "mb-2 px-0.5"}`}>
-      <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">{title}</h2>
-      {aside && <span className="text-[10px] text-neutral-400 tabular-nums">{aside}</span>}
+    <div className={bare ? "" : "mb-2"}>
+      <div className="flex items-baseline justify-between gap-3 px-0.5">
+        <h2 className="font-display text-sm font-black uppercase tracking-[0.14em] text-white">{title}</h2>
+        {aside && <span className="text-[10px] text-neutral-400 tabular-nums">{aside}</span>}
+      </div>
+      {/* Regla maciza bajo el título: en el sistema de referencia las secciones
+          se separan con una línea, no con espacio en blanco. Es lo que da el
+          "strict grid alignment" cuando las tarjetas de abajo son de tamaños
+          distintos. */}
+      <div className="mt-1 h-[3px] w-full bg-lavender/45" aria-hidden />
     </div>
   );
 }
@@ -409,15 +472,18 @@ function Stat({
   done: boolean;
 }) {
   return (
-    <div className="panel p-3 flex flex-col gap-1">
+    // Card neo-brutalista: superficie sólida, borde grueso y sombra dura
+    // desplazada. Sustituye a `panel` (gradiente translúcido), que sobre una
+    // rejilla de muchas tarjetas pequeñas se leía como una mancha continua.
+    <div className="brutal-sm flex flex-col gap-1 rounded-lg bg-surface p-3">
       <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">{label}</span>
       {value !== null ? (
-        <span className="font-display text-2xl font-bold text-white tabular-nums leading-none">
+        <span className="font-display text-2xl font-black text-white tabular-nums leading-none">
           {value}
           {unit && <span className="ml-1 text-xs font-semibold text-neutral-400">{unit}</span>}
         </span>
       ) : done ? (
-        <span className="font-display text-2xl font-bold text-neutral-600 leading-none">—</span>
+        <span className="font-display text-2xl font-black text-neutral-600 leading-none">—</span>
       ) : (
         <span className="h-6 w-16 rounded bg-white/10 animate-pulse" />
       )}
@@ -450,20 +516,23 @@ function ContractRow({
   accent?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-white/[0.03] border border-lavender/15 p-2.5">
+    <div className="brutal-sm flex items-start gap-3 rounded-lg bg-surface p-2.5">
+      {/* Badges macizos, no tintes al 15%. El estado de verificación es el
+          dato más consultado de esta sección —es la promesa de la página de
+          transparencia— y a 9px sobre un fondo translúcido no se leía. */}
       <span
-        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold font-display ${
-          accent ? "bg-gold/15 text-gold" : "bg-white/10 text-neutral-400"
+        className={`shrink-0 rounded border-2 border-deep px-1.5 py-0.5 font-display text-[10px] font-black ${
+          accent ? "bg-gold text-surface" : "bg-lavender text-surface"
         }`}
       >
         {tag}
       </span>
-      <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] text-neutral-400 leading-tight">{role}</span>
           <span
-            className={`rounded px-1 py-px text-[9px] font-semibold ${
-              verified ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-300"
+            className={`rounded border-2 border-deep px-1.5 py-px text-[10px] font-black ${
+              verified ? "bg-emerald-400 text-emerald-950" : "bg-amber-400 text-amber-950"
             }`}
           >
             {verified ? `✓ ${verifiedLabel}` : `⚠ ${unverifiedLabel}`}

@@ -58,6 +58,17 @@ Thumbs.db
 .idea/
 .vscode/
 
+# --- Descargas de trabajo (no son código) ---
+# Exports de Notion: llegan con nombre de hash al directorio del repo. Son
+# material de consulta, no fuente — y un binario subido se queda en la
+# historia para siempre.
+notion-*.pdf
+
+# Capturas de referencia que caen en la raíz con el nombre por defecto del
+# navegador. Van ANCLADAS con "/" (solo la raíz) a propósito: sin la barra,
+# el patrón también taparía imágenes legítimas en frontend/public o docs/.
+/descarga*.png
+
 # --- Agent skills (vendored por máquina, regenerables) ---
 .agents/
 .claude/

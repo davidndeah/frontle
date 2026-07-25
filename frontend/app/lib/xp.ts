@@ -149,10 +149,49 @@ export function todayUTC(): number {
 
 // --- Otorgamiento por modo ---------------------------------------------------
 
+// Clave de un evento en el mirror local: espeja la PK de `xp_events`
+// (player_id, day, source, level, seq) con seq siempre 1 en el diario.
+const eventKey = (e: XpEvent) => `${e.source}:${e.level ?? "-"}`;
+
+// Cuáles de estos eventos son NUEVOS hoy. Mismo papel que `nextSeq` en los
+// modos con tope: no impone nada —el techo real es la PK del servidor— solo
+// evita anunciar XP que el servidor va a descartar por duplicado. Importa
+// porque el diario se puede reintentar pagando: la segunda victoria del mismo
+// nivel no vuelve a pagar XP y la pantalla no debe decir que sí.
+// La clave incluye el nivel, así que `streak_day` (level "-") se otorga una
+// sola vez aunque el jugador resuelva easy y medium el mismo día.
+function markNewDailyEvents(day: number, events: XpEvent[]): XpEvent[] {
+  const key = `frontle-xp-daily-${day}`;
+  let granted: string[] = [];
+  try {
+    const raw = JSON.parse(localStorage.getItem(key) || "[]");
+    if (Array.isArray(raw)) granted = raw.map(String);
+  } catch {}
+  const seen = new Set(granted);
+  const fresh = events.filter((e) => !seen.has(eventKey(e)));
+  if (fresh.length > 0) {
+    try {
+      localStorage.setItem(key, JSON.stringify([...seen, ...fresh.map(eventKey)]));
+    } catch {}
+  }
+  return fresh;
+}
+
 // Reto diario resuelto: XP del nivel + calidad (estrellas) + sin pistas +
 // racha mantenida. `stars` es la misma métrica de la win card (3 óptima,
 // 2 = +1 país, 1 = más). Todo idempotente por (día, nivel).
-export function awardDailySolve(day: number, level: Difficulty, stars: 1 | 2 | 3, usedHints: boolean): void {
+//
+// Devuelve el XP realmente otorgado (0 si el jugador ya lo cobró hoy) y espera
+// a que el evento esté insertado: la pantalla de victoria lee la posición en la
+// liga justo después y necesita ver este XP ya contado. Se postean SIEMPRE
+// todos los eventos, no solo los nuevos — reenviar es idempotente y repara el
+// caso de un localStorage perdido o de otro dispositivo.
+export async function awardDailySolve(
+  day: number,
+  level: Difficulty,
+  stars: 1 | 2 | 3,
+  usedHints: boolean
+): Promise<number> {
   const events: XpEvent[] = [
     { source: "daily", level, xp: XP.daily[level] },
     { source: "streak_day", xp: XP.streakDay },
@@ -160,7 +199,9 @@ export function awardDailySolve(day: number, level: Difficulty, stars: 1 | 2 | 3
   if (stars === 3) events.push({ source: "stars", level, xp: XP.stars3 });
   if (stars === 2) events.push({ source: "stars", level, xp: XP.stars2 });
   if (!usedHints) events.push({ source: "nohints", level, xp: XP.noHints });
-  void postEvents(day, events);
+  const fresh = markNewDailyEvents(day, events);
+  await postEvents(day, events);
+  return fresh.reduce((sum, e) => sum + e.xp, 0);
 }
 
 // Hito de racha (7/30/100) al alcanzarlo. Re-alcanzarlo tras perder la racha

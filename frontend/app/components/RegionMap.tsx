@@ -13,6 +13,7 @@ import { geoMercator, geoPath, geoGraticule } from "d3-geo";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
 import type { Status } from "../lib/game";
 import { STATUS_COLORS as COLORS } from "../lib/theme";
+import GlobeLoader from "./GlobeLoader";
 
 
 interface Props {
@@ -138,8 +139,8 @@ export default function RegionMap({
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!render ? (
-        <div className="h-[220px] flex items-center justify-center text-neutral-300 text-sm">
-          {loadingLabel}
+        <div className="h-[220px] flex items-center justify-center">
+          <GlobeLoader label={loadingLabel} />
         </div>
       ) : (
         <>

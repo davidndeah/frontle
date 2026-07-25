@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { geoMercator, geoPath } from "d3-geo";
 import { featureForCountry, type AtlasFeature } from "../lib/atlas";
+import GlobeLoader from "./GlobeLoader";
 
 const W = 360;
 const H = 240;
@@ -34,7 +35,7 @@ export default function CountryOutline({ country, loadingLabel }: { country: str
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!d ? (
-        <div className="h-[240px] flex items-center justify-center text-neutral-300 text-sm">{loadingLabel}</div>
+        <div className="h-[240px] flex items-center justify-center"><GlobeLoader label={loadingLabel} /></div>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
           <path

@@ -15,6 +15,8 @@ import type { t } from "../lib/i18n";
 import { getWeeklyPot, WEEKLY_PODIUM_SHARE } from "../lib/payments";
 import { getNamesFor, shortId } from "../lib/ranking";
 import { getWeeklyRanking, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry } from "../lib/xp";
+import GlobeLoader, { withMinDelay } from "./GlobeLoader";
+import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./Leaderboard";
 
 function fmtClose(ms: number): string {
   const totalH = Math.max(0, Math.floor(ms / 3_600_000));
@@ -43,13 +45,15 @@ export default function WeeklyLeague({
   useEffect(() => {
     let alive = true;
     (async () => {
-      const rows = await getWeeklyRanking();
+      const rows = await withMinDelay(getWeeklyRanking());
       if (!alive) return;
       setEntries(rows);
       setLoaded(true);
       const n = await getNamesFor(rows.map((r) => r.playerId));
       if (alive) setNames(n);
-    })();
+      // Sin esto un fallo dejaría el loader girando para siempre. Marcar
+      // `loaded` enseña la tabla vacía, que al menos es un final.
+    })().catch(() => alive && setLoaded(true));
     return () => {
       alive = false;
     };
@@ -68,12 +72,35 @@ export default function WeeklyLeague({
   }, []);
 
   const myIndex = entries.findIndex((e) => e.playerId === me);
-  const medals = ["🥇", "🥈", "🥉"];
+  // El podio son los 3 primeros; el resto va como tabla, hasta el 10.º.
+  const podium = entries.slice(0, 3);
+  const rest = entries.slice(3, 10);
+
   // Premio de cada puesto del podio. Solo hay premio que enseñar si el pot
   // existe y tiene fondos; con 0 sembrado, prometerlo sería mentir.
   const premioTotal = pot ?? 0;
   const conPremio = premioTotal > 0;
   const premioDe = (i: number) => (premioTotal * WEEKLY_PODIUM_SHARE[i]) / 100;
+
+  // Traduce una fila de la liga al modelo común del leaderboard. `pos` es el
+  // índice global (0 = primero) y solo sirve para saber si toca premio.
+  const toEntry = (e: WeeklyEntry, pos: number): LeaderEntry => {
+    const mine = e.playerId === me;
+    // Nombre de perfil si lo hay; si no, la dirección truncada — MiniPay la
+    // admite como pista secundaria, nunca como identidad principal.
+    const name = names[e.playerId] || shortId(e.playerId);
+    return {
+      id: e.playerId,
+      label: mine ? tr.liga.youNamed(name) : name,
+      mine,
+      stat: (
+        <>
+          {e.xp} <span className="text-[10px] opacity-70">XP</span>
+        </>
+      ),
+      sub: conPremio && pos < WEEKLY_PODIUM_SHARE.length ? fmt(premioDe(pos)) : undefined,
+    };
+  };
 
   return (
     <section className="panel p-4 flex flex-col gap-2">
@@ -86,13 +113,23 @@ export default function WeeklyLeague({
           desplegar) o esté vacío, se mantiene el aviso de temporada seca. */}
       {conPremio ? (
         <>
-          <p className="rounded-xl border border-gold/30 bg-gold/10 px-3 py-2 text-center text-sm font-bold text-amber-300">
+          {/* Bloque de acento macizo, no un tinte: el premio es lo que hay
+              que ver primero al abrir la liga. */}
+          <p className="brutal-sm rounded-lg bg-gold px-3 py-2 text-center text-sm font-black text-surface">
             {tr.liga.prize(fmt(premioTotal))}
           </p>
           <div className="grid grid-cols-3 gap-1.5">
             {WEEKLY_PODIUM_SHARE.map((_, i) => (
-              <div key={i} className="rounded-xl border border-lavender/20 bg-base px-2 py-1.5 text-center">
-                <div className="text-base leading-none">{medals[i]}</div>
+              <div key={i} className="brutal-sm rounded-lg bg-surface px-2 py-1.5 text-center">
+                {/* Mismo distintivo que el podio (nº en círculo), para que las
+                    dos lecturas del reparto se reconozcan entre sí. */}
+                <span
+                  className={`mx-auto grid h-5 w-5 place-items-center rounded-full border-2 border-deep font-display text-[10px] font-black text-surface ${
+                    i === 0 ? "bg-gold" : "bg-lavender"
+                  }`}
+                >
+                  {i + 1}
+                </span>
                 <div className="mt-1 font-mono tabular-nums text-xs font-bold text-amber-300">{fmt(premioDe(i))}</div>
               </div>
             ))}
@@ -118,46 +155,47 @@ export default function WeeklyLeague({
         </div>
       )}
 
+      {/* La tabla es de todos, se compita o no, así que el loader tampoco
+          depende de `joined`: sin él la liga aparecía en blanco hasta que
+          llegaba la consulta. */}
+      {!loaded && <GlobeLoader label={tr.liga.loading} size="sm" className="py-3" />}
+
       {joined && loaded && entries.length === 0 && (
         <p className="text-sm text-neutral-300 text-center py-3">{tr.liga.empty}</p>
       )}
 
-      {entries.length > 0 && (
-        <ol className="flex flex-col">
-          {entries.slice(0, 10).map((e, i) => {
-            const mine = e.playerId === me;
-            return (
-              <li
-                key={e.playerId}
-                className={`flex items-center gap-2 py-1.5 px-2 rounded-lg ${mine ? "bg-gold/10 border border-gold/30" : ""}`}
-              >
-                <span className="w-7 text-center text-sm flex-none">{medals[i] ?? `${i + 1}`}</span>
-                <span className={`flex-1 truncate text-sm ${mine ? "text-amber-100 font-semibold" : "text-neutral-200"}`}>
-                  {mine ? tr.liga.you : names[e.playerId] || shortId(e.playerId)}
-                </span>
-                <span className="flex flex-col items-end flex-none leading-tight">
-                  <span className="font-mono tabular-nums text-sm text-white">
-                    {e.xp} <span className="text-[10px] text-neutral-400">XP</span>
-                  </span>
-                  {/* Lo que se lleva HOY quien va en ese puesto del podio. */}
-                  {conPremio && i < WEEKLY_PODIUM_SHARE.length && (
-                    <span className="font-mono tabular-nums text-[10px] font-bold text-amber-300">{fmt(premioDe(i))}</span>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ol>
+      {/* Podio (1-3). El escalonado y el orden del DOM los resuelve Podium. */}
+      {podium.length > 0 && <Podium items={podium.map((e, i) => toEntry(e, i))} />}
+
+      {/* --- Tabla (4 en adelante) ------------------------------------------
+          Una card por jugador en el lenguaje neo-brutalista que la app ya usa
+          en botones y niveles: borde grueso, sombra dura desplazada, esquinas
+          poco redondeadas. La fila propia va en bloque dorado sólido (no un
+          tinte al 10%): en la referencia el acento es macizo, y así se
+          encuentra sin buscarla. */}
+      {rest.length > 0 && (
+        <div className="mt-2 flex flex-col gap-1.5">
+          <div className={`${RANK_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
+            <span>{tr.liga.colRank}</span>
+            <span>{tr.colPlayer}</span>
+            <span className="text-right">{tr.liga.colPoints}</span>
+          </div>
+          <ol className="flex flex-col gap-1.5">
+            {rest.map((e, i) => (
+              <RankRow key={e.playerId} pos={i + 4} entry={toEntry(e, i + 3)} />
+            ))}
+          </ol>
+        </div>
       )}
 
-      {/* Tu fila, si no estás en el top visible */}
+      {/* Tu fila, si quedaste fuera del top visible. Se separa con un “···”
+          para que no se lea como el puesto siguiente al último de la tabla. */}
       {myIndex >= 10 && (
-        <div className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-gold/10 border border-gold/30">
-          <span className="w-7 text-center text-sm flex-none">{myIndex + 1}</span>
-          <span className="flex-1 truncate text-sm text-amber-100 font-semibold">{tr.liga.you}</span>
-          <span className="font-mono tabular-nums text-sm text-white flex-none">
-            {entries[myIndex].xp} <span className="text-[10px] text-neutral-400">XP</span>
-          </span>
+        <div className="mt-1.5 flex flex-col gap-1.5">
+          <p className="text-center text-xs leading-none text-neutral-500" aria-hidden>
+            ···
+          </p>
+          <RankRow pos={myIndex + 1} entry={toEntry(entries[myIndex], myIndex)} />
         </div>
       )}
     </section>

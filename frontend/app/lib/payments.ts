@@ -896,14 +896,44 @@ export async function getWeeklyMinPurchase(): Promise<number | null> {
   }
 }
 
-export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayResult; txHash?: string; account?: string }> {
+// Fases de la compra, para que la UI pueda decir en qué va. Existen por la
+// wallet embebida: Privy firma con `showWalletUIs:false`, así que el jugador
+// por correo NO ve ninguna pantalla de la wallet — sin esto, treinta segundos
+// de trabajo real se ven exactamente igual que un botón que no hizo nada.
+export type PurchaseStep = "checking" | "approving" | "signing" | "confirming";
+
+// "pending" = el pago YA se emitió pero no se pudo confirmar aquí (timeout,
+// RPC caído, el jugador cerró). No es un fallo: la tx sigue su curso y el
+// hash queda guardado para acreditarla después.
+export type PurchaseResult = PayResult | "pending";
+
+// Techo de espera por receipt. Sin él, un RPC que no contesta deja el botón
+// girando para siempre. Al vencer NO se da la compra por perdida: se devuelve
+// "pending" con el hash.
+const RECEIPT_TIMEOUT = 90_000;
+
+export async function purchaseCoinPack(
+  amountUsdt: number,
+  opts: {
+    onStep?: (step: PurchaseStep) => void;
+    /** Se llama en cuanto la tx se emite, ANTES de esperar confirmación. */
+    onSent?: (txHash: string) => void;
+  } = {}
+): Promise<{ res: PurchaseResult; txHash?: string; account?: string }> {
+  const { onStep, onSent } = opts;
   const active = getProvider();
   if (!active) return { res: "error" };
+  // Fuera del try: el catch necesita saber si el dinero ya salió.
+  let sentHash: `0x${string}` | undefined;
   try {
+    onStep?.("checking");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transport = custom(active.provider as any);
     const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
-    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    // Celo cierra bloque cada ~1 s; el sondeo por defecto de viem es de 4 s.
+    // En la primera compra hay DOS esperas de receipt, así que bajarlo quita
+    // hasta ~8 s de espera que no era de la cadena sino del reloj del cliente.
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http(), pollingInterval: 1000 });
     let [account] = await walletClient.getAddresses();
     if (!account) [account] = await walletClient.requestAddresses();
     if (!account) return { res: "error" };
@@ -927,6 +957,9 @@ export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayRe
         args: [account, WEEKLY_ADDRESS],
       });
       if (allowance < wei) {
+        // Paso extra SOLO en la primera compra: el contrato tira del saldo con
+        // transferFrom. Se autoriza el máximo para no repetirlo nunca más.
+        onStep?.("approving");
         const approveHash = await walletClient.writeContract({
           account,
           chain: ACTIVE_CHAIN,
@@ -936,8 +969,9 @@ export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayRe
           args: [WEEKLY_ADDRESS, maxUint256],
           ...feeOpts,
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        await publicClient.waitForTransactionReceipt({ hash: approveHash, timeout: RECEIPT_TIMEOUT });
       }
+      onStep?.("signing");
       hash = await walletClient.writeContract({
         account,
         chain: ACTIVE_CHAIN,
@@ -948,6 +982,7 @@ export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayRe
         ...feeOpts,
       });
     } else {
+      onStep?.("signing");
       hash = await walletClient.writeContract({
         account,
         chain: ACTIVE_CHAIN,
@@ -958,12 +993,21 @@ export async function purchaseCoinPack(amountUsdt: number): Promise<{ res: PayRe
         ...feeOpts,
       });
     }
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    // A partir de aquí el dinero YA salió: el hash se entrega antes de esperar
+    // nada, para que quien llama pueda guardarlo y acreditarlo aunque esta
+    // función no llegue a devolver.
+    sentHash = hash;
+    onSent?.(hash);
+    onStep?.("confirming");
+    const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: RECEIPT_TIMEOUT });
     return receipt.status === "success"
       ? { res: "success", txHash: hash, account: account.toLowerCase() }
-      : { res: "error" };
+      : { res: "error", txHash: hash };
   } catch (err) {
     console.error("[monedas] compra falló o cancelada:", err);
+    // Si la tx ya se emitió, el fallo es de ESTA espera, no del pago: darlo
+    // por perdido cobraría al jugador sin acreditarle nada.
+    if (sentHash) return { res: "pending", txHash: sentHash };
     if (isUserRejection(err)) return { res: "cancelled" };
     if (/insufficient funds|exceeds the balance/i.test(String((err as Error)?.message ?? ""))) {
       return { res: active.embedded ? "no_gas" : "no_funds" };

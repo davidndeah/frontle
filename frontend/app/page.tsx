@@ -28,12 +28,15 @@ import {
   DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
-import { sdk as farcasterSdk } from "@farcaster/miniapp-sdk";
+import { signalMiniAppReady } from "./lib/farcaster";
 import Coachmarks from "./components/Coachmarks";
+import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
+import TxOverlay from "./components/TxOverlay";
+import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./components/Leaderboard";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
@@ -57,7 +60,7 @@ import StreakCard from "./components/StreakCard";
 import CoinShop, { CoinShopCard } from "./components/CoinShop";
 import { getCoinBalance, onCoinsChanged, retryPendingCredit } from "./lib/coins";
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
-import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC } from "./lib/xp";
+import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
@@ -176,11 +179,25 @@ export default function Frontle() {
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
   const [ranking, setRanking] = useState<ScoreEntry[]>([]);
+  // Arranca en true: al montar ya hay una consulta en curso, y sin esto la
+  // tabla decía "aún no hay marcas" durante la carga — afirmaba vacío lo que
+  // solo estaba pendiente.
+  const [rankingLoading, setRankingLoading] = useState(true);
   const [myId, setMyId] = useState("");
   // ¿La identidad actual vino del login por correo? Solo esas sesiones se
   // pueden cerrar: la wallet de MiniPay o de una extensión la inyecta el
   // navegador, y ofrecer "cerrar sesión" ahí sería un botón que no hace nada.
   const [viaEmail, setViaEmail] = useState(false);
+
+  // Cierre del reto diario: XP otorgado y las dos posiciones que la pantalla
+  // de victoria muestra. Se llena DESPUÉS de mandar la marca y el XP, para que
+  // los puestos ya cuenten esta partida. `loading` mientras se resuelve.
+  const [winStats, setWinStats] = useState<{
+    loading: boolean;
+    xp: number;
+    weekly: WeeklyStanding | null;
+    daily: DailyStanding | null;
+  } | null>(null);
 
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
@@ -232,10 +249,11 @@ export default function Frontle() {
   const [nameDraft, setNameDraft] = useState("");
   useEffect(() => setAliasState(getAlias()), []);
   // Le avisa al cliente de Farcaster que la app ya está lista para mostrarse,
-  // así suelta el splash screen. Fuera de un contexto Mini App (navegador
-  // normal) el SDK detecta que no aplica y no hace nada.
+  // así suelta el splash screen. El SDK se importa dinámicamente y solo si el
+  // entorno puede ser un Mini App (ver lib/farcaster.ts): estático metía
+  // ~525 KB en el JS inicial de esta ruta, dentro de MiniPay donde no sirve.
   useEffect(() => {
-    farcasterSdk.actions.ready().catch(() => {});
+    void signalMiniAppReady();
   }, []);
   // Prompt de nombre al registrarse: si hay identidad y aún no eligió nombre,
   // se le pide una vez (así el ranking muestra nombres, no wallets).
@@ -517,8 +535,24 @@ export default function Frontle() {
       if (s) b = parseInt(s, 10);
     } catch {}
     setBest(b);
-    // ranking del nivel
-    getRanking(day, level).then(setRanking);
+    // Ranking del nivel. `alive` descarta la respuesta de un nivel que el
+    // jugador ya abandonó: sin el guard, cambiar rápido de nivel podía dejar
+    // pintada la tabla del anterior si su consulta volvía después.
+    let alive = true;
+    setRankingLoading(true);
+    withMinDelay(getRanking(day, level))
+      .then((rows) => {
+        if (!alive) return;
+        setRanking(rows);
+        setRankingLoading(false);
+      })
+      // `getRanking` ya traga sus errores, pero el loader no puede quedarse
+      // girando para siempre si eso cambia: apagarlo enseña el estado vacío,
+      // que al menos es un final.
+      .catch(() => alive && setRankingLoading(false));
+    return () => {
+      alive = false;
+    };
   }, [day, level]);
 
   useEffect(() => {
@@ -724,11 +758,10 @@ export default function Frontle() {
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
-        void enterRanking(score, finalMs!);
         // Liga v2: XP por nivel + calidad (estrellas de la win card) + sin
         // pistas + racha del día. Idempotente por (día, nivel) en el servidor.
         const stars = score <= challenge.optimal ? 3 : score === challenge.optimal + 1 ? 2 : 1;
-        awardDailySolve(day, level, stars, showInitial || showNextSil || showAllSil);
+        void closeDaily(score, finalMs!, stars, showInitial || showNextSil || showAllSil);
       }
     }
     setInput("");
@@ -752,12 +785,53 @@ export default function Frontle() {
 
   // Al resolver: si hay wallet (MiniPay), entra al ranking sin fricción.
   // Si no hay dirección aún, NO envía — el navegador verá el botón "Conectar".
-  async function enterRanking(score: number, timeMs: number) {
+  // Devuelve la dirección con la que se compitió (vacía si no hubo).
+  async function enterRanking(score: number, timeMs: number): Promise<string> {
     const addr = myId || (await getWalletAddress());
-    if (!addr) return;
+    if (!addr) return "";
     setMyId(addr);
     await pushScore(addr, score, timeMs);
+    return addr;
   }
+
+  // Cierre del reto diario, en orden: mandar la marca → otorgar el XP → leer
+  // las dos posiciones. El orden importa: si se leyeran antes, el puesto del
+  // día no incluiría esta marca y el de la liga no incluiría este XP, así que
+  // la pantalla mostraría números viejos justo en el momento que más pesan.
+  async function closeDaily(score: number, timeMs: number, stars: 1 | 2 | 3, usedHints: boolean) {
+    setWinStats({ loading: true, xp: 0, weekly: null, daily: null });
+    try {
+      const addr = await enterRanking(score, timeMs);
+      const xp = await awardDailySolve(day, level, stars, usedHints);
+      const [weekly, daily] = await Promise.all([
+        getWeeklyStanding(),
+        addr ? getMyDailyStanding(day, level, addr) : Promise.resolve(null),
+      ]);
+      setWinStats({ loading: false, xp, weekly, daily });
+    } catch {
+      // Ni el XP ni el ranking pueden romper la victoria: se cae al estado sin
+      // datos y la win card simplemente no muestra el bloque.
+      setWinStats(null);
+    }
+  }
+
+  // Relectura sin otorgar XP: la victoria restaurada (recargar la página con
+  // el reto ya resuelto) y el caso de conectar la billetera DESPUÉS de ganar.
+  const refreshWinStats = useCallback(async (addr: string) => {
+    if (!addr) return;
+    setWinStats({ loading: true, xp: 0, weekly: null, daily: null });
+    const [weekly, daily] = await Promise.all([
+      getWeeklyStanding(),
+      getMyDailyStanding(day, level, addr),
+    ]);
+    setWinStats({ loading: false, xp: 0, weekly, daily });
+  }, [day, level]);
+
+  // Victoria restaurada: al recargar con el reto ya resuelto no pasa por
+  // `closeDaily`, así que el bloque se llena aquí (solo lectura, sin XP).
+  useEffect(() => {
+    if (state.solved && myId && winStats === null) void refreshWinStats(myId);
+  }, [state.solved, myId, winStats, refreshWinStats]);
 
   // Navegador: el jugador conecta su wallet (abre prompt) para entrar al ranking.
   async function connectForRanking() {
@@ -765,7 +839,11 @@ export default function Frontle() {
     if (!addr) return;
     setHasWallet(true);
     setMyId(addr);
-    if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
+    if (state.solved) {
+      await pushScore(addr, state.chain.length, elapsedMs);
+      // Ya hay identidad: recién ahora existen puestos que mostrar.
+      await refreshWinStats(addr);
+    }
   }
 
   // Correo (Privy): PrivyIdentityBridge nos entrega la dirección de la wallet
@@ -837,6 +915,7 @@ export default function Frontle() {
     setStarted(false); // vuelve a la pantalla de Play (cronómetro se reinicia al jugar)
     setElapsedMs(0);
     pausedMsRef.current = 0;
+    setWinStats(null); // el reintento recalcula puestos al volver a resolver
     saveGame({ started: false, solved: false, chain: [] });
   }
 
@@ -1139,16 +1218,22 @@ export default function Frontle() {
           </p>
         )}
 
-        {/* Pago de pista en curso: cronómetro en pausa + tablero tapado.
-            Devuelve exactamente el tiempo que la red se llevó — y nada más
-            (con el mapa visible, la espera sería análisis gratis). */}
-        {paying !== null && started && !state.solved && (
-          <div className="fixed inset-0 z-[60] bg-base/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 px-8">
-            <span className="text-4xl" aria-hidden>⏸️</span>
-            <span className="text-lg font-mono font-bold tabular-nums text-white">🕒 {formatTime(elapsedMs)}</span>
-            <p className="font-bold text-white animate-pulse">{tr.paying}</p>
-            <p className="text-sm text-neutral-300 text-center max-w-xs">{tr.payTimerPaused}</p>
-          </div>
+        {/* Pago en curso. Antes solo cubría las PISTAS (`started && !solved`),
+            así que el reintento —que se compra desde la pantalla de victoria,
+            con el reto ya resuelto— se quedaba sin aviso: solo el ⏳ del
+            botón. Ahora tapa cualquier pago del reto.
+            El bloque del cronómetro sigue siendo exclusivo de la partida en
+            curso: ahí tapar el tablero es parte del trato (con el mapa a la
+            vista, la espera sería análisis gratis) y hay que mostrar que el
+            reloj quedó en pausa. Resuelto ya no hay reloj que pausar. */}
+        {paying !== null && (
+          <TxOverlay label={tr.paying} note={started && !state.solved ? tr.payTimerPaused : undefined}>
+            {started && !state.solved && (
+              <span className="text-lg font-mono font-bold tabular-nums text-white">
+                ⏸️ 🕒 {formatTime(elapsedMs)}
+              </span>
+            )}
+          </TxOverlay>
         )}
 
         {/* Mapa o pantalla de Play (solo en el paso reto).
@@ -1243,6 +1328,7 @@ export default function Frontle() {
                 hasWallet={hasWallet}
                 inRanking={!!myId}
                 onConnect={connectForRanking}
+                winStats={winStats}
                 panel={panel}
                 fmt={fmt}
               />
@@ -1338,7 +1424,7 @@ export default function Frontle() {
                 )}
                 {/* Selector de nivel: cada nivel tiene su ranking */}
                 <LevelSelect tr={tr} level={level} onChange={setLevel} />
-                <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
+                <RankingCard tr={tr} ranking={ranking} loading={rankingLoading} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
                 {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
                 <WinnersCard
                   tr={tr}
@@ -1634,6 +1720,12 @@ export default function Frontle() {
           tr={tr}
         />
       )}
+
+      {/* Reclamo de premio en curso. Va aquí, fuera de las pestañas, porque es
+          la única transacción que se lanza desde Perfil y antes solo cambiaba
+          el texto del propio botón — con la billetera de correo, que firma sin
+          enseñar nada, eso era indistinguible de un botón muerto. */}
+      {claimingKey !== null && <TxOverlay label={tr.prizeClaiming} note={tr.txKeepOpen} />}
 
       {/* Tienda de monedas (compartida por Home, Perfil y el menú de Bordy).
           Al cerrar refresca el saldo por si hubo compra. */}
@@ -2460,6 +2552,7 @@ function PrizesCard({
 function RankingCard({
   tr,
   ranking,
+  loading,
   best,
   panel,
   myId,
@@ -2468,59 +2561,69 @@ function RankingCard({
 }: {
   tr: ReturnType<typeof t>;
   ranking: ScoreEntry[];
+  loading: boolean;
   best: number | null;
   panel: string;
   myId: string;
   alias: string;
   levelLabel: string;
 }) {
+  // Traduce una marca del día al modelo común del leaderboard.
+  const toEntry = (r: ScoreEntry): LeaderEntry => {
+    const mine = !!myId && r.playerId === myId;
+    // El nombre manda. Quien jugó antes de que existiera el perfil no tiene
+    // ninguno: se le identifica con la etiqueta genérica y la dirección
+    // truncada, que MiniPay solo admite como pista secundaria, nunca como
+    // identidad principal.
+    const name = r.name || `${tr.anonPlayer} ${shortId(r.playerId)}`;
+    return {
+      id: r.playerId,
+      label: mine ? tr.liga.youNamed(name) : name,
+      mine,
+      // La bandera es del país de la IP, no del jugador: se queda como
+      // adorno junto al nombre, igual que estaba en la tabla anterior.
+      badge: <Flag code={r.countryCode} size={18} />,
+      stat: (
+        <>
+          {r.countries} <span className="text-[10px] opacity-70">{tr.colRoute}</span>
+        </>
+      ),
+      sub: formatTime(r.timeMs),
+    };
+  };
+
+  const podium = ranking.slice(0, 3).map(toEntry);
+  const restRows = ranking.slice(3).map(toEntry);
+
   return (
     <section className={`${panel} p-3`}>
       <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
-      {ranking.length === 0 ? (
+      {loading ? (
+        <GlobeLoader label={tr.rankingLoading} size="sm" className="py-3" />
+      ) : ranking.length === 0 ? (
         <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-[10px] uppercase text-neutral-400">
-              <th className="text-left font-medium py-1 w-7">#</th>
-              <th className="text-left font-medium py-1 w-6"></th>
-              <th className="text-left font-medium py-1">{tr.colPlayer}</th>
-              <th className="text-right font-medium py-1">{tr.colRoute}</th>
-              <th className="text-right font-medium py-1">{tr.colTime}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranking.map((r, i) => {
-              const mine = !!myId && r.playerId === myId;
-              return (
-                <tr
-                  key={i}
-                  className={`border-t border-white/10 ${mine ? "bg-amber-400/20 text-amber-200" : ""}`}
-                >
-                  <td className="py-1.5">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
-                  <td className="py-1.5"><Flag code={r.countryCode} size={20} /></td>
-                  {/* El nombre manda. Quien jugó antes de que existiera el
-                      perfil no tiene ninguno: se le identifica con la etiqueta
-                      genérica y la dirección truncada, que MiniPay solo admite
-                      como pista secundaria, nunca como identidad principal. */}
-                  <td className="py-1.5 text-xs">
-                    {r.name ? (
-                      <span className="font-semibold">{r.name}</span>
-                    ) : (
-                      <span className="text-neutral-300">
-                        {tr.anonPlayer} <span className="font-mono text-neutral-400">{shortId(r.playerId)}</span>
-                      </span>
-                    )}
-                    {mine ? " 👈" : ""}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">{r.countries}</td>
-                  <td className="py-1.5 text-right tabular-nums font-mono">{formatTime(r.timeMs)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <>
+          {/* Mismo lenguaje que la liga semanal: podio para los 3 primeros y
+              cards del 4.º en adelante. Lo que cambia es la métrica — aquí no
+              hay un número de puntos sino DOS datos, países y tiempo, que es
+              el desempate. Van como stat y sub. */}
+          <Podium items={podium} />
+          {restRows.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              <div className={`${RANK_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
+                <span>#</span>
+                <span>{tr.colPlayer}</span>
+                <span className="text-right">{tr.colRoute} · {tr.colTime}</span>
+              </div>
+              <ol className="flex flex-col gap-1.5">
+                {restRows.map((entry, i) => (
+                  <RankRow key={entry.id} pos={i + 4} entry={entry} />
+                ))}
+              </ol>
+            </div>
+          )}
+        </>
       )}
       <p className="text-[11px] text-neutral-400 mt-2 text-center">
         {/* Mismo criterio que la tabla: nombre, o etiqueta + dirección. */}
@@ -2549,6 +2652,7 @@ function WinCard({
   hasWallet,
   inRanking,
   onConnect,
+  winStats,
   panel,
   fmt,
 }: {
@@ -2569,6 +2673,12 @@ function WinCard({
   hasWallet: boolean;
   inRanking: boolean;
   onConnect: () => void;
+  winStats: {
+    loading: boolean;
+    xp: number;
+    weekly: WeeklyStanding | null;
+    daily: DailyStanding | null;
+  } | null;
   panel: string;
   fmt: (usdt: number) => string;
 }) {
@@ -2612,6 +2722,54 @@ function WinCard({
       <p className="pop-in mt-2 inline-block rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
         ✨ {tr.points.earned(POINTS_PER_SOLVE)}
       </p>
+      {/* Liga v2: qué le dejó esta victoria — XP de la semana y los dos puestos
+          que el jugador puede mover (liga semanal y ranking de hoy). */}
+      {winStats && (
+        <div className="pop-in mt-3 rounded-xl border border-lavender/25 bg-base px-4 py-3">
+          {winStats.loading ? (
+            <GlobeLoader label={tr.xpWin.loading} size="sm" className="py-2" />
+          ) : (
+            <>
+              {winStats.xp > 0 ? (
+                <p className="text-center font-display text-3xl font-black text-gold">
+                  {tr.xpWin.gained(winStats.xp)}
+                </p>
+              ) : (
+                // Sin XP nuevo no es un fallo: el reintento del mismo nivel ya
+                // cobró su XP. Decirlo evita que parezca que se perdió algo.
+                <p className="text-center text-xs text-neutral-400">{tr.xpWin.alreadyEarned}</p>
+              )}
+              {winStats.weekly || winStats.daily ? (
+                <dl className="mt-3 flex flex-col gap-1.5">
+                  {winStats.weekly && (
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-xs text-neutral-300">🏆 {tr.xpWin.weeklyLabel}</dt>
+                      <dd className="text-right">
+                        <span className="font-display text-base font-bold text-white">
+                          {tr.xpWin.position(winStats.weekly.rank, winStats.weekly.players)}
+                        </span>
+                        <span className="ml-2 font-mono text-[11px] text-amber-200">
+                          {tr.xpWin.total(winStats.weekly.xp)}
+                        </span>
+                      </dd>
+                    </div>
+                  )}
+                  {winStats.daily && (
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-xs text-neutral-300">📅 {tr.xpWin.dailyLabel}</dt>
+                      <dd className="font-display text-base font-bold text-white">
+                        {tr.xpWin.position(winStats.daily.rank, winStats.daily.players)}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              ) : (
+                <p className="mt-2 text-center text-[11px] text-neutral-400">{tr.xpWin.needWallet}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
       <div className="mt-4">
         <ScoreCard
           data={{

@@ -7,6 +7,7 @@ import type { Feature, Geometry, FeatureCollection } from "geojson";
 import { COUNTRY_NAMES } from "../lib/countries";
 import type { Status } from "../lib/game";
 import { STATUS_COLORS as COLORS } from "../lib/theme";
+import GlobeLoader from "./GlobeLoader";
 
 const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
@@ -239,8 +240,8 @@ export default function WorldMap({
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!render ? (
-        <div className="h-[220px] flex items-center justify-center text-neutral-300 text-sm">
-          {loadingLabel}
+        <div className="h-[220px] flex items-center justify-center">
+          <GlobeLoader label={loadingLabel} />
         </div>
       ) : (
         <>

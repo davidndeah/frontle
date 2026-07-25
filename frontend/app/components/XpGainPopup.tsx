@@ -16,6 +16,7 @@ import { useState } from "react";
 import type { t } from "../lib/i18n";
 import { getWeeklyStanding, type WeeklyStanding } from "../lib/xp";
 import Sheet from "./Sheet";
+import GlobeLoader from "./GlobeLoader";
 
 interface XpWin {
   open: boolean;
@@ -60,7 +61,7 @@ export default function XpGainPopup({
     <Sheet onClose={onClose} label={tr.xpWin.title} z={70} className="pop-in">
       <div className="flex flex-col items-center gap-3 py-2 text-center">
         {win.loading ? (
-          <p className="text-sm text-neutral-300 py-6">{tr.xpWin.loading}</p>
+          <GlobeLoader label={tr.xpWin.loading} size="sm" className="py-4" />
         ) : (
           <>
             {win.xp > 0 ? (

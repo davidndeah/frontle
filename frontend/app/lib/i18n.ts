@@ -188,18 +188,30 @@ type Dict = {
   usdtOnly: string;
   // Overlay del pago de pistas: el cronómetro se pausa durante la confirmación.
   payTimerPaused: string;
+  // Nota generica de espera on-chain (overlay de transaccion). Repite el
+  // sentido de coins.stepNote a proposito: esa vive en el namespace de la
+  // tienda y esto lo usa cualquier transaccion.
+  txKeepOpen: string;
   // Liga semanal (v2 Fase 1: ranking de XP en seco, sin premio todavía).
   liga: {
     title: string;
     dry: string;
     empty: string;
+    loading: string;
     you: string;
+    // Nombre propio marcado: "Sofia (Tu)". Se muestra el nombre y NO solo
+    // "Tu": en una tabla de nombres, verse por el propio es lo que la hace
+    // legible de un vistazo.
+    youNamed: (name: string) => string;
     closes: (time: string) => string;
     needWallet: string;
     // Premio de la semana. Solo se muestran cuando el pot on-chain existe;
     // si no, sigue mandando `dry` ("los premios llegan pronto").
     prize: (amount: string) => string;
     split: string;
+    // Cabecera de la tabla de la liga (del 4.º puesto en adelante).
+    colRank: string;
+    colPoints: string;
   };
   // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
   coins: {
@@ -218,6 +230,16 @@ type Dict = {
     minNote: (amount: string) => string;
     // La tienda se puede abrir sin billetera; comprar, no.
     needWallet: string;
+    // Progreso de la compra. La billetera de correo firma sin mostrar NADA,
+    // así que este es el único aviso de que algo está pasando.
+    steps: {
+      checking: string;
+      approving: string;
+      signing: string;
+      confirming: string;
+      crediting: string;
+    };
+    stepNote: string;
   };
   // Aviso de XP al ganar en los modos libres (Regiones, Quiz, Práctica).
   xpWin: {
@@ -229,6 +251,13 @@ type Dict = {
     total: (xp: number) => string;
     needWallet: string;
     close: string;
+    // Bloque de la pantalla de victoria del reto diario: XP ganado, puesto en
+    // la liga semanal y puesto en el ranking de hoy.
+    weeklyLabel: string;
+    dailyLabel: string;
+    // Formato corto "#3 de 120", compartido por los dos puestos.
+    position: (pos: number, players: number) => string;
+    alreadyEarned: string;
   };
   // Volver a jugar en los modos libres: gratis mientras queden rondas con XP,
   // y con monedas a partir de ahí.
@@ -429,6 +458,7 @@ type Dict = {
   // Se muestra junto a la dirección truncada: "Jugador 0df8…a1c3".
   anonPlayer: string;
   rankingEmpty: string;
+  rankingLoading: string;
   feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
   stats: {
     back: string;
@@ -533,15 +563,20 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Tu billetera no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     usdtOnly: "Frontle acepta solo USDT. Si tu saldo está en otra stablecoin (USDC o USDm), cámbialo a USDT en MiniPay primero.",
     payTimerPaused: "El tiempo está en pausa mientras se confirma el pago. Sigue al confirmarse.",
+    txKeepOpen: "Puede tardar hasta un minuto. No cierres la app.",
     liga: {
       title: "Liga semanal",
       dry: "Temporada de prueba: suma XP jugando cualquier modo. Los premios llegan pronto.",
       empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
+      loading: "Cargando la liga de la semana…",
       you: "Tú",
+      youNamed: (n) => `${n} (Tú)`,
       closes: (time) => `Cierra en ${time}`,
       needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
       prize: (a) => `🏆 Premio de la semana: ${a}`,
       split: "Se reparte entre los 3 primeros: 50% · 30% · 10%.",
+      colRank: "Puesto",
+      colPoints: "Puntos",
     },
     coins: {
       shop: "Tienda de monedas",
@@ -550,13 +585,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "Las monedas pagan pistas y nuevos intentos en los modos de la liga, al instante y sin esperas. Cada compra hace crecer el premio semanal.",
       balance: (n) => `Tienes ${n} 🪙`,
       bought: (n) => `¡Listo! Se acreditaron ${n} 🪙.`,
-      pending: "Pago confirmado. Tus monedas se acreditan en un momento.",
+      pending: "Pago enviado. Tus monedas se acreditan en cuanto la red confirme.",
       failed: "No se pudo completar la compra. Intenta de nuevo.",
       noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
       cost: (n) => `${n} 🪙`,
       units: "O compra sueltas",
       minNote: (a) => `Las compras de menos de ${a} USDT no están disponibles por ahora.`,
       needWallet: "Necesitas una billetera para comprar monedas. Entra con tu correo y te creamos una.",
+      steps: {
+        checking: "Revisando tu saldo…",
+        approving: "Autorizando el pago (paso 1 de 2)…",
+        signing: "Enviando el pago…",
+        confirming: "Confirmando en la red…",
+        crediting: "Acreditando tus monedas…",
+      },
+      stepNote: "Puede tardar hasta un minuto. No cierres la app.",
     },
     xpWin: {
       title: "XP ganado",
@@ -567,6 +610,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP esta semana`,
       needWallet: "Conecta tu billetera para competir en la liga semanal.",
       close: "Seguir",
+      weeklyLabel: "Liga semanal",
+      dailyLabel: "Ranking de hoy",
+      position: (pos, players) => `#${pos} de ${players}`,
+      alreadyEarned: "Ya sumaste el XP de este reto hoy.",
     },
     replay: {
       freeLeft: (n) => `Te quedan ${n} con XP hoy`,
@@ -773,6 +820,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Ruta",
     colTime: "Tiempo",
     rankingEmpty: "Aún nadie ha resuelto el reto de hoy. ¡Sé el primero!",
+    rankingLoading: "Cargando el ranking de hoy…",
     feedback: (r, c) =>
       r === "unknown" ? `No reconozco "${c.input}".`
       : r === "revealed" ? `${c.country} ya está en el mapa.`
@@ -882,15 +930,20 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
     usdtOnly: "Frontle only accepts USDT. If your balance is in another stablecoin (USDC or USDm), swap it to USDT in MiniPay first.",
     payTimerPaused: "The clock is paused while your payment is confirmed. It resumes right after.",
+    txKeepOpen: "This can take up to a minute. Please don't close the app.",
     liga: {
       title: "Weekly league",
       dry: "Trial season: earn XP by playing any mode. Prizes are coming soon.",
       empty: "No one has earned XP this week. Play any mode and open the board!",
+      loading: "Loading this week's league…",
       you: "You",
+      youNamed: (n) => `${n} (You)`,
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
       prize: (a) => `🏆 This week's prize: ${a}`,
       split: "Split among the top 3: 50% · 30% · 10%.",
+      colRank: "Rank",
+      colPoints: "Points",
     },
     coins: {
       shop: "Coin shop",
@@ -899,13 +952,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "Coins pay for hints and new attempts in league modes, instantly with no waiting. Every purchase grows the weekly prize.",
       balance: (n) => `You have ${n} 🪙`,
       bought: (n) => `Done! ${n} 🪙 credited.`,
-      pending: "Payment confirmed. Your coins will be credited in a moment.",
+      pending: "Payment sent. Your coins will be credited as soon as the network confirms.",
       failed: "The purchase didn't go through. Please try again.",
       noFunds: "Not enough balance for this pack. Deposit a little and come back.",
       cost: (n) => `${n} 🪙`,
       units: "Or buy single coins",
       minNote: (a) => `Purchases under ${a} USDT aren't available right now.`,
       needWallet: "You need a wallet to buy coins. Sign in with your email and we'll create one for you.",
+      steps: {
+        checking: "Checking your balance…",
+        approving: "Authorising the payment (step 1 of 2)…",
+        signing: "Sending the payment…",
+        confirming: "Confirming on the network…",
+        crediting: "Crediting your coins…",
+      },
+      stepNote: "This can take up to a minute. Please don't close the app.",
     },
     xpWin: {
       title: "XP earned",
@@ -916,6 +977,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP this week`,
       needWallet: "Connect your wallet to compete in the weekly league.",
       close: "Continue",
+      weeklyLabel: "Weekly league",
+      dailyLabel: "Today's ranking",
+      position: (pos, players) => `#${pos} of ${players}`,
+      alreadyEarned: "You've already earned this challenge's XP today.",
     },
     replay: {
       freeLeft: (n) => `${n} left with XP today`,
@@ -1122,6 +1187,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Route",
     colTime: "Time",
     rankingEmpty: "Nobody has solved today's challenge yet. Be the first!",
+    rankingLoading: "Loading today's ranking…",
     feedback: (r, c) =>
       r === "unknown" ? `I don't recognize "${c.input}".`
       : r === "revealed" ? `${c.country} is already on the map.`
@@ -1231,15 +1297,20 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
     usdtOnly: "O Frontle aceita apenas USDT. Se o seu saldo está em outra stablecoin (USDC ou USDm), troque por USDT no MiniPay primeiro.",
     payTimerPaused: "O tempo fica em pausa enquanto o pagamento é confirmado. Continua logo depois.",
+    txKeepOpen: "Pode levar até um minuto. Não feche o app.",
     liga: {
       title: "Liga semanal",
       dry: "Temporada de teste: some XP jogando qualquer modo. Os prêmios chegam em breve.",
       empty: "Ninguém somou XP esta semana. Jogue qualquer modo e inaugure a tabela!",
+      loading: "Carregando a liga da semana…",
       you: "Você",
+      youNamed: (n) => `${n} (Você)`,
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
       prize: (a) => `🏆 Prêmio da semana: ${a}`,
       split: "Dividido entre os 3 primeiros: 50% · 30% · 10%.",
+      colRank: "Posição",
+      colPoints: "Pontos",
     },
     coins: {
       shop: "Loja de moedas",
@@ -1248,13 +1319,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "As moedas pagam dicas e novas tentativas nos modos da liga, na hora e sem esperas. Cada compra faz crescer o prêmio semanal.",
       balance: (n) => `Você tem ${n} 🪙`,
       bought: (n) => `Pronto! ${n} 🪙 creditadas.`,
-      pending: "Pagamento confirmado. Suas moedas serão creditadas em instantes.",
+      pending: "Pagamento enviado. Suas moedas serão creditadas assim que a rede confirmar.",
       failed: "A compra não foi concluída. Tente de novo.",
       noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
       cost: (n) => `${n} 🪙`,
       units: "Ou compre avulsas",
       minNote: (a) => `Compras abaixo de ${a} USDT não estão disponíveis por enquanto.`,
       needWallet: "Você precisa de uma carteira para comprar moedas. Entre com seu e-mail e criamos uma para você.",
+      steps: {
+        checking: "Conferindo seu saldo…",
+        approving: "Autorizando o pagamento (passo 1 de 2)…",
+        signing: "Enviando o pagamento…",
+        confirming: "Confirmando na rede…",
+        crediting: "Creditando suas moedas…",
+      },
+      stepNote: "Pode levar até um minuto. Não feche o app.",
     },
     xpWin: {
       title: "XP ganho",
@@ -1265,6 +1344,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP esta semana`,
       needWallet: "Conecte sua carteira para competir na liga semanal.",
       close: "Continuar",
+      weeklyLabel: "Liga semanal",
+      dailyLabel: "Ranking de hoje",
+      position: (pos, players) => `#${pos} de ${players}`,
+      alreadyEarned: "Você já somou o XP deste desafio hoje.",
     },
     replay: {
       freeLeft: (n) => `Faltam ${n} com XP hoje`,
@@ -1471,6 +1554,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Rota",
     colTime: "Tempo",
     rankingEmpty: "Ninguém resolveu o desafio de hoje ainda. Seja o primeiro!",
+    rankingLoading: "Carregando o ranking de hoje…",
     feedback: (r, c) =>
       r === "unknown" ? `Não reconheço "${c.input}".`
       : r === "revealed" ? `${c.country} já está no mapa.`
@@ -1580,15 +1664,20 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
     usdtOnly: "Frontle n'accepte que l'USDT. Si votre solde est dans une autre stablecoin (USDC ou USDm), échangez-la contre de l'USDT dans MiniPay d'abord.",
     payTimerPaused: "Le chrono est en pause pendant la confirmation du paiement. Il reprend juste après.",
+    txKeepOpen: "Cela peut prendre jusqu'à une minute. Ne fermez pas l'application.",
     liga: {
       title: "Ligue hebdo",
       dry: "Saison d'essai : gagnez de l'XP dans n'importe quel mode. Les prix arrivent bientôt.",
       empty: "Personne n'a gagné d'XP cette semaine. Jouez un mode et ouvrez le classement !",
+      loading: "Chargement de la ligue de la semaine…",
       you: "Vous",
+      youNamed: (n) => `${n} (Vous)`,
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
       prize: (a) => `🏆 Prix de la semaine : ${a}`,
       split: "Réparti entre les 3 premiers : 50 % · 30 % · 10 %.",
+      colRank: "Rang",
+      colPoints: "Points",
     },
     coins: {
       shop: "Boutique de pièces",
@@ -1597,13 +1686,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "Les pièces paient les indices et les nouveaux essais des modes de la ligue, instantanément et sans attente. Chaque achat fait grossir le prix hebdomadaire.",
       balance: (n) => `Vous avez ${n} 🪙`,
       bought: (n) => `C'est fait ! ${n} 🪙 créditées.`,
-      pending: "Paiement confirmé. Vos pièces arrivent dans un instant.",
+      pending: "Paiement envoyé. Vos pièces arrivent dès que le réseau confirme.",
       failed: "L'achat n'a pas abouti. Réessayez.",
       noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
       cost: (n) => `${n} 🪙`,
       units: "Ou achetez à l'unité",
       minNote: (a) => `Les achats de moins de ${a} USDT ne sont pas disponibles pour l'instant.`,
       needWallet: "Il vous faut un portefeuille pour acheter des pièces. Connectez-vous avec votre e-mail et nous en créons un.",
+      steps: {
+        checking: "Vérification de votre solde…",
+        approving: "Autorisation du paiement (étape 1 sur 2)…",
+        signing: "Envoi du paiement…",
+        confirming: "Confirmation sur le réseau…",
+        crediting: "Ajout de vos pièces…",
+      },
+      stepNote: "Cela peut prendre jusqu'à une minute. Ne fermez pas l'application.",
     },
     xpWin: {
       title: "XP gagné",
@@ -1614,6 +1711,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP cette semaine`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue hebdo.",
       close: "Continuer",
+      weeklyLabel: "Ligue hebdo",
+      dailyLabel: "Classement du jour",
+      position: (pos, players) => `#${pos} sur ${players}`,
+      alreadyEarned: "Vous avez déjà gagné l'XP de ce défi aujourd'hui.",
     },
     replay: {
       freeLeft: (n) => `Il en reste ${n} avec XP aujourd'hui`,
@@ -1820,6 +1921,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Itinéraire",
     colTime: "Temps",
     rankingEmpty: "Personne n'a encore résolu le défi du jour. Soyez le premier !",
+    rankingLoading: "Chargement du classement du jour…",
     feedback: (r, c) =>
       r === "unknown" ? `Je ne reconnais pas "${c.input}".`
       : r === "revealed" ? `${c.country} est déjà sur la carte.`

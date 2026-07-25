@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { geoMercator, geoPath } from "d3-geo";
 import type { Feature, Geometry, FeatureCollection } from "geojson";
+import GlobeLoader from "./GlobeLoader";
 
 type NamedFeature = Feature<Geometry, { name: string; code: string }>;
 
@@ -53,8 +54,9 @@ export default function RegionMapPreview({
   return (
     <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20">
       {!paths ? (
-        <div className="h-[180px] flex items-center justify-center text-neutral-300 text-sm">
-          {loadingLabel}
+        <div className="h-[180px] flex items-center justify-center">
+          {/* La preview es más baja que el mapa completo: globo `sm`. */}
+          <GlobeLoader label={loadingLabel} size="sm" />
         </div>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto block">
