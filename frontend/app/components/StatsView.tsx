@@ -508,20 +508,23 @@ function ContractRow({
   accent?: boolean;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg bg-white/[0.03] border border-lavender/15 p-2.5">
+    <div className="brutal-sm flex items-start gap-3 rounded-lg bg-surface p-2.5">
+      {/* Badges macizos, no tintes al 15%. El estado de verificación es el
+          dato más consultado de esta sección —es la promesa de la página de
+          transparencia— y a 9px sobre un fondo translúcido no se leía. */}
       <span
-        className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold font-display ${
-          accent ? "bg-gold/15 text-gold" : "bg-white/10 text-neutral-400"
+        className={`shrink-0 rounded border-2 border-deep px-1.5 py-0.5 font-display text-[10px] font-black ${
+          accent ? "bg-gold text-surface" : "bg-lavender text-surface"
         }`}
       >
         {tag}
       </span>
-      <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex flex-col gap-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[11px] text-neutral-400 leading-tight">{role}</span>
           <span
-            className={`rounded px-1 py-px text-[9px] font-semibold ${
-              verified ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-300"
+            className={`rounded border-2 border-deep px-1.5 py-px text-[10px] font-black ${
+              verified ? "bg-emerald-400 text-emerald-950" : "bg-amber-400 text-amber-950"
             }`}
           >
             {verified ? `✓ ${verifiedLabel}` : `⚠ ${unverifiedLabel}`}
