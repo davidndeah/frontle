@@ -8,7 +8,7 @@ Capa 3 de la arquitectura: smart contracts en **Celo**. Esta carpeta es tu punto
 
 ## 🎯 Objetivo
 
-El **frontend ya está completo y desplegado** ([frontle.vercel.app](https://frontle.vercel.app)). Todas las acciones pagas (3 pistas + reintento) ya están cableadas a **un único punto** que hoy es un stub gratis. Tu trabajo:
+El **frontend ya está completo y desplegado** ([www.frontle.earth](https://www.frontle.earth)). Todas las acciones pagas (3 pistas + reintento) ya están cableadas a **un único punto** que hoy es un stub gratis. Tu trabajo:
 
 1. Escribir y desplegar el contrato `FrontleGame` en Celo.
 2. Implementar el pago real en ese punto (`requestPayment`).
