@@ -10,7 +10,7 @@ Material listo para grabar el video (≤3 min) y para llenar el formulario de `/
 
 | Campo | Valor |
 |---|---|
-| **App en vivo** | https://frontle.vercel.app |
+| **App en vivo** | https://www.frontle.earth |
 | **Repo público** | https://github.com/davidndeah/frontle |
 | **Contrato (Celo Mainnet, verificado)** | `0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09` |
 | **Blockscout** | https://celo.blockscout.com/address/0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09 |
@@ -69,7 +69,7 @@ Material listo para grabar el video (≤3 min) y para llenar el formulario de `/
 **Criterio:** Celo/stablecoins (20%) · Producto (25%).
 
 ### 5 · Próximos pasos — 2:40–3:00
-> **Dices:** *"Sigue: torneos semanales, ligas por país y un bono en pesos para nuevos jugadores. Frontle conecta el mundo por sus fronteras — y conecta a los 16 millones de MiniPay con un juego diario que sí paga. Pruébalo en frontle.vercel.app."*
+> **Dices:** *"Sigue: torneos semanales, ligas por país y un bono en pesos para nuevos jugadores. Frontle conecta el mundo por sus fronteras — y conecta a los 16 millones de MiniPay con un juego diario que sí paga. Pruébalo en www.frontle.earth."*
 
 **Muestras:** logo + URL + "Hackathon Agentes Onchain · Celo Colombia".
 **Criterio:** visión / utilidad (30%).
@@ -91,7 +91,7 @@ Material listo para grabar el video (≤3 min) y para llenar el formulario de `/
 **Requisitos mínimos para poder puntuar — HECHO:**
 - [x] Contrato desplegado y **verificado en Celo Mainnet** (`0x7Ea1…Fa09`)
 - [x] Repo público en GitHub con cambios reales
-- [x] URL funcional (frontle.vercel.app)
+- [x] URL funcional (www.frontle.earth)
 - [x] Funciona dentro del navegador de **MiniPay** (auto-conexión, solo stablecoins, sin CELO a la vista)
 
 **Por completar antes del viernes 1 PM:**
