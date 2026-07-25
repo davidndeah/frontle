@@ -21,6 +21,26 @@ const fredoka = Fredoka({
   weight: ["500", "600", "700"],
 });
 
+// Embed de Mini App para fc:miniapp/fc:frame — spec pide un único meta tag
+// con este JSON adentro (no los tags planos fc:frame:image/fc:frame:button:1
+// de Frames v1, que es lo que había antes y por eso Warpcast no generaba
+// preview). imageUrl debería ser 3:2 pero bordy-m2.webp es 1280x1520
+// (retrato); sirve como interino, hace falta un banner 3:2 dedicado.
+const MINIAPP_EMBED = JSON.stringify({
+  version: "1",
+  imageUrl: `${SITE_URL}/bordy-m2.webp`,
+  button: {
+    title: "🌍 Jugar",
+    action: {
+      type: "launch_frame",
+      url: SITE_URL,
+      name: "Frontle",
+      splashImageUrl: `${SITE_URL}/bordy-m2.webp`,
+      splashBackgroundColor: "#160833",
+    },
+  },
+});
+
 export const metadata: Metadata = {
   // Raíz de todas las URLs relativas (canonical, Open Graph). Sin esto, Next
   // no puede emitir un canonical y Google veía la app en dos dominios
@@ -44,13 +64,9 @@ export const metadata: Metadata = {
   other: {
     "talentapp:project_verification":
       "f6cbe89fff8ad187d423f134f841edf187b4f3842e330a413e7f9f65520276c66a797b8c53f2c666877bcf9cf6dcfe7c0c022aa62fc3b52defe66791302d4f36",
-    // Farcaster Mini App manifest and embed tags
-    "fc:frame": "vNext",
-    "fc:frame:image": `${SITE_URL}/bordy-m2.webp`,
-    "fc:frame:button:1": "🌍 Jugar",
-    "fc:frame:button:1:action": "launch_frame",
-    "fc:frame:button:1:target": SITE_URL,
-    "fc:miniapp": `${SITE_URL}/.well-known/farcaster.json`,
+    // Farcaster Mini App embed (spec: miniapps.farcaster.xyz/docs/specification)
+    "fc:miniapp": MINIAPP_EMBED,
+    "fc:frame": MINIAPP_EMBED, // alias para clientes viejos
   },
 };
 
