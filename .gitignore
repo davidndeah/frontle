@@ -58,6 +58,12 @@ Thumbs.db
 .idea/
 .vscode/
 
+# --- Descargas de trabajo (no son código) ---
+# Exports de Notion: llegan con nombre de hash al directorio del repo. Son
+# material de consulta, no fuente — y un binario subido se queda en la
+# historia para siempre.
+notion-*.pdf
+
 # --- Agent skills (vendored por máquina, regenerables) ---
 .agents/
 .claude/
