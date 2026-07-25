@@ -101,31 +101,47 @@ export default function StatsView() {
         <section>
           <SectionHead title={tr.retention} aside={tr.retentionHint} />
           <div className="grid grid-cols-3 gap-2">
-            {retention.map((r) => (
-              <div key={r.windowDays} className="panel p-3 flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">
-                  D{r.windowDays}
-                </span>
-                {/* Sin cohorte madura no hay porcentaje que mostrar: un 0%
-                    ahí significaría "nadie volvió", y lo cierto es que aún
-                    nadie ha tenido tantos días para volver. */}
-                {r.cohort > 0 ? (
-                  <>
-                    <span className="font-display text-2xl font-bold text-white tabular-nums leading-none">
-                      {pct(r.retained / r.cohort)}
-                    </span>
-                    <span className="text-[10px] text-neutral-400 leading-tight tabular-nums">
-                      {num(r.retained)}/{num(r.cohort)}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-display text-2xl font-bold text-neutral-600 leading-none">—</span>
-                    <span className="text-[10px] text-neutral-400 leading-tight">{tr.noCohort}</span>
-                  </>
-                )}
-              </div>
-            ))}
+            {retention.map((r) => {
+              // OJO: la fracción cruda para el ancho CSS. `pct()` es para
+              // LEER (en es sale "45 %", con espacio duro) y como width no
+              // es válida — es la trampa documentada en CLAUDE.md.
+              const ratio = r.cohort > 0 ? r.retained / r.cohort : 0;
+              return (
+                <div key={r.windowDays} className="brutal-sm flex flex-col gap-1 rounded-lg bg-surface p-3">
+                  <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">
+                    D{r.windowDays}
+                  </span>
+                  {/* Sin cohorte madura no hay porcentaje que mostrar: un 0%
+                      ahí significaría "nadie volvió", y lo cierto es que aún
+                      nadie ha tenido tantos días para volver. */}
+                  {r.cohort > 0 ? (
+                    <>
+                      <span className="font-display text-2xl font-black text-white tabular-nums leading-none">
+                        {pct(ratio)}
+                      </span>
+                      {/* Barra del sistema: canal hundido con borde y relleno
+                          macizo. Da la comparación entre D1/D7/D30 de un
+                          vistazo, que con tres números sueltos no se veía. */}
+                      <div
+                        className="h-2 w-full overflow-hidden rounded-sm border-2 border-deep bg-deep"
+                        role="img"
+                        aria-label={pct(ratio)}
+                      >
+                        <div className="h-full bg-gold" style={{ width: `${Math.round(ratio * 100)}%` }} />
+                      </div>
+                      <span className="text-[10px] text-neutral-400 leading-tight tabular-nums">
+                        {num(r.retained)}/{num(r.cohort)}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-display text-2xl font-black text-neutral-600 leading-none">—</span>
+                      <span className="text-[10px] text-neutral-400 leading-tight">{tr.noCohort}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
