@@ -8,8 +8,8 @@ Construido para **[MiniPay](https://www.opera.com/products/minipay)** (16M+ usua
 
 | | |
 |---|---|
-| 🎮 **App en vivo** | **https://frontle.vercel.app** |
-| 📊 **Estadísticas públicas** | [frontle.vercel.app/stats](https://frontle.vercel.app/stats) — leídas del contrato, nadie las edita a mano |
+| 🎮 **App en vivo** | **https://www.frontle.earth** |
+| 📊 **Estadísticas públicas** | [www.frontle.earth/stats](https://www.frontle.earth/stats) — leídas del contrato, nadie las edita a mano |
 | ⛓️ **Contrato v2** (niveles, verificado) | [`0xaDcA…BeBE`](https://celo.blockscout.com/address/0xaDcA9A707F394509C8aA906B89B93cb222f2BeBE) |
 | ⛓️ **Contrato v1** (histórico) | [`0x7Ea1…Fa09`](https://celo.blockscout.com/address/0x7Ea1EEB96Caf0b07E47354c349b8FdFC75B2Fa09) |
 
