@@ -15,6 +15,7 @@ import type { t } from "../lib/i18n";
 import { getWeeklyPot, WEEKLY_PODIUM_SHARE } from "../lib/payments";
 import { getNamesFor, shortId } from "../lib/ranking";
 import { getWeeklyRanking, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry } from "../lib/xp";
+import GlobeLoader, { withMinDelay } from "./GlobeLoader";
 
 function fmtClose(ms: number): string {
   const totalH = Math.max(0, Math.floor(ms / 3_600_000));
@@ -43,13 +44,15 @@ export default function WeeklyLeague({
   useEffect(() => {
     let alive = true;
     (async () => {
-      const rows = await getWeeklyRanking();
+      const rows = await withMinDelay(getWeeklyRanking());
       if (!alive) return;
       setEntries(rows);
       setLoaded(true);
       const n = await getNamesFor(rows.map((r) => r.playerId));
       if (alive) setNames(n);
-    })();
+      // Sin esto un fallo dejaría el loader girando para siempre. Marcar
+      // `loaded` enseña la tabla vacía, que al menos es un final.
+    })().catch(() => alive && setLoaded(true));
     return () => {
       alive = false;
     };
@@ -117,6 +120,11 @@ export default function WeeklyLeague({
           )}
         </div>
       )}
+
+      {/* La tabla es de todos, se compita o no, así que el loader tampoco
+          depende de `joined`: sin él la liga aparecía en blanco hasta que
+          llegaba la consulta. */}
+      {!loaded && <GlobeLoader label={tr.liga.loading} size="sm" className="py-3" />}
 
       {joined && loaded && entries.length === 0 && (
         <p className="text-sm text-neutral-300 text-center py-3">{tr.liga.empty}</p>

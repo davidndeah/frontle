@@ -193,6 +193,7 @@ type Dict = {
     title: string;
     dry: string;
     empty: string;
+    loading: string;
     you: string;
     closes: (time: string) => string;
     needWallet: string;
@@ -446,6 +447,7 @@ type Dict = {
   // Se muestra junto a la dirección truncada: "Jugador 0df8…a1c3".
   anonPlayer: string;
   rankingEmpty: string;
+  rankingLoading: string;
   feedback: (r: GuessReason, ctx: { country?: string; end: string; quality?: string; input: string }) => string;
   stats: {
     back: string;
@@ -554,6 +556,7 @@ const STRINGS: Record<Locale, Dict> = {
       title: "Liga semanal",
       dry: "Temporada de prueba: suma XP jugando cualquier modo. Los premios llegan pronto.",
       empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
+      loading: "Cargando la liga de la semana…",
       you: "Tú",
       closes: (time) => `Cierra en ${time}`,
       needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
@@ -802,6 +805,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Ruta",
     colTime: "Tiempo",
     rankingEmpty: "Aún nadie ha resuelto el reto de hoy. ¡Sé el primero!",
+    rankingLoading: "Cargando el ranking de hoy…",
     feedback: (r, c) =>
       r === "unknown" ? `No reconozco "${c.input}".`
       : r === "revealed" ? `${c.country} ya está en el mapa.`
@@ -915,6 +919,7 @@ const STRINGS: Record<Locale, Dict> = {
       title: "Weekly league",
       dry: "Trial season: earn XP by playing any mode. Prizes are coming soon.",
       empty: "No one has earned XP this week. Play any mode and open the board!",
+      loading: "Loading this week's league…",
       you: "You",
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
@@ -1163,6 +1168,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Route",
     colTime: "Time",
     rankingEmpty: "Nobody has solved today's challenge yet. Be the first!",
+    rankingLoading: "Loading today's ranking…",
     feedback: (r, c) =>
       r === "unknown" ? `I don't recognize "${c.input}".`
       : r === "revealed" ? `${c.country} is already on the map.`
@@ -1276,6 +1282,7 @@ const STRINGS: Record<Locale, Dict> = {
       title: "Liga semanal",
       dry: "Temporada de teste: some XP jogando qualquer modo. Os prêmios chegam em breve.",
       empty: "Ninguém somou XP esta semana. Jogue qualquer modo e inaugure a tabela!",
+      loading: "Carregando a liga da semana…",
       you: "Você",
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
@@ -1524,6 +1531,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Rota",
     colTime: "Tempo",
     rankingEmpty: "Ninguém resolveu o desafio de hoje ainda. Seja o primeiro!",
+    rankingLoading: "Carregando o ranking de hoje…",
     feedback: (r, c) =>
       r === "unknown" ? `Não reconheço "${c.input}".`
       : r === "revealed" ? `${c.country} já está no mapa.`
@@ -1637,6 +1645,7 @@ const STRINGS: Record<Locale, Dict> = {
       title: "Ligue hebdo",
       dry: "Saison d'essai : gagnez de l'XP dans n'importe quel mode. Les prix arrivent bientôt.",
       empty: "Personne n'a gagné d'XP cette semaine. Jouez un mode et ouvrez le classement !",
+      loading: "Chargement de la ligue de la semaine…",
       you: "Vous",
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
@@ -1885,6 +1894,7 @@ const STRINGS: Record<Locale, Dict> = {
     colRoute: "Itinéraire",
     colTime: "Temps",
     rankingEmpty: "Personne n'a encore résolu le défi du jour. Soyez le premier !",
+    rankingLoading: "Chargement du classement du jour…",
     feedback: (r, c) =>
       r === "unknown" ? `Je ne reconnais pas "${c.input}".`
       : r === "revealed" ? `${c.country} est déjà sur la carte.`

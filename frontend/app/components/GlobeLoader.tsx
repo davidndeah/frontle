@@ -18,6 +18,19 @@
 //    lectores de pantalla y una espera sin nombre no dice nada.
 // ============================================================
 
+// Piso de duración de una espera, en ms. Una consulta que vuelve en 80 ms
+// hace parpadear el loader: el jugador ve un destello y no alcanza a leer qué
+// pasó, que se siente peor que esperar. Un segundo es el mínimo para que la
+// aparición se lea como intencional.
+export const MIN_LOADER_MS = 1000;
+
+// Alarga una promesa hasta `ms` si vuelve antes. No la ralentiza cuando ya
+// tardaba más: corren en paralelo, así que el coste real es max(promesa, ms).
+export async function withMinDelay<T>(p: Promise<T>, ms: number = MIN_LOADER_MS): Promise<T> {
+  const [value] = await Promise.all([p, new Promise((r) => setTimeout(r, ms))]);
+  return value;
+}
+
 // Los cuatro continentes. Colores tomados del ícono de la app para que el
 // loader se lea como el mismo planeta que la marca.
 const CONTINENTS: { d: string; fill: string }[] = [

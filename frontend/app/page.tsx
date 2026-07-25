@@ -34,7 +34,7 @@ import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
 import { signalMiniAppReady } from "./lib/farcaster";
 import Coachmarks from "./components/Coachmarks";
-import GlobeLoader from "./components/GlobeLoader";
+import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
@@ -177,6 +177,10 @@ export default function Frontle() {
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
   const [ranking, setRanking] = useState<ScoreEntry[]>([]);
+  // Arranca en true: al montar ya hay una consulta en curso, y sin esto la
+  // tabla decía "aún no hay marcas" durante la carga — afirmaba vacío lo que
+  // solo estaba pendiente.
+  const [rankingLoading, setRankingLoading] = useState(true);
   const [myId, setMyId] = useState("");
   // ¿La identidad actual vino del login por correo? Solo esas sesiones se
   // pueden cerrar: la wallet de MiniPay o de una extensión la inyecta el
@@ -529,8 +533,24 @@ export default function Frontle() {
       if (s) b = parseInt(s, 10);
     } catch {}
     setBest(b);
-    // ranking del nivel
-    getRanking(day, level).then(setRanking);
+    // Ranking del nivel. `alive` descarta la respuesta de un nivel que el
+    // jugador ya abandonó: sin el guard, cambiar rápido de nivel podía dejar
+    // pintada la tabla del anterior si su consulta volvía después.
+    let alive = true;
+    setRankingLoading(true);
+    withMinDelay(getRanking(day, level))
+      .then((rows) => {
+        if (!alive) return;
+        setRanking(rows);
+        setRankingLoading(false);
+      })
+      // `getRanking` ya traga sus errores, pero el loader no puede quedarse
+      // girando para siempre si eso cambia: apagarlo enseña el estado vacío,
+      // que al menos es un final.
+      .catch(() => alive && setRankingLoading(false));
+    return () => {
+      alive = false;
+    };
   }, [day, level]);
 
   useEffect(() => {
@@ -1396,7 +1416,7 @@ export default function Frontle() {
                 )}
                 {/* Selector de nivel: cada nivel tiene su ranking */}
                 <LevelSelect tr={tr} level={level} onChange={setLevel} />
-                <RankingCard tr={tr} ranking={ranking} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
+                <RankingCard tr={tr} ranking={ranking} loading={rankingLoading} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
                 {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
                 <WinnersCard
                   tr={tr}
@@ -2518,6 +2538,7 @@ function PrizesCard({
 function RankingCard({
   tr,
   ranking,
+  loading,
   best,
   panel,
   myId,
@@ -2526,6 +2547,7 @@ function RankingCard({
 }: {
   tr: ReturnType<typeof t>;
   ranking: ScoreEntry[];
+  loading: boolean;
   best: number | null;
   panel: string;
   myId: string;
@@ -2535,7 +2557,9 @@ function RankingCard({
   return (
     <section className={`${panel} p-3`}>
       <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
-      {ranking.length === 0 ? (
+      {loading ? (
+        <GlobeLoader label={tr.rankingLoading} size="sm" className="py-3" />
+      ) : ranking.length === 0 ? (
         <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
       ) : (
         <table className="w-full text-sm">
