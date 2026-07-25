@@ -35,6 +35,7 @@ import { SITE_HOST } from "./lib/site";
 import { signalMiniAppReady } from "./lib/farcaster";
 import Coachmarks from "./components/Coachmarks";
 import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
+import TxOverlay from "./components/TxOverlay";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
@@ -1216,16 +1217,22 @@ export default function Frontle() {
           </p>
         )}
 
-        {/* Pago de pista en curso: cronómetro en pausa + tablero tapado.
-            Devuelve exactamente el tiempo que la red se llevó — y nada más
-            (con el mapa visible, la espera sería análisis gratis). */}
-        {paying !== null && started && !state.solved && (
-          <div className="fixed inset-0 z-[60] bg-base/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 px-8">
-            <span className="text-4xl" aria-hidden>⏸️</span>
-            <span className="text-lg font-mono font-bold tabular-nums text-white">🕒 {formatTime(elapsedMs)}</span>
-            <p className="font-bold text-white animate-pulse">{tr.paying}</p>
-            <p className="text-sm text-neutral-300 text-center max-w-xs">{tr.payTimerPaused}</p>
-          </div>
+        {/* Pago en curso. Antes solo cubría las PISTAS (`started && !solved`),
+            así que el reintento —que se compra desde la pantalla de victoria,
+            con el reto ya resuelto— se quedaba sin aviso: solo el ⏳ del
+            botón. Ahora tapa cualquier pago del reto.
+            El bloque del cronómetro sigue siendo exclusivo de la partida en
+            curso: ahí tapar el tablero es parte del trato (con el mapa a la
+            vista, la espera sería análisis gratis) y hay que mostrar que el
+            reloj quedó en pausa. Resuelto ya no hay reloj que pausar. */}
+        {paying !== null && (
+          <TxOverlay label={tr.paying} note={started && !state.solved ? tr.payTimerPaused : undefined}>
+            {started && !state.solved && (
+              <span className="text-lg font-mono font-bold tabular-nums text-white">
+                ⏸️ 🕒 {formatTime(elapsedMs)}
+              </span>
+            )}
+          </TxOverlay>
         )}
 
         {/* Mapa o pantalla de Play (solo en el paso reto).
@@ -1712,6 +1719,12 @@ export default function Frontle() {
           tr={tr}
         />
       )}
+
+      {/* Reclamo de premio en curso. Va aquí, fuera de las pestañas, porque es
+          la única transacción que se lanza desde Perfil y antes solo cambiaba
+          el texto del propio botón — con la billetera de correo, que firma sin
+          enseñar nada, eso era indistinguible de un botón muerto. */}
+      {claimingKey !== null && <TxOverlay label={tr.prizeClaiming} note={tr.txKeepOpen} />}
 
       {/* Tienda de monedas (compartida por Home, Perfil y el menú de Bordy).
           Al cerrar refresca el saldo por si hubo compra. */}

@@ -188,6 +188,10 @@ type Dict = {
   usdtOnly: string;
   // Overlay del pago de pistas: el cronómetro se pausa durante la confirmación.
   payTimerPaused: string;
+  // Nota generica de espera on-chain (overlay de transaccion). Repite el
+  // sentido de coins.stepNote a proposito: esa vive en el namespace de la
+  // tienda y esto lo usa cualquier transaccion.
+  txKeepOpen: string;
   // Liga semanal (v2 Fase 1: ranking de XP en seco, sin premio todavía).
   liga: {
     title: string;
@@ -552,6 +556,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Tu billetera no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     usdtOnly: "Frontle acepta solo USDT. Si tu saldo está en otra stablecoin (USDC o USDm), cámbialo a USDT en MiniPay primero.",
     payTimerPaused: "El tiempo está en pausa mientras se confirma el pago. Sigue al confirmarse.",
+    txKeepOpen: "Puede tardar hasta un minuto. No cierres la app.",
     liga: {
       title: "Liga semanal",
       dry: "Temporada de prueba: suma XP jugando cualquier modo. Los premios llegan pronto.",
@@ -915,6 +920,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Your wallet has no balance left for the network fee. Your welcome balance is used up; deposit a little to pay for hints or retries.",
     usdtOnly: "Frontle only accepts USDT. If your balance is in another stablecoin (USDC or USDm), swap it to USDT in MiniPay first.",
     payTimerPaused: "The clock is paused while your payment is confirmed. It resumes right after.",
+    txKeepOpen: "This can take up to a minute. Please don't close the app.",
     liga: {
       title: "Weekly league",
       dry: "Trial season: earn XP by playing any mode. Prizes are coming soon.",
@@ -1278,6 +1284,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Sua carteira não tem saldo para a taxa de rede. O saldo de boas-vindas acabou; deposite um pouco para pagar dicas ou novas tentativas.",
     usdtOnly: "O Frontle aceita apenas USDT. Se o seu saldo está em outra stablecoin (USDC ou USDm), troque por USDT no MiniPay primeiro.",
     payTimerPaused: "O tempo fica em pausa enquanto o pagamento é confirmado. Continua logo depois.",
+    txKeepOpen: "Pode levar até um minuto. Não feche o app.",
     liga: {
       title: "Liga semanal",
       dry: "Temporada de teste: some XP jogando qualquer modo. Os prêmios chegam em breve.",
@@ -1641,6 +1648,7 @@ const STRINGS: Record<Locale, Dict> = {
     payNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau. Le solde de bienvenue est épuisé ; déposez un peu pour payer des indices ou des essais.",
     usdtOnly: "Frontle n'accepte que l'USDT. Si votre solde est dans une autre stablecoin (USDC ou USDm), échangez-la contre de l'USDT dans MiniPay d'abord.",
     payTimerPaused: "Le chrono est en pause pendant la confirmation du paiement. Il reprend juste après.",
+    txKeepOpen: "Cela peut prendre jusqu'à une minute. Ne fermez pas l'application.",
     liga: {
       title: "Ligue hebdo",
       dry: "Saison d'essai : gagnez de l'XP dans n'importe quel mode. Les prix arrivent bientôt.",
