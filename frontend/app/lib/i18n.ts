@@ -199,6 +199,10 @@ type Dict = {
     empty: string;
     loading: string;
     you: string;
+    // Nombre propio marcado: "Sofia (Tu)". Se muestra el nombre y NO solo
+    // "Tu": en una tabla de nombres, verse por el propio es lo que la hace
+    // legible de un vistazo.
+    youNamed: (name: string) => string;
     closes: (time: string) => string;
     needWallet: string;
     // Premio de la semana. Solo se muestran cuando el pot on-chain existe;
@@ -566,6 +570,7 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
       loading: "Cargando la liga de la semana…",
       you: "Tú",
+      youNamed: (n) => `${n} (Tú)`,
       closes: (time) => `Cierra en ${time}`,
       needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
       prize: (a) => `🏆 Premio de la semana: ${a}`,
@@ -932,6 +937,7 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "No one has earned XP this week. Play any mode and open the board!",
       loading: "Loading this week's league…",
       you: "You",
+      youNamed: (n) => `${n} (You)`,
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
       prize: (a) => `🏆 This week's prize: ${a}`,
@@ -1298,6 +1304,7 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Ninguém somou XP esta semana. Jogue qualquer modo e inaugure a tabela!",
       loading: "Carregando a liga da semana…",
       you: "Você",
+      youNamed: (n) => `${n} (Você)`,
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
       prize: (a) => `🏆 Prêmio da semana: ${a}`,
@@ -1664,6 +1671,7 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Personne n'a gagné d'XP cette semaine. Jouez un mode et ouvrez le classement !",
       loading: "Chargement de la ligue de la semaine…",
       you: "Vous",
+      youNamed: (n) => `${n} (Vous)`,
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
       prize: (a) => `🏆 Prix de la semaine : ${a}`,

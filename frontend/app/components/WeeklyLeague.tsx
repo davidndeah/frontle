@@ -16,94 +16,13 @@ import { getWeeklyPot, WEEKLY_PODIUM_SHARE } from "../lib/payments";
 import { getNamesFor, shortId } from "../lib/ranking";
 import { getWeeklyRanking, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry } from "../lib/xp";
 import GlobeLoader, { withMinDelay } from "./GlobeLoader";
+import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./Leaderboard";
 
 function fmtClose(ms: number): string {
   const totalH = Math.max(0, Math.floor(ms / 3_600_000));
   const d = Math.floor(totalH / 24);
   const h = totalH % 24;
   return d > 0 ? `${d}d ${h}h` : `${h}h`;
-}
-
-// --- Avatar -----------------------------------------------------------------
-// No hay fotos de perfil: la identidad es una wallet. Se genera un avatar con
-// la inicial sobre un color estable por jugador — la misma wallet saca siempre
-// el mismo color, así la tabla se vuelve reconocible de un vistazo.
-// La paleta es la del ícono de la app (public/icon.svg), como el GlobeLoader.
-const AVATAR_COLORS = ["#c084fc", "#a855f7", "#22d3ee", "#e879f9", "#fbbf24"];
-
-function avatarColor(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return AVATAR_COLORS[h % AVATAR_COLORS.length];
-}
-
-function Avatar({ id, label, size }: { id: string; label: string; size: number }) {
-  // `[...label]` y no `label[0]`: un nombre que empiece por emoji o por una
-  // letra fuera del plano básico se partiría a la mitad con índice directo.
-  const ch = ([...label.trim()][0] ?? "?").toUpperCase();
-  return (
-    <span
-      aria-hidden
-      className="brutal-sm grid flex-none place-items-center rounded-full font-display font-black text-surface"
-      style={{
-        width: size,
-        height: size,
-        background: avatarColor(id),
-        fontSize: Math.round(size * 0.44),
-      }}
-    >
-      {ch}
-    </span>
-  );
-}
-
-// Rejilla común de la cabecera y de las filas: sin ella los tres textos de la
-// cabecera no caerían sobre sus columnas.
-const ROW_GRID = "grid grid-cols-[1.75rem_1fr_auto] items-center gap-2";
-
-// Reordenado visual del podio (2 · 1 · 3) sin tocar el orden del DOM.
-const PODIUM_ORDER = ["order-2", "order-1", "order-3"];
-
-// Literales completos: Tailwind escanea el texto del fuente, así que una
-// clase construida con plantilla (`grid-cols-${n}`) no se generaría.
-const PODIUM_COLS = ["", "grid-cols-1", "grid-cols-2", "grid-cols-3"];
-
-// Fila de la tabla (4.º en adelante) y también la fila propia cuando queda
-// fuera del top. Es un componente para que las dos no se separen con el uso.
-function LeagueRow({
-  pos,
-  id,
-  label,
-  xp,
-  mine,
-}: {
-  pos: number;
-  id: string;
-  label: string;
-  xp: number;
-  mine: boolean;
-}) {
-  return (
-    <li
-      className={`brutal-sm ${ROW_GRID} rounded-lg px-2 py-2 ${
-        mine ? "bg-gold text-surface" : "bg-surface text-neutral-100"
-      }`}
-    >
-      <span className={`font-display text-center text-sm font-black ${mine ? "text-surface" : "text-lavender"}`}>
-        {pos}
-      </span>
-      <span className="flex min-w-0 items-center gap-2">
-        <Avatar id={id} label={label} size={26} />
-        <span className="truncate text-sm font-semibold" title={label}>
-          {label}
-        </span>
-      </span>
-      <span className={`font-mono text-sm font-bold tabular-nums ${mine ? "text-surface" : "text-white"}`}>
-        {xp}
-        <span className={`ml-1 text-[10px] ${mine ? "text-surface/70" : "text-neutral-400"}`}>XP</span>
-      </span>
-    </li>
-  );
 }
 
 export default function WeeklyLeague({
@@ -156,11 +75,32 @@ export default function WeeklyLeague({
   // El podio son los 3 primeros; el resto va como tabla, hasta el 10.º.
   const podium = entries.slice(0, 3);
   const rest = entries.slice(3, 10);
+
   // Premio de cada puesto del podio. Solo hay premio que enseñar si el pot
   // existe y tiene fondos; con 0 sembrado, prometerlo sería mentir.
   const premioTotal = pot ?? 0;
   const conPremio = premioTotal > 0;
   const premioDe = (i: number) => (premioTotal * WEEKLY_PODIUM_SHARE[i]) / 100;
+
+  // Traduce una fila de la liga al modelo común del leaderboard. `pos` es el
+  // índice global (0 = primero) y solo sirve para saber si toca premio.
+  const toEntry = (e: WeeklyEntry, pos: number): LeaderEntry => {
+    const mine = e.playerId === me;
+    // Nombre de perfil si lo hay; si no, la dirección truncada — MiniPay la
+    // admite como pista secundaria, nunca como identidad principal.
+    const name = names[e.playerId] || shortId(e.playerId);
+    return {
+      id: e.playerId,
+      label: mine ? tr.liga.youNamed(name) : name,
+      mine,
+      stat: (
+        <>
+          {e.xp} <span className="text-[10px] opacity-70">XP</span>
+        </>
+      ),
+      sub: conPremio && pos < WEEKLY_PODIUM_SHARE.length ? fmt(premioDe(pos)) : undefined,
+    };
+  };
 
   return (
     <section className="panel p-4 flex flex-col gap-2">
@@ -224,52 +164,8 @@ export default function WeeklyLeague({
         <p className="text-sm text-neutral-300 text-center py-3">{tr.liga.empty}</p>
       )}
 
-      {/* --- Podio (1-3) ---------------------------------------------------
-          El nº1 va en el centro y elevado: es el orden VISUAL. En el DOM la
-          lista sigue siendo 1, 2, 3 y solo se reordena con `order`, para que
-          un lector de pantalla la lea por puesto y no de izquierda a derecha.
-          Con menos de 3 jugadores no hay podio que escalonar: se centran. */}
-      {podium.length > 0 && (
-        <ol className={`mt-1 grid items-end justify-items-center gap-2 ${PODIUM_COLS[podium.length]}`}>
-          {podium.map((e, i) => {
-            const mine = e.playerId === me;
-            const label = mine ? tr.liga.you : names[e.playerId] || shortId(e.playerId);
-            const first = i === 0;
-            return (
-              <li
-                key={e.playerId}
-                className={`flex w-full flex-col items-center ${podium.length === 3 ? PODIUM_ORDER[i] : ""}`}
-              >
-                {/* La corona sustituye al “más alto”: en móvil no hay sitio
-                    para pedestales de verdad sin robárselo a los nombres. */}
-                <span className={`text-xl leading-none ${first ? "" : "invisible"}`} aria-hidden>
-                  👑
-                </span>
-                <Avatar id={e.playerId} label={label} size={first ? 58 : 46} />
-                <span
-                  className={`-mt-2.5 grid h-6 w-6 place-items-center rounded-full border-2 border-deep font-display text-[11px] font-black text-surface ${
-                    first ? "bg-gold" : "bg-lavender"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <span
-                  className={`mt-1 w-full truncate text-center text-xs font-bold ${
-                    mine ? "text-gold" : "text-white"
-                  }`}
-                  title={label}
-                >
-                  {label}
-                </span>
-                <span className="font-mono text-[11px] tabular-nums text-neutral-300">{e.xp} XP</span>
-                {conPremio && i < WEEKLY_PODIUM_SHARE.length && (
-                  <span className="font-mono text-[10px] font-bold tabular-nums text-amber-300">{fmt(premioDe(i))}</span>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      )}
+      {/* Podio (1-3). El escalonado y el orden del DOM los resuelve Podium. */}
+      {podium.length > 0 && <Podium items={podium.map((e, i) => toEntry(e, i))} />}
 
       {/* --- Tabla (4 en adelante) ------------------------------------------
           Una card por jugador en el lenguaje neo-brutalista que la app ya usa
@@ -279,21 +175,14 @@ export default function WeeklyLeague({
           encuentra sin buscarla. */}
       {rest.length > 0 && (
         <div className="mt-2 flex flex-col gap-1.5">
-          <div className={`${ROW_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
+          <div className={`${RANK_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
             <span>{tr.liga.colRank}</span>
             <span>{tr.colPlayer}</span>
             <span className="text-right">{tr.liga.colPoints}</span>
           </div>
           <ol className="flex flex-col gap-1.5">
             {rest.map((e, i) => (
-              <LeagueRow
-                key={e.playerId}
-                pos={i + 4}
-                id={e.playerId}
-                label={e.playerId === me ? tr.liga.you : names[e.playerId] || shortId(e.playerId)}
-                xp={e.xp}
-                mine={e.playerId === me}
-              />
+              <RankRow key={e.playerId} pos={i + 4} entry={toEntry(e, i + 3)} />
             ))}
           </ol>
         </div>
@@ -306,7 +195,7 @@ export default function WeeklyLeague({
           <p className="text-center text-xs leading-none text-neutral-500" aria-hidden>
             ···
           </p>
-          <LeagueRow pos={myIndex + 1} id={me} label={tr.liga.you} xp={entries[myIndex].xp} mine />
+          <RankRow pos={myIndex + 1} entry={toEntry(entries[myIndex], myIndex)} />
         </div>
       )}
     </section>

@@ -36,6 +36,7 @@ import { signalMiniAppReady } from "./lib/farcaster";
 import Coachmarks from "./components/Coachmarks";
 import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
 import TxOverlay from "./components/TxOverlay";
+import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./components/Leaderboard";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
@@ -2567,6 +2568,33 @@ function RankingCard({
   alias: string;
   levelLabel: string;
 }) {
+  // Traduce una marca del día al modelo común del leaderboard.
+  const toEntry = (r: ScoreEntry): LeaderEntry => {
+    const mine = !!myId && r.playerId === myId;
+    // El nombre manda. Quien jugó antes de que existiera el perfil no tiene
+    // ninguno: se le identifica con la etiqueta genérica y la dirección
+    // truncada, que MiniPay solo admite como pista secundaria, nunca como
+    // identidad principal.
+    const name = r.name || `${tr.anonPlayer} ${shortId(r.playerId)}`;
+    return {
+      id: r.playerId,
+      label: mine ? tr.liga.youNamed(name) : name,
+      mine,
+      // La bandera es del país de la IP, no del jugador: se queda como
+      // adorno junto al nombre, igual que estaba en la tabla anterior.
+      badge: <Flag code={r.countryCode} size={18} />,
+      stat: (
+        <>
+          {r.countries} <span className="text-[10px] opacity-70">{tr.colRoute}</span>
+        </>
+      ),
+      sub: formatTime(r.timeMs),
+    };
+  };
+
+  const podium = ranking.slice(0, 3).map(toEntry);
+  const restRows = ranking.slice(3).map(toEntry);
+
   return (
     <section className={`${panel} p-3`}>
       <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
@@ -2575,47 +2603,27 @@ function RankingCard({
       ) : ranking.length === 0 ? (
         <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-[10px] uppercase text-neutral-400">
-              <th className="text-left font-medium py-1 w-7">#</th>
-              <th className="text-left font-medium py-1 w-6"></th>
-              <th className="text-left font-medium py-1">{tr.colPlayer}</th>
-              <th className="text-right font-medium py-1">{tr.colRoute}</th>
-              <th className="text-right font-medium py-1">{tr.colTime}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ranking.map((r, i) => {
-              const mine = !!myId && r.playerId === myId;
-              return (
-                <tr
-                  key={i}
-                  className={`border-t border-white/10 ${mine ? "bg-amber-400/20 text-amber-200" : ""}`}
-                >
-                  <td className="py-1.5">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
-                  <td className="py-1.5"><Flag code={r.countryCode} size={20} /></td>
-                  {/* El nombre manda. Quien jugó antes de que existiera el
-                      perfil no tiene ninguno: se le identifica con la etiqueta
-                      genérica y la dirección truncada, que MiniPay solo admite
-                      como pista secundaria, nunca como identidad principal. */}
-                  <td className="py-1.5 text-xs">
-                    {r.name ? (
-                      <span className="font-semibold">{r.name}</span>
-                    ) : (
-                      <span className="text-neutral-300">
-                        {tr.anonPlayer} <span className="font-mono text-neutral-400">{shortId(r.playerId)}</span>
-                      </span>
-                    )}
-                    {mine ? " 👈" : ""}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">{r.countries}</td>
-                  <td className="py-1.5 text-right tabular-nums font-mono">{formatTime(r.timeMs)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <>
+          {/* Mismo lenguaje que la liga semanal: podio para los 3 primeros y
+              cards del 4.º en adelante. Lo que cambia es la métrica — aquí no
+              hay un número de puntos sino DOS datos, países y tiempo, que es
+              el desempate. Van como stat y sub. */}
+          <Podium items={podium} />
+          {restRows.length > 0 && (
+            <div className="mt-2 flex flex-col gap-1.5">
+              <div className={`${RANK_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
+                <span>#</span>
+                <span>{tr.colPlayer}</span>
+                <span className="text-right">{tr.colRoute} · {tr.colTime}</span>
+              </div>
+              <ol className="flex flex-col gap-1.5">
+                {restRows.map((entry, i) => (
+                  <RankRow key={entry.id} pos={i + 4} entry={entry} />
+                ))}
+              </ol>
+            </div>
+          )}
+        </>
       )}
       <p className="text-[11px] text-neutral-400 mt-2 text-center">
         {/* Mismo criterio que la tabla: nombre, o etiqueta + dirección. */}
