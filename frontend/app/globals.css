@@ -686,6 +686,82 @@ body {
   animation: star-pop 0.3s ease-out both, star-prism-flash 0.5s ease-out 0.45s;
 }
 
+/* ============================================================
+   Loader del globo (components/GlobeLoader.tsx)
+   Continentes que derivan sobre un océano mientras algo carga. La paleta no
+   es la del verde/azul de manual: es la del ícono de la app (public/icon.svg
+   — océano azul-noche, continentes en los colores del prisma), para que el
+   loader se lea como el mismo planeta que el ícono.
+   Todo va en % del propio globo, no en em, para que `--globe-size` sea la
+   ÚNICA medida que hay que cambiar entre tamaños.
+   ============================================================ */
+.globe-loader {
+  --globe-size: 7.5rem;
+  --globe-ocean: #101830;
+  --globe-rim: rgba(183, 156, 237, 0.45);
+  width: var(--globe-size);
+  height: var(--globe-size);
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+  background-color: var(--globe-ocean);
+  /* Borde y sombras en fracción de `--globe-size`, no en em: si fueran em
+     dependerían del font-size heredado y el globo `sm` saldría con el mismo
+     borde grueso que el `lg`. Así el tamaño es la única medida que cambia. */
+  border: solid calc(var(--globe-size) * 0.02) var(--globe-rim);
+  /* Luz cenital + terminador: da volumen sin sombra externa. */
+  box-shadow:
+    inset 0 calc(var(--globe-size) * 0.067) rgba(255, 255, 255, 0.18),
+    inset 0 calc(var(--globe-size) * -0.067) rgba(0, 0, 0, 0.35);
+  animation: globe-boot 1s 1;
+}
+
+.globe-loader svg {
+  position: absolute;
+  width: 93.33%;
+  height: auto;
+}
+
+/* Dos velocidades desfasadas: sin esto los cuatro continentes viajan en
+   bloque y el globo parece un disco girando, no una esfera. */
+.globe-loader svg:nth-child(1) { bottom: -26.67%; animation: globe-drift-a 5s infinite linear 0.75s; }
+.globe-loader svg:nth-child(2) { top: -40%;       animation: globe-drift-a 5s infinite linear; }
+.globe-loader svg:nth-child(3) { top: -33.33%;    animation: globe-drift-b 5s infinite linear; }
+.globe-loader svg:nth-child(4) { bottom: -29.33%; animation: globe-drift-b 5s infinite linear 0.75s; }
+
+/* Destello inicial: el globo "se enciende" al aparecer. */
+@keyframes globe-boot {
+  0%, 75% { filter: brightness(400%); box-shadow: none; }
+  100% {
+    filter: brightness(100%);
+    box-shadow:
+      inset 0 calc(var(--globe-size) * 0.067) rgba(255, 255, 255, 0.18),
+      inset 0 calc(var(--globe-size) * -0.067) rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* El salto de opacidad a mitad de recorrido es el truco: el continente se
+   apaga al salir por un borde y reaparece apagado en el otro, así el bucle
+   no tiene costura. El skew simula la curvatura al acercarse al limbo. */
+@keyframes globe-drift-a {
+  0%   { left: -26.67%; opacity: 1; transform: skewX(0deg) rotate(0deg); }
+  30%  { left: -80%;    opacity: 1; transform: skewX(-25deg) rotate(25deg); }
+  31%  { left: -80%;    opacity: 0; transform: skewX(-25deg) rotate(25deg); }
+  35%  { left: 93.33%;  opacity: 0; transform: skewX(25deg) rotate(-25deg); }
+  45%  { left: 93.33%;  opacity: 1; transform: skewX(25deg) rotate(-25deg); }
+  100% { left: -26.67%; opacity: 1; transform: skewX(0deg) rotate(0deg); }
+}
+
+@keyframes globe-drift-b {
+  0%   { left: 66.67%;  opacity: 1; transform: skewX(0deg) rotate(0deg); }
+  75%  { left: -93.33%; opacity: 1; transform: skewX(-25deg) rotate(25deg); }
+  76%  { left: -93.33%; opacity: 0; transform: skewX(-25deg) rotate(25deg); }
+  77%  { left: 106.67%; opacity: 0; transform: skewX(25deg) rotate(-25deg); }
+  80%  { left: 106.67%; opacity: 1; transform: skewX(25deg) rotate(-25deg); }
+  100% { left: 66.67%;  opacity: 1; transform: skewX(0deg) rotate(0deg); }
+}
+
 /* Quien pide menos movimiento recibe el destello, pero no las chispas. */
 @media (prefers-reduced-motion: reduce) {
   .claim-flash { animation-duration: 0.01ms; }
@@ -715,6 +791,12 @@ body {
   /* Estrellas: sin caída ni destello — aparecen fijas. */
   .star-pop,
   .star-prism { animation: none; }
+
+  /* Globo: se queda quieto, con los continentes puestos. No se oculta ni se
+     sustituye por nada — es lo único que indica que algo está cargando, y
+     esa información no se puede quitar. El texto de al lado la refuerza. */
+  .globe-loader,
+  .globe-loader svg { animation: none; }
 
   /* Bordy reactivo: sin saltos, sacudidas ni chispas — el LED sigue diciendo
      el estado con COLOR, que es la parte informativa. El ladeo de fallo se

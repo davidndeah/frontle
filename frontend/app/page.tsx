@@ -34,6 +34,7 @@ import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
 import { signalMiniAppReady } from "./lib/farcaster";
 import Coachmarks from "./components/Coachmarks";
+import GlobeLoader from "./components/GlobeLoader";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
 import ScoreCard from "./components/ScoreCard";
@@ -2681,7 +2682,7 @@ function WinCard({
       {winStats && (
         <div className="pop-in mt-3 rounded-xl border border-lavender/25 bg-base px-4 py-3">
           {winStats.loading ? (
-            <p className="py-2 text-center text-sm text-neutral-300">{tr.xpWin.loading}</p>
+            <GlobeLoader label={tr.xpWin.loading} size="sm" className="py-2" />
           ) : (
             <>
               {winStats.xp > 0 ? (

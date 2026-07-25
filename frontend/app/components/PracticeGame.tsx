@@ -33,6 +33,7 @@ import { awardPracticeSolve, freeRoundsLeft } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
+import GlobeLoader from "./GlobeLoader";
 import { SITE_HOST } from "../lib/site";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
@@ -221,7 +222,7 @@ export default function PracticeGame({
   }
 
   if (!state) {
-    return <div className="py-10 text-center text-neutral-300 text-sm">{tr.loadingMap}</div>;
+    return <div className="py-10"><GlobeLoader label={tr.loadingMap} /></div>;
   }
 
   const { challenge } = state;
