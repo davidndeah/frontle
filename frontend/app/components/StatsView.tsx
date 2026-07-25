@@ -70,6 +70,10 @@ export default function StatsView() {
   // Ojo: el ancho va en CSS crudo, sin toLocaleString (en es daría "45 %").
   const maxPlays = countries.reduce((a, c) => Math.max(a, c.plays), 0);
 
+  // Mismo criterio para el desglose por acción: la barra se mide contra el
+  // método más usado. Igual que arriba, el ancho va en CSS crudo.
+  const maxMethod = (activity?.byMethod ?? []).reduce((a, m) => Math.max(a, m.count), 0);
+
   return (
     <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-6">
       <header>
@@ -282,12 +286,23 @@ export default function StatsView() {
             />
           </div>
 
-          <div className="panel p-3 mt-2 flex flex-col gap-1.5">
+          {/* Desglose por acción. El reparto entre métodos era invisible: dos
+              columnas de números sin escala común. Cada fila lleva ahora su
+              barra contra la acción más usada. */}
+          <div className="brutal-sm mt-2 flex flex-col gap-2 rounded-lg bg-surface p-3">
             <span className="text-[10px] uppercase tracking-wider text-neutral-400">{tr.byAction}</span>
             {activity.byMethod.map((m) => (
-              <div key={m.method} className="flex items-baseline justify-between gap-2 text-[13px]">
-                <span className="text-neutral-200 truncate">{m.method}</span>
-                <span className="text-neutral-400 tabular-nums shrink-0">{num(m.count)}</span>
+              <div key={m.method} className="flex flex-col gap-1">
+                <div className="flex items-baseline justify-between gap-2 text-[13px]">
+                  <span className="truncate font-semibold text-neutral-100">{m.method}</span>
+                  <span className="shrink-0 tabular-nums text-neutral-400">{num(m.count)}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-sm border border-deep bg-deep">
+                  <div
+                    className="h-full bg-lavender"
+                    style={{ width: maxMethod > 0 ? `${Math.round((m.count / maxMethod) * 100)}%` : "0%" }}
+                  />
+                </div>
               </div>
             ))}
           </div>
