@@ -13,19 +13,26 @@ import { dateSeed, type Status } from "../lib/game";
 import { formatTime } from "../lib/ranking";
 import {
   dailyRegionChallenge,
+  randomRegionChallenge,
   tryRegionGuess,
   nextRegionHint,
   type RegionPlayState,
 } from "../lib/regionGame";
-import { awardRegionWin } from "../lib/xp";
-import { spendCoins } from "../lib/coins";
+import { awardRegionWin, freeRoundsLeft } from "../lib/xp";
+import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
+import XpGainPopup, { useXpWin } from "./XpGainPopup";
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
 import { t, type Locale } from "../lib/i18n";
 import RegionMap from "./RegionMap";
 import ScoreCard from "./ScoreCard";
 import type { Square } from "../lib/scoreCard";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin } from "../lib/sfx";
+import type { BordyMood } from "./Bordy";
+import Coachmarks from "./Coachmarks";
+import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
+import { winMood, greenGuessMood } from "../lib/streakMood";
+import { SITE_HOST } from "../lib/site";
 
 // Bandera de una subdivisión (PNG local; cae a marcador si falta).
 // FLAGS-13: muchas subdivisiones (p.ej. Nigeria/Ghana) no tienen bandera
@@ -68,7 +75,17 @@ const CHIP: Record<Status, string> = {
   red: "border-rose-400/50 text-rose-100",
 };
 
-export default function RegionGame({ regionId, locale, onExit }: { regionId: string; locale: Locale; onExit: () => void }) {
+export default function RegionGame({
+  regionId, locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0,
+}: {
+  regionId: string; locale: Locale; onExit: () => void;
+  /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
+  reactBordy?: (m: BordyMood) => void;
+  /** Nonce: cuando cambia, el menú de Bordy pide reproducir el tutorial. */
+  coachSignal?: number;
+  /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
+  dailyStreak?: number;
+}) {
   const def = REGIONS[regionId];
   const tr = t(locale);
   // Sustantivo localizado de las subdivisiones (departamento/state/província…)
@@ -78,6 +95,11 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
   const day = dateSeed();
   const storeKey = `frontle-region-${day}-${regionId}`;
   const bestKey = `frontle-region-best-${day}-${regionId}`;
+  // Las rondas extra (pagadas) NO pueden escribir sobre la partida diaria: al
+  // restaurar, el reto se recalcula con dailyRegionChallenge y la cadena de una
+  // ronda extra quedaría pegada al reto equivocado. Van a su propia clave, y
+  // esta sí guarda el reto porque es aleatorio y no se puede recalcular.
+  const extraKey = `frontle-region-extra-${day}-${regionId}`;
 
   const [state, setState] = useState<RegionPlayState>(() => ({
     challenge: dailyRegionChallenge(regionId, day),
@@ -100,16 +122,39 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
   async function paidHint(kind: "spend_hint" | "spend_hint_strong", already: boolean, apply: () => void) {
     if (already) return;
     const r = await spendCoins(kind, `region:${regionId}`);
-    if (r === "ok") apply();
+    if (r === "ok") { apply(); reactBordy?.("pensando"); }
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // ¿La partida en curso es una ronda extra (pagada)? En ref, no en estado:
+  // `save` lo consulta dentro del mismo render en que se activa.
+  const extraRef = useRef(false);
+  // Aviso de XP + puesto en la liga al resolver.
+  const { win, celebrate, close: closeWin } = useXpWin();
+  const freeLeft = freeRoundsLeft("region");
+  // Recorrido de bienvenida del modo (1 vez). Arranca solo cuando la partida
+  // ya empezó, porque señala las pistas, que no existen en la pantalla previa.
+  const [coach, setCoach] = useState(false);
 
   const { challenge } = state;
 
-  // Restaurar partida del día (por región)
+  // Restaurar partida del día (por región). La ronda extra manda: si existe,
+  // es la que el jugador tenía delante (y la pagó), así que no puede perderse
+  // al refrescar.
   useEffect(() => {
     try {
+      const rawExtra = localStorage.getItem(extraKey);
+      if (rawExtra) {
+        const g = JSON.parse(rawExtra);
+        if (g?.challenge) {
+          extraRef.current = true;
+          startRef.current = g.startMs || Date.now();
+          setStarted(true);
+          setState({ challenge: g.challenge, chain: g.chain ?? [], solved: !!g.solved });
+          setElapsedMs(g.solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now()));
+          return;
+        }
+      }
       const raw = localStorage.getItem(storeKey);
       if (raw) {
         const g = JSON.parse(raw);
@@ -138,8 +183,38 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
 
   function save(g: { started: boolean; solved: boolean; chain: RegionPlayState["chain"]; finalMs?: number }) {
     try {
-      localStorage.setItem(storeKey, JSON.stringify({ ...g, startMs: startRef.current }));
+      if (extraRef.current) {
+        localStorage.setItem(extraKey, JSON.stringify({ ...g, startMs: startRef.current, challenge: state.challenge }));
+      } else {
+        localStorage.setItem(storeKey, JSON.stringify({ ...g, startMs: startRef.current }));
+      }
     } catch {}
+  }
+
+  // Volver a jugar. En regiones el cupo con XP es 1 al día, así que tras
+  // resolver el reto diario esta ronda siempre se paga — que es justo lo
+  // pedido: la segunda partida del modo se compra con monedas.
+  async function playAgain() {
+    if (freeLeft === 0) {
+      const r = await spendCoins("spend_attempt", `region:${regionId}`);
+      if (r !== "ok") { setShopOpen(true); return; }
+    }
+    const challenge = randomRegionChallenge(regionId);
+    extraRef.current = true;
+    startRef.current = Date.now();
+    setElapsedMs(0);
+    setState({ challenge, chain: [], solved: false });
+    setShowInitial(false);
+    setShowNextSil(false);
+    setShowAllSil(false);
+    setMessage(null);
+    try {
+      localStorage.setItem(
+        extraKey,
+        JSON.stringify({ started: true, solved: false, chain: [], startMs: startRef.current, challenge })
+      );
+    } catch {}
+    setTimeout(() => inputRef.current?.focus(), 50);
   }
 
   function start() {
@@ -148,7 +223,17 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
     setStarted(true);
     save({ started: true, solved: false, chain: [] });
     setTimeout(() => inputRef.current?.focus(), 50);
+    if (!modeCoachSeen("region")) setCoach(true);
   }
+
+  // Reproducir el tutorial a pedido del menú de Bordy (ver CountryQuizGame).
+  const lastSignal = useRef(coachSignal);
+  useEffect(() => {
+    if (coachSignal !== lastSignal.current) {
+      lastSignal.current = coachSignal;
+      if (started && !state.solved) setCoach(true);
+    }
+  }, [coachSignal, started, state.solved]);
 
   const statusByEntity = useMemo(() => {
     const m: Record<string, Status> = { [challenge.start]: "start", [challenge.end]: "end" };
@@ -171,11 +256,11 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
       }),
       ok: res.ok,
     });
-    if (!res.ok) sfxInvalid();
-    else if (res.solved) sfxWin();
-    else if (res.quality === "green") sfxGood();
-    else if (res.quality === "yellow") sfxLateral();
-    else if (res.quality === "red") sfxFar();
+    if (!res.ok) { sfxInvalid(); reactBordy?.("fallo"); }
+    else if (res.solved) { sfxWin(); reactBordy?.(winMood(dailyStreak)); }
+    else if (res.quality === "green") { sfxGood(); reactBordy?.(greenGuessMood(state.chain[state.chain.length - 1]?.quality)); }
+    else if (res.quality === "yellow") { sfxLateral(); reactBordy?.("desvio"); }
+    else if (res.quality === "red") { sfxFar(); reactBordy?.("fallo"); }
 
     if (res.ok && res.entity && res.quality) {
       const chain = [...state.chain, { entity: res.entity, quality: res.quality }];
@@ -187,13 +272,16 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
       save({ started: true, solved, chain, finalMs });
       if (solved) {
         setElapsedMs(finalMs!);
+        // La marca del día es la del RETO del día: una ronda extra juega otro
+        // reto distinto, así que su número de aciertos no es comparable.
         const score = chain.length;
-        if (best === null || score < best) {
+        if (!extraRef.current && (best === null || score < best)) {
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
-        // Liga v2: completar un país da XP (tope diario en el servidor).
-        awardRegionWin();
+        // Liga v2: completar un país da XP (tope diario en el servidor). El
+        // aviso espera al insert para mostrar el puesto ya actualizado.
+        celebrate(awardRegionWin());
       }
     }
     setInput("");
@@ -207,17 +295,32 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
 
   return (
     <div className="flex flex-col gap-4">
-      {/* volver */}
+      {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
-      <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/flags/national/${regionId}.webp`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
-        <span className="font-display font-semibold">{def.title}</span>
-      </button>
+      <XpGainPopup tr={tr} win={win} onClose={closeWin} />
+      <div className="flex items-center justify-between">
+        <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`/flags/national/${regionId}.webp`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
+          <span className="font-display font-semibold">{def.title}</span>
+        </button>
+        {/* Solo durante la partida: el 2º paso del recorrido señala el panel
+            de pistas, que no existe en la pantalla previa al "Jugar". */}
+        {started && (
+          <button
+            onClick={() => setCoach(true)}
+            aria-label={tr.coachReplay}
+            title={tr.coachReplay}
+            className="w-8 h-8 rounded-full bg-white/5 border border-lavender/25 text-neutral-300 active:scale-90 transition flex items-center justify-center"
+          >
+            ?
+          </button>
+        )}
+      </div>
 
       {/* reto */}
-      <section className="panel p-4">
+      <section id="region-challenge" className="panel p-4">
         <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-3">
           {tr.region.challengeOfDay} · {noun}
         </p>
@@ -245,15 +348,25 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
             </span>
           </p>
 
-          <RegionMap
-            regionId={regionId}
-            statusByEntity={statusByEntity}
-            loadingLabel={tr.loadingMap}
-            controls={tr.a11y}
-            silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
-            showAllOutlines={showAllSil}
-            resetKey={`${challenge.start}->${challenge.end}`}
-          />
+          {/* Sigue montado bajo el velo mientras el tutorial está abierto,
+              para no revelar el mapa de fondo antes de que el jugador
+              termine de leerlo. */}
+          <div className="relative">
+            <RegionMap
+              regionId={regionId}
+              statusByEntity={statusByEntity}
+              loadingLabel={tr.loadingMap}
+              controls={tr.a11y}
+              silhouettes={showNextSil && hintEntity ? [hintEntity] : []}
+              showAllOutlines={showAllSil}
+              resetKey={`${challenge.start}->${challenge.end}`}
+            />
+            {coach && (
+              <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
+                <span className="text-6xl opacity-30" aria-hidden>🗺️</span>
+              </div>
+            )}
+          </div>
 
           {/* chips de la ruta */}
           <section className="flex flex-wrap justify-center gap-2">
@@ -265,7 +378,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
           </section>
 
           {state.solved ? (
-            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} squares={["start", ...state.chain.map((c) => c.quality), "end"]} />
+            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} squares={["start", ...state.chain.map((c) => c.quality), "end"]} onPlayAgain={() => void playAgain()} freeLeft={freeLeft} />
           ) : (
             <section className="relative flex flex-col gap-3">
               <form onSubmit={(e) => { e.preventDefault(); if (input.trim()) submit(input); }} className="flex gap-2">
@@ -302,7 +415,7 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
               )}
               {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
                   lo valida el servidor; sin saldo, se abre la tienda. */}
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div id="region-hints" className="flex flex-wrap items-center justify-center gap-2">
                 <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)} · ${tr.coins.cost(3)}`} />
                 <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)} · ${tr.coins.cost(3)}`} />
                 <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)} · ${tr.coins.cost(5)}`} />
@@ -316,6 +429,17 @@ export default function RegionGame({ regionId, locale, onExit }: { regionId: str
           <button onClick={start} className="btn-3d font-display font-bold text-2xl px-12 py-4">{tr.play}</button>
           {best !== null && <p className="text-xs text-neutral-400">{tr.region.bestToday(best, noun)}</p>}
         </div>
+      )}
+
+      {coach && (
+        <Coachmarks
+          steps={[
+            { target: "region-challenge", text: tr.modeCoach.region[0] },
+            { target: "region-hints", text: tr.modeCoach.region[1] },
+          ]}
+          labels={{ skip: tr.coachSkip, next: tr.tutNext, done: tr.coachDone }}
+          onDone={() => { markModeCoachSeen("region"); setCoach(false); }}
+        />
       )}
     </div>
   );
@@ -331,14 +455,17 @@ function RChip({ regionId, name, code, kind }: { regionId: string; name: string;
 }
 
 function RegionWin({
-  tr, noun, guesses, optimal, timeMs, onExit, def, squares,
+  tr, noun, guesses, optimal, timeMs, onExit, def, squares, onPlayAgain, freeLeft,
 }: {
   tr: ReturnType<typeof t>; noun: string; guesses: number; optimal: number; timeMs: number; onExit: () => void;
   def: { flag: string; title: string }; squares: Square[];
+  onPlayAgain: () => void;
+  /** Rondas con XP que quedan hoy; a 0, volver a jugar cuesta monedas. */
+  freeLeft: number;
 }) {
   const perfect = guesses <= optimal;
   const stars = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
-  const shareText = `🌍 Frontle ${def.flag} ${def.title}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ${formatTime(timeMs)}\nfrontle.vercel.app`;
+  const shareText = `🌍 Frontle ${def.flag} ${def.title}\n${"⭐".repeat(stars)} · ${guesses} ${noun} · ${formatTime(timeMs)}\n${SITE_HOST}`;
 
   return (
     <section className="panel p-5 text-center">
@@ -360,7 +487,13 @@ function RegionWin({
           copiedLabel={tr.copied}
         />
       </div>
-      <button onClick={onExit} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-surface px-6 py-3 font-bold text-white">
+      <button onClick={onPlayAgain} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-gold px-6 py-3 font-bold text-surface">
+        🔄 {freeLeft > 0 ? tr.practiceNextRound : tr.replay.paid(COIN_COSTS.spend_attempt)}
+      </button>
+      <p className="mt-1.5 text-[11px] text-neutral-400">
+        {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : tr.replay.paidNote}
+      </p>
+      <button onClick={onExit} className="brutal-sm brutal-press mt-2 w-full rounded-xl bg-surface px-6 py-3 font-bold text-white">
         {tr.region.chooseOtherMode}
       </button>
       <p className="text-[11px] text-neutral-400 mt-3">{tr.region.modeFooter(def.title)}</p>

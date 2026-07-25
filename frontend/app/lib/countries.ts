@@ -212,13 +212,19 @@ const RAW: Omit<Country, "code">[] = [
 
 // Conexiones marítimas (cruces de océano/estrecho) — permiten jugar
 // entre continentes. United States ↔ Russia (estrecho de Bering) une
-// América con el Viejo Mundo; las demás enriquecen rutas del Mediterráneo.
+// América con el Viejo Mundo; Egypt ↔ Saudi Arabia hace lo mismo entre
+// África y Asia; las demás enriquecen rutas del Mediterráneo.
 const SEA_LINKS: [string, string][] = [
   ["United States", "Russia"], // Estrecho de Bering (América ↔ Eurasia)
   ["Spain", "Morocco"], // Estrecho de Gibraltar
   ["Italy", "Tunisia"], // Canal de Sicilia
   ["Italy", "Albania"], // Mar Adriático
   ["Indonesia", "Australia"], // Mar de Timor (no aplica si Australia no existe)
+  // Estrecho de Tirán, boca del golfo de Áqaba: ~13 km en su punto más
+  // angosto, el mismo orden de magnitud que Gibraltar. Sin ella, la ruta
+  // óptima entre África y la península arábiga se iba por Israel/Jordania
+  // aunque el cruce directo es real y el mapa ya lo pinta.
+  ["Egypt", "Saudi Arabia"],
 ];
 
 // Fronteras que existen porque el MAPA pinta el territorio como parte del país

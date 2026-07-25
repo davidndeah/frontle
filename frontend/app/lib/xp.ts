@@ -31,6 +31,27 @@ export const XP = {
 // Topes diarios de las fuentes con seq (el servidor los impone vía PK+check).
 const CAPS = { quiz_flag: 5, quiz_outline: 5, practice: 3, region: 1 } as const;
 
+// Fuente con tope diario. Las rondas dentro del tope son las que dan XP —y por
+// eso son las GRATIS. Pasado el tope se puede seguir jugando pagando monedas,
+// pero ya no otorga XP: si lo hiciera, las monedas comprarían posición en la
+// liga (y premio), que es justo lo que FrontleWeekly prohíbe por diseño.
+export type CappedSource = keyof typeof CAPS;
+
+// Fuente de XP de cada modo de quiz.
+export function quizSource(mode: "flag" | "outline"): CappedSource {
+  return mode === "flag" ? "quiz_flag" : "quiz_outline";
+}
+
+// Rondas gratis (= con XP) que le quedan hoy al jugador en esa fuente. El
+// contador local espeja el del servidor; el techo real lo impone la PK.
+export function freeRoundsLeft(source: CappedSource, day = todayUTC()): number {
+  let n = 0;
+  try {
+    n = Number(localStorage.getItem(`frontle-xp-seq-${day}-${source}`) || "0");
+  } catch {}
+  return Math.max(0, CAPS[source] - n);
+}
+
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const useSupabase = Boolean(SUPA_URL && SUPA_KEY);
@@ -149,26 +170,33 @@ export function awardStreakMilestone(day: number, streak: number): void {
   void postEvents(day, [{ source: "streak_milestone", level: String(streak), xp: XP.streakMilestone }]);
 }
 
+// Los tres modos libres devuelven el XP realmente otorgado (0 si ya se agotó
+// el tope del día) y esperan a que el evento esté insertado: la pantalla de
+// victoria lee la posición en la liga justo después y necesita ver este XP ya
+// contado. El diario no lo necesita y sigue siendo fire-and-forget.
+
 // Regiones: completar un país (máx 1 país con XP por día).
-export function awardRegionWin(day = todayUTC()): void {
+export async function awardRegionWin(day = todayUTC()): Promise<number> {
   const seq = nextSeq(day, "region");
-  if (seq === null) return;
-  void postEvents(day, [{ source: "region", seq, xp: XP.region }]);
+  if (seq === null) return 0;
+  await postEvents(day, [{ source: "region", seq, xp: XP.region }]);
+  return XP.region;
 }
 
 // Quiz: acierto (máx 5 con XP por día y por modo).
-export function awardQuizCorrect(mode: "flag" | "outline", day = todayUTC()): void {
-  const source = mode === "flag" ? "quiz_flag" : "quiz_outline";
-  const seq = nextSeq(day, source);
-  if (seq === null) return;
-  void postEvents(day, [{ source, seq, xp: XP.quiz }]);
+export async function awardQuizCorrect(mode: "flag" | "outline", day = todayUTC()): Promise<number> {
+  const seq = nextSeq(day, quizSource(mode));
+  if (seq === null) return 0;
+  await postEvents(day, [{ source: quizSource(mode), seq, xp: XP.quiz }]);
+  return XP.quiz;
 }
 
 // Práctica: reto resuelto (máx 3 con XP por día).
-export function awardPracticeSolve(day = todayUTC()): void {
+export async function awardPracticeSolve(day = todayUTC()): Promise<number> {
   const seq = nextSeq(day, "practice");
-  if (seq === null) return;
-  void postEvents(day, [{ source: "practice", seq, xp: XP.practice }]);
+  if (seq === null) return 0;
+  await postEvents(day, [{ source: "practice", seq, xp: XP.practice }]);
+  return XP.practice;
 }
 
 // --- Lectura de la liga ------------------------------------------------------
@@ -210,6 +238,52 @@ export async function getWeeklyRanking(limit = 20): Promise<WeeklyEntry[]> {
   } catch {
     return [];
   }
+}
+
+// Cuántas filas de `weekly_xp` cumplen el filtro, sin traérselas: PostgREST
+// devuelve el total en la cabecera Content-Range ("0-0/42") cuando se le pide
+// count=exact. Así la posición no depende de descargar la tabla entera.
+async function countWeekly(filter: string): Promise<number | null> {
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/weekly_xp?${filter}&select=player_id`, {
+      headers: { ...HEADERS(), Prefer: "count=exact", Range: "0-0" },
+    });
+    const total = r.headers.get("content-range")?.split("/")[1];
+    return total && total !== "*" ? Number(total) : null;
+  } catch {
+    return null;
+  }
+}
+
+export interface WeeklyStanding {
+  xp: number;
+  /** Puesto (1 = primero). Empates: comparten el mejor puesto posible. */
+  rank: number;
+  /** Cuántos jugadores compiten esta semana. */
+  players: number;
+}
+
+// Posición del jugador en la liga de la semana. null si no hay backend o el
+// jugador aún no tiene identidad de liga (sin wallet no se compite).
+export async function getWeeklyStanding(): Promise<WeeklyStanding | null> {
+  if (!useSupabase || !hasLeagueIdentity()) return null;
+  const week = weekStartUTC();
+  const xp = await getMyWeeklyXp();
+  const [ahead, players] = await Promise.all([
+    countWeekly(`week=eq.${week}&xp=gt.${xp}`),
+    countWeekly(`week=eq.${week}`),
+  ]);
+  if (ahead === null || players === null) return null;
+  const rank = ahead + 1;
+  // Con 0 XP el jugador aún no tiene fila propia: no estaría contado en
+  // `players` y el puesto quedaría por encima del total.
+  return { xp, rank, players: Math.max(players, rank) };
+}
+
+// Cuántos jugadores compiten en la liga esta semana (para /stats).
+export async function getWeeklyPlayers(): Promise<number | null> {
+  if (!useSupabase) return null;
+  return countWeekly(`week=eq.${weekStartUTC()}`);
 }
 
 // XP semanal del propio jugador (0 si aún no tiene eventos esta semana).

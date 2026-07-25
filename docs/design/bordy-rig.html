@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bordy riggeado — brazos y cara que se mueven</title>
+<style>
+  :root {
+    --bg:#160833; --surface:#1c0b3e; --gold:#fcff52; --lavender:#b79ced;
+    --ink:#f3edff; --muted:#8791a8;
+    --body-grad: radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%);
+  }
+  .premium {
+    --bg:#0d0820; --surface:#221a44; --gold:#d9b45a; --lavender:#8f82c4;
+    --ink:#ece9f6; --muted:#9a92b5;
+    --body-grad: radial-gradient(120% 90% at 50% 0%, #241c48 0%, #140f2e 50%, #0a0716 100%);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:var(--body-grad);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;
+    align-items:center;gap:16px;padding:24px 16px 60px;transition:background .4s}
+  h1{font-size:20px;margin:0;text-align:center}
+  .sub{color:var(--muted);font-size:13px;margin:0;text-align:center;max-width:520px;line-height:1.5}
+
+  /* ===== EL RIG ===== */
+  .stage{width:270px;margin-top:4px}
+  .bordy{position:relative;width:100%;aspect-ratio:1280/1520}
+  .bordy>img{position:absolute;display:block}
+  .p-base    {left:0;    top:0;     width:100%}
+  .p-orejaI  {left:13.75%;top:28.95%;width:4.45%;  transform-origin:100% 50%}
+  .p-orejaD  {left:85.86%;top:28.95%;width:8.83%;  transform-origin:0% 50%}
+  .p-brazoI  {left:18.13%;top:61.71%;width:11.41%; transform-origin:85% 12%}
+  .p-brazoD  {left:77.27%;top:63.09%;width:12.27%; transform-origin:15% 12%}
+  .p-boca    {left:38.44%;top:47.37%;width:14.06%}
+  .cara{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+  /* La antena es un GRUPO (imagen + LED) para que el semáforo rote con ella.
+     El LED es información del juego (semáforo), no decoración: va en todos
+     los estados. Se pinta ENCIMA de la bolita amarilla del render. */
+  .p-antena{position:absolute;left:48.36%;top:0.20%;width:9.53%;transform-origin:50% 100%}
+  .p-antena img{width:100%;display:block}
+  .led{position:absolute;left:50%;top:29%;width:64%;aspect-ratio:1;
+    transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle at 38% 32%, rgba(255,255,255,.6) 0%, var(--led) 46%, color-mix(in srgb, var(--led) 68%, #000) 100%);
+    box-shadow:0 0 14px 5px color-mix(in srgb, var(--led) 55%, transparent);
+    transition:background .28s ease, box-shadow .28s ease}
+  @keyframes led-pulso{0%,100%{opacity:.55}50%{opacity:1}}
+  .led-rapido{animation:led-pulso .45s ease-in-out infinite}
+  .led-lento {animation:led-pulso 1.4s ease-in-out infinite}
+  @keyframes led-parpadeo{0%,86%,100%{opacity:.92}89%{opacity:.12}91%{opacity:.92}93%{opacity:.12}95%{opacity:.92}}
+  .led-blink{animation:led-parpadeo 5.5s ease-in-out infinite}
+
+  /* --- flote ambiental --- */
+  @keyframes respira{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-1.6%) scale(1.012,.99)}}
+  .respira{animation:respira 3.6s ease-in-out infinite}
+
+  /* --- brazos: rotan en el HOMBRO --- */
+  @keyframes brazoI-idle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(6deg)}}
+  @keyframes brazoD-idle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-6deg)}}
+  .brazoI-idle{animation:brazoI-idle 3.6s ease-in-out infinite}
+  .brazoD-idle{animation:brazoD-idle 3.6s ease-in-out infinite}
+
+  @keyframes brazoI-arriba{0%{transform:rotate(0)}30%{transform:rotate(-115deg)}70%{transform:rotate(-100deg)}100%{transform:rotate(-108deg)}}
+  @keyframes brazoD-arriba{0%{transform:rotate(0)}30%{transform:rotate(115deg)}70%{transform:rotate(100deg)}100%{transform:rotate(108deg)}}
+  .brazoI-arriba{animation:brazoI-arriba .5s cubic-bezier(.34,1.56,.64,1) forwards}
+  .brazoD-arriba{animation:brazoD-arriba .5s cubic-bezier(.34,1.56,.64,1) forwards}
+
+  /* RACHA: brazos BOMBEANDO de alegría (celebración, no voltereta) */
+  @keyframes brazoI-bombea{0%{transform:rotate(0)}15%{transform:rotate(-118deg)}
+    35%{transform:rotate(-78deg)}55%{transform:rotate(-118deg)}75%{transform:rotate(-78deg)}100%{transform:rotate(-112deg)}}
+  @keyframes brazoD-bombea{0%{transform:rotate(0)}15%{transform:rotate(118deg)}
+    35%{transform:rotate(78deg)}55%{transform:rotate(118deg)}75%{transform:rotate(78deg)}100%{transform:rotate(112deg)}}
+  .brazoI-bombea{animation:brazoI-bombea 1.5s ease-in-out}
+  .brazoD-bombea{animation:brazoD-bombea 1.5s ease-in-out}
+
+  @keyframes brazoD-saluda{0%{transform:rotate(0)}20%{transform:rotate(120deg)}
+    35%{transform:rotate(95deg)}50%{transform:rotate(125deg)}65%{transform:rotate(95deg)}
+    80%{transform:rotate(120deg)}100%{transform:rotate(0)}}
+  .brazoD-saluda{animation:brazoD-saluda 1.4s ease-in-out}
+
+  @keyframes brazoI-cae{to{transform:rotate(28deg) translateY(6%)}}
+  @keyframes brazoD-cae{to{transform:rotate(-28deg) translateY(6%)}}
+  .brazoI-cae{animation:brazoI-cae .45s ease-out forwards}
+  .brazoD-cae{animation:brazoD-cae .45s ease-out forwards}
+
+  /* PENSANDO: un brazo sube a la barbilla y se queda quieto ahí */
+  @keyframes brazoD-piensa{to{transform:rotate(74deg) translate(-16%,-14%)}}
+  .brazoD-piensa{animation:brazoD-piensa .55s ease-out forwards}
+  @keyframes brazoI-quieto{to{transform:rotate(3deg)}}
+  .brazoI-quieto{animation:brazoI-quieto .5s ease-out forwards}
+
+  /* --- antena --- */
+  @keyframes antena-idle{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+  .antena-idle{animation:antena-idle 3.6s ease-in-out infinite}
+  @keyframes antena-latigazo{0%{transform:rotate(0)}20%{transform:rotate(-26deg)}
+    45%{transform:rotate(18deg)}65%{transform:rotate(-10deg)}82%{transform:rotate(5deg)}100%{transform:rotate(0)}}
+  .antena-latigazo{animation:antena-latigazo .9s cubic-bezier(.22,1,.36,1)}
+  @keyframes antena-triste{to{transform:rotate(-30deg) translateY(4%)}}
+  .antena-triste{animation:antena-triste .5s ease-out forwards}
+  /* pensando: se ladea y queda "procesando" */
+  @keyframes antena-piensa{0%,100%{transform:rotate(12deg)}50%{transform:rotate(20deg)}}
+  .antena-piensa{animation:antena-piensa 2.8s ease-in-out infinite}
+  /* racha: vibra excitada */
+  @keyframes antena-vibra{0%,100%{transform:rotate(-14deg)}25%{transform:rotate(14deg)}
+    50%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}
+  .antena-vibra{animation:antena-vibra .35s ease-in-out 4}
+
+  /* --- orejas --- */
+  @keyframes orejaI-tiembla{0%,100%{transform:rotate(0) scale(1)}30%{transform:rotate(-12deg) scale(1.08)}60%{transform:rotate(6deg)}}
+  @keyframes orejaD-tiembla{0%,100%{transform:rotate(0) scale(1)}30%{transform:rotate(12deg) scale(1.08)}60%{transform:rotate(-6deg)}}
+  .orejaI-tiembla{animation:orejaI-tiembla .55s ease-in-out}
+  .orejaD-tiembla{animation:orejaD-tiembla .55s ease-in-out}
+
+  /* --- cuerpo --- */
+  @keyframes salto{0%{transform:translateY(0) scale(1,1)}15%{transform:translateY(2%) scale(1.07,.9)}
+    45%{transform:translateY(-16%) scale(.96,1.06)}80%{transform:translateY(0) scale(1.06,.92)}
+    90%{transform:translateY(-3%)}100%{transform:translateY(0) scale(1,1)}}
+  .salto{animation:salto .8s cubic-bezier(.22,1,.36,1)}
+
+  /* RACHA: rebote de ALEGRÍA — tres brincos seguidos, sin giro */
+  @keyframes festeja{
+    0%{transform:translateY(0) scale(1,1)}
+    8%{transform:translateY(2%) scale(1.08,.9)}
+    22%{transform:translateY(-15%) scale(.96,1.06) rotate(-4deg)}
+    36%{transform:translateY(0) scale(1.06,.93)}
+    48%{transform:translateY(-12%) scale(.97,1.05) rotate(4deg)}
+    62%{transform:translateY(0) scale(1.05,.94)}
+    74%{transform:translateY(-9%) scale(.98,1.04) rotate(-3deg)}
+    88%{transform:translateY(0) scale(1.04,.95)}
+    100%{transform:translateY(0) scale(1,1)}}
+  .festeja{animation:festeja 1.5s cubic-bezier(.22,1,.36,1)}
+
+  @keyframes sacude{0%,100%{transform:translateX(0)}15%{transform:translateX(-4%) rotate(-2deg)}
+    30%{transform:translateX(3.5%) rotate(2deg)}45%{transform:translateX(-3%) rotate(-1.5deg)}
+    60%{transform:translateX(2%) rotate(1deg)}75%{transform:translateX(-1%)}}
+  .sacude{animation:sacude .55s ease-out}
+  @keyframes mareo{0%,100%{transform:rotate(-6deg)}25%{transform:rotate(-10deg)}50%{transform:rotate(-2deg)}75%{transform:rotate(-8deg)}}
+  .mareo{animation:mareo 1.3s ease-in-out infinite}
+  /* PENSANDO: cabeza ladeada, quieto y contemplativo (sin escalar) */
+  @keyframes cavila{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(-4.5deg)}}
+  .cavila{animation:cavila 3.4s ease-in-out infinite}
+
+  /* ===== OJOS EN LLAMAS (racha) =====
+     La gracia del despiece: como los ojos ya son vectoriales, en racha se
+     reemplazan por dos llamas que ondean. Cada una con su propio desfase
+     para que no bailen en espejo (eso las delataría como copia). */
+  @keyframes llamita{
+    0%,100%{transform:scale(1,1) rotate(0deg)}
+    22%    {transform:scale(.9,1.2) rotate(-4deg)}
+    48%    {transform:scale(1.1,.9) rotate(3deg)}
+    72%    {transform:scale(.94,1.12) rotate(-2deg)}}
+  .llama-ojo{transform-box:fill-box;transform-origin:50% 92%;
+    animation:llamita .36s ease-in-out infinite}
+
+  /* puntitos de pensar */
+  .puntos{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;transition:opacity .25s}
+  .puntos.on{opacity:1}
+  @keyframes sube{0%,100%{opacity:0;transform:translateY(6px)}40%,70%{opacity:.95;transform:translateY(0)}}
+  .puntos circle{animation:sube 2.2s ease-in-out infinite}
+
+  /* --- controles --- */
+  .panel{background:var(--surface);border:1px solid color-mix(in srgb,var(--lavender) 25%,transparent);
+    border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;width:100%;max-width:520px;transition:background .4s}
+  .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .row{display:flex;flex-wrap:wrap;gap:8px}
+  button{border:1px solid color-mix(in srgb,var(--lavender) 35%,transparent);
+    background:color-mix(in srgb,var(--lavender) 12%,transparent);color:var(--ink);
+    border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;cursor:pointer;transition:transform .1s}
+  button:active{transform:scale(.95)}
+  button.on{background:var(--gold);color:#201800;border-color:var(--gold)}
+  .hint{font-size:12px;color:var(--muted);line-height:1.6}
+  .cur{font-size:13px}.cur b{color:var(--gold)}
+  .chip{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:5px}
+</style>
+</head>
+<body>
+  <h1>Bordy riggeado — brazos y cara que SÍ se mueven</h1>
+  <p class="sub">El mismo <code>bordy-m2.webp</code> despiezado en capas. El <b>LED de la antena</b> sigue siendo el semáforo del juego en todos los estados.</p>
+
+  <div class="stage">
+    <div class="bordy respira" id="root">
+      <img class="p-orejaI" id="orejaI" src="../../frontend/public/bordy/oreja-izq.webp" alt="">
+      <img class="p-orejaD" id="orejaD" src="../../frontend/public/bordy/oreja-der.webp" alt="">
+      <div class="p-antena" id="antena">
+        <img src="../../frontend/public/bordy/antena.webp" alt="">
+        <span class="led" id="led" style="--led:#fbbf24"></span>
+      </div>
+      <img class="p-base" src="../../frontend/public/bordy/base.webp" alt="Bordy">
+      <img class="p-brazoI" id="brazoI" src="../../frontend/public/bordy/brazo-izq.webp" alt="">
+      <img class="p-brazoD" id="brazoD" src="../../frontend/public/bordy/brazo-der.webp" alt="">
+      <img class="p-boca" id="boca" src="../../frontend/public/bordy/boca.webp" alt="">
+      <svg class="cara" viewBox="0 0 1280 1520" id="cara" aria-hidden="true"></svg>
+      <svg class="puntos" id="puntos" viewBox="0 0 1280 1520" aria-hidden="true">
+        <circle cx="1000" cy="300" r="16" fill="#b79ced" style="animation-delay:0s"/>
+        <circle cx="1058" cy="222" r="21" fill="#b79ced" style="animation-delay:.3s"/>
+        <circle cx="1128" cy="132" r="27" fill="#b79ced" style="animation-delay:.6s"/>
+      </svg>
+    </div>
+  </div>
+
+  <p class="cur">Estado: <b id="est">reposo</b> · LED <span class="chip" id="chip"></span><span id="ledName"></span></p>
+
+  <div class="panel">
+    <div class="label">Estados</div>
+    <div class="row" id="btns"></div>
+    <div class="hint">
+      <b>Racha</b>: los <b>ojos se vuelven llamas</b> 🔥 mientras festeja con tres brincos y los brazos bombeando.<br>
+      <b>Pensando</b> reworkeado: cabeza ladeada, brazo en la barbilla, <b>los ojos barren de lado a lado</b> y vuelven los puntitos.<br>
+      El <b>LED</b> cambia de color en todos los estados (desvío ahora es naranja, antes era idéntico al reposo).
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Paleta</div>
+    <div class="row">
+      <button class="pal on" data-pal="classic">Clásico</button>
+      <button class="pal" data-pal="premium">Premium</button>
+    </div>
+  </div>
+
+<script>
+var OJO_I={cx:416,cy:536,r:44}, OJO_D={cx:723,cy:534,r:44};
+var BOCA={cx:582,cy:764};
+var TINTA="#0b0a14", MORADO="#a855f7";
+
+function ojoNormal(o,ry){return '<ellipse cx="'+o.cx+'" cy="'+o.cy+'" rx="'+o.r+'" ry="'+(ry||o.r)+'" fill="'+TINTA+'"/>';}
+function ojoFeliz(o){return '<path d="M '+(o.cx-o.r-6)+' '+(o.cy+14)+' Q '+o.cx+' '+(o.cy-42)+' '+(o.cx+o.r+6)+' '+(o.cy+14)+
+  '" stroke="'+TINTA+'" stroke-width="24" fill="none" stroke-linecap="round"/>';}
+function ojoX(o){var r=o.r;return '<path d="M '+(o.cx-r)+' '+(o.cy-r)+' L '+(o.cx+r)+' '+(o.cy+r)+' M '+(o.cx+r)+' '+(o.cy-r)+' L '+(o.cx-r)+' '+(o.cy+r)+
+  '" stroke="'+TINTA+'" stroke-width="22" stroke-linecap="round"/>';}
+// racha: el ojo ES una llama. Base ancha sobre la cuenca, punta arriba, más
+// un núcleo amarillo interior que le da profundidad.
+function ojoLlama(o,delay){
+  var x=o.cx, y=o.cy;
+  // Ancha a propósito: la llama debe DESBORDAR la cuenca del ojo (88px de
+  // ancho), si no se lee como un ojo raro en vez de fuego. ~196px de ancho
+  // (2.2x el ojo). Aun así las dos llamas no se tocan ni con el pico del
+  // parpadeo, y se mantienen dentro del visor.
+  var fuera='M '+x+' '+(y-140)+' C '+(x+87)+' '+(y-62)+', '+(x+136)+' '+(y+12)+', '+x+' '+(y+70)+
+            ' C '+(x-136)+' '+(y+12)+', '+(x-87)+' '+(y-62)+', '+x+' '+(y-140)+' Z';
+  var dentro='M '+x+' '+(y-76)+' C '+(x+49)+' '+(y-26)+', '+(x+76)+' '+(y+24)+', '+x+' '+(y+54)+
+             ' C '+(x-76)+' '+(y+24)+', '+(x-49)+' '+(y-26)+', '+x+' '+(y-76)+' Z';
+  return '<g class="llama-ojo" style="animation-delay:'+delay+'">'+
+         '<path d="'+fuera+'" fill="url(#gLlama)"/>'+
+         '<path d="'+dentro+'" fill="#ffe74a" opacity=".92"/></g>';
+}
+var DEFS_LLAMA='<defs><linearGradient id="gLlama" x1="0" y1="1" x2="0" y2="0">'+
+  '<stop offset="0%" stop-color="#ff3d00"/><stop offset="50%" stop-color="#ff8a00"/>'+
+  '<stop offset="100%" stop-color="#ffe74a"/></linearGradient></defs>';
+
+// pensando: ojo entrecerrado que BARRE de lado a lado (solo posible con ojos vectoriales)
+function ojoPiensa(o){
+  return '<ellipse cx="'+o.cx+'" cy="'+(o.cy-6)+'" rx="'+o.r+'" ry="'+(o.r*0.5)+'" fill="'+TINTA+'">'+
+    '<animate attributeName="cx" values="'+(o.cx-14)+';'+(o.cx+16)+';'+(o.cx-14)+'" dur="3.2s" repeatCount="indefinite"/>'+
+    '</ellipse>';
+}
+function bocaSVG(t){var x=BOCA.cx,y=BOCA.cy;
+  if(t==="grande")return '<path d="M '+(x-78)+' '+(y-18)+' Q '+x+' '+(y+72)+' '+(x+78)+' '+(y-18)+' Q '+x+' '+(y+16)+' '+(x-78)+' '+(y-18)+' Z" fill="'+MORADO+'"/>';
+  if(t==="mueca")return '<path d="M '+(x-62)+' '+(y+30)+' Q '+x+' '+(y-34)+' '+(x+62)+' '+(y+30)+'" stroke="'+MORADO+'" stroke-width="24" fill="none" stroke-linecap="round"/>';
+  if(t==="o")return '<ellipse cx="'+x+'" cy="'+(y+6)+'" rx="34" ry="42" fill="'+MORADO+'"/>';
+  if(t==="chica")return '<ellipse cx="'+(x+6)+'" cy="'+(y+8)+'" rx="26" ry="17" fill="'+MORADO+'"/>';
+  if(t==="plana")return '<rect x="'+(x-46)+'" y="'+(y+2)+'" width="92" height="20" rx="10" fill="'+MORADO+'"/>';
+  return "";
+}
+
+// LED = semáforo del juego. Presente en TODOS los estados.
+var LED={reposo:"#fbbf24",acierto:"#34d399",desvio:"#fb923c",fallo:"#f87171",racha:"#fcff52",pensando:"#38bdf8",sorpresa:"#c084fc"};
+var LEDNOM={reposo:"ámbar",acierto:"verde",desvio:"naranja",fallo:"rojo",racha:"oro",pensando:"cian",sorpresa:"violeta"};
+
+var EST={
+  reposo:{cuerpo:"",brazoI:"brazoI-idle",brazoD:"brazoD-idle",antena:"antena-idle",
+          ojos:"normal",boca:"real",led:"led-blink",dur:0},
+  acierto:{cuerpo:"salto",brazoI:"brazoI-arriba",brazoD:"brazoD-arriba",antena:"antena-latigazo",
+          orejas:1,ojos:"feliz",boca:"grande",dur:900},
+  racha:{cuerpo:"festeja",brazoI:"brazoI-bombea",brazoD:"brazoD-bombea",antena:"antena-vibra",
+          orejas:1,ojos:"llama",boca:"grande",led:"led-rapido",dur:1700},
+  fallo:{cuerpo:"sacude",luego:"mareo",brazoI:"brazoI-cae",brazoD:"brazoD-cae",antena:"antena-triste",
+          ojos:"x",boca:"mueca",dur:1800},
+  desvio:{cuerpo:"sacude",brazoI:"brazoI-idle",brazoD:"brazoD-saluda",antena:"antena-latigazo",
+          orejas:1,ojos:"normal",boca:"plana",dur:1400},
+  pensando:{cuerpo:"cavila",brazoI:"brazoI-quieto",brazoD:"brazoD-piensa",antena:"antena-piensa",
+          ojos:"piensa",boca:"chica",led:"led-lento",puntos:1,dur:0},
+  sorpresa:{cuerpo:"salto",brazoI:"brazoI-arriba",brazoD:"brazoD-arriba",antena:"antena-latigazo",
+          orejas:1,ojos:"grande",boca:"o",dur:1200}
+};
+var NOM={reposo:"reposo",acierto:"acierto",racha:"racha",fallo:"fallo",desvio:"desvío",pensando:"pensando",sorpresa:"sorpresa"};
+
+var root=document.getElementById("root"),cara=document.getElementById("cara"),boca=document.getElementById("boca"),
+    est=document.getElementById("est"),brazoI=document.getElementById("brazoI"),brazoD=document.getElementById("brazoD"),
+    antena=document.getElementById("antena"),orejaI=document.getElementById("orejaI"),orejaD=document.getElementById("orejaD"),
+    led=document.getElementById("led"),puntos=document.getElementById("puntos"),
+    chip=document.getElementById("chip"),ledName=document.getElementById("ledName");
+var t1=null,t2=null,tB=null;
+
+function pintaCara(o,b){
+  var s="";
+  if(o==="llama")s=DEFS_LLAMA+ojoLlama(OJO_I,"0s")+ojoLlama(OJO_D,".18s");
+  else if(o==="feliz")s=ojoFeliz(OJO_I)+ojoFeliz(OJO_D);
+  else if(o==="x")s=ojoX(OJO_I)+ojoX(OJO_D);
+  else if(o==="piensa")s=ojoPiensa(OJO_I)+ojoPiensa(OJO_D);
+  else if(o==="grande")s=ojoNormal(OJO_I,54)+ojoNormal(OJO_D,54);
+  else s=ojoNormal(OJO_I)+ojoNormal(OJO_D);
+  s+=bocaSVG(b); cara.innerHTML=s;
+  boca.style.display=(b==="real")?"block":"none";
+}
+function reAplica(el,cls){el.className=el.className.split(" ")[0];void el.offsetWidth;if(cls)el.className+=" "+cls;}
+
+function set(e){
+  if(t1)clearTimeout(t1); if(t2)clearTimeout(t2); if(tB)clearTimeout(tB);
+  var c=EST[e];
+  root.className="bordy respira";void root.offsetWidth;
+  if(c.cuerpo)root.className="bordy respira "+c.cuerpo;
+  reAplica(brazoI,c.brazoI);reAplica(brazoD,c.brazoD);
+  // la antena conserva su clase base p-antena
+  antena.className="p-antena";void antena.offsetWidth;antena.className="p-antena "+c.antena;
+  if(c.orejas){reAplica(orejaI,"orejaI-tiembla");reAplica(orejaD,"orejaD-tiembla");}
+  else{reAplica(orejaI,"");reAplica(orejaD,"");}
+  // LED: color siempre + pulso según estado
+  led.style.setProperty("--led",LED[e]);
+  led.className="led";void led.offsetWidth;if(c.led)led.className="led "+c.led;
+  chip.style.background=LED[e];ledName.textContent=LEDNOM[e];
+  puntos.classList.toggle("on",!!c.puntos);
+  pintaCara(c.ojos,c.boca);
+  est.textContent=NOM[e];
+  var bs=document.querySelectorAll("#btns button");
+  for(var i=0;i<bs.length;i++)bs[i].classList.toggle("on",bs[i].dataset.e===e);
+  if(c.luego)t2=setTimeout(function(){root.className="bordy respira "+c.luego;},550);
+  if(c.dur)t1=setTimeout(function(){set("reposo");},c.dur);
+  if(e==="reposo")parpadeo();
+}
+function parpadeo(){
+  tB=setTimeout(function(){
+    var g=cara.querySelectorAll("ellipse");
+    if(g.length>=2){g[0].setAttribute("ry","5");g[1].setAttribute("ry","5");
+      setTimeout(function(){g[0].setAttribute("ry","44");g[1].setAttribute("ry","44");},110);}
+    parpadeo();
+  },2600+Math.random()*3200);
+}
+Object.keys(EST).forEach(function(e){
+  var b=document.createElement("button");b.dataset.e=e;
+  b.textContent=NOM[e].charAt(0).toUpperCase()+NOM[e].slice(1);
+  b.onclick=function(){set(e);};document.getElementById("btns").appendChild(b);
+});
+var pal=document.querySelectorAll("button.pal");
+pal.forEach(function(b){b.onclick=function(){
+  document.body.classList.toggle("premium",b.dataset.pal==="premium");
+  pal.forEach(function(x){x.classList.toggle("on",x===b);});};});
+set("reposo");
+</script>
+</body>
+</html>

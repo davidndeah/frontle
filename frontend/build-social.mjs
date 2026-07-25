@@ -148,7 +148,7 @@ const svg = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http
   <text x="80" y="118" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="900" fill="#ffffff" letter-spacing="2">FRONTLE</text>
   <text x="82" y="166" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#c3cbdd">Putting Colombia on the map — literally 🌍</text>
 
-  <text x="80" y="${H - 52}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#8791a8">frontle.vercel.app</text>
+  <text x="80" y="${H - 52}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#8791a8">www.frontle.earth</text>
   <text x="${W - 80}" y="${H - 52}" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#8791a8" text-anchor="end">@frontle_app · built on @Celo</text>
 </svg>
 `;

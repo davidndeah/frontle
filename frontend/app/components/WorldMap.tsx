@@ -86,6 +86,36 @@ const W = 360;
 const H = 220;
 const PAD = 24;
 
+// Área aproximada (shoelace, en grados²) de un anillo. Solo sirve para
+// comparar los polígonos de un MISMO país entre sí, no como área real.
+function ringArea(ring: number[][]): number {
+  let sum = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[i + 1];
+    sum += x1 * y2 - x2 * y1;
+  }
+  return Math.abs(sum) / 2;
+}
+
+// Se queda con el polígono más grande de un MultiPolygon (ver comentario en
+// `render`). Los países con un solo polígono pasan intactos.
+function mainPolygon(f: NamedFeature): NamedFeature {
+  if (f.geometry.type !== "MultiPolygon") return f;
+  const polys = f.geometry.coordinates;
+  if (polys.length <= 1) return f;
+  let best = 0;
+  let bestArea = -1;
+  polys.forEach((poly, i) => {
+    const a = ringArea(poly[0]);
+    if (a > bestArea) {
+      bestArea = a;
+      best = i;
+    }
+  });
+  return { ...f, geometry: { type: "Polygon", coordinates: polys[best] } };
+}
+
 export default function WorldMap({
   statusByCountry,
   loadingLabel,
@@ -130,7 +160,15 @@ export default function WorldMap({
     const anchor = known.filter(
       (x) => statusByCountry[x.name!] === "start" || statusByCountry[x.name!] === "end"
     );
-    const fitFeatures = (anchor.length ? anchor : [...known, ...sil]).map((k) => k.f);
+    // Para el ENCUADRE (no para el relleno) usamos solo el polígono principal
+    // de cada país: algunos (Francia + Guayana Francesa, en el mismo
+    // MultiPolygon del atlas) traen un territorio de ultramar a miles de km
+    // del cuerpo principal. Con el feature completo, fitExtent se abre para
+    // mostrar ambos y el zoom queda descuadrado (p.ej. Francia "trae" a
+    // Sudamérica al cuadro aunque el reto sea puramente europeo). No es el
+    // mismo bug que Rusia/antimeridiano (ahí el país es uno solo partido por
+    // la proyección) — aquí son dos territorios real y genuinamente separados.
+    const fitFeatures = (anchor.length ? anchor : [...known, ...sil]).map((k) => mainPolygon(k.f));
     if (fitFeatures.length === 0) return { graticule: "", outlines: [], silhouettes: [], known: [] };
 
     const fc: FeatureCollection = { type: "FeatureCollection", features: fitFeatures };

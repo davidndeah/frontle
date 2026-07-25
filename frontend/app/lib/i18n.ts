@@ -196,6 +196,10 @@ type Dict = {
     you: string;
     closes: (time: string) => string;
     needWallet: string;
+    // Premio de la semana. Solo se muestran cuando el pot on-chain existe;
+    // si no, sigue mandando `dry` ("los premios llegan pronto").
+    prize: (amount: string) => string;
+    split: string;
   };
   // Tienda de monedas (v2 Fase 2): pistas y reintentos de los modos de la liga.
   coins: {
@@ -209,6 +213,29 @@ type Dict = {
     failed: string;
     noFunds: string;
     cost: (n: number) => string;
+    // Compra suelta (1/2/5/10) y aviso del mínimo por transacción.
+    units: string;
+    minNote: (amount: string) => string;
+    // La tienda se puede abrir sin billetera; comprar, no.
+    needWallet: string;
+  };
+  // Aviso de XP al ganar en los modos libres (Regiones, Quiz, Práctica).
+  xpWin: {
+    title: string;
+    loading: string;
+    gained: (n: number) => string;
+    capped: string;
+    rank: (pos: number, players: number) => string;
+    total: (xp: number) => string;
+    needWallet: string;
+    close: string;
+  };
+  // Volver a jugar en los modos libres: gratis mientras queden rondas con XP,
+  // y con monedas a partir de ahí.
+  replay: {
+    freeLeft: (n: number) => string;
+    paid: (coins: number) => string;
+    paidNote: string;
   };
   // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
   streakCard: {
@@ -326,6 +353,10 @@ type Dict = {
   bordyMenu: {
     open: string; title: string; sub: string;
     tutorial: string; tutorialHint: string;
+    /** Botón para repetir el tutorial del modo que se está jugando. */
+    replayTutorial: string;
+    /** Encabezado de la lista de modos para aprender (desde el inicio). */
+    learnTitle: string;
     shop: string; shopHint: string;
     profile: string; profileHint: string;
     settings: string; settingsHint: string;
@@ -348,6 +379,8 @@ type Dict = {
     tries: (n: number) => string;
     wrong: string;
     correct: (name: string) => string;
+    /** Aviso al cambiar de nivel a mitad de ronda: no se rerollea el reto. */
+    levelNextRound: string;
   };
   // Sustantivo localizado por tipo de subdivisión (singular/plural)
   subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
@@ -362,6 +395,10 @@ type Dict = {
   coachSteps: string[];
   coachSkip: string;
   coachDone: string;
+  /** Botón de ayuda que reproduce el recorrido del modo. */
+  coachReplay: string;
+  /** Recorrido corto propio de cada modo (2 pasos), sobre la pantalla real. */
+  modeCoach: { region: string[]; practice: string[]; quiz: string[] };
   rankingTitle: string;
   // Sub-tabs del ranking: reto diario (marca+tiempo) vs liga semanal (XP).
   rankTabs: { daily: string; weekly: string };
@@ -419,20 +456,45 @@ type Dict = {
     topCountries: string;
     last30d: string;
     economy: string;
-    bothContracts: string;
+    // Antes decía "contratos v1 + v2": con FrontleWeekly ya son tres, y estas
+    // secciones suman los tres.
+    allContracts: string;
     prizesPaid: string;
     daysClosed: string;
     playerFunds: string;
     playerFundsHint: string;
     protocolFees: string;
     protocolFeesHint: string;
+    // Métricas on-chain que exige el formulario de listado.
+    txDay: string;
+    txWeek: string;
+    txMonth: string;
+    volume: string;
+    volumeHint: string;
+    feesUsd: string;
+    feesUsdHint: string;
+    // Liga semanal (v2) y monedas: la otra mitad de la economía.
+    weeklyTitle: string;
+    weeklyThisWeek: string;
+    weeklyPot: string;
+    weeklyPlayers: string;
+    weeklyPrizes: string;
+    weeksClosed: string;
+    weeklySplit: string;
+    coinsTitle: string;
+    coinsSold: string;
+    coinsSpent: string;
+    coinsHolders: string;
+    coinsNote: string;
     moneyTitle: string;
     money1: string;
     money2: (pot: string, fee: string) => string;
     money3: string;
+    money4: string;
     contractsTitle: string;
     contractInUse: string;
     contractLegacy: string;
+    contractWeekly: string;
     contractsNote: string;
     verified: string;
     unverified: string;
@@ -467,8 +529,8 @@ const STRINGS: Record<Locale, Dict> = {
     paying: "Procesando pago…",
     payFailed: "No se pudo completar el pago. Intenta de nuevo.",
     payCancelled: "Pago cancelado.",
-    payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu wallet para continuar.`,
-    payNoGas: "Tu wallet no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
+    payNoFunds: (a) => `Saldo insuficiente: esta compra cuesta ${a}. Recarga tu billetera para continuar.`,
+    payNoGas: "Tu billetera no tiene saldo para la comisión de red. El saldo de bienvenida ya se agotó; deposita un poco para pagar pistas o reintentos.",
     usdtOnly: "Frontle acepta solo USDT. Si tu saldo está en otra stablecoin (USDC o USDm), cámbialo a USDT en MiniPay primero.",
     payTimerPaused: "El tiempo está en pausa mientras se confirma el pago. Sigue al confirmarse.",
     liga: {
@@ -477,7 +539,9 @@ const STRINGS: Record<Locale, Dict> = {
       empty: "Nadie ha sumado XP esta semana. ¡Juega cualquier modo y estrena la tabla!",
       you: "Tú",
       closes: (time) => `Cierra en ${time}`,
-      needWallet: "Conecta tu wallet para competir en la liga y cobrar el premio.",
+      needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
+      prize: (a) => `🏆 Premio de la semana: ${a}`,
+      split: "Se reparte entre los 3 primeros: 50% · 30% · 10%.",
     },
     coins: {
       shop: "Tienda de monedas",
@@ -490,6 +554,24 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "No se pudo completar la compra. Intenta de nuevo.",
       noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
       cost: (n) => `${n} 🪙`,
+      units: "O compra sueltas",
+      minNote: (a) => `Las compras de menos de ${a} USDT no están disponibles por ahora.`,
+      needWallet: "Necesitas una billetera para comprar monedas. Entra con tu correo y te creamos una.",
+    },
+    xpWin: {
+      title: "XP ganado",
+      loading: "Calculando tu puesto…",
+      gained: (n) => `+${n} XP`,
+      capped: "Ya sumaste todo el XP que da este modo hoy. Puedes seguir jugando para practicar: vuelve mañana para más XP.",
+      rank: (pos, players) => `Vas #${pos} de ${players} en la liga`,
+      total: (xp) => `${xp} XP esta semana`,
+      needWallet: "Conecta tu billetera para competir en la liga semanal.",
+      close: "Seguir",
+    },
+    replay: {
+      freeLeft: (n) => `Te quedan ${n} con XP hoy`,
+      paid: (coins) => `Jugar otra vez · ${coins} 🪙`,
+      paidNote: "Ya no suma XP: es solo para practicar.",
     },
     streakCard: {
       days: "días seguidos",
@@ -515,11 +597,11 @@ const STRINGS: Record<Locale, Dict> = {
     copmBalance: (a) => `Saldo: ${a} COP`,
     amountIn: "Ver montos en",
     noWallet: "Abre Frontle en MiniPay para pistas y reintentos.",
-    connectToRank: "🔗 Conecta tu wallet para entrar al ranking",
-    connectWallet: "🔗 Conectar wallet",
+    connectToRank: "🔗 Conecta tu billetera para entrar al ranking",
+    connectWallet: "🔗 Conectar billetera",
     connectBenefit: "Para el ranking y las pistas",
     connectToPlay: "Conéctate para jugar",
-    openInMiniPay: "Conéctate con tu wallet o correo para jugar, o abre Frontle desde MiniPay.",
+    openInMiniPay: "Conéctate con tu billetera o correo para jugar, o abre Frontle desde MiniPay.",
     emailLogin: "✉️ Entrar con correo",
     welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
     bonusDismiss: "¡Gracias!",
@@ -533,7 +615,7 @@ const STRINGS: Record<Locale, Dict> = {
     statDays: "días jugados",
     statBestToday: "mejor hoy",
     statPrizes: "premios",
-    walletBalanceTitle: "Saldo de tu wallet",
+    walletBalanceTitle: "Saldo de tu billetera",
     deposit: "Depositar",
     addressCopied: "¡Dirección copiada!",
     language: "Idioma",
@@ -581,12 +663,13 @@ const STRINGS: Record<Locale, Dict> = {
       effects: (m) => m ? "Activar efectos" : "Silenciar efectos",
       zoomIn: "Acercar", zoomOut: "Alejar", recenter: "Reencuadrar", settings: "Ajustes",
     },
-    name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu wallet).", save: "Guardar", skip: "Usar mi wallet" },
-    walletSheet: { title: "💰 Tu wallet", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Cerrar sesión", signOutHint: "Podrás volver a entrar con otro correo." },
+    name: { title: "¡Elige tu nombre!", sub: "Así apareces en el ranking (en vez de tu billetera).", save: "Guardar", skip: "Usar mi billetera" },
+    walletSheet: { title: "💰 Tu billetera", connectedAs: "Conectado como", signIn: "👤 Entrar", signOut: "Cerrar sesión", signOutHint: "Podrás volver a entrar con otro correo." },
     settingsSheet: { title: "⚙️ Ajustes", language: "Idioma", theme: "Tema", themes: { default: "Clásico", premium: "Premium" } },
     bordyMenu: {
       open: "Abrir el menú de Bordy", title: "¿En qué te ayudo?", sub: "Soy Bordy, tu guía",
       tutorial: "Cómo se juega", tutorialHint: "Repasa las reglas conmigo",
+      replayTutorial: "Ver cómo se juega", learnTitle: "Aprende un modo",
       shop: "Tienda", shopHint: "Compra monedas para pistas y reintentos",
       profile: "Mi perfil", profileHint: "Nombre, logros y premios",
       settings: "Ajustes", settingsHint: "Idioma, música y efectos",
@@ -606,6 +689,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Intentos: ${n}`,
       wrong: "No es ese, ¡sigue intentando!",
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
+      levelNextRound: "Se aplica en la próxima ronda",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
@@ -647,8 +731,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 ¿Atascado? Aquí compras una pista: la INICIAL del siguiente país, su SILUETA en el mapa, o todas las siluetas. Cuestan centavos y el 80% alimenta el pot del día 🏆",
       "⏱️ Y este es el desempate: a igual número de países, gana el más rápido. Arranca cuando toques ¡Entendido! — el reto sigue oculto, así que nadie gana ventaja 😄",
     ],
+    modeCoach: {
+      region: [
+        "Aquí conectas subdivisiones del mismo país: de la de arriba a la de abajo, vecina por vecina.",
+        "Estas pistas cuestan monedas. El reto es diario y gratis: no gastas nada por jugar.",
+      ],
+      practice: [
+        "Entrenamiento libre: retos infinitos, sin premios ni ranking. Los contornos se ven todos, para aprender.",
+        "Cambia la dificultad cuando quieras — se aplica en la ronda siguiente, no en la que estás jugando.",
+      ],
+      quiz: [
+        "Mira la imagen y escribe de qué país es. Aquí no hay cadena: es un país por ronda.",
+        "Cada pista que abras te resta estrellas, así que intenta primero sin ellas.",
+      ],
+    },
     coachSkip: "Saltar",
     coachDone: "¡Entendido!",
+    coachReplay: "Cómo se juega",
     rankingTitle: "Ranking diario",
     rankTabs: { daily: "Diario", weekly: "Semanal" },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
@@ -708,24 +807,46 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top países",
       last30d: "últimos 30 días",
       economy: "Economía",
-      bothContracts: "contratos v1 + v2",
+      allContracts: "los tres contratos",
       prizesPaid: "Premios repartidos",
       daysClosed: "Días cerrados",
       playerFunds: "Fondos de los jugadores",
       playerFundsHint: "premio de hoy + premios sin reclamar",
       protocolFees: "Comisión de plataforma",
       protocolFeesHint: "el 20% de mantenimiento, aparte del premio",
+      txDay: "24 h",
+      txWeek: "7 días",
+      txMonth: "30 días",
+      volume: "Volumen movido",
+      volumeHint: "entradas y salidas de los contratos",
+      feesUsd: "Comisiones de red",
+      feesUsdHint: "pagadas por los jugadores, estimadas en USD",
+      weeklyTitle: "Liga semanal",
+      weeklyThisWeek: "esta semana",
+      weeklyPot: "Premio de la semana",
+      weeklyPlayers: "Compitiendo",
+      weeklyPrizes: "Premios repartidos",
+      weeksClosed: "Semanas cerradas",
+      weeklySplit: "Se reparte 50% · 30% · 10% entre los tres primeros por XP. El XP se gana jugando: no se puede comprar.",
+      coinsTitle: "Monedas",
+      coinsSold: "Compradas",
+      coinsSpent: "Gastadas",
+      coinsHolders: "Con saldo",
+      coinsNote: "Las monedas pagan pistas y rondas extra. No son un token: son saldo de juego, y su compra alimenta el premio semanal.",
       moneyTitle: "A dónde va tu dinero",
       money1: "El primer intento de cada reto diario es gratis. Las pistas y los reintentos son compras opcionales en USDT.",
       money2: (pot, fee) =>
         `De cada compra, el ${pot} alimenta el premio del día y el ${fee} cubre el mantenimiento de la plataforma. Al cierre del día (UTC) el premio se reparte entre los mejores de cada nivel, y los ganadores lo reclaman desde la app.`,
       money3:
-        "Frontle nunca custodia tus fondos: los pagos van directo de tu wallet al contrato inteligente. La comisión se contabiliza aparte y no toca el premio.",
+        "Frontle nunca guarda tu dinero: los pagos van directo de tu billetera al contrato inteligente. La comisión se contabiliza aparte y no toca el premio.",
+      money4:
+        "La liga semanal es una economía aparte: el 100% de cada compra de monedas entra al premio de la semana, del que la plataforma retiene un 10% al cerrarla. Competir es gratis — el XP se gana jugando y nunca se compra.",
       contractsTitle: "Los contratos",
       contractInUse: "En uso · premio por nivel",
       contractLegacy: "Histórico · ganador único",
+      contractWeekly: "En uso · pot de la liga semanal",
       contractsNote:
-        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los dos. Puedes auditar cada transacción en el explorador.",
+        "El v1 ya no recibe pagos y sus premios fueron reclamados; las cifras de arriba suman los tres. Puedes auditar cada transacción en el explorador.",
       verified: "verificado",
       unverified: "sin verificar",
       sourceOpen: "Ver el código en GitHub",
@@ -768,6 +889,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "You",
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
+      prize: (a) => `🏆 This week's prize: ${a}`,
+      split: "Split among the top 3: 50% · 30% · 10%.",
     },
     coins: {
       shop: "Coin shop",
@@ -780,6 +903,24 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "The purchase didn't go through. Please try again.",
       noFunds: "Not enough balance for this pack. Deposit a little and come back.",
       cost: (n) => `${n} 🪙`,
+      units: "Or buy single coins",
+      minNote: (a) => `Purchases under ${a} USDT aren't available right now.`,
+      needWallet: "You need a wallet to buy coins. Sign in with your email and we'll create one for you.",
+    },
+    xpWin: {
+      title: "XP earned",
+      loading: "Working out your place…",
+      gained: (n) => `+${n} XP`,
+      capped: "You've earned all the XP this mode gives today. Keep playing to practise: come back tomorrow for more XP.",
+      rank: (pos, players) => `You're #${pos} of ${players} in the league`,
+      total: (xp) => `${xp} XP this week`,
+      needWallet: "Connect your wallet to compete in the weekly league.",
+      close: "Continue",
+    },
+    replay: {
+      freeLeft: (n) => `${n} left with XP today`,
+      paid: (coins) => `Play again · ${coins} 🪙`,
+      paidNote: "No XP from here on: practice only.",
     },
     streakCard: {
       days: "days in a row",
@@ -877,6 +1018,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Open Bordy's menu", title: "How can I help?", sub: "I'm Bordy, your guide",
       tutorial: "How to play", tutorialHint: "Go over the rules with me",
+      replayTutorial: "See how to play", learnTitle: "Learn a mode",
       shop: "Shop", shopHint: "Buy coins for hints and retries",
       profile: "My profile", profileHint: "Name, achievements and prizes",
       settings: "Settings", settingsHint: "Language, music and effects",
@@ -896,6 +1038,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Tries: ${n}`,
       wrong: "Not that one, keep trying!",
       correct: (n) => `Correct! It was ${n} 🎉`,
+      levelNextRound: "Applies to the next round",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
@@ -937,8 +1080,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Stuck? This is where you buy a hint: the next country's INITIAL, its SILHOUETTE on the map, or all the silhouettes. They cost cents and 80% feeds the day's pot 🏆",
       "⏱️ And this is the tiebreaker: with the same number of countries, the fastest wins. It starts when you tap Got it! — the challenge stays hidden, so nobody gets an edge 😄",
     ],
+    modeCoach: {
+      region: [
+        "Here you connect subdivisions within one country: from the top one to the bottom one, neighbor by neighbor.",
+        "These hints cost coins. The challenge itself is daily and free: playing costs you nothing.",
+      ],
+      practice: [
+        "Free training: endless challenges, no prizes or ranking. Every outline is visible, so you can learn.",
+        "Change the difficulty anytime — it applies to the next round, not the one you're playing.",
+      ],
+      quiz: [
+        "Look at the image and type which country it is. No chain here: one country per round.",
+        "Every hint you open costs you stars, so try without them first.",
+      ],
+    },
     coachSkip: "Skip",
     coachDone: "Got it!",
+    coachReplay: "How to play",
     rankingTitle: "Daily ranking",
     rankTabs: { daily: "Daily", weekly: "Weekly" },
     bestToday: (n) => `Your best today: ${n} countries`,
@@ -998,7 +1156,7 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top countries",
       last30d: "last 30 days",
       economy: "Economy",
-      bothContracts: "contracts v1 + v2",
+      allContracts: "all three contracts",
       prizesPaid: "Prizes paid out",
       daysClosed: "Days closed",
       playerFunds: "Player funds",
@@ -1006,16 +1164,38 @@ const STRINGS: Record<Locale, Dict> = {
       protocolFees: "Platform fee",
       protocolFeesHint: "the 20% for upkeep, kept apart from the prize",
       moneyTitle: "Where your money goes",
+      txDay: "24 h",
+      txWeek: "7 days",
+      txMonth: "30 days",
+      volume: "Volume moved",
+      volumeHint: "in and out of the contracts",
+      feesUsd: "Network fees",
+      feesUsdHint: "paid by players, estimated in USD",
+      weeklyTitle: "Weekly league",
+      weeklyThisWeek: "this week",
+      weeklyPot: "This week's prize",
+      weeklyPlayers: "Competing",
+      weeklyPrizes: "Prizes paid out",
+      weeksClosed: "Weeks closed",
+      weeklySplit: "Split 50% · 30% · 10% among the top three by XP. XP is earned by playing: it can't be bought.",
+      coinsTitle: "Coins",
+      coinsSold: "Bought",
+      coinsSpent: "Spent",
+      coinsHolders: "Holding a balance",
+      coinsNote: "Coins pay for hints and extra rounds. They aren't a token: they're in-game balance, and buying them feeds the weekly prize.",
       money1: "The first attempt at each daily challenge is free. Hints and retries are optional purchases in USDT.",
       money2: (pot, fee) =>
         `Of every purchase, ${pot} feeds the day's prize and ${fee} covers platform upkeep. When the day closes (UTC) the prize is split among the best of each level, and winners claim it from the app.`,
       money3:
         "Frontle never holds your funds: payments go straight from your wallet to the smart contract. The fee is accounted for separately and never touches the prize.",
+      money4:
+        "The weekly league is a separate economy: 100% of every coin purchase goes into that week's prize, of which the platform keeps 10% when the week closes. Competing is free — XP is earned by playing and is never for sale.",
       contractsTitle: "The contracts",
       contractInUse: "In use · prize per level",
       contractLegacy: "Historical · single winner",
+      contractWeekly: "In use · weekly league pot",
       contractsNote:
-        "v1 no longer takes payments and its prizes were all claimed; the figures above add up both. You can audit every transaction on the explorer.",
+        "v1 no longer takes payments and its prizes were all claimed; the figures above add up all three. You can audit every transaction on the explorer.",
       verified: "verified",
       unverified: "unverified",
       sourceOpen: "See the code on GitHub",
@@ -1058,6 +1238,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Você",
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
+      prize: (a) => `🏆 Prêmio da semana: ${a}`,
+      split: "Dividido entre os 3 primeiros: 50% · 30% · 10%.",
     },
     coins: {
       shop: "Loja de moedas",
@@ -1070,6 +1252,24 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "A compra não foi concluída. Tente de novo.",
       noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
       cost: (n) => `${n} 🪙`,
+      units: "Ou compre avulsas",
+      minNote: (a) => `Compras abaixo de ${a} USDT não estão disponíveis por enquanto.`,
+      needWallet: "Você precisa de uma carteira para comprar moedas. Entre com seu e-mail e criamos uma para você.",
+    },
+    xpWin: {
+      title: "XP ganho",
+      loading: "Calculando sua posição…",
+      gained: (n) => `+${n} XP`,
+      capped: "Você já somou todo o XP que este modo dá hoje. Pode continuar jogando para treinar: volte amanhã para mais XP.",
+      rank: (pos, players) => `Você está em #${pos} de ${players} na liga`,
+      total: (xp) => `${xp} XP esta semana`,
+      needWallet: "Conecte sua carteira para competir na liga semanal.",
+      close: "Continuar",
+    },
+    replay: {
+      freeLeft: (n) => `Faltam ${n} com XP hoje`,
+      paid: (coins) => `Jogar de novo · ${coins} 🪙`,
+      paidNote: "Não soma mais XP: é só para treinar.",
     },
     streakCard: {
       days: "dias seguidos",
@@ -1095,11 +1295,11 @@ const STRINGS: Record<Locale, Dict> = {
     copmBalance: (a) => `Saldo: ${a} COP`,
     amountIn: "Ver valores em",
     noWallet: "Abra o Frontle no MiniPay para dicas e novas tentativas.",
-    connectToRank: "🔗 Conecte sua wallet para entrar no ranking",
-    connectWallet: "🔗 Conectar wallet",
+    connectToRank: "🔗 Conecte sua carteira para entrar no ranking",
+    connectWallet: "🔗 Conectar carteira",
     connectBenefit: "Para o ranking e as dicas",
     connectToPlay: "Entre para jogar",
-    openInMiniPay: "Conecte sua wallet ou e-mail para jogar, ou abra o Frontle no MiniPay.",
+    openInMiniPay: "Conecte sua carteira ou e-mail para jogar, ou abra o Frontle no MiniPay.",
     emailLogin: "✉️ Entrar com e-mail",
     welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
     bonusDismiss: "Obrigado!",
@@ -1167,6 +1367,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Abrir o menu do Bordy", title: "Como posso ajudar?", sub: "Sou o Bordy, seu guia",
       tutorial: "Como se joga", tutorialHint: "Revise as regras comigo",
+      replayTutorial: "Ver como se joga", learnTitle: "Aprenda um modo",
       shop: "Loja", shopHint: "Compre moedas para dicas e novas tentativas",
       profile: "Meu perfil", profileHint: "Nome, conquistas e prêmios",
       settings: "Ajustes", settingsHint: "Idioma, música e efeitos",
@@ -1186,6 +1387,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Tentativas: ${n}`,
       wrong: "Não é esse, continue tentando!",
       correct: (n) => `Correto! Era ${n} 🎉`,
+      levelNextRound: "Vale para a próxima rodada",
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
@@ -1227,8 +1429,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Travou? Aqui você compra uma dica: a INICIAL do próximo país, sua SILHUETA no mapa, ou todas as silhuetas. Custam centavos e 80% alimenta o pot do dia 🏆",
       "⏱️ E este é o desempate: com o mesmo número de países, ganha o mais rápido. Ele começa quando você tocar em Entendi! — o desafio segue oculto, então ninguém ganha vantagem 😄",
     ],
+    modeCoach: {
+      region: [
+        "Aqui você conecta subdivisões do mesmo país: da de cima até a de baixo, vizinha por vizinha.",
+        "Estas dicas custam moedas. O desafio é diário e grátis: jogar não custa nada.",
+      ],
+      practice: [
+        "Treino livre: desafios infinitos, sem prêmios nem ranking. Todos os contornos ficam visíveis, para aprender.",
+        "Mude a dificuldade quando quiser — vale para a próxima rodada, não para a que você está jogando.",
+      ],
+      quiz: [
+        "Olhe a imagem e escreva de que país é. Aqui não há cadeia: é um país por rodada.",
+        "Cada dica que abrir tira estrelas, então tente primeiro sem elas.",
+      ],
+    },
     coachSkip: "Pular",
     coachDone: "Entendi!",
+    coachReplay: "Como se joga",
     rankingTitle: "Ranking diário",
     rankTabs: { daily: "Diário", weekly: "Semanal" },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
@@ -1288,22 +1505,44 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top países",
       last30d: "últimos 30 dias",
       economy: "Economia",
-      bothContracts: "contratos v1 + v2",
+      allContracts: "os três contratos",
       prizesPaid: "Prêmios distribuídos",
       daysClosed: "Dias encerrados",
       playerFunds: "Fundos dos jogadores",
       playerFundsHint: "prêmio de hoje + prêmios não resgatados",
       protocolFees: "Taxa da plataforma",
       protocolFeesHint: "os 20% de manutenção, à parte do prêmio",
+      txDay: "24 h",
+      txWeek: "7 dias",
+      txMonth: "30 dias",
+      volume: "Volume movimentado",
+      volumeHint: "entradas e saídas dos contratos",
+      feesUsd: "Taxas de rede",
+      feesUsdHint: "pagas pelos jogadores, estimadas em USD",
+      weeklyTitle: "Liga semanal",
+      weeklyThisWeek: "esta semana",
+      weeklyPot: "Prêmio da semana",
+      weeklyPlayers: "Competindo",
+      weeklyPrizes: "Prêmios distribuídos",
+      weeksClosed: "Semanas encerradas",
+      weeklySplit: "Dividido 50% · 30% · 10% entre os três primeiros por XP. O XP se ganha jogando: não dá para comprar.",
+      coinsTitle: "Moedas",
+      coinsSold: "Compradas",
+      coinsSpent: "Gastas",
+      coinsHolders: "Com saldo",
+      coinsNote: "As moedas pagam dicas e rodadas extras. Não são um token: são saldo de jogo, e comprá-las alimenta o prêmio semanal.",
       moneyTitle: "Para onde vai seu dinheiro",
       money1: "A primeira tentativa de cada desafio diário é grátis. Dicas e novas tentativas são compras opcionais em USDT.",
       money2: (pot, fee) =>
         `De cada compra, ${pot} alimenta o prêmio do dia e ${fee} cobre a manutenção da plataforma. Ao encerrar o dia (UTC) o prêmio é dividido entre os melhores de cada nível, e os vencedores o resgatam pelo app.`,
       money3:
         "O Frontle nunca guarda seus fundos: os pagamentos vão direto da sua carteira para o contrato inteligente. A taxa é contabilizada à parte e não toca no prêmio.",
+      money4:
+        "A liga semanal é uma economia à parte: 100% de cada compra de moedas entra no prêmio da semana, do qual a plataforma retém 10% ao encerrá-la. Competir é grátis — o XP se ganha jogando e nunca se compra.",
       contractsTitle: "Os contratos",
       contractInUse: "Em uso · prêmio por nível",
       contractLegacy: "Histórico · vencedor único",
+      contractWeekly: "Em uso · pot da liga semanal",
       contractsNote:
         "O v1 já não recebe pagamentos e seus prêmios foram resgatados; os números acima somam os dois. Você pode auditar cada transação no explorador.",
       verified: "verificado",
@@ -1348,6 +1587,8 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Vous",
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
+      prize: (a) => `🏆 Prix de la semaine : ${a}`,
+      split: "Réparti entre les 3 premiers : 50 % · 30 % · 10 %.",
     },
     coins: {
       shop: "Boutique de pièces",
@@ -1360,6 +1601,24 @@ const STRINGS: Record<Locale, Dict> = {
       failed: "L'achat n'a pas abouti. Réessayez.",
       noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
       cost: (n) => `${n} 🪙`,
+      units: "Ou achetez à l'unité",
+      minNote: (a) => `Les achats de moins de ${a} USDT ne sont pas disponibles pour l'instant.`,
+      needWallet: "Il vous faut un portefeuille pour acheter des pièces. Connectez-vous avec votre e-mail et nous en créons un.",
+    },
+    xpWin: {
+      title: "XP gagné",
+      loading: "Calcul de votre place…",
+      gained: (n) => `+${n} XP`,
+      capped: "Vous avez gagné tout l'XP que ce mode donne aujourd'hui. Continuez à jouer pour vous entraîner : revenez demain pour plus d'XP.",
+      rank: (pos, players) => `Vous êtes #${pos} sur ${players} dans la ligue`,
+      total: (xp) => `${xp} XP cette semaine`,
+      needWallet: "Connectez votre portefeuille pour jouer la ligue hebdo.",
+      close: "Continuer",
+    },
+    replay: {
+      freeLeft: (n) => `Il en reste ${n} avec XP aujourd'hui`,
+      paid: (coins) => `Rejouer · ${coins} 🪙`,
+      paidNote: "Plus d'XP à partir d'ici : entraînement seulement.",
     },
     streakCard: {
       days: "jours d'affilée",
@@ -1385,11 +1644,11 @@ const STRINGS: Record<Locale, Dict> = {
     copmBalance: (a) => `Solde : ${a} COP`,
     amountIn: "Afficher les montants en",
     noWallet: "Ouvrez Frontle dans MiniPay pour les indices et les essais.",
-    connectToRank: "🔗 Connectez votre wallet pour rejoindre le classement",
-    connectWallet: "🔗 Connecter wallet",
+    connectToRank: "🔗 Connectez votre portefeuille pour rejoindre le classement",
+    connectWallet: "🔗 Connecter portefeuille",
     connectBenefit: "Pour le classement et les indices",
     connectToPlay: "Connecte-toi pour jouer",
-    openInMiniPay: "Connecte ton wallet ou e-mail pour jouer, ou ouvre Frontle depuis MiniPay.",
+    openInMiniPay: "Connecte ton portefeuille ou e-mail pour jouer, ou ouvre Frontle depuis MiniPay.",
     emailLogin: "✉️ Se connecter par e-mail",
     welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
     bonusDismiss: "Merci !",
@@ -1457,6 +1716,7 @@ const STRINGS: Record<Locale, Dict> = {
     bordyMenu: {
       open: "Ouvrir le menu de Bordy", title: "Comment puis-je t'aider ?", sub: "Je suis Bordy, ton guide",
       tutorial: "Comment jouer", tutorialHint: "Revois les règles avec moi",
+      replayTutorial: "Voir comment jouer", learnTitle: "Apprends un mode",
       shop: "Boutique", shopHint: "Achète des pièces pour les indices et les reprises",
       profile: "Mon profil", profileHint: "Nom, succès et prix",
       settings: "Réglages", settingsHint: "Langue, musique et effets",
@@ -1476,6 +1736,7 @@ const STRINGS: Record<Locale, Dict> = {
       tries: (n) => `Essais : ${n}`,
       wrong: "Ce n'est pas ça, continue !",
       correct: (n) => `Correct ! C'était ${n} 🎉`,
+      levelNextRound: "S'applique au tour suivant",
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
@@ -1517,8 +1778,23 @@ const STRINGS: Record<Locale, Dict> = {
       "💡 Bloqué ? C'est ici que tu achètes un indice : l'INITIALE du pays suivant, sa SILHOUETTE sur la carte, ou toutes les silhouettes. Quelques centimes, et 80 % alimentent le pot du jour 🏆",
       "⏱️ Et voici le départage : à nombre de pays égal, le plus rapide gagne. Il démarre quand tu touches Compris ! — le défi reste caché, donc personne n'est avantagé 😄",
     ],
+    modeCoach: {
+      region: [
+        "Ici tu relies des subdivisions d'un même pays : de celle du haut à celle du bas, voisine par voisine.",
+        "Ces indices coûtent des pièces. Le défi est quotidien et gratuit : jouer ne te coûte rien.",
+      ],
+      practice: [
+        "Entraînement libre : défis infinis, sans prix ni classement. Tous les contours sont visibles, pour apprendre.",
+        "Change la difficulté quand tu veux — elle s'applique au tour suivant, pas à celui en cours.",
+      ],
+      quiz: [
+        "Regarde l'image et écris de quel pays il s'agit. Pas de chaîne ici : un pays par tour.",
+        "Chaque indice ouvert te coûte des étoiles, alors essaie d'abord sans.",
+      ],
+    },
     coachSkip: "Passer",
     coachDone: "Compris !",
+    coachReplay: "Comment jouer",
     rankingTitle: "Classement du jour",
     rankTabs: { daily: "Quotidien", weekly: "Hebdo" },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
@@ -1578,13 +1854,32 @@ const STRINGS: Record<Locale, Dict> = {
       topCountries: "Top pays",
       last30d: "30 derniers jours",
       economy: "Économie",
-      bothContracts: "contrats v1 + v2",
+      allContracts: "les trois contrats",
       prizesPaid: "Gains distribués",
       daysClosed: "Jours clôturés",
       playerFunds: "Fonds des joueurs",
       playerFundsHint: "cagnotte du jour + gains non réclamés",
       protocolFees: "Commission de la plateforme",
       protocolFeesHint: "les 20 % d'entretien, à part de la cagnotte",
+      txDay: "24 h",
+      txWeek: "7 jours",
+      txMonth: "30 jours",
+      volume: "Volume déplacé",
+      volumeHint: "entrées et sorties des contrats",
+      feesUsd: "Frais de réseau",
+      feesUsdHint: "payés par les joueurs, estimés en USD",
+      weeklyTitle: "Ligue hebdo",
+      weeklyThisWeek: "cette semaine",
+      weeklyPot: "Prix de la semaine",
+      weeklyPlayers: "En lice",
+      weeklyPrizes: "Prix distribués",
+      weeksClosed: "Semaines clôturées",
+      weeklySplit: "Réparti 50 % · 30 % · 10 % entre les trois premiers à l'XP. L'XP se gagne en jouant : il ne s'achète pas.",
+      coinsTitle: "Pièces",
+      coinsSold: "Achetées",
+      coinsSpent: "Dépensées",
+      coinsHolders: "Avec un solde",
+      coinsNote: "Les pièces paient les indices et les manches supplémentaires. Ce n'est pas un jeton : c'est un solde de jeu, et leur achat alimente le prix hebdomadaire.",
       moneyTitle: "Où va votre argent",
       money1: "Le premier essai de chaque défi quotidien est gratuit. Les indices et les essais supplémentaires sont des achats optionnels en USDT.",
       money2: (pot, fee) =>
@@ -1592,10 +1887,13 @@ const STRINGS: Record<Locale, Dict> = {
       money3:
         "Frontle ne détient jamais vos fonds : les paiements vont directement de votre portefeuille au contrat intelligent. La commission est comptabilisée à part et ne touche pas la cagnotte.",
       contractsTitle: "Les contrats",
+      money4:
+        "La ligue hebdo est une économie à part : 100 % de chaque achat de pièces entre dans le prix de la semaine, dont la plateforme retient 10 % à la clôture. Concourir est gratuit — l'XP se gagne en jouant et ne s'achète jamais.",
       contractInUse: "En service · gain par niveau",
       contractLegacy: "Historique · gagnant unique",
+      contractWeekly: "En service · cagnotte de la ligue hebdo",
       contractsNote:
-        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les deux. Vous pouvez auditer chaque transaction sur l'explorateur.",
+        "Le v1 ne reçoit plus de paiements et ses gains ont tous été réclamés ; les chiffres ci-dessus additionnent les trois. Vous pouvez auditer chaque transaction sur l'explorateur.",
       verified: "vérifié",
       unverified: "non vérifié",
       sourceOpen: "Voir le code sur GitHub",

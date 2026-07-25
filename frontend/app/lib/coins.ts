@@ -16,19 +16,42 @@ import { purchaseCoinPack, type PayResult } from "./payments";
 import { xpPlayerId } from "./xp";
 import { ensureSecret, localSecret, rpc } from "./secret";
 
+// Precio unitario del plan §5.1. Los paquetes grandes traen bonus; comprar
+// suelto siempre sale a esta tarifa, sin recargo ni descuento.
+export const COIN_UNIT_USDT = 0.01;
+
+// Un lote comprable: cuántas monedas y cuánto cuesta.
+export interface CoinLot {
+  coins: number;
+  usdt: number;
+}
+
 // Paquetes del plan §5.1 (1 🪙 = $0.01; los grandes traen bonus).
-export const COIN_PACKS = [
+export const COIN_PACKS: readonly CoinLot[] = [
   { coins: 50, usdt: 0.5 },
   { coins: 110, usdt: 1.0 },
   { coins: 300, usdt: 2.5 },
-] as const;
+];
 
-// Ítems de gasto (deben coincidir con el check `coin_shape` de la 0009).
+// Compra suelta, para quien solo necesita una pista y no un paquete. Sin
+// bonus: sale a tarifa plana. `credit-coins` ya acredita cualquier monto a
+// 1 🪙 = $0.01 (su fallback), así que el servidor no necesita cambios.
+export const COIN_UNITS: readonly CoinLot[] = [1, 2, 5, 10].map((coins) => ({
+  coins,
+  // Redondeo a 2 decimales: 3*0.01 en coma flotante da 0.030000000000000002,
+  // y ese sobrante llegaría a parseUnits como monto no representable.
+  usdt: Math.round(coins * COIN_UNIT_USDT * 100) / 100,
+}));
+
+// Ítems de gasto. Deben coincidir con el check `coin_shape` de coin_ledger,
+// hoy en la 0015 — NO en la 0009, que es donde nacieron: el congelador bajó de
+// 15 a 5 🪙 en la 0015 y aquí se quedó en 15. El servidor manda (fija el precio
+// en `buy_streak_freeze`), así que el desajuste solo mentía en pantalla.
 export const COIN_COSTS = {
   spend_hint: 3,
   spend_hint_strong: 5,
   spend_attempt: 5,
-  spend_freeze: 15,
+  spend_freeze: 5,
   spend_repair: 25,
   spend_repair_long: 50,
 } as const;
@@ -44,6 +67,24 @@ const HEADERS = () => ({
   Authorization: `Bearer ${SUPA_KEY}`,
 });
 
+// --- Aviso de "el saldo cambió" ---------------------------------------------
+// El contador del header vive en page.tsx, pero se gasta desde dentro de los
+// modos (pistas, reintentos) y desde la tarjeta de racha, que no lo conocen.
+// Un evento de ventana evita pasar callbacks por tres niveles de props: quien
+// mueva monedas avisa, y quien muestre saldo se entera. Mismo patrón que el
+// bus de lib/privy.ts.
+const COINS_EVENT = "frontle:coins";
+
+export function notifyCoinsChanged(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(COINS_EVENT));
+}
+
+export function onCoinsChanged(cb: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(COINS_EVENT, cb);
+  return () => window.removeEventListener(COINS_EVENT, cb);
+}
+
 // Saldo actual del jugador (0 si no tiene movimientos o no hay backend).
 export async function getCoinBalance(): Promise<number> {
   if (!useSupabase) return 0;
@@ -56,6 +97,59 @@ export async function getCoinBalance(): Promise<number> {
     return Number((Array.isArray(j) && j[0]?.coins) || 0);
   } catch {
     return 0;
+  }
+}
+
+// --- Agregados públicos para /stats -----------------------------------------
+
+export interface CoinStats {
+  sold: number; // monedas compradas (no incluye las regaladas)
+  spent: number; // monedas gastadas en pistas, reintentos y escudos
+  holders: number; // jugadores con saldo > 0
+  /** El ledger no cupo en una página: los totales son un mínimo, no el total. */
+  truncated: boolean;
+}
+
+// Techo de filas por petición. PostgREST corta en algún punto de todos modos;
+// pedir un límite explícito permite DETECTAR el corte comparándolo con el
+// total exacto de la cabecera, en vez de publicar una suma incompleta como si
+// fuera definitiva — en una página de transparencia eso sería mentir.
+const LEDGER_PAGE = 5000;
+
+export async function getCoinStats(): Promise<CoinStats | null> {
+  if (!useSupabase) return null;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/coin_ledger?select=kind,amount&limit=${LEDGER_PAGE}`, {
+      headers: { ...HEADERS(), Prefer: "count=exact" },
+    });
+    const rows: Array<{ kind: string; amount: number }> = await r.json();
+    if (!Array.isArray(rows)) return null;
+    const totalStr = r.headers.get("content-range")?.split("/")[1];
+    const total = totalStr && totalStr !== "*" ? Number(totalStr) : rows.length;
+
+    let sold = 0;
+    let spent = 0;
+    for (const row of rows) {
+      const n = Number(row.amount ?? 0);
+      if (row.kind === "purchase") sold += n;
+      else if (n < 0) spent += -n;
+    }
+
+    // Los tenedores salen de la vista de saldos, no del ledger: ahí ya está
+    // hecha la resta de compras menos gastos por jugador.
+    const h = await fetch(`${SUPA_URL}/rest/v1/coin_balance?coins=gt.0&select=player_id&limit=1`, {
+      headers: { ...HEADERS(), Prefer: "count=exact", Range: "0-0" },
+    });
+    const holdersStr = h.headers.get("content-range")?.split("/")[1];
+
+    return {
+      sold,
+      spent,
+      holders: holdersStr && holdersStr !== "*" ? Number(holdersStr) : 0,
+      truncated: total > rows.length,
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -73,7 +167,10 @@ export async function spendCoins(kind: SpendKind, ref?: string): Promise<SpendRe
     p_kind: kind,
     p_ref: ref ?? null,
   });
-  if (r.ok) return "ok";
+  if (r.ok) {
+    notifyCoinsChanged();
+    return "ok";
+  }
   if (r.code === "P0001") return "insufficient";
   if (r.code === "P0002") return "identity";
   return "error";
@@ -86,7 +183,7 @@ export type BuyCoinsResult = { res: PayResult | "credit_pending"; coins?: number
 // queda en localStorage y se reintenta en la próxima consulta de saldo.
 const PENDING_KEY = "frontle-coins-pending-tx";
 
-export async function buyCoinPack(pack: (typeof COIN_PACKS)[number]): Promise<BuyCoinsResult> {
+export async function buyCoinPack(pack: CoinLot): Promise<BuyCoinsResult> {
   const { res, txHash } = await purchaseCoinPack(pack.usdt);
   if (res !== "success" || !txHash) return { res };
   const credited = await creditTx(txHash);
@@ -96,6 +193,7 @@ export async function buyCoinPack(pack: (typeof COIN_PACKS)[number]): Promise<Bu
     } catch {}
     return { res: "credit_pending" };
   }
+  notifyCoinsChanged();
   return { res: "success", coins: credited };
 }
 
@@ -111,6 +209,7 @@ export async function retryPendingCredit(): Promise<void> {
     try {
       localStorage.removeItem(PENDING_KEY);
     } catch {}
+    notifyCoinsChanged();
   }
 }
 

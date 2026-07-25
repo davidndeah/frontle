@@ -141,8 +141,15 @@ sembrado** por la plataforma (`fundPot`). Ver memoria `frontle-economy-model-dec
 - **FrontleWeekly (mainnet, pot semanal de la liga v2) — desplegado 2026-07-20:**
   `0x766A12333AA5249CDEf2259Cc9D3aD0c746c8132` — verificado en Celoscan.
   Deploy tx `0xce5691b24ad31e5ac33bc5d7083df7995bba9bbfc0120d011668537eeb7492d2`
-  (bloque 72674170). Parámetros: minPurchase `100000` (0.10 USDT), protocolBps
-  `1000` (10%, topado por `MAX_PROTOCOL_BPS`). Reparte 50/30/10 al podio semanal.
+  (bloque 72674170). Parámetros vigentes: minPurchase `10000` (0.01 USDT),
+  protocolBps `1000` (10%, topado por `MAX_PROTOCOL_BPS`). Reparte 50/30/10 al
+  podio semanal.
+  El mínimo se desplegó en `100000` (0.10 USDT) y se bajó a `10000` el
+  2026-07-23 con `setParams` (tx `0xf428e00cd62e6b99faaa17defaf9d9ea3606c2bc194a278eae65fe6925951594`,
+  bloque 72949776) para que la tienda pueda vender monedas sueltas de 1, 2 y 5
+  — a 0.01 USDT/moneda, cualquiera de esas compras no llegaba al mínimo viejo.
+  ⚠️ `setParams` fija minPurchase Y protocolBps a la vez: al tocar uno hay que
+  repetir el valor del otro o se cambia sin querer.
   ⚠️ Su índice de semana (`currentWeek()`, lunes a lunes) NO es el `week_start`
   de Supabase: ver `supabase/functions/close-week`.
 - **Token USDT (6 dec):** `0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e`

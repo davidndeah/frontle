@@ -7,6 +7,10 @@
 //   3. Cobertura de continents.ts (pista de continente del quiz).
 //   4. Intl.DisplayNames en los 4 idiomas (nombres y resolución).
 //   5. Banderas regionales locales (public/flags/<región>/<code>.webp).
+//   6. Cruces marítimos esperados (SEA_LINKS de countries.ts): si falta
+//      uno, la ruta óptima de un reto se va por el continente en vez de
+//      cruzar directo, aunque el mapa pinte el cruce como válido — el
+//      bug que motivó esta sección (Egipto↔Arabia Saudí, ver countries.ts).
 //  Uso:  node scripts/check-visuals.mjs
 //  Sale con código 1 si hay hallazgos rojos (útil para CI).
 // ============================================================
@@ -183,6 +187,30 @@ function norm(s) {
     if (missing > 0) warn.push(`FLAGS ${id}: ${missing}/${ents.length} sin imagen (usan marcador)`);
     console.log(`región ${id}: ${ents.length} entidades, ${missing} sin imagen${tiny ? `, ${tiny} sospechosas` : ""}`);
   }
+}
+
+// --- 7. cruces marítimos esperados (regresión del bug Egipto↔Arabia Saudí) ---
+{
+  const src = countriesSrc; // ya leído para el bloque 1
+  const seaLinksBlock = src.match(/SEA_LINKS[^=]*=\s*\[([\s\S]*?)\n\];/)?.[1] ?? "";
+  const seaLinks = new Set(
+    [...seaLinksBlock.matchAll(/\["([^"]+)",\s*"([^"]+)"\]/g)].map(([, a, b]) => edgeKey(a, b))
+  );
+  // Cruces reales y angostos (mismo criterio que Gibraltar: un estrecho, no
+  // un mar abierto) que el juego debería reconocer como frontera. Agregar
+  // aquí cuando se confirme uno nuevo evita que el bug se repita en silencio.
+  const EXPECTED_SEA_LINKS = [
+    ["United States", "Russia"], // Estrecho de Bering
+    ["Spain", "Morocco"], // Estrecho de Gibraltar
+    ["Egypt", "Saudi Arabia"], // Estrecho de Tirán / golfo de Áqaba
+  ];
+  function edgeKey(a, b) {
+    return a < b ? `${a} ${b}` : `${b} ${a}`;
+  }
+  for (const [a, b] of EXPECTED_SEA_LINKS) {
+    if (!seaLinks.has(edgeKey(a, b))) red.push(`SEA_LINK faltante: ${a} ↔ ${b} (ruta óptima se iría por tierra)`);
+  }
+  console.log(`cruces marítimos: ${seaLinks.size} en el grafo, ${EXPECTED_SEA_LINKS.length} esperados verificados`);
 }
 
 // --- resumen ---

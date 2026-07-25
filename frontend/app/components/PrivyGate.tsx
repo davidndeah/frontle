@@ -15,7 +15,7 @@
 // ============================================================
 
 import { useEffect, useRef } from "react";
-import { PrivyProvider, useLogin, useWallets, usePrivy } from "@privy-io/react-auth";
+import { PrivyProvider, useLogin, useWallets, usePrivy, type PrivyClientConfig } from "@privy-io/react-auth";
 import { celo } from "viem/chains";
 import { setEmbeddedProvider } from "../lib/payments";
 import { onEmailLoginRequest, onLogoutRequest, PRIVY_APP_ID } from "../lib/privy";
@@ -25,6 +25,24 @@ import { onEmailLoginRequest, onLogoutRequest, PRIVY_APP_ID } from "../lib/privy
 const CELO_WITH_RPC = {
   ...celo,
   rpcUrls: { ...celo.rpcUrls, default: { http: ["https://forno.celo.org"] } },
+};
+
+// Config del provider como CONSTANTE DE MÓDULO — no un objeto literal inline.
+// page.tsx re-renderiza cada 250ms (reloj de la partida) y PrivyGate con él;
+// si el `config` naciera nuevo en cada render, Privy reinicializaría su cliente
+// y DERRIBARÍA el modal de correo abierto: en móvil el teclado aparecía y se
+// cerraba al instante porque el input se remontaba. Con identidad estable, un
+// re-render de PrivyGate ya no toca al provider.
+const PRIVY_CONFIG: PrivyClientConfig = {
+  loginMethods: ["email"],
+  // La wallet embebida debe nacer en Celo, no en Ethereum.
+  defaultChain: CELO_WITH_RPC,
+  supportedChains: [CELO_WITH_RPC],
+  embeddedWallets: {
+    showWalletUIs: false,
+    // Solo crea wallet a quien entra por correo y no trae una propia.
+    ethereum: { createOnLogin: "users-without-wallets" },
+  },
 };
 
 // Reclama el bono de bienvenida (una sola vez por usuario). El servidor verifica
@@ -154,20 +172,7 @@ export default function PrivyGate({
   onWelcomeBonus?: (amount: string) => void;
 }) {
   return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      config={{
-        loginMethods: ["email"],
-        // La wallet embebida debe nacer en Celo, no en Ethereum.
-        defaultChain: CELO_WITH_RPC,
-        supportedChains: [CELO_WITH_RPC],
-        embeddedWallets: {
-          showWalletUIs: false,
-          // Solo crea wallet a quien entra por correo y no trae una propia.
-          ethereum: { createOnLogin: "users-without-wallets" },
-        },
-      }}
-    >
+    <PrivyProvider appId={PRIVY_APP_ID} config={PRIVY_CONFIG}>
       <IdentityBridge onIdentity={onIdentity} onWelcomeBonus={onWelcomeBonus} />
       <LoginListener />
       <LogoutListener />

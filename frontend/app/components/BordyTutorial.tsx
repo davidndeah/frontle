@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TUTORIAL_MAP } from "../lib/tutorialMap";
 import { countryName, t, type Locale } from "../lib/i18n";
 import { STATUS_COLORS } from "../lib/theme";
+import Bordy from "./Bordy";
 
 type Dict = ReturnType<typeof t>;
 
@@ -221,7 +222,18 @@ function InputDemo({ text, locale, placeholder }: { text: string; locale: Locale
 }
 
 // --- Tutorial completo ---
-export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale: Locale; onDone: () => void }) {
+export default function BordyTutorial({
+  tr, locale, onDone,
+}: {
+  tr: Dict; locale: Locale;
+  /**
+   * `completo` distingue TERMINAR de SALTAR, y esa diferencia importa: quien
+   * salta está diciendo "no me expliques nada", así que tampoco debe recibir
+   * los coachmarks después. Antes ambos casos eran indistinguibles y el
+   * usuario que saltaba se topaba con un segundo tutorial.
+   */
+  onDone: (completo: boolean) => void;
+}) {
   const [step, setStep] = useState(0);
   const [chars, setChars] = useState(0);
   const [status, setStatus] = useState<DemoStatus>({});
@@ -278,16 +290,16 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
     return () => timers.forEach(clearTimeout);
   }, [step, mutedRef, STEPS]);
 
-  function finish() {
+  function finish(completo: boolean) {
     try { if (hideNext) localStorage.setItem("frontle-tutorial-hide", "1"); } catch {}
-    onDone();
+    onDone(completo);
   }
 
   function next() {
     chime(mutedRef.current);
     if (typing) { setChars(full.length); return; }
     if (step < STEPS.length - 1) setStep(step + 1);
-    else finish();
+    else finish(true);
   }
 
   return (
@@ -311,11 +323,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
 
       {/* Bordy + burbuja */}
       <div className="flex items-center gap-2 w-full max-w-sm">
-        <div className="relative w-[76px] h-[90px] flex-none">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bordy-m2.webp" alt="Bordy"
-            className={`w-full h-full object-contain drop-shadow-xl ${typing ? "bordy-talk" : "bordy-float-sm"}`} />
-        </div>
+        <Bordy mood="idle" talking={typing} float={!typing} className="w-[76px] h-[90px] flex-none" imgClassName="drop-shadow-xl" />
         <div className="panel relative flex-1 px-4 py-3 min-h-[86px]">
           <p className="text-white text-[13.5px] leading-relaxed">
             <span className="mr-1.5">{STEPS[step].icon}</span>
@@ -342,7 +350,7 @@ export default function BordyTutorial({ tr, locale, onDone }: { tr: Dict; locale
           className="w-3.5 h-3.5 accent-gold" />
         {tr.dontShowAgain}
       </label>
-      <button onClick={finish} className="text-[11px] text-neutral-400 underline active:scale-95 transition -mt-1">
+      <button onClick={() => finish(false)} className="text-[11px] text-neutral-400 underline active:scale-95 transition -mt-1">
         {tr.skipTutorial}
       </button>
     </div>
@@ -363,10 +371,7 @@ export function QuickStart({ tr, onDone, onFull }: { tr: Dict; onDone: () => voi
   return (
     <div className="fixed inset-0 z-[60] bg-grid flex flex-col items-center justify-center gap-4"
       style={{ background: "var(--body-grad)" }}>
-      <div className="w-[96px] h-[112px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/bordy-m2.webp" alt="Bordy" className="bordy-talk w-full h-full object-contain drop-shadow-xl" />
-      </div>
+      <Bordy mood="idle" talking className="w-[96px] h-[112px]" imgClassName="drop-shadow-xl" />
       <p className="font-display font-bold text-white text-xl">{tr.ready}</p>
       <div key={n} className="pop-in font-display font-bold text-7xl text-gold tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
         {n > 0 ? n : tr.go}
