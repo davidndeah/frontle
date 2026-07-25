@@ -42,3 +42,35 @@ Un componente nuevo `app/components/PlaceGuessGame.tsx`, clonando el patrón que
 - **Selección de nivel, monedas, ranking, compartir:** clonar tal cual de `PracticeGame`/
   `CountryQuizGame` (`LevelSelect`, `CoinShop`, `ScoreCard`) — cero motor nuevo, solo el
   estímulo (imagen) y el banco de datos son nuevos.
+
+---
+
+## 3. Banco de datos: esquema propio + fotos con licencia clara
+
+**Esquema** (`app/lib/places.ts`, formato propio — no el de `data/geo.json` de Arcadia):
+
+```ts
+export interface PlaceEntry {
+  id: string;
+  country: string;       // debe existir en COUNTRY_NAMES o ISLAND_NAMES
+  imageUrl: string;       // propia, no hotlinkeada de Arcadia ni de nadie
+  credit?: string;        // atribución si la licencia de la foto lo exige
+  decoys: string[];       // 3 países señuelo, mismo continente para que sea difícil de verdad
+  tier?: Difficulty;      // igual que quiz.ts — ausente = medium
+}
+```
+
+**De dónde salen las fotos (pendiente de decisión de David):**
+1. **Wikimedia Commons** — enorme catálogo de fotos de lugares con licencia CC (BY / BY-SA / dominio
+   público). Requiere guardar el `credit` de cada una (autor + licencia) — el esquema ya lo contempla.
+   Filtrar por licencias que permitan uso comercial sin compartir el código (CC-BY, CC0, dominio
+   público; evitar ShareAlike si complica términos legales del proyecto).
+2. **Fotos propias / banco pagado** (Unsplash+/Shutterstock) — más control de estilo/calidad, pero
+   cuesta tiempo o dinero.
+3. **Empezar chico**: ~30-50 lugares muy reconocibles (Torre Eiffel, Cristo Redentor, Machu Picchu,
+   Times Square…) con Wikimedia, igual que `PLAN-MODOS-QUIZ.md` arrancó con "~50 países curados"
+   para los datos culturales. Ampliar por tandas.
+
+**Riesgo a evitar:** el LICENSE de Arcadia prohíbe explícitamente "scraping/extracting/bulk-downloading"
+su banco — ni las URLs de sus imágenes ni sus IDs de lugares se deben mirar siquiera como referencia
+de qué fotografiar. El banco de Frontle se arma de cero, con fuentes propias verificables.
