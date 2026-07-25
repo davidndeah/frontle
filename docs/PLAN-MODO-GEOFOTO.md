@@ -74,3 +74,23 @@ export interface PlaceEntry {
 **Riesgo a evitar:** el LICENSE de Arcadia prohíbe explícitamente "scraping/extracting/bulk-downloading"
 su banco — ni las URLs de sus imágenes ni sus IDs de lugares se deben mirar siquiera como referencia
 de qué fotografiar. El banco de Frontle se arma de cero, con fuentes propias verificables.
+
+---
+
+## 4. Preguntas abiertas (decisión de David)
+
+- ¿Cuántos lugares para el lanzamiento — 30, 50, más? (arrancar chico, ampliar por tandas, como
+  hizo `countryFacts.ts`).
+- ¿Wikimedia Commons alcanza en calidad/variedad, o vale la pena un banco pagado desde el día 1?
+- ¿El modo entra al reto diario (determinista por fecha, como `dailyChallenge()`) o solo como modo
+  repetible tipo Bandera/Contorno? Empezar por repetible es menos riesgo (no hay "reto del día
+  arruinado" si falta contenido).
+- ¿Señuelos (`decoys`) se autoran a mano por entrada, o se derivan (mismo continente, aleatorios)?
+  Autorarlos a mano da mejor dificultad pero cuesta más tiempo por entrada.
+
+## 5. Siguiente paso
+
+Este plan es solo diseño — no hay código todavía. El primer paso real sería: David decide la
+fuente de fotos (§3) y cura las primeras ~10-15 entradas a mano (mismo patrón que el arranque de
+`countryFacts.ts` en `PLAN-MODOS-QUIZ.md`); con esas, se puede prototipar `PlaceGuessGame.tsx`
+clonando `CountryQuizGame.tsx` y validar que el patrón de §2 funciona antes de escalar el banco.
