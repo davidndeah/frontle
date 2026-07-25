@@ -366,11 +366,20 @@ function fmtDate(iso: string, locale: Locale): string {
     : d.toLocaleDateString(locale, { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+// Cabecera de sección. `bare` = va dentro de un panel que ya tiene su propio
+// aire, así que no añade margen inferior.
 function SectionHead({ title, aside, bare = false }: { title: string; aside?: string; bare?: boolean }) {
   return (
-    <div className={`flex items-baseline justify-between gap-3 ${bare ? "" : "mb-2 px-0.5"}`}>
-      <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">{title}</h2>
-      {aside && <span className="text-[10px] text-neutral-400 tabular-nums">{aside}</span>}
+    <div className={bare ? "" : "mb-2"}>
+      <div className="flex items-baseline justify-between gap-3 px-0.5">
+        <h2 className="font-display text-sm font-black uppercase tracking-[0.14em] text-white">{title}</h2>
+        {aside && <span className="text-[10px] text-neutral-400 tabular-nums">{aside}</span>}
+      </div>
+      {/* Regla maciza bajo el título: en el sistema de referencia las secciones
+          se separan con una línea, no con espacio en blanco. Es lo que da el
+          "strict grid alignment" cuando las tarjetas de abajo son de tamaños
+          distintos. */}
+      <div className="mt-1 h-[3px] w-full bg-lavender/45" aria-hidden />
     </div>
   );
 }
@@ -409,15 +418,18 @@ function Stat({
   done: boolean;
 }) {
   return (
-    <div className="panel p-3 flex flex-col gap-1">
+    // Card neo-brutalista: superficie sólida, borde grueso y sombra dura
+    // desplazada. Sustituye a `panel` (gradiente translúcido), que sobre una
+    // rejilla de muchas tarjetas pequeñas se leía como una mancha continua.
+    <div className="brutal-sm flex flex-col gap-1 rounded-lg bg-surface p-3">
       <span className="text-[10px] uppercase tracking-wider text-neutral-400 leading-tight">{label}</span>
       {value !== null ? (
-        <span className="font-display text-2xl font-bold text-white tabular-nums leading-none">
+        <span className="font-display text-2xl font-black text-white tabular-nums leading-none">
           {value}
           {unit && <span className="ml-1 text-xs font-semibold text-neutral-400">{unit}</span>}
         </span>
       ) : done ? (
-        <span className="font-display text-2xl font-bold text-neutral-600 leading-none">—</span>
+        <span className="font-display text-2xl font-black text-neutral-600 leading-none">—</span>
       ) : (
         <span className="h-6 w-16 rounded bg-white/10 animate-pulse" />
       )}
