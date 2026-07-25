@@ -116,7 +116,7 @@
 - Fila origen→destino: **banderas** (no nombres, spoiler-free) con "→".
 - **Cuadritos del semáforo** (una fila de 🟩🟨🟥 según la calidad de cada país de la ruta) — el equivalente visual de los cuadritos de Wordle.
 - Métricas: nº de países · ⏱️ tiempo · ⭐ estrellas (3/2/1 vs óptima).
-- Footer: "frontle.vercel.app".
+- Footer: "www.frontle.earth".
 **Implementación (Canvas, sin libs):**
 1. Nuevo `app/lib/scoreCard.ts`: `async function makeScoreCard(data): Promise<Blob>`.
    - Crear `<canvas 1080×1080>`, `getContext("2d")`, pintar fondo (gradiente #1c0b3e→#160833), textos y rects de colores del semáforo (COLORS de game.ts).
