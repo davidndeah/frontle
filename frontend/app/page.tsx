@@ -28,7 +28,7 @@ import {
   DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, type ScoreEntry } from "./lib/ranking";
+import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
@@ -57,7 +57,7 @@ import StreakCard from "./components/StreakCard";
 import CoinShop, { CoinShopCard } from "./components/CoinShop";
 import { getCoinBalance, onCoinsChanged, retryPendingCredit } from "./lib/coins";
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
-import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC } from "./lib/xp";
+import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
@@ -181,6 +181,16 @@ export default function Frontle() {
   // pueden cerrar: la wallet de MiniPay o de una extensión la inyecta el
   // navegador, y ofrecer "cerrar sesión" ahí sería un botón que no hace nada.
   const [viaEmail, setViaEmail] = useState(false);
+
+  // Cierre del reto diario: XP otorgado y las dos posiciones que la pantalla
+  // de victoria muestra. Se llena DESPUÉS de mandar la marca y el XP, para que
+  // los puestos ya cuenten esta partida. `loading` mientras se resuelve.
+  const [winStats, setWinStats] = useState<{
+    loading: boolean;
+    xp: number;
+    weekly: WeeklyStanding | null;
+    daily: DailyStanding | null;
+  } | null>(null);
 
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
@@ -724,11 +734,10 @@ export default function Frontle() {
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
-        void enterRanking(score, finalMs!);
         // Liga v2: XP por nivel + calidad (estrellas de la win card) + sin
         // pistas + racha del día. Idempotente por (día, nivel) en el servidor.
         const stars = score <= challenge.optimal ? 3 : score === challenge.optimal + 1 ? 2 : 1;
-        awardDailySolve(day, level, stars, showInitial || showNextSil || showAllSil);
+        void closeDaily(score, finalMs!, stars, showInitial || showNextSil || showAllSil);
       }
     }
     setInput("");
@@ -752,12 +761,53 @@ export default function Frontle() {
 
   // Al resolver: si hay wallet (MiniPay), entra al ranking sin fricción.
   // Si no hay dirección aún, NO envía — el navegador verá el botón "Conectar".
-  async function enterRanking(score: number, timeMs: number) {
+  // Devuelve la dirección con la que se compitió (vacía si no hubo).
+  async function enterRanking(score: number, timeMs: number): Promise<string> {
     const addr = myId || (await getWalletAddress());
-    if (!addr) return;
+    if (!addr) return "";
     setMyId(addr);
     await pushScore(addr, score, timeMs);
+    return addr;
   }
+
+  // Cierre del reto diario, en orden: mandar la marca → otorgar el XP → leer
+  // las dos posiciones. El orden importa: si se leyeran antes, el puesto del
+  // día no incluiría esta marca y el de la liga no incluiría este XP, así que
+  // la pantalla mostraría números viejos justo en el momento que más pesan.
+  async function closeDaily(score: number, timeMs: number, stars: 1 | 2 | 3, usedHints: boolean) {
+    setWinStats({ loading: true, xp: 0, weekly: null, daily: null });
+    try {
+      const addr = await enterRanking(score, timeMs);
+      const xp = await awardDailySolve(day, level, stars, usedHints);
+      const [weekly, daily] = await Promise.all([
+        getWeeklyStanding(),
+        addr ? getMyDailyStanding(day, level, addr) : Promise.resolve(null),
+      ]);
+      setWinStats({ loading: false, xp, weekly, daily });
+    } catch {
+      // Ni el XP ni el ranking pueden romper la victoria: se cae al estado sin
+      // datos y la win card simplemente no muestra el bloque.
+      setWinStats(null);
+    }
+  }
+
+  // Relectura sin otorgar XP: la victoria restaurada (recargar la página con
+  // el reto ya resuelto) y el caso de conectar la billetera DESPUÉS de ganar.
+  const refreshWinStats = useCallback(async (addr: string) => {
+    if (!addr) return;
+    setWinStats({ loading: true, xp: 0, weekly: null, daily: null });
+    const [weekly, daily] = await Promise.all([
+      getWeeklyStanding(),
+      getMyDailyStanding(day, level, addr),
+    ]);
+    setWinStats({ loading: false, xp: 0, weekly, daily });
+  }, [day, level]);
+
+  // Victoria restaurada: al recargar con el reto ya resuelto no pasa por
+  // `closeDaily`, así que el bloque se llena aquí (solo lectura, sin XP).
+  useEffect(() => {
+    if (state.solved && myId && winStats === null) void refreshWinStats(myId);
+  }, [state.solved, myId, winStats, refreshWinStats]);
 
   // Navegador: el jugador conecta su wallet (abre prompt) para entrar al ranking.
   async function connectForRanking() {
@@ -765,7 +815,11 @@ export default function Frontle() {
     if (!addr) return;
     setHasWallet(true);
     setMyId(addr);
-    if (state.solved) await pushScore(addr, state.chain.length, elapsedMs);
+    if (state.solved) {
+      await pushScore(addr, state.chain.length, elapsedMs);
+      // Ya hay identidad: recién ahora existen puestos que mostrar.
+      await refreshWinStats(addr);
+    }
   }
 
   // Correo (Privy): PrivyIdentityBridge nos entrega la dirección de la wallet
@@ -837,6 +891,7 @@ export default function Frontle() {
     setStarted(false); // vuelve a la pantalla de Play (cronómetro se reinicia al jugar)
     setElapsedMs(0);
     pausedMsRef.current = 0;
+    setWinStats(null); // el reintento recalcula puestos al volver a resolver
     saveGame({ started: false, solved: false, chain: [] });
   }
 
@@ -1243,6 +1298,7 @@ export default function Frontle() {
                 hasWallet={hasWallet}
                 inRanking={!!myId}
                 onConnect={connectForRanking}
+                winStats={winStats}
                 panel={panel}
                 fmt={fmt}
               />
@@ -2549,6 +2605,7 @@ function WinCard({
   hasWallet,
   inRanking,
   onConnect,
+  winStats,
   panel,
   fmt,
 }: {
@@ -2569,6 +2626,12 @@ function WinCard({
   hasWallet: boolean;
   inRanking: boolean;
   onConnect: () => void;
+  winStats: {
+    loading: boolean;
+    xp: number;
+    weekly: WeeklyStanding | null;
+    daily: DailyStanding | null;
+  } | null;
   panel: string;
   fmt: (usdt: number) => string;
 }) {
@@ -2612,6 +2675,54 @@ function WinCard({
       <p className="pop-in mt-2 inline-block rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-semibold text-gold">
         ✨ {tr.points.earned(POINTS_PER_SOLVE)}
       </p>
+      {/* Liga v2: qué le dejó esta victoria — XP de la semana y los dos puestos
+          que el jugador puede mover (liga semanal y ranking de hoy). */}
+      {winStats && (
+        <div className="pop-in mt-3 rounded-xl border border-lavender/25 bg-base px-4 py-3">
+          {winStats.loading ? (
+            <p className="py-2 text-center text-sm text-neutral-300">{tr.xpWin.loading}</p>
+          ) : (
+            <>
+              {winStats.xp > 0 ? (
+                <p className="text-center font-display text-3xl font-black text-gold">
+                  {tr.xpWin.gained(winStats.xp)}
+                </p>
+              ) : (
+                // Sin XP nuevo no es un fallo: el reintento del mismo nivel ya
+                // cobró su XP. Decirlo evita que parezca que se perdió algo.
+                <p className="text-center text-xs text-neutral-400">{tr.xpWin.alreadyEarned}</p>
+              )}
+              {winStats.weekly || winStats.daily ? (
+                <dl className="mt-3 flex flex-col gap-1.5">
+                  {winStats.weekly && (
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-xs text-neutral-300">🏆 {tr.xpWin.weeklyLabel}</dt>
+                      <dd className="text-right">
+                        <span className="font-display text-base font-bold text-white">
+                          {tr.xpWin.position(winStats.weekly.rank, winStats.weekly.players)}
+                        </span>
+                        <span className="ml-2 font-mono text-[11px] text-amber-200">
+                          {tr.xpWin.total(winStats.weekly.xp)}
+                        </span>
+                      </dd>
+                    </div>
+                  )}
+                  {winStats.daily && (
+                    <div className="flex items-baseline justify-between gap-3">
+                      <dt className="text-xs text-neutral-300">📅 {tr.xpWin.dailyLabel}</dt>
+                      <dd className="font-display text-base font-bold text-white">
+                        {tr.xpWin.position(winStats.daily.rank, winStats.daily.players)}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              ) : (
+                <p className="mt-2 text-center text-[11px] text-neutral-400">{tr.xpWin.needWallet}</p>
+              )}
+            </>
+          )}
+        </div>
+      )}
       <div className="mt-4">
         <ScoreCard
           data={{

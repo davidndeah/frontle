@@ -133,11 +133,11 @@ function bestPerPlayer(entries: ScoreEntry[], limit: number): ScoreEntry[] {
   return out;
 }
 
-export async function getRanking(
-  day: number,
-  level: Difficulty = "medium",
-  limit = 10
-): Promise<ScoreEntry[]> {
+// Todas las marcas de (día, nivel), sin deduplicar. El techo de 500 filas es
+// el que ya usaba el ranking: cubre de sobra un día real sin traerse la tabla
+// entera. Lo comparten el top y el cálculo de posición para que ambos ordenen
+// exactamente con el mismo criterio.
+async function fetchDay(day: number, level: Difficulty): Promise<ScoreEntry[]> {
   if (useSupabase) {
     try {
       const r = await fetch(
@@ -145,7 +145,7 @@ export async function getRanking(
         { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       const j = await r.json();
-      const all: ScoreEntry[] = (Array.isArray(j) ? j : []).map((x: Record<string, unknown>) => ({
+      return (Array.isArray(j) ? j : []).map((x: Record<string, unknown>) => ({
         day: Number(x.day),
         countries: Number(x.countries),
         timeMs: Number(x.time_ms),
@@ -155,19 +155,49 @@ export async function getRanking(
         name: (x.name as string) || undefined,
         createdAt: x.created_at as string | undefined,
       }));
-      return bestPerPlayer(all, limit);
     } catch {
       return [];
     }
   }
   try {
-    const arr: ScoreEntry[] = JSON.parse(
-      localStorage.getItem(`frontle-ranking-${day}-${level}`) || "[]"
-    );
-    return bestPerPlayer(arr, limit);
+    const arr = JSON.parse(localStorage.getItem(`frontle-ranking-${day}-${level}`) || "[]");
+    return Array.isArray(arr) ? (arr as ScoreEntry[]) : [];
   } catch {
     return [];
   }
+}
+
+export async function getRanking(
+  day: number,
+  level: Difficulty = "medium",
+  limit = 10
+): Promise<ScoreEntry[]> {
+  return bestPerPlayer(await fetchDay(day, level), limit);
+}
+
+export interface DailyStanding {
+  /** Puesto de hoy en ese nivel (1 = primero). */
+  rank: number;
+  /** Cuántos jugadores marcaron hoy en ese nivel. */
+  players: number;
+}
+
+// Posición del jugador en el ranking de HOY (mismo nivel). Se calcula sobre la
+// tabla ya deduplicada por jugador —una fila por jugador, su mejor marca— para
+// que el puesto coincida con la lista que el jugador ve en la pestaña Ranking.
+// null si aún no tiene marca enviada (sin wallet no se compite).
+export async function getMyDailyStanding(
+  day: number,
+  level: Difficulty,
+  playerId: string
+): Promise<DailyStanding | null> {
+  if (!playerId) return null;
+  const all = await fetchDay(day, level);
+  const board = bestPerPlayer(all, all.length);
+  const me = playerId.toLowerCase();
+  const i = board.findIndex((e) => e.playerId.toLowerCase() === me);
+  if (i < 0) return null;
+  return { rank: i + 1, players: board.length };
 }
 
 // Mejor marca de UN jugador en (día, nivel). Sirve para recuperar el tiempo
