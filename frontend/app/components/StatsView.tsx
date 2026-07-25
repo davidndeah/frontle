@@ -77,11 +77,17 @@ export default function StatsView() {
   return (
     <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-6">
       <header>
-        <Link href="/" className="text-sm text-[#c4b5fd] underline">
+        {/* El "volver" era un enlace subrayado suelto: a 14px sobre el fondo
+            violeta, el único control de navegación de la página costaba de
+            ver. Pasa a botón con la misma física que los del juego. */}
+        <Link
+          href="/"
+          className="brutal-sm brutal-press inline-block rounded-lg bg-surface px-3 py-1.5 text-xs font-bold text-[#c4b5fd]"
+        >
           {tr.back}
         </Link>
-        <h1 className="font-display text-3xl font-bold mt-3">{tr.title}</h1>
-        <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{tr.subtitle(CONTRACT_INFO.chainName)}</p>
+        <h1 className="font-display text-4xl font-black mt-3 leading-none">{tr.title}</h1>
+        <p className="text-xs text-neutral-400 mt-2 leading-relaxed">{tr.subtitle(CONTRACT_INFO.chainName)}</p>
       </header>
 
       <Section title={tr.today} aside={chain ? tr.dayNo(chain.day) : undefined} cols={3}>
@@ -313,8 +319,10 @@ export default function StatsView() {
         </section>
       )}
 
+      {/* Usa SectionHead como el resto: era el único título de la página
+          escrito a mano, y se quedó atrás cuando la cabecera cambió. */}
       <section className="panel p-4 flex flex-col gap-3 text-sm text-neutral-200 leading-relaxed">
-        <h2 className="font-display text-xs font-bold uppercase tracking-[0.18em] text-[#c4b5fd]">{tr.moneyTitle}</h2>
+        <SectionHead title={tr.moneyTitle} bare />
         <p>{tr.money1}</p>
         <p>{tr.money2("80%", "20%")}</p>
         <p>{tr.money3}</p>
