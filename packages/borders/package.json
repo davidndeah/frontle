@@ -1,11 +1,11 @@
 {
-  "name": "@frontle/borders",
+  "name": "@frontle-game/borders",
   "version": "0.1.0",
   "description": "Country land-border graph + shortest-path and deterministic daily-challenge engine. The pure geography engine behind Frontle.",
   "keywords": ["geography", "countries", "borders", "graph", "bfs", "shortest-path", "wordle", "game", "celo", "frontle"],
   "license": "MIT",
   "author": "Frontle",
-  "homepage": "https://frontle.vercel.app",
+  "homepage": "https://www.frontle.earth",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/davidndeah/frontle.git",

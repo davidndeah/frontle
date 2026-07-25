@@ -1,5 +1,5 @@
 // ============================================================
-//  @frontle/borders — API pública del motor de fronteras.
+//  @frontle-game/borders — API pública del motor de fronteras.
 //  Reexporta el grafo (countries) y la lógica de juego (game).
 //  Todo es puro: sin DOM, sin React, sin dependencias.
 // ============================================================

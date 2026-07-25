@@ -1,6 +1,6 @@
-# @frontle/borders
+# @frontle-game/borders
 
-The pure geography engine behind [Frontle](https://frontle.vercel.app) — a daily
+The pure geography engine behind [Frontle](https://www.frontle.earth) — a daily
 "connect two countries through their land borders" game built for MiniPay on Celo.
 
 Zero dependencies. Works in the browser, Node, and edge runtimes.
@@ -15,7 +15,7 @@ Zero dependencies. Works in the browser, Node, and edge runtimes.
 ## Install
 
 ```bash
-npm i @frontle/borders
+npm i @frontle-game/borders
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ npm i @frontle/borders
 ```ts
 import {
   dailyChallenge, tryGuess, resolveCountry, connectsThroughKnown,
-} from "@frontle/borders";
+} from "@frontle-game/borders";
 
 // Today's puzzle (deterministic by UTC date):
 const challenge = dailyChallenge();
