@@ -44,5 +44,5 @@ y solo eso puede inspirar un diseño propio, construido desde cero.
 
 El modo **GeoGuess** de Arcadia (foto de un lugar → 4 opciones de dónde queda) encaja
 temáticamente con Frontle mejor que cualquiera de sus otros mini-juegos, porque Frontle ya es
-un juego de geografía. Ver [modo-geoguess.md](./modo-geoguess.md) para el diseño propio,
+un juego de geografía. Ver [PLAN-MODO-GEOFOTO.md](../PLAN-MODO-GEOFOTO.md) para el diseño propio,
 construido sin tocar nada de Arcadia.
