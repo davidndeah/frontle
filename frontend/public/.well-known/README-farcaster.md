@@ -4,6 +4,8 @@
 
 El archivo `farcaster.json` está creado con la estructura base del Mini App de Farcaster, pero **falta firmar la asociación de cuenta** (`accountAssociation`). Actualmente contiene campos vacíos:
 
+⚠️ `iconUrl` apunta temporalmente a `bordy-m2.webp` (no hay un ícono cuadrado dedicado en `public/`, solo `icon.svg`). El spec de Farcaster pide un PNG 1024×1024 sin transparencia — conviene generar uno antes de publicar en el catálogo, aunque no bloquea la firma.
+
 ``json
 "accountAssociation": {
   "header": "",
@@ -14,14 +16,15 @@ El archivo `farcaster.json` está creado con la estructura base del Mini App de 
 
 ## Qué debe hacer David
 
-Para completar el `accountAssociation`, necesitas firmar el dominio `frontle.vercel.app` con tu **FID de Farcaster** (tu cuenta de Warpcast) y tu **custody wallet** (la wallet asociada a tu cuenta).
+Para completar el `accountAssociation`, necesitas firmar el dominio `www.frontle.earth` (el dominio canónico, ver `app/lib/site.ts`) con tu **FID de Farcaster** (tu cuenta de Warpcast) y tu **custody wallet** (la wallet asociada a tu cuenta). **No uses `frontle.vercel.app`**: es el dominio viejo, ya migrado.
 
 ### Opción 1: Usar Warpcast Mini App Manifest Tool (recomendado)
 
 1. Ve a [Warpcast](https://warpcast.com) y asegúrate de estar autenticado con tu cuenta.
 2. Abre la herramienta de manifest de Mini App de Farcaster (URL exacta: solicitar al equipo de Farcaster o buscar "Mini App manifest tool" en docs.farcaster.xyz).
 3. En la herramienta:
-   - Ingresa el dominio: `frontle.vercel.app`
+   - Ingresa el dominio: `www.frontle.earth`
+   - Dale a "Refresh" y confirma que `/.well-known/farcaster.json` responda 200 (solo pasará una vez esta rama esté mergeada y desplegada a producción)
    - Selecciona tu cuenta de Farcaster (FID)
    - La herramienta te pedirá firmar con tu custody wallet
 4. La herramienta te generará tres valores:
@@ -48,8 +51,8 @@ Una vez completes `accountAssociation`:
    ```
 
 2. **Verificación en producción:**
-   - La app ya despliega automáticamente desde `main` a https://frontle.vercel.app
-   - Verifica que https://frontle.vercel.app/.well-known/farcaster.json sea accesible
+   - La app despliega automáticamente desde `main` a https://www.frontle.earth
+   - Verifica que https://www.frontle.earth/.well-known/farcaster.json sea accesible (200, JSON válido) ANTES de firmar — la firma queda atada a ese dominio exacto
 
 3. **Registro en catálogo de Farcaster:**
    - Una vez el manifest esté completo y firmado, puedes registrar Frontle en el catálogo oficial de Mini Apps de Farcaster (solicitar instrucciones en docs.farcaster.xyz o al equipo de Farcaster).
@@ -60,7 +63,7 @@ Ejemplo de cómo se vería una firma completa:
 
 ``json
 "accountAssociation": {
-  "header": "{\"did\":\"did:farcaster:z6Mkod...\",\"name\":\"frontle.vercel.app\",\"type\":\"ProofOfAccount\",\"version\":1}",
+  "header": "{\"did\":\"did:farcaster:z6Mkod...\",\"name\":\"www.frontle.earth\",\"type\":\"ProofOfAccount\",\"version\":1}",
   "payload": "eJwLYWIEYWQFYWQFYWQFYWQFYWQFYWQF...",
   "signature": "0x7d8c42a5e1b4d9f2c6e8a1b3d5f7a9c1e3b5d7f9a1c3e5b7d9f1a3c5e7b9d1"
 }

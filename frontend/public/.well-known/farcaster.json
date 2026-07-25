@@ -7,11 +7,11 @@
   "frame": {
     "version": "1",
     "name": "Frontle",
-    "iconUrl": "https://frontle.vercel.app/icon.png",
-    "homeUrl": "https://frontle.vercel.app",
-    "imageUrl": "https://frontle.vercel.app/bordy-m2.webp",
+    "iconUrl": "https://www.frontle.earth/bordy-m2.webp",
+    "homeUrl": "https://www.frontle.earth",
+    "imageUrl": "https://www.frontle.earth/bordy-m2.webp",
     "buttonTitle": "🌍 Jugar",
-    "splashImageUrl": "https://frontle.vercel.app/bordy-m2.webp",
+    "splashImageUrl": "https://www.frontle.earth/bordy-m2.webp",
     "splashBackgroundColor": "#160833"
   }
 }
