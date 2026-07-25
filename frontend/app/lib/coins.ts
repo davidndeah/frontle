@@ -12,7 +12,7 @@
 //    (wallet o anónimo — p. ej. monedas de bienvenida futuras).
 // ============================================================
 
-import { purchaseCoinPack, type PayResult } from "./payments";
+import { purchaseCoinPack, type PayResult, type PurchaseStep } from "./payments";
 import { xpPlayerId } from "./xp";
 import { ensureSecret, localSecret, rpc } from "./secret";
 
@@ -178,39 +178,96 @@ export async function spendCoins(kind: SpendKind, ref?: string): Promise<SpendRe
 
 export type BuyCoinsResult = { res: PayResult | "credit_pending"; coins?: number };
 
-// Compra un paquete: transfer on-chain + acreditación verificada del server.
-// "credit_pending" = la tx se confirmó pero la acreditación falló — el hash
-// queda en localStorage y se reintenta en la próxima consulta de saldo.
+// Fase de la compra que se le puede contar al jugador. `crediting` es la
+// última, ya fuera de la cadena.
+export type BuyStep = PurchaseStep | "crediting";
+
+// --- Compras pagadas pendientes de acreditar --------------------------------
+// El hash de una compra emitida es un PAGARÉ: el jugador ya pagó. Vive en
+// localStorage hasta que `credit-coins` lo acredita (es idempotente por hash,
+// así que reintentar nunca duplica). Es una LISTA porque dos compras seguidas
+// con la red lenta dejaban dos pendientes y la clave única perdía la primera.
 const PENDING_KEY = "frontle-coins-pending-tx";
 
-export async function buyCoinPack(pack: CoinLot): Promise<BuyCoinsResult> {
-  const { res, txHash } = await purchaseCoinPack(pack.usdt);
-  if (res !== "success" || !txHash) return { res };
+// Tope de pagarés guardados. Uno que el servidor nunca acepte se quedaría
+// para siempre; el tope evita que la clave crezca sin fin.
+const PENDING_MAX = 5;
+
+function pendingList(): string[] {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(PENDING_KEY);
+  } catch {}
+  if (!raw) return [];
+  // Formato viejo: un hash pelado. Se sigue leyendo para no tirar la compra
+  // de quien actualice con una pendiente encima.
+  if (raw.startsWith("0x")) return [raw];
+  try {
+    const v: unknown = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePending(list: string[]): void {
+  try {
+    if (list.length) localStorage.setItem(PENDING_KEY, JSON.stringify(list.slice(-PENDING_MAX)));
+    else localStorage.removeItem(PENDING_KEY);
+  } catch {}
+}
+
+function addPending(txHash: string): void {
+  const list = pendingList();
+  if (!list.includes(txHash)) savePending([...list, txHash]);
+}
+
+function dropPending(txHash: string): void {
+  savePending(pendingList().filter((t) => t !== txHash));
+}
+
+// Compra un paquete: pago on-chain + acreditación verificada del server.
+// "credit_pending" = el pago salió pero aún no está acreditado (no se confirmó
+// a tiempo, o el edge function falló). El hash queda guardado y se reintenta
+// en la próxima consulta de saldo — el jugador nunca paga sin recibir.
+export async function buyCoinPack(pack: CoinLot, onStep?: (step: BuyStep) => void): Promise<BuyCoinsResult> {
+  const { res, txHash } = await purchaseCoinPack(pack.usdt, {
+    onStep,
+    // Se guarda ANTES de esperar el receipt: si esa espera se cae, el pago ya
+    // se emitió y sin esto el hash —y con él las monedas pagadas— se perdía.
+    onSent: addPending,
+  });
+  if (res === "pending") return { res: "credit_pending" };
+  if (res !== "success" || !txHash) {
+    // Con hash y sin éxito = revirtió on-chain: no hay nada que acreditar y
+    // reintentarlo cada vez que se abre la tienda no lo arreglaría.
+    if (txHash) dropPending(txHash);
+    return { res };
+  }
+  onStep?.("crediting");
   const credited = await creditTx(txHash);
   if (credited === null) {
-    try {
-      localStorage.setItem(PENDING_KEY, txHash);
-    } catch {}
+    addPending(txHash);
     return { res: "credit_pending" };
   }
+  dropPending(txHash);
   notifyCoinsChanged();
   return { res: "success", coins: credited };
 }
 
-// Reintenta acreditar una compra pendiente (llamar junto a getCoinBalance).
+// Reintenta acreditar las compras pendientes (llamar junto a getCoinBalance).
 export async function retryPendingCredit(): Promise<void> {
-  let tx: string | null = null;
-  try {
-    tx = localStorage.getItem(PENDING_KEY);
-  } catch {}
-  if (!tx) return;
-  const credited = await creditTx(tx);
-  if (credited !== null) {
-    try {
-      localStorage.removeItem(PENDING_KEY);
-    } catch {}
-    notifyCoinsChanged();
+  const list = pendingList();
+  if (list.length === 0) return;
+  const left: string[] = [];
+  let credited = false;
+  for (const tx of list) {
+    // null = aún sin confirmar o el server no la aceptó todavía: se conserva.
+    if ((await creditTx(tx)) === null) left.push(tx);
+    else credited = true;
   }
+  savePending(left);
+  if (credited) notifyCoinsChanged();
 }
 
 // Llama al edge function. Devuelve las monedas acreditadas o null si falló.

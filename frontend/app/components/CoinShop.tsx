@@ -9,7 +9,15 @@
 
 import { useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
-import { COIN_PACKS, COIN_UNITS, buyCoinPack, getCoinBalance, retryPendingCredit, type CoinLot } from "../lib/coins";
+import {
+  COIN_PACKS,
+  COIN_UNITS,
+  buyCoinPack,
+  getCoinBalance,
+  retryPendingCredit,
+  type BuyStep,
+  type CoinLot,
+} from "../lib/coins";
 import { getWeeklyMinPurchase, hasWalletProvider } from "../lib/payments";
 import { PRIVY_ENABLED } from "../lib/privy";
 import { EmailLoginButton } from "./PrivyLogin";
@@ -61,6 +69,10 @@ export default function CoinShop({
   const [balance, setBalance] = useState<number | null>(null);
   // Lote en curso, identificado por su nº de monedas (único entre packs y sueltos).
   const [buying, setBuying] = useState<number | null>(null);
+  // Fase de la compra en curso. La billetera de correo (Privy) firma sin abrir
+  // ninguna pantalla propia, así que sin esto la primera compra —dos
+  // transacciones, hasta un minuto— se ve igual que un botón que no responde.
+  const [step, setStep] = useState<BuyStep>("checking");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [minUsdt, setMinUsdt] = useState<number | null>(null);
   // ¿Se puede firmar? Se resuelve al abrir, no en el render inicial: en el
@@ -92,8 +104,9 @@ export default function CoinShop({
   async function buy(lot: CoinLot) {
     if (buying !== null) return;
     setBuying(lot.coins);
+    setStep("checking");
     setMsg(null);
-    const { res, coins } = await buyCoinPack(lot);
+    const { res, coins } = await buyCoinPack(lot, setStep);
     setBuying(null);
     if (res === "success") {
       setMsg({ text: tr.coins.bought(coins ?? lot.coins), ok: true });
@@ -185,6 +198,27 @@ export default function CoinShop({
       {/* Solo si el mínimo del contrato deja algún lote fuera. */}
       {COIN_UNITS.some((u) => !comprable(u)) && (
         <p className="mt-2 text-[11px] text-neutral-400">{tr.coins.minNote((minUsdt ?? 0).toFixed(2))}</p>
+      )}
+
+      {/* Progreso de la compra. Es lo único que ve el jugador que entró por
+          correo: su billetera firma en silencio y la primera compra son dos
+          transacciones. Antes solo latía el botón y parecía que no pasaba nada,
+          así que se tocaba una y otra vez. */}
+      {buying !== null && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-4 flex items-center gap-3 rounded-xl border border-gold/40 bg-gold/10 px-3 py-3"
+        >
+          <span
+            className="h-4 w-4 flex-none animate-spin rounded-full border-2 border-gold border-t-transparent"
+            aria-hidden
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-bold text-amber-100">{tr.coins.steps[step]}</span>
+            <span className="block text-[11px] text-neutral-300">{tr.coins.stepNote}</span>
+          </span>
+        </div>
       )}
 
       {msg && (

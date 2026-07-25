@@ -218,6 +218,16 @@ type Dict = {
     minNote: (amount: string) => string;
     // La tienda se puede abrir sin billetera; comprar, no.
     needWallet: string;
+    // Progreso de la compra. La billetera de correo firma sin mostrar NADA,
+    // así que este es el único aviso de que algo está pasando.
+    steps: {
+      checking: string;
+      approving: string;
+      signing: string;
+      confirming: string;
+      crediting: string;
+    };
+    stepNote: string;
   };
   // Aviso de XP al ganar en los modos libres (Regiones, Quiz, Práctica).
   xpWin: {
@@ -229,6 +239,13 @@ type Dict = {
     total: (xp: number) => string;
     needWallet: string;
     close: string;
+    // Bloque de la pantalla de victoria del reto diario: XP ganado, puesto en
+    // la liga semanal y puesto en el ranking de hoy.
+    weeklyLabel: string;
+    dailyLabel: string;
+    // Formato corto "#3 de 120", compartido por los dos puestos.
+    position: (pos: number, players: number) => string;
+    alreadyEarned: string;
   };
   // Volver a jugar en los modos libres: gratis mientras queden rondas con XP,
   // y con monedas a partir de ahí.
@@ -550,13 +567,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "Las monedas pagan pistas y nuevos intentos en los modos de la liga, al instante y sin esperas. Cada compra hace crecer el premio semanal.",
       balance: (n) => `Tienes ${n} 🪙`,
       bought: (n) => `¡Listo! Se acreditaron ${n} 🪙.`,
-      pending: "Pago confirmado. Tus monedas se acreditan en un momento.",
+      pending: "Pago enviado. Tus monedas se acreditan en cuanto la red confirme.",
       failed: "No se pudo completar la compra. Intenta de nuevo.",
       noFunds: "Saldo insuficiente para este paquete. Deposita un poco y vuelve.",
       cost: (n) => `${n} 🪙`,
       units: "O compra sueltas",
       minNote: (a) => `Las compras de menos de ${a} USDT no están disponibles por ahora.`,
       needWallet: "Necesitas una billetera para comprar monedas. Entra con tu correo y te creamos una.",
+      steps: {
+        checking: "Revisando tu saldo…",
+        approving: "Autorizando el pago (paso 1 de 2)…",
+        signing: "Enviando el pago…",
+        confirming: "Confirmando en la red…",
+        crediting: "Acreditando tus monedas…",
+      },
+      stepNote: "Puede tardar hasta un minuto. No cierres la app.",
     },
     xpWin: {
       title: "XP ganado",
@@ -567,6 +592,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP esta semana`,
       needWallet: "Conecta tu billetera para competir en la liga semanal.",
       close: "Seguir",
+      weeklyLabel: "Liga semanal",
+      dailyLabel: "Ranking de hoy",
+      position: (pos, players) => `#${pos} de ${players}`,
+      alreadyEarned: "Ya sumaste el XP de este reto hoy.",
     },
     replay: {
       freeLeft: (n) => `Te quedan ${n} con XP hoy`,
@@ -899,13 +928,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "Coins pay for hints and new attempts in league modes, instantly with no waiting. Every purchase grows the weekly prize.",
       balance: (n) => `You have ${n} 🪙`,
       bought: (n) => `Done! ${n} 🪙 credited.`,
-      pending: "Payment confirmed. Your coins will be credited in a moment.",
+      pending: "Payment sent. Your coins will be credited as soon as the network confirms.",
       failed: "The purchase didn't go through. Please try again.",
       noFunds: "Not enough balance for this pack. Deposit a little and come back.",
       cost: (n) => `${n} 🪙`,
       units: "Or buy single coins",
       minNote: (a) => `Purchases under ${a} USDT aren't available right now.`,
       needWallet: "You need a wallet to buy coins. Sign in with your email and we'll create one for you.",
+      steps: {
+        checking: "Checking your balance…",
+        approving: "Authorising the payment (step 1 of 2)…",
+        signing: "Sending the payment…",
+        confirming: "Confirming on the network…",
+        crediting: "Crediting your coins…",
+      },
+      stepNote: "This can take up to a minute. Please don't close the app.",
     },
     xpWin: {
       title: "XP earned",
@@ -916,6 +953,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP this week`,
       needWallet: "Connect your wallet to compete in the weekly league.",
       close: "Continue",
+      weeklyLabel: "Weekly league",
+      dailyLabel: "Today's ranking",
+      position: (pos, players) => `#${pos} of ${players}`,
+      alreadyEarned: "You've already earned this challenge's XP today.",
     },
     replay: {
       freeLeft: (n) => `${n} left with XP today`,
@@ -1248,13 +1289,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "As moedas pagam dicas e novas tentativas nos modos da liga, na hora e sem esperas. Cada compra faz crescer o prêmio semanal.",
       balance: (n) => `Você tem ${n} 🪙`,
       bought: (n) => `Pronto! ${n} 🪙 creditadas.`,
-      pending: "Pagamento confirmado. Suas moedas serão creditadas em instantes.",
+      pending: "Pagamento enviado. Suas moedas serão creditadas assim que a rede confirmar.",
       failed: "A compra não foi concluída. Tente de novo.",
       noFunds: "Saldo insuficiente para este pacote. Deposite um pouco e volte.",
       cost: (n) => `${n} 🪙`,
       units: "Ou compre avulsas",
       minNote: (a) => `Compras abaixo de ${a} USDT não estão disponíveis por enquanto.`,
       needWallet: "Você precisa de uma carteira para comprar moedas. Entre com seu e-mail e criamos uma para você.",
+      steps: {
+        checking: "Conferindo seu saldo…",
+        approving: "Autorizando o pagamento (passo 1 de 2)…",
+        signing: "Enviando o pagamento…",
+        confirming: "Confirmando na rede…",
+        crediting: "Creditando suas moedas…",
+      },
+      stepNote: "Pode levar até um minuto. Não feche o app.",
     },
     xpWin: {
       title: "XP ganho",
@@ -1265,6 +1314,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP esta semana`,
       needWallet: "Conecte sua carteira para competir na liga semanal.",
       close: "Continuar",
+      weeklyLabel: "Liga semanal",
+      dailyLabel: "Ranking de hoje",
+      position: (pos, players) => `#${pos} de ${players}`,
+      alreadyEarned: "Você já somou o XP deste desafio hoje.",
     },
     replay: {
       freeLeft: (n) => `Faltam ${n} com XP hoje`,
@@ -1597,13 +1650,21 @@ const STRINGS: Record<Locale, Dict> = {
       blurb: "Les pièces paient les indices et les nouveaux essais des modes de la ligue, instantanément et sans attente. Chaque achat fait grossir le prix hebdomadaire.",
       balance: (n) => `Vous avez ${n} 🪙`,
       bought: (n) => `C'est fait ! ${n} 🪙 créditées.`,
-      pending: "Paiement confirmé. Vos pièces arrivent dans un instant.",
+      pending: "Paiement envoyé. Vos pièces arrivent dès que le réseau confirme.",
       failed: "L'achat n'a pas abouti. Réessayez.",
       noFunds: "Solde insuffisant pour ce pack. Déposez un peu et revenez.",
       cost: (n) => `${n} 🪙`,
       units: "Ou achetez à l'unité",
       minNote: (a) => `Les achats de moins de ${a} USDT ne sont pas disponibles pour l'instant.`,
       needWallet: "Il vous faut un portefeuille pour acheter des pièces. Connectez-vous avec votre e-mail et nous en créons un.",
+      steps: {
+        checking: "Vérification de votre solde…",
+        approving: "Autorisation du paiement (étape 1 sur 2)…",
+        signing: "Envoi du paiement…",
+        confirming: "Confirmation sur le réseau…",
+        crediting: "Ajout de vos pièces…",
+      },
+      stepNote: "Cela peut prendre jusqu'à une minute. Ne fermez pas l'application.",
     },
     xpWin: {
       title: "XP gagné",
@@ -1614,6 +1675,10 @@ const STRINGS: Record<Locale, Dict> = {
       total: (xp) => `${xp} XP cette semaine`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue hebdo.",
       close: "Continuer",
+      weeklyLabel: "Ligue hebdo",
+      dailyLabel: "Classement du jour",
+      position: (pos, players) => `#${pos} sur ${players}`,
+      alreadyEarned: "Vous avez déjà gagné l'XP de ce défi aujourd'hui.",
     },
     replay: {
       freeLeft: (n) => `Il en reste ${n} avec XP aujourd'hui`,
