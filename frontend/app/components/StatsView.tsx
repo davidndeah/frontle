@@ -149,29 +149,44 @@ export default function StatsView() {
       {countries.length > 0 && (
         <section>
           <SectionHead title={tr.topCountries} aside={tr.last30d} />
-          <div className="panel p-3 flex flex-col gap-2.5">
-            {countries.map((c) => (
-              <div key={c.code} className="flex items-center gap-2.5">
-                <span className="text-lg leading-none w-6 shrink-0" aria-hidden="true">
+          {/* Una card por país en vez de una lista dentro de un panel: con el
+              borde grueso cada país es una unidad y la barra deja de parecer
+              un separador entre renglones. */}
+          <ol className="flex flex-col gap-1.5">
+            {countries.map((c, i) => (
+              <li key={c.code} className="brutal-sm flex items-center gap-2.5 rounded-lg bg-surface px-2.5 py-2">
+                {/* Puesto en bloque macizo, como los círculos del podio. */}
+                <span
+                  className={`grid h-5 w-5 flex-none place-items-center rounded-full border-2 border-deep font-display text-[10px] font-black text-surface ${
+                    i === 0 ? "bg-gold" : "bg-lavender"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <span className="w-6 shrink-0 text-lg leading-none" aria-hidden="true">
                   {codeToFlag(c.code)}
                 </span>
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-[13px] text-neutral-200 truncate">{regionName(c.code, locale)}</span>
-                    <span className="text-[11px] text-neutral-400 tabular-nums shrink-0">
+                    <span className="truncate text-[13px] font-semibold text-neutral-100">
+                      {regionName(c.code, locale)}
+                    </span>
+                    <span className="shrink-0 text-[11px] tabular-nums text-neutral-400">
                       {num(c.plays)} · {num(c.players)} {tr.players.toLowerCase()}
                     </span>
                   </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  {/* Se mide contra el LÍDER, no contra el total: así el
+                      primero llena la barra y la comparación se lee sola. */}
+                  <div className="mt-1 h-2 overflow-hidden rounded-sm border-2 border-deep bg-deep">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#a855f7] to-gold"
-                      style={{ width: maxPlays > 0 ? `${(c.plays / maxPlays) * 100}%` : "0%" }}
+                      className={i === 0 ? "h-full bg-gold" : "h-full bg-lavender"}
+                      style={{ width: maxPlays > 0 ? `${Math.round((c.plays / maxPlays) * 100)}%` : "0%" }}
                     />
                   </div>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </section>
       )}
 
