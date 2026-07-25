@@ -64,6 +64,11 @@ Thumbs.db
 # historia para siempre.
 notion-*.pdf
 
+# Capturas de referencia que caen en la raíz con el nombre por defecto del
+# navegador. Van ANCLADAS con "/" (solo la raíz) a propósito: sin la barra,
+# el patrón también taparía imágenes legítimas en frontend/public o docs/.
+/descarga*.png
+
 # --- Agent skills (vendored por máquina, regenerables) ---
 .agents/
 .claude/
