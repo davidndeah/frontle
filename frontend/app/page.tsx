@@ -32,6 +32,7 @@ import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDay
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
+import { sdk as farcasterSdk } from "@farcaster/miniapp-sdk";
 import Coachmarks from "./components/Coachmarks";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
@@ -230,6 +231,12 @@ export default function Frontle() {
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   useEffect(() => setAliasState(getAlias()), []);
+  // Le avisa al cliente de Farcaster que la app ya está lista para mostrarse,
+  // así suelta el splash screen. Fuera de un contexto Mini App (navegador
+  // normal) el SDK detecta que no aplica y no hace nada.
+  useEffect(() => {
+    farcasterSdk.actions.ready().catch(() => {});
+  }, []);
   // Prompt de nombre al registrarse: si hay identidad y aún no eligió nombre,
   // se le pide una vez (así el ranking muestra nombres, no wallets).
   const [nameModal, setNameModal] = useState(false);
