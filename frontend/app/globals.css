@@ -444,6 +444,16 @@
 /* El press de .btn-3d vive junto al de .brutal-press (al final del bloque
    brutal) para ganarle al hover en cascada. */
 
+/* "Focus always visible", una de las reglas del sistema neo-brutalista que ya
+   sigue esta app. No había NINGÚN estilo de foco: navegar con teclado era
+   invisible y el default del navegador se pierde sobre el violeta. Anillo
+   dorado, que contrasta en los dos temas. `:focus-visible` y no `:focus`
+   para no marcar lo que se toca con el dedo o el ratón. */
+:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
 /* ===== Neo-brutalismo sobre Violeta Prisma (cards y botones) =====
    Lenguaje de la referencia: borde grueso, sombra dura desplazada, hundirse
    al tocar. La paleta NO cambia: violeta de marca para la card héroe,
