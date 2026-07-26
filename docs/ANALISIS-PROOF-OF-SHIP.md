@@ -87,3 +87,37 @@ integración de Privy), separando `style:`/`docs:`/`refactor:`/`chore:` de cada 
 > Lo de chessxu **sí es replicable y legítimo**: dividir el trabajo real en commits atómicos con
 > mensajes convencionales. Frontle ya lo viene haciendo (ver el historial de julio).
 
+## 5. Brechas reales contra el top (lo accionable)
+
+### 5.1 — Frontle registra **1 repo**; el top registra 2–4
+
+Es la diferencia estructural más clara de la tabla del §3. Langclaw AI registra 4
+(`frontend`, `backend`, `contracts`, `.github`), TipiTip 2, NullState 2, Micromind 2. Frontle
+registra solo `davidndeah/frontle` porque **es un monorepo**: frontend, contratos y la librería
+viven en el mismo árbol.
+
+**Opción legítima disponible:** `@frontle-game/borders` ya es un paquete npm **publicado y
+autónomo** (motor de fronteras puro, sin DOM ni React, con su propio `build`, sus 10 tests y su
+README). Sacarlo a su propio repo no sería inflar nada: es una librería real, reutilizable por
+terceros, que hoy vive incómoda dentro de un monorepo de app. TipiTip hizo exactamente eso con
+`tipitip-npm` ("Mirror of the @tipitip/embed npm package").
+
+⚠️ **Pero no antes del 27.** Mover el paquete a otro repo ahora parte el historial y deja el repo
+nuevo con ~1 día de actividad. Es una decisión de arquitectura para agosto, no una jugada de
+último minuto.
+
+### 5.2 — npm como fuente de datos
+
+Talent muestra una pestaña **npm** en la ficha del proyecto. `@frontle-game/borders@0.1.0` se
+publicó el 25 de julio, así que llega tarde para mover el score de este mes, pero queda
+sembrado para agosto. TipiTip lleva su paquete npm registrado como fuente desde antes.
+
+### 5.3 — Lo que Frontle ya tiene y el top no
+
+No todo son brechas. Frontle es de los pocos del top 10 con:
+- **Crecimiento positivo** en las tres métricas onchain (el resto del podio cae ~90 %).
+- **Tres contratos verificados** en Celoscan *y* Blockscout, con resúmenes automáticos ya
+  generados por Talent en dos de ellos.
+- Un producto con **retención diaria por diseño** (reto diario + racha), no un flujo de una sola
+  transacción.
+
