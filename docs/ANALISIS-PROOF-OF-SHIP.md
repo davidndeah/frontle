@@ -60,6 +60,27 @@ Frontle está **en la media de commits** del top 10 y es **segundo en PRs** — 
 GitHub no es la debilidad. Los dos números que despegan (1.393 y 1.790) merecen mirarse de cerca,
 y ahí aparece lo del §4.
 
+### 3.1 — Los commits NO explican el ranking
+
+Cruzando el puesto con la actividad de GitHub y las métricas onchain de cada ficha:
+
+| # | Proyecto | Commits | Tx 30D | DAU 30D | Fuentes de datos |
+|---|---|---|---|---|---|
+| 1 | TipiTip | 1.393 | 683 (−93 %) | 676 (−87 %) | 3 contratos + 2 repos = **5** |
+| 5 | GameArena | **270** | 2.000 (−35 %) | 345 (**+62 %**) | 4 contratos + 1 repo = **5** |
+| 6 | chessxu | **1.790** | 4.000 (−73 %) | 3.000 (−68 %) | 5 contratos + 1 repo = **6** |
+| 10 | **Frontle** | 366 | 278 (**+672 %**) | 117 (**+1.070 %**) | 3 contratos + 1 repo = **4** |
+
+Dos contradicciones que cierran el tema:
+
+- **chessxu lidera en commits (1.790), en transacciones (4K) y en DAU (3K) — y aun así está #6.**
+- **GameArena tiene los commits más bajos del top 10 (270, menos que Frontle) y está #5.**
+
+Conclusión honesta: **la fórmula no es pública y no se puede reconstruir con cuatro puntos.**
+Pero sí descarta la hipótesis simple de "más commits = mejor puesto", y sugiere que la
+**tendencia** pesa: el único de esos tres con DAU creciendo (GameArena, +62 %) le gana a quien
+lo dobla en volumen absoluto pero cae (chessxu, −68 %).
+
 ## 4. Los volúmenes altos no son código: TipiTip está inflando la métrica
 
 **El #1 del leaderboard genera commits sintéticos.** Comprobado contra la API de GitHub, no
