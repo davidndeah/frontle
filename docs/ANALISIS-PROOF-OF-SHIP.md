@@ -159,16 +159,28 @@ agente de soporte) es seguro; **enviarlo/activarlo no**.
 
 ## 7. Conclusión
 
-Frontle no está #10 por falta de actividad en GitHub — está en la media del top en commits y es
-segundo en PRs. Está #10 porque los de arriba tienen **más volumen onchain absoluto** (aunque en
-caída libre) y **más fuentes de datos registradas**.
+Frontle no está #10 por falta de actividad en GitHub: está en la media del top en commits, es
+segundo en PRs, y **GameArena está cinco puestos por encima con menos de ambas cosas**. Escribir
+más commits no es la palanca.
+
+Las dos brechas medibles contra los de arriba son:
+
+1. **Volumen onchain absoluto.** 278 tx / 117 DAU contra 2.000/345 (GameArena) o 4.000/3.000
+   (chessxu). Es la diferencia más grande y la más difícil de fingir — son usuarios de verdad.
+2. **Fuentes de datos registradas.** Frontle tiene 4 (3 contratos + 1 repo); el resto del top
+   tiene 5–6. Es la brecha más barata de cerrar, pero **en agosto**, no ahora (§5.1).
+
+Y la ventaja propia que hay que proteger: **Frontle es el único de los medidos con las tres
+métricas onchain creciendo** (+672 %, +1.070 %, +1.063 %) mientras el podio se desploma ~90 %.
+Si la tendencia pesa en la fórmula —y el caso GameArena vs. chessxu sugiere que sí—, ese es el
+activo real.
 
 Las tres palancas ordenadas por relación impacto/riesgo:
 
 1. **No romper nada antes del 27** — el activo más valioso ahora es seguir en el top 10, no
    escalar posiciones. Cualquier cambio grande de arquitectura (§5.1) es de agosto.
-2. **Seguir shipeando trabajo real en commits atómicos**, que es lo que ya se hace.
-3. **Crecer usuarios reales** — es la única métrica donde la brecha es grande y donde Frontle ya
-   tiene la mejor tendencia de la tabla. 117 DAU creciendo bate a 676 desplomándose, si el mes
-   que viene la curva sigue.
+2. **Crecer usuarios reales**, que es la brecha grande y la que la fórmula parece premiar por
+   tendencia. Todo lo demás es ruido al lado de esto.
+3. **Seguir shipeando trabajo real en commits atómicos** — no porque suba el score (queda
+   demostrado que no manda), sino porque es la única forma de que (2) ocurra.
 
