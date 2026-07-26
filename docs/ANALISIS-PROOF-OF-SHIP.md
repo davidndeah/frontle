@@ -121,3 +121,33 @@ No todo son brechas. Frontle es de los pocos del top 10 con:
 - Un producto con **retención diaria por diseño** (reto diario + racha), no un flujo de una sola
   transacción.
 
+## 6. ⚠️ El riesgo más caro: listarse en MiniPay antes de cobrar
+
+Regla textual del programa:
+
+> "Projects already listed on MiniPay are not eligible to get rewards on Proof of Ship."
+
+Es decir: **si Frontle queda listado en MiniPay antes del payout, pierde el premio del mes.**
+
+Buena noticia: [`PLAN-LISTING.md`](./PLAN-LISTING.md) ya lo tenía previsto — *"el listing se
+finaliza/aplica en **agosto** tras el payout de Proof of Ship S2 (31 jul)"*. Este análisis
+**confirma esa decisión con la regla textual en la mano**: no era una precaución de más.
+
+Consecuencia operativa: entre hoy y el payout, **preparar** el listing (materiales, PageSpeed,
+agente de soporte) es seguro; **enviarlo/activarlo no**.
+
+## 7. Conclusión
+
+Frontle no está #10 por falta de actividad en GitHub — está en la media del top en commits y es
+segundo en PRs. Está #10 porque los de arriba tienen **más volumen onchain absoluto** (aunque en
+caída libre) y **más fuentes de datos registradas**.
+
+Las tres palancas ordenadas por relación impacto/riesgo:
+
+1. **No romper nada antes del 27** — el activo más valioso ahora es seguir en el top 10, no
+   escalar posiciones. Cualquier cambio grande de arquitectura (§5.1) es de agosto.
+2. **Seguir shipeando trabajo real en commits atómicos**, que es lo que ya se hace.
+3. **Crecer usuarios reales** — es la única métrica donde la brecha es grande y donde Frontle ya
+   tiene la mejor tendencia de la tabla. 117 DAU creciendo bate a 676 desplomándose, si el mes
+   que viene la curva sigue.
+
