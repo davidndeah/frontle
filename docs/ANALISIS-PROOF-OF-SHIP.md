@@ -38,3 +38,25 @@ Lectura: Frontle tiene **menos volumen absoluto pero la mejor tendencia de la ta
 pocos proyectos creciendo en tres dígitos mientras el #1 se desploma ~90 % en todo. Además la
 intensidad de uso es mejor: 278 tx / 117 DAU ≈ **2,4 transacciones por usuario**, contra ≈1,0 de
 TipiTip (un patrón que suele indicar cuentas que tocan el contrato una sola vez).
+
+## 3. Benchmark de actividad en GitHub (1–27 de julio)
+
+Medido con la API de GitHub sobre los repos de cada proyecto del top 10:
+
+| # | Proyecto | Repos | Commits julio | PRs julio |
+|---|---|---|---|---|
+| 1 | TipiTip | 2 | **1.393** | 100+ |
+| 2 | NullState | 2 | 260 | 100+ |
+| 3 | Pay For API | 1 | 652 | 0 |
+| 4 | PlayChessify | 1 | 429 | 0 |
+| 5 | GameArena | — | (repo no público/no compartido) | — |
+| 6 | chessxu | 1 | **1.790** | 14 |
+| 7 | AbaPay | 1 | 295 | 0 |
+| 8 | Langclaw AI | **4** | 638 (281+238+119) | 124 |
+| 9 | Micromind | 2 | 333 | 64 |
+| **10** | **Frontle** | **1** | **366** | **82** |
+
+Frontle está **en la media de commits** del top 10 y es **segundo en PRs** — la actividad de
+GitHub no es la debilidad. Los dos números que despegan (1.393 y 1.790) merecen mirarse de cerca,
+y ahí aparece lo del §4.
+
