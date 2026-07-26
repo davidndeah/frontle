@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Home de modos, síntesis v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Tokens REALES de la app (frontend/app/globals.css, tema default).
+   Copiados a mano: este mockup se abre suelto, sin build de Tailwind.
+   ============================================================ */
+:root{
+  --bg:#160833; --surface:#1c0b3e; --deep:#0d0420; --panel-solid:#0f0524;
+  --lavender:#b79ced; --gold:#fcff52; --ink:#f3edff; --muted:#8791a8;
+  --violet:#6c2bd9;
+  --body-grad:radial-gradient(120% 90% at 50% 0%,#2a1257 0%,#1c0b3e 50%,#130729 100%);
+  --panel-grad:linear-gradient(160deg,rgba(138,92,245,.26),rgba(76,29,149,.30));
+  --panel-brd:rgba(183,156,237,.28);
+  --grid-line:rgba(183,156,237,.10);
+  --prism-grad:linear-gradient(100deg,#c084fc 0%,#a855f7 28%,#ffffff 52%,#fcff52 100%);
+  --start:#22d3ee; --end:#e879f9; --good:#22c55e; --lateral:#eab308; --far:#ef4444;
+  --font-display:"Fredoka"; --font-sans:"Geist";
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,sans-serif;
+  padding:32px 20px 80px;line-height:1.5}
+.wrap{max-width:1400px;margin:0 auto}
+
+.doc-head{max-width:72ch;margin-bottom:38px}
+.doc-head h1{font-family:var(--font-display);font-size:1.9rem;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.doc-head p{color:#c9c2dd;margin-bottom:10px}
+.keep{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.34);border-radius:12px;padding:14px 16px;margin-top:16px}
+.keep strong{color:#86efac}
+.keep ul{margin:8px 0 0 18px;color:#c9c2dd;font-size:.92rem}
+.keep li{margin-bottom:4px}
+
+.grid{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.col{flex:1 1 340px;min-width:320px;max-width:400px}
+.col > h2{font-family:var(--font-display);font-size:1.25rem;font-weight:700;margin-bottom:4px;
+  display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.col > h2 .tag{font-family:var(--font-sans);font-size:.66rem;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--deep);background:var(--gold);border-radius:999px;padding:2px 8px}
+.col > .idea{color:#c9c2dd;font-size:.9rem;margin-bottom:16px;min-height:3.4em}
+
+/* ---------- Teléfono 360px (mínimo MiniPay) ---------- */
+.phone{width:360px;height:718px;border-radius:26px;overflow:hidden;position:relative;
+  border:2px solid var(--deep);box-shadow:0 24px 60px rgba(0,0,0,.55);background:var(--body-grad)}
+.phone .grid-bg{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:46px 46px}
+.screen{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding:10px 13px 14px;display:flex;flex-direction:column;gap:11px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ---------- Piezas del sistema ---------- */
+.brutal{border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep)}
+.brutal-sm{border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep)}
+.topbar{display:flex;align-items:center;gap:7px;padding:9px 13px 4px;flex:none}
+.brand{font-family:var(--font-display);font-weight:700;font-size:.95rem;letter-spacing:.06em;
+  background:var(--prism-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(183,156,237,.25);border-radius:999px;padding:3px 8px}
+.navbar{flex:none;display:flex;border-top:1px solid rgba(183,156,237,.18);
+  background:rgba(13,4,32,.85);backdrop-filter:blur(8px)}
+.navbar div{flex:1;text-align:center;padding:8px 0 10px;font-size:.58rem;color:var(--muted)}
+.navbar div.on{color:var(--gold)}
+.navbar div span{display:block;font-size:1rem;margin-bottom:1px}
+h3.sec{font-family:var(--font-display);font-size:.7rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:3px 0 -3px}
+
+/* ---------- BORDY ---------- */
+.bordy{display:block}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+.bordy.fl{animation:float 4.5s ease-in-out infinite}
+.bubble{
+  position:relative;background:var(--surface);border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);
+  border-radius:13px;padding:8px 11px;font-size:.72rem;line-height:1.35;flex:1;
+}
+.bubble::after{content:"";position:absolute;left:-9px;top:17px;width:0;height:0;
+  border:7px solid transparent;border-right-color:var(--deep)}
+.bubble b{color:var(--gold);font-weight:700}
+.streak-badge{
+  position:absolute;right:-6px;top:-4px;display:flex;align-items:center;gap:2px;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);border-radius:999px;
+  padding:1px 6px;font-family:var(--font-display);font-weight:700;font-size:.7rem;
+}
+
+/* ---------- HÉROE: el duelo real de hoy ---------- */
+.hero{border-radius:16px;background:var(--violet);padding:13px;position:relative;overflow:hidden}
+/* .82 y no .62: sobre el violeta del heroe, 62% da 3.6:1 y este texto mide
+   9.6px, asi que necesita 4.5:1. A .82 sube a 5.2:1. */
+.hero .kicker{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.hero .live{position:absolute;top:11px;right:11px;display:flex;align-items:center;gap:5px;
+  font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;
+  background:rgba(0,0,0,.35);border-radius:999px;padding:2px 7px}
+.hero .live b{width:5px;height:5px;border-radius:50%;background:var(--far);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.duel{display:flex;align-items:center;gap:9px;margin:11px 0 3px}
+.duel .side{flex:1;text-align:center;min-width:0}
+.duel img{width:56px;height:37px;object-fit:cover;border-radius:5px;border:2px solid var(--deep);display:block;margin:0 auto 5px}
+.duel .side b{display:block;font-family:var(--font-display);font-size:.8rem;font-weight:600;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* El cian y el fucsia de origen/destino son INFORMACION, pero como texto de
+   8.8px sobre el violeta dan 3.9:1 y 2.9:1 — ilegibles. El color se mueve al
+   borde de la bandera (donde se ve mejor y no compite con el texto) y la
+   etiqueta pasa a blanco 75% = 4.6:1. */
+.duel .side i{font-style:normal;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,.75)}
+.duel .from img{border-color:var(--start)}
+.duel .to img{border-color:var(--end)}
+.duel .link{flex:none;width:66px;position:relative;height:34px}
+.duel .link svg{position:absolute;inset:0;width:100%;height:100%}
+.duel .link em{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-style:normal;
+  font-family:var(--font-display);font-weight:700;font-size:.64rem;color:var(--deep);
+  background:var(--gold);border-radius:999px;padding:1px 6px;border:2px solid var(--deep)}
+.pot{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:rgba(0,0,0,.28);border-radius:10px;padding:7px 10px;margin-top:9px}
+.pot .amt{font-family:var(--font-display);font-weight:700;font-size:1.1rem;color:var(--gold);line-height:1}
+.pot .lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.pot .clock{font-family:ui-monospace,monospace;font-size:.78rem;color:#fff;font-variant-numeric:tabular-nums}
+.levels{display:flex;gap:5px;margin-top:9px}
+.levels button{flex:1;border-radius:9px;padding:6px 0;font-family:var(--font-display);font-weight:600;
+  font-size:.68rem;background:rgba(0,0,0,.25);color:#fff;border:2px solid var(--deep);cursor:pointer}
+.levels button.on{background:var(--gold);color:var(--deep)}
+.play-big{
+  width:100%;margin-top:9px;border-radius:11px;padding:10px 0;cursor:pointer;
+  font-family:var(--font-display);font-weight:700;font-size:.95rem;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);
+}
+
+/* ---------- FICHAS art-forward (herencia de C) ---------- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{
+  position:relative;border-radius:14px;overflow:hidden;aspect-ratio:1/.86;cursor:pointer;
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);background:var(--panel-solid);
+  display:flex;align-items:flex-end;
+}
+.tile .art{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}
+.tile .art img{width:100%;height:100%;object-fit:cover}
+.tile .art .glyph{font-size:2.6rem}
+/* Velo oscuro solo bajo el texto: el arte manda, el texto sigue legible. */
+.tile .foot{
+  position:relative;width:100%;display:flex;align-items:center;gap:6px;padding:7px 8px;
+  background:linear-gradient(to top,rgba(13,4,32,.94) 60%,rgba(13,4,32,0));
+}
+.tile .foot b{font-family:var(--font-display);font-size:.78rem;font-weight:600;line-height:1.1;flex:1;min-width:0}
+.tile .foot .go{
+  flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:.68rem;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);
+}
+.tile .rib{position:absolute;top:7px;left:7px;font-size:.53rem;font-weight:800;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--deep);border-radius:999px;padding:1px 6px;border:2px solid var(--deep)}
+.tile .rec{position:absolute;top:7px;right:7px;font-size:.55rem;font-weight:700;color:#fff;
+  background:rgba(13,4,32,.75);border-radius:999px;padding:1px 6px}
+
+/* ---------- 2 · HUD ---------- */
+.hud{display:flex;align-items:center;gap:9px;border-radius:13px;background:var(--panel-grad);
+  border:1px solid var(--panel-brd);padding:8px 11px}
+.hud .fire{display:flex;align-items:baseline;gap:3px}
+.hud .fire b{font-family:var(--font-display);font-size:1.25rem;font-weight:700;line-height:1;color:var(--gold)}
+.hud .fire small{font-size:.55rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.hud .sep{width:1px;height:26px;background:rgba(255,255,255,.13)}
+.hud .lvl{flex:1;min-width:0}
+.hud .lvl small{font-size:.6rem;color:#c4b5fd;font-weight:600;display:block;margin-bottom:3px}
+.hud .bar{height:6px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}
+.hud .bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#22d3ee,#22c55e,#fcff52)}
+
+/* ---------- 3 · Bordy en el héroe + carrusel ---------- */
+.hero.tall{padding-bottom:0}
+.hero .ribbon{
+  position:absolute;top:11px;left:11px;display:flex;align-items:center;gap:3px;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);border-radius:999px;
+  padding:1px 8px;font-family:var(--font-display);font-weight:700;font-size:.7rem;z-index:2;
+}
+.hero .withbordy{display:flex;align-items:flex-end;gap:8px;margin-top:8px}
+.hero .withbordy .play-big{margin-top:0;flex:1}
+.deck{display:flex;gap:10px;overflow-x:auto;padding:2px 0 8px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.dcard{
+  flex:none;width:132px;scroll-snap-align:start;border-radius:14px;overflow:hidden;cursor:pointer;
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);background:var(--panel-solid);
+  display:flex;flex-direction:column;
+}
+.dcard .art{height:104px;position:relative;display:grid;place-items:center;overflow:hidden}
+.dcard .art img{width:100%;height:100%;object-fit:cover}
+.dcard .art .glyph{font-size:2.4rem}
+.dcard .rib{position:absolute;top:6px;left:6px;font-size:.5rem;font-weight:800;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--deep);border-radius:999px;padding:1px 5px;border:2px solid var(--deep)}
+.dcard .foot{display:flex;align-items:center;gap:5px;padding:7px 8px;background:var(--surface)}
+.dcard .foot b{font-family:var(--font-display);font-size:.74rem;font-weight:600;flex:1;min-width:0;line-height:1.1}
+.dcard .foot .go{flex:none;width:22px;height:22px;border-radius:6px;display:grid;place-items:center;
+  font-size:.62rem;background:var(--gold);color:var(--deep);border:2px solid var(--deep)}
+
+.notes{margin-top:16px;font-size:.82rem}
+.notes dt{font-weight:700;color:var(--gold);margin-top:10px;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+.notes dd{color:#c9c2dd;margin-top:3px}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <h1>Home de modos — síntesis v2</h1>
+    <p>Las tres combinan lo que te gustó de la v1. Lo que cambia entre ellas es <strong>dónde vive Bordy</strong>, <strong>dónde vive la racha</strong> y si los modos gratis son <strong>rejilla o carrusel</strong>.</p>
+
+    <div class="keep">
+      <strong>Constantes en las tres (lo que elegiste)</strong>
+      <ul>
+        <li><strong>Layout de A</strong> — un héroe dominante con el duelo real de hoy (banderas, ruta, pot, reloj) y los modos gratis debajo.</li>
+        <li><strong>Racha de B</strong> — siempre visible, nunca enterrada.</li>
+        <li><strong>Cards de C</strong> — el arte ocupa la ficha entera, el texto es mínimo y el botón de jugar está siempre a la vista.</li>
+        <li><strong>Bordy presente</strong> — faltaba en la v1. Aquí cada dirección le da un papel distinto.</li>
+      </ul>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ==================== 1 ==================== -->
+    <section class="col">
+      <h2>1 · Bordy anfitrión <span class="tag">él presenta el reto</span></h2>
+      <p class="idea">Bordy recibe con una frase sobre el reto de hoy y la racha va colgada de él, como una medalla. Debajo, el héroe y la rejilla.</p>
+
+      <div class="phone">
+        <div class="grid-bg"></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="brand">FRONTLE</span>
+            <span class="chip" style="margin-left:auto">🪙 12</span>
+            <span class="chip">⚙️</span>
+          </div>
+          <div class="scroll">
+
+            <div style="display:flex;align-items:flex-start;gap:9px">
+              <span style="position:relative;flex:none">
+                <img class="bordy fl" src="../../frontend/public/bordy-m2.webp" alt="Bordy" style="width:62px;height:74px;object-fit:contain">
+                <span class="streak-badge">🔥4</span>
+              </span>
+              <span class="bubble">¡Vas <b>4 días seguidos</b>! El de hoy cruza un mar 👀</span>
+            </div>
+
+            <div class="hero brutal">
+              <span class="live"><b></b> En juego</span>
+              <span class="kicker">Reto de hoy</span>
+              <div class="duel">
+                <span class="side from"><img src="https://flagcdn.com/w80/eh.png" alt=""><b>Sáhara Occ.</b><i>Salida</i></span>
+                <span class="link">
+                  <svg viewBox="0 0 66 34" fill="none"><path d="M2 28 Q33 -2 64 28" stroke="url(#g1)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+                  <defs><linearGradient id="g1" x1="0" y1="0" x2="66" y2="0"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/></linearGradient></defs></svg>
+                  <em>4 países</em>
+                </span>
+                <span class="side to"><img src="https://flagcdn.com/w80/ye.png" alt=""><b>Yemen</b><i>Meta</i></span>
+              </div>
+              <div class="pot">
+                <span><span class="lbl">Premio del día</span><br><span class="amt">0.48 USDT</span></span>
+                <span style="text-align:right"><span class="lbl">Cierra en</span><br><span class="clock">07:10:42</span></span>
+              </div>
+              <div class="levels"><button>🌱</button><button class="on">⚡ Medio</button><button>💀</button></div>
+              <button class="play-big">▶ JUGAR</button>
+            </div>
+
+            <h3 class="sec">Gratis, sin límite</h3>
+            <div class="tiles">
+              <div class="tile">
+                <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""></span>
+                <span class="rec">🔥 7</span>
+                <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+              </div>
+              <div class="tile">
+                <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                  <svg viewBox="0 0 120 90" width="72%" height="72%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="rec">🔥 4</span>
+                <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+              </div>
+              <div class="tile">
+                <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""></span>
+                <span class="rec">13 países</span>
+                <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+              </div>
+              <div class="tile">
+                <span class="art" style="background:linear-gradient(160deg,#2a1257,#150a2e)"><span class="glyph">🎓</span></span>
+                <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+              </div>
+            </div>
+
+          </div>
+          <div class="navbar">
+            <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+            <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="notes">
+        <dt>Bordy</dt><dd>Anfitrión arriba, con burbuja. Su frase puede cambiar por día, racha o dificultad — es el único sitio donde el juego «habla».</dd>
+        <dt>Racha</dt><dd>Medalla pegada a Bordy: se lee como logro suyo y tuyo, no como un dato más.</dd>
+        <dt>Coste</dt><dd>La burbuja gasta ~90px de alto antes del héroe. Es la que más scroll pide.</dd>
+      </dl>
+    </section>
+
+    <!-- ==================== 2 ==================== -->
+    <section class="col">
+      <h2>2 · Marcador <span class="tag">HUD compacto</span></h2>
+      <p class="idea">Racha, nivel y monedas en una barra tipo HUD de consola, con Bordy asomado al final. Máximo espacio para el héroe y las fichas.</p>
+
+      <div class="phone">
+        <div class="grid-bg"></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="brand">FRONTLE</span>
+            <span class="chip" style="margin-left:auto">🪙 12</span>
+            <span class="chip">⚙️</span>
+          </div>
+          <div class="scroll">
+
+            <div class="hud">
+              <span class="fire"><b>4</b><small>racha</small></span>
+              <span class="sep"></span>
+              <span class="lvl">
+                <small>Nivel 3 · Explorador</small>
+                <span class="bar"><i style="width:66%"></i></span>
+              </span>
+              <img class="bordy fl" src="../../frontend/public/bordy-m2.webp" alt="Bordy" style="width:34px;height:41px;object-fit:contain;flex:none">
+            </div>
+
+            <div class="hero brutal">
+              <span class="live"><b></b> En juego</span>
+              <span class="kicker">Reto de hoy</span>
+              <div class="duel">
+                <span class="side from"><img src="https://flagcdn.com/w80/eh.png" alt=""><b>Sáhara Occ.</b><i>Salida</i></span>
+                <span class="link">
+                  <svg viewBox="0 0 66 34" fill="none"><path d="M2 28 Q33 -2 64 28" stroke="url(#g2)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+                  <defs><linearGradient id="g2" x1="0" y1="0" x2="66" y2="0"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/></linearGradient></defs></svg>
+                  <em>4 países</em>
+                </span>
+                <span class="side to"><img src="https://flagcdn.com/w80/ye.png" alt=""><b>Yemen</b><i>Meta</i></span>
+              </div>
+              <div class="pot">
+                <span><span class="lbl">Premio del día</span><br><span class="amt">0.48 USDT</span></span>
+                <span style="text-align:right"><span class="lbl">Cierra en</span><br><span class="clock">07:10:42</span></span>
+              </div>
+              <div class="levels"><button>🌱 Fácil</button><button class="on">⚡ Medio</button><button>💀 Difícil</button></div>
+              <button class="play-big">▶ JUGAR</button>
+            </div>
+
+            <h3 class="sec">Gratis, sin límite</h3>
+            <div class="tiles">
+              <div class="tile">
+                <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""></span>
+                <span class="rec">🔥 7</span>
+                <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+              </div>
+              <div class="tile">
+                <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                  <svg viewBox="0 0 120 90" width="72%" height="72%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="rec">🔥 4</span>
+                <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+              </div>
+              <div class="tile">
+                <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""></span>
+                <span class="rec">13 países</span>
+                <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+              </div>
+              <div class="tile">
+                <span class="art" style="background:linear-gradient(160deg,#2a1257,#150a2e)"><span class="glyph">🎓</span></span>
+                <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+              </div>
+            </div>
+
+          </div>
+          <div class="navbar">
+            <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+            <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="notes">
+        <dt>Bordy</dt><dd>Copiloto dentro del HUD, pequeño. Reacciona (celebra al subir la racha) sin robar espacio.</dd>
+        <dt>Racha</dt><dd>Primer dato de la barra, junto al nivel: se lee como marcador de partida.</dd>
+        <dt>Coste</dt><dd>Bordy queda a 34px — pierde la expresividad del rig. Es la más sobria de las tres.</dd>
+      </dl>
+    </section>
+
+    <!-- ==================== 3 ==================== -->
+    <section class="col">
+      <h2>3 · Bordy en el ring <span class="tag">carrusel</span></h2>
+      <p class="idea">Bordy vive <em>dentro</em> del héroe, junto al botón de jugar, y la racha es un galón en la esquina. Los modos gratis pasan a carrusel.</p>
+
+      <div class="phone">
+        <div class="grid-bg"></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="brand">FRONTLE</span>
+            <span class="chip" style="margin-left:auto">🪙 12</span>
+            <span class="chip">⚙️</span>
+          </div>
+          <div class="scroll">
+
+            <div class="hero brutal tall">
+              <span class="ribbon">🔥 4 días</span>
+              <span class="live"><b></b> En juego</span>
+              <div style="height:16px"></div>
+              <span class="kicker">Reto de hoy</span>
+              <div class="duel">
+                <span class="side from"><img src="https://flagcdn.com/w80/eh.png" alt=""><b>Sáhara Occ.</b><i>Salida</i></span>
+                <span class="link">
+                  <svg viewBox="0 0 66 34" fill="none"><path d="M2 28 Q33 -2 64 28" stroke="url(#g3)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+                  <defs><linearGradient id="g3" x1="0" y1="0" x2="66" y2="0"><stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/></linearGradient></defs></svg>
+                  <em>4 países</em>
+                </span>
+                <span class="side to"><img src="https://flagcdn.com/w80/ye.png" alt=""><b>Yemen</b><i>Meta</i></span>
+              </div>
+              <div class="pot">
+                <span><span class="lbl">Premio del día</span><br><span class="amt">0.48 USDT</span></span>
+                <span style="text-align:right"><span class="lbl">Cierra en</span><br><span class="clock">07:10:42</span></span>
+              </div>
+              <div class="levels"><button>🌱</button><button class="on">⚡ Medio</button><button>💀</button></div>
+              <div class="withbordy">
+                <button class="play-big">▶ JUGAR</button>
+                <img class="bordy fl" src="../../frontend/public/bordy-m2.webp" alt="Bordy" style="width:62px;height:74px;object-fit:contain;margin-bottom:-2px;flex:none">
+              </div>
+            </div>
+
+            <h3 class="sec">Gratis, sin límite</h3>
+            <div class="deck">
+              <div class="dcard">
+                <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""><span class="rib" style="background:var(--start)">🔥 7</span></span>
+                <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+              </div>
+              <div class="dcard">
+                <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                  <svg viewBox="0 0 120 90" width="76%" height="76%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                  <span class="rib" style="background:var(--good)">🔥 4</span>
+                </span>
+                <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+              </div>
+              <div class="dcard">
+                <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""><span class="rib" style="background:var(--end)">13</span></span>
+                <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+              </div>
+              <div class="dcard">
+                <span class="art" style="background:linear-gradient(160deg,#2a1257,#150a2e)"><span class="glyph">🎓</span></span>
+                <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+              </div>
+            </div>
+
+          </div>
+          <div class="navbar">
+            <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+            <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="notes">
+        <dt>Bordy</dt><dd>Dentro del héroe, al lado del botón: parece que te acompaña a entrar a la partida. Es donde más grande y expresivo se ve.</dd>
+        <dt>Racha</dt><dd>Galón dorado en la esquina del héroe — asocia la racha al reto que la mantiene viva.</dd>
+        <dt>Coste</dt><dd>El carrusel deja el 4.º modo fuera de pantalla. Gana el héroe, pierden los gratis.</dd>
+      </dl>
+    </section>
+
+  </div>
+</div>
+</body>
+</html>
