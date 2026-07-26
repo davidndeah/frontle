@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Home de modos v3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens reales de la app (frontend/app/globals.css, tema default). */
+:root{
+  --bg:#160833; --surface:#1c0b3e; --deep:#0d0420; --panel-solid:#0f0524;
+  --lavender:#b79ced; --gold:#fcff52; --ink:#f3edff; --muted:#8791a8; --violet:#6c2bd9;
+  --body-grad:radial-gradient(120% 90% at 50% 0%,#2a1257 0%,#1c0b3e 50%,#130729 100%);
+  --panel-grad:linear-gradient(160deg,rgba(138,92,245,.26),rgba(76,29,149,.30));
+  --panel-brd:rgba(183,156,237,.28); --grid-line:rgba(183,156,237,.10);
+  --prism-grad:linear-gradient(100deg,#c084fc 0%,#a855f7 28%,#ffffff 52%,#fcff52 100%);
+  --start:#22d3ee; --end:#e879f9; --good:#22c55e;
+  --font-display:"Fredoka"; --font-sans:"Geist";
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,sans-serif;
+  padding:32px 20px 70px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto}
+.doc-head{max-width:70ch;margin-bottom:32px}
+.doc-head h1{font-family:var(--font-display);font-size:1.85rem;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.doc-head p{color:#c9c2dd;margin-bottom:8px}
+.chg{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.34);border-radius:12px;padding:14px 16px;margin-top:14px}
+.chg strong{color:#86efac}
+.chg ol{margin:8px 0 0 18px;color:#c9c2dd;font-size:.92rem}
+.chg li{margin-bottom:5px}
+.layout{display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+
+/* ---------- Teléfono 360px (mínimo MiniPay) ---------- */
+.phone{width:360px;height:718px;border-radius:26px;overflow:hidden;position:relative;flex:none;
+  border:2px solid var(--deep);box-shadow:0 24px 60px rgba(0,0,0,.55);background:var(--body-grad)}
+.phone .grid-bg{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:46px 46px}
+.screen{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding:9px 13px 14px;display:flex;flex-direction:column;gap:11px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ---------- 1 · Header ---------- */
+.topbar{display:flex;align-items:center;gap:7px;padding:9px 13px 3px;flex:none}
+.brand{font-family:var(--font-display);font-weight:700;font-size:.95rem;letter-spacing:.06em;
+  background:var(--prism-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(183,156,237,.25);border-radius:999px;padding:3px 8px}
+
+/* ---------- 2 · Bordy + racha ---------- */
+.host{display:flex;align-items:center;gap:9px}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+.host img{width:60px;height:72px;object-fit:contain;flex:none;animation:float 4.5s ease-in-out infinite}
+.bubble{position:relative;flex:1;background:var(--surface);border:2px solid var(--deep);
+  box-shadow:3px 3px 0 var(--deep);border-radius:13px;padding:9px 11px;font-size:.76rem;line-height:1.35}
+.bubble::after{content:"";position:absolute;left:-9px;top:16px;width:0;height:0;
+  border:7px solid transparent;border-right-color:var(--deep)}
+.bubble .fire{font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:.95rem}
+
+/* ---------- 3 · Héroe: el reto SELLADO ---------- */
+.hero{border-radius:16px;background:var(--violet);padding:13px;position:relative;overflow:hidden;
+  border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep)}
+.hero .kicker{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.hero .live{position:absolute;top:11px;right:11px;display:flex;align-items:center;gap:5px;
+  font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;
+  background:rgba(0,0,0,.35);border-radius:999px;padding:2px 7px}
+.hero .live b{width:5px;height:5px;border-radius:50%;background:#ef4444;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* Cartas boca abajo: se ve la ESTRUCTURA (salida → meta) pero no el contenido. */
+.sealed{display:flex;align-items:center;gap:9px;margin:11px 0 2px}
+.sealed .slot{flex:1;text-align:center;min-width:0}
+.sealed .back{
+  width:56px;height:37px;margin:0 auto 5px;border-radius:5px;position:relative;overflow:hidden;
+  border:2px solid var(--deep);background:var(--panel-solid);display:grid;place-items:center;
+  background-image:linear-gradient(rgba(183,156,237,.16) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(183,156,237,.16) 1px,transparent 1px);
+  background-size:9px 9px;
+}
+.sealed .back q{font-family:var(--font-display);font-weight:700;font-size:1.15rem;color:var(--gold);quotes:none}
+.sealed .back::before{ /* brillo que recorre la carta: "hay algo ahí dentro" */
+  content:"";position:absolute;top:0;bottom:0;width:36px;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);
+  animation:sweep 3.4s ease-in-out infinite;
+}
+.sealed .slot:last-child .back::before{animation-delay:.45s}
+@keyframes sweep{0%{left:-40px}55%,100%{left:100%}}
+.sealed .slot b{display:block;font-family:var(--font-display);font-size:.72rem;font-weight:600;
+  color:rgba(255,255,255,.78);letter-spacing:.06em}
+.sealed .slot i{font-style:normal;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.75)}
+.sealed .from .back{border-color:var(--start)}
+.sealed .to .back{border-color:var(--end)}
+.sealed .link{flex:none;width:60px;position:relative;height:34px}
+.sealed .link svg{position:absolute;inset:0;width:100%;height:100%}
+.sealed .link em{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-style:normal;
+  font-family:var(--font-display);font-weight:700;font-size:.64rem;color:var(--deep);
+  background:var(--gold);border-radius:999px;padding:1px 7px;border:2px solid var(--deep)}
+
+/* Niveles: cada uno muestra SU pot. Elegir nivel = elegir premio. */
+.levels{display:flex;gap:6px;margin-top:11px}
+.levels button{
+  flex:1;border-radius:10px;padding:7px 3px 6px;cursor:pointer;text-align:center;
+  background:rgba(0,0,0,.26);border:2px solid var(--deep);color:#fff;font-family:var(--font-sans);
+}
+.levels button.on{background:var(--gold);color:var(--deep)}
+.levels button u{display:block;text-decoration:none;font-family:var(--font-display);font-weight:600;font-size:.72rem;line-height:1.1}
+.levels button s{display:block;text-decoration:none;font-family:ui-monospace,monospace;font-size:.63rem;
+  font-variant-numeric:tabular-nums;margin-top:3px;color:var(--gold)}
+.levels button.on s{color:var(--deep);font-weight:700}
+.closes{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:9px;
+  font-size:.62rem;color:rgba(255,255,255,.75)}
+.closes b{font-family:ui-monospace,monospace;font-size:.78rem;color:#fff;font-variant-numeric:tabular-nums;font-weight:400}
+.play{
+  display:block;width:100%;margin-top:11px;border-radius:13px;padding:13px 0;cursor:pointer;
+  font-family:var(--font-display);font-weight:700;font-size:1.08rem;letter-spacing:.01em;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep);
+  transition:transform .08s ease,box-shadow .08s ease;
+}
+.play:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
+
+/* ---------- 4 · Modos: 2 columnas, tamaño compacto ---------- */
+h3.sec{font-family:var(--font-display);font-size:.7rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:2px 0 -3px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{
+  border-radius:13px;overflow:hidden;cursor:pointer;background:var(--panel-solid);
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);display:flex;flex-direction:column;
+  transition:transform .08s ease,box-shadow .08s ease;
+}
+.mode:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
+/* 78px: las fichas full-bleed de «Bordy anfitrion» median 162x139 y pesaban
+   demasiado. Con el arte a 78 la card baja a ~119, el tamano compacto de las
+   cards del carrusel de «Bordy en el ring». */
+.mode .art{height:78px;position:relative;display:grid;place-items:center;overflow:hidden}
+.mode .art img{width:100%;height:100%;object-fit:cover}
+.mode .art .glyph{font-size:2.4rem}
+.mode .rec{position:absolute;top:6px;right:6px;font-size:.55rem;font-weight:700;color:#fff;
+  background:rgba(13,4,32,.78);border-radius:999px;padding:1px 6px}
+.mode .foot{display:flex;align-items:center;gap:6px;padding:7px 8px;background:var(--surface)}
+.mode .foot b{font-family:var(--font-display);font-size:.78rem;font-weight:600;flex:1;min-width:0;line-height:1.1}
+.mode .foot .go{flex:none;width:23px;height:23px;border-radius:7px;display:grid;place-items:center;
+  font-size:.64rem;background:var(--gold);color:var(--deep);border:2px solid var(--deep)}
+
+.navbar{flex:none;display:flex;border-top:1px solid rgba(183,156,237,.18);
+  background:rgba(13,4,32,.85);backdrop-filter:blur(8px)}
+.navbar div{flex:1;text-align:center;padding:8px 0 10px;font-size:.58rem;color:var(--muted)}
+.navbar div.on{color:var(--gold)}
+.navbar div span{display:block;font-size:1rem;margin-bottom:1px}
+
+/* ---------- Notas al lado ---------- */
+.side{flex:1;min-width:300px;max-width:520px}
+.side h2{font-family:var(--font-display);font-size:1.1rem;font-weight:700;margin:22px 0 6px}
+.side h2:first-child{margin-top:0}
+.side p{color:#c9c2dd;font-size:.88rem;margin-bottom:8px}
+.side .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;
+  background:var(--gold);color:var(--deep);font-family:var(--font-display);font-weight:700;font-size:.75rem;
+  margin-right:7px;vertical-align:middle}
+.side code{background:rgba(255,255,255,.07);border-radius:4px;padding:1px 5px;font-size:.85em}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <h1>Home de modos — v3</h1>
+    <p>Recoge las decisiones de la v2 y resuelve los cuatro cambios que pediste. Orden de la pantalla, de arriba abajo: <strong>header → Bordy con la racha → reto sellado → modos en dos columnas</strong>.</p>
+    <div class="chg">
+      <strong>Qué cambia respecto a la v2</strong>
+      <ol>
+        <li><strong>Bordy y la racha suben al top</strong>, justo bajo el header. Salen del héroe (ya no hay galón ni Bordy dentro).</li>
+        <li><strong>El reto de hoy queda oculto</strong> hasta entrar a jugar: dos cartas boca abajo en vez de las banderas.</li>
+        <li><strong>Cada nivel muestra su propio pot</strong>, para elegir viendo el premio. La hora de cierre queda debajo.</li>
+        <li><strong>Botón JUGAR a ancho completo</strong> y más alto, al final del héroe y sin nada que lo estorbe.</li>
+        <li><strong>Modos en dos columnas</strong> (como Bordy anfitrión) con el tamaño compacto de las cards del carrusel.</li>
+      </ol>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <div class="phone">
+      <div class="grid-bg"></div>
+      <div class="screen">
+
+        <!-- 1 · Header -->
+        <div class="topbar">
+          <span class="brand">FRONTLE</span>
+          <span class="chip" style="margin-left:auto">🪙 12</span>
+          <span class="chip">⚙️</span>
+        </div>
+
+        <div class="scroll">
+
+          <!-- 2 · Bordy + racha -->
+          <div class="host">
+            <img src="../../frontend/public/bordy-m2.webp" alt="Bordy">
+            <span class="bubble">Llevas <span class="fire">🔥 4 días</span> seguidos. ¡No la rompas hoy!</span>
+          </div>
+
+          <!-- 3 · Héroe: reto sellado -->
+          <div class="hero">
+            <span class="live"><b></b> En juego</span>
+            <span class="kicker">Reto de hoy</span>
+
+            <div class="sealed">
+              <span class="slot from">
+                <span class="back"><q>?</q></span>
+                <b>?</b><i>Salida</i>
+              </span>
+              <span class="link">
+                <svg viewBox="0 0 60 34" fill="none">
+                  <path d="M2 28 Q30 -2 58 28" stroke="url(#gr)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+                  <defs><linearGradient id="gr" x1="0" y1="0" x2="60" y2="0">
+                    <stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/>
+                  </linearGradient></defs>
+                </svg>
+                <em>? países</em>
+              </span>
+              <span class="slot to">
+                <span class="back"><q>?</q></span>
+                <b>?</b><i>Meta</i>
+              </span>
+            </div>
+
+            <div class="levels">
+              <button><u>🌱 Fácil</u><s>0.12</s></button>
+              <button class="on"><u>⚡ Medio</u><s>0.48</s></button>
+              <button><u>💀 Difícil</u><s>0.94</s></button>
+            </div>
+            <p class="closes">Cierra en <b>07:10:42</b></p>
+
+            <button class="play">▶ JUGAR</button>
+          </div>
+
+          <!-- 4 · Modos en 2 columnas -->
+          <h3 class="sec">Gratis, sin límite</h3>
+          <div class="modes">
+            <div class="mode">
+              <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""><span class="rec">🔥 7</span></span>
+              <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+            </div>
+            <div class="mode">
+              <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                <svg viewBox="0 0 120 90" width="70%" height="70%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                <span class="rec">🔥 4</span>
+              </span>
+              <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+            </div>
+            <div class="mode">
+              <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""><span class="rec">13</span></span>
+              <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+            </div>
+            <div class="mode">
+              <span class="art" style="background:linear-gradient(160deg,#2a1257,#150a2e)"><span class="glyph">🎓</span></span>
+              <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="navbar">
+          <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+          <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <h2><span class="num">2</span>Bordy y la racha, arriba</h2>
+      <p>Bordy pasa a ser lo primero tras el header, con la racha dentro de su frase. Su texto puede cambiar por día, por racha o por si ya jugaste — es el único sitio donde el juego habla en primera persona.</p>
+      <p>Al salir del héroe, se libera todo el espacio de abajo para el botón de jugar.</p>
+
+      <h2><span class="num">3</span>El reto va sellado</h2>
+      <p>Dos cartas boca abajo con la trama de la marca y un <code>?</code> en oro. Se conserva la estructura que te gustó — salida, ruta, meta — pero <strong>sin revelar países ni cuántos hacen falta</strong>: el conteo también va oculto, porque delata la dificultad real.</p>
+      <p>Un brillo recorre cada carta cada pocos segundos: comunica que hay algo dentro sin decir qué. El cian y el fucsia siguen marcando salida y meta, ahora en el borde de la carta.</p>
+
+      <h2><span class="num">3b</span>Un pot por nivel</h2>
+      <p>Cada nivel enseña su propio premio, así que elegir dificultad es elegir cuánto hay en juego. La hora de cierre queda debajo, en una sola línea, sin competir con los importes.</p>
+
+      <h2><span class="num">3c</span>Botón de jugar</h2>
+      <p>Ancho completo, 13px de padding vertical y tipografía a 1.08rem — antes competía con Bordy por el espacio y quedaba estrecho. Ahora cierra el héroe y es lo último que ves antes de los modos gratis.</p>
+
+      <h2><span class="num">4</span>Modos en dos columnas</h2>
+      <p>La rejilla 2×2 de «Bordy anfitrión» con la anatomía compacta de las cards del carrusel: bloque de arte arriba y barra sólida abajo con el nombre y el ▶ — en vez del arte a sangre con velo encima, que pesaba mucho.</p>
+      <p>Medido en el mockup: cada card queda en <strong>160 × 119px</strong>, contra los 162 × 139 de las fichas de «Bordy anfitrión».</p>
+      <p>El récord personal (🔥 7) sigue en la esquina del arte: es el gancho para volver.</p>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
