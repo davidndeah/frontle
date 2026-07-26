@@ -49,7 +49,7 @@ Medido con la API de GitHub sobre los repos de cada proyecto del top 10:
 | 2 | NullState | 2 | 260 | 100+ |
 | 3 | Pay For API | 1 | 652 | 0 |
 | 4 | PlayChessify | 1 | 429 | 0 |
-| 5 | GameArena | — | (repo no público/no compartido) | — |
+| 5 | GameArena (`HACK3R-CRYPTO/Gamerstew`) | 1 | 270 | 45 |
 | 6 | chessxu | 1 | **1.790** | 14 |
 | 7 | AbaPay | 1 | 295 | 0 |
 | 8 | Langclaw AI | **4** | 638 (281+238+119) | 124 |
