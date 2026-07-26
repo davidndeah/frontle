@@ -60,3 +60,30 @@ Frontle está **en la media de commits** del top 10 y es **segundo en PRs** — 
 GitHub no es la debilidad. Los dos números que despegan (1.393 y 1.790) merecen mirarse de cerca,
 y ahí aparece lo del §4.
 
+## 4. Los volúmenes altos no son código: TipiTip está inflando la métrica
+
+**El #1 del leaderboard genera commits sintéticos.** Comprobado contra la API de GitHub, no
+inferido:
+
+- Sus últimos commits añaden **un archivo cada uno**, con nombre aleatorio del tipo
+  `util_4ae64257.ts`, `util_04cb1b64.ts`, `util_c7d0fa63.ts`.
+- El diff de cada uno es de **+1 línea** (algunos +5).
+- Cada commit va en **su propio PR** (#1584, #1585, … #1598 consecutivos) y lleva `[skip ci]`
+  para que no corra CI.
+- Los mensajes se repiten en bucle: *"add retry utility function"*, *"add validation utility"*,
+  *"add async helper functions"*, tres o cuatro veces en quince commits.
+- El repo tiene hoy **1.156 archivos `util_*.ts`** en la raíz. El contenido es relleno: funciones
+  con nombre aleatorio (`fetch_2557d0b6`) que nadie importa.
+
+En contraste, **chessxu (1.790 commits) sí es trabajo real**, solo que partido muy fino:
+`+44/−6`, `+15/−5`, `+1/−23`… commits convencionales de features de verdad (límite freemium,
+integración de Privy), separando `style:`/`docs:`/`refactor:`/`chore:` de cada cambio.
+
+> **Decisión: Frontle no copia el farming.** No es una postura moral abstracta — es que el
+> programa se llama "Proof of **Ship**", los proyectos pasan por *Projects Review* del 28 al 31,
+> y un repo con mil archivos basura es trivial de detectar y motivo evidente de descalificación.
+> El riesgo es perder todo el premio, no ganar unos puestos.
+>
+> Lo de chessxu **sí es replicable y legítimo**: dividir el trabajo real en commits atómicos con
+> mensajes convencionales. Frontle ya lo viene haciendo (ver el historial de julio).
+
