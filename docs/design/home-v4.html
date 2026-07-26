@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Home de modos v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens reales de la app (frontend/app/globals.css, tema default). */
+:root{
+  --bg:#160833; --surface:#1c0b3e; --deep:#0d0420; --panel-solid:#0f0524;
+  --lavender:#b79ced; --gold:#fcff52; --ink:#f3edff; --muted:#8791a8; --violet:#6c2bd9;
+  --body-grad:radial-gradient(120% 90% at 50% 0%,#2a1257 0%,#1c0b3e 50%,#130729 100%);
+  --panel-brd:rgba(183,156,237,.28); --grid-line:rgba(183,156,237,.10);
+  --prism-grad:linear-gradient(100deg,#c084fc 0%,#a855f7 28%,#ffffff 52%,#fcff52 100%);
+  --start:#22d3ee; --end:#e879f9; --good:#22c55e;
+  --font-display:"Fredoka"; --font-sans:"Geist";
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,sans-serif;
+  padding:32px 20px 70px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto}
+.doc-head{max-width:70ch;margin-bottom:30px}
+.doc-head h1{font-family:var(--font-display);font-size:1.85rem;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.doc-head p{color:#c9c2dd;margin-bottom:8px}
+.doc-head .tip{background:rgba(252,255,82,.08);border:1px solid rgba(252,255,82,.32);
+  border-radius:12px;padding:11px 14px;margin-top:12px;font-size:.9rem;color:#f0ecc9}
+.chg{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.34);border-radius:12px;padding:14px 16px;margin-top:14px}
+.chg strong{color:#86efac}
+.chg ol{margin:8px 0 0 18px;color:#c9c2dd;font-size:.92rem}
+.chg li{margin-bottom:5px}
+.layout{display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+
+.phone{width:360px;height:718px;border-radius:26px;overflow:hidden;position:relative;flex:none;
+  border:2px solid var(--deep);box-shadow:0 24px 60px rgba(0,0,0,.55);background:var(--body-grad)}
+.phone .grid-bg{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:46px 46px}
+.screen{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding:9px 13px 14px;display:flex;flex-direction:column;gap:11px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* 1 · Header */
+.topbar{display:flex;align-items:center;gap:7px;padding:9px 13px 3px;flex:none}
+.brand{font-family:var(--font-display);font-weight:700;font-size:.95rem;letter-spacing:.06em;
+  background:var(--prism-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(183,156,237,.25);border-radius:999px;padding:3px 8px}
+
+/* 2 · Bordy + racha */
+.host{display:flex;align-items:center;gap:9px}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+.host img{width:60px;height:72px;object-fit:contain;flex:none;animation:float 4.5s ease-in-out infinite}
+.bubble{position:relative;flex:1;background:var(--surface);border:2px solid var(--deep);
+  box-shadow:3px 3px 0 var(--deep);border-radius:13px;padding:9px 11px;font-size:.76rem;line-height:1.35}
+.bubble::after{content:"";position:absolute;left:-9px;top:16px;width:0;height:0;
+  border:7px solid transparent;border-right-color:var(--deep)}
+.bubble .fire{font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:.95rem}
+
+/* 3 · Héroe */
+.hero{border-radius:16px;background:var(--violet);padding:13px;position:relative;overflow:hidden;
+  border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep)}
+.hero .kicker{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.hero .live{position:absolute;top:11px;right:11px;display:flex;align-items:center;gap:5px;
+  font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;
+  background:rgba(0,0,0,.35);border-radius:999px;padding:2px 7px}
+.hero .live b{width:5px;height:5px;border-radius:50%;background:#ef4444;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* --- El duelo sellado, con el arco que SI conecta --------------------------
+   El intento anterior metia el svg en la columna del medio (60px de ancho),
+   asi que la linea nacia y moria en el hueco: nunca tocaba las banderas y no
+   se leia como conexion. Ahora el arco es UNA capa sobre toda la fila, va por
+   detras de las cartas y termina en un punto sobre cada una. */
+.sealed{position:relative;display:flex;align-items:flex-start;gap:8px;margin:11px 0 2px;padding-top:30px}
+/* El viewBox (300 de ancho) coincide con el ancho de .sealed, asi que las X
+   del path son pixeles reales: 73 y 227 son los centros exactos de las dos
+   cartas (medido). Termina en y=36, 6px POR DEBAJO del borde superior de la
+   carta (y=30), asi la linea desaparece tras ella y se lee como anclada. */
+.sealed .arc{position:absolute;left:0;right:0;top:0;height:40px;pointer-events:none;z-index:0}
+.sealed .slot{position:relative;z-index:1;flex:1;text-align:center;min-width:0}
+.sealed .back{
+  width:56px;height:37px;margin:0 auto 5px;border-radius:5px;position:relative;overflow:hidden;
+  border:2px solid var(--deep);background:var(--panel-solid);display:grid;place-items:center;
+  background-image:linear-gradient(rgba(183,156,237,.16) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(183,156,237,.16) 1px,transparent 1px);
+  background-size:9px 9px;
+}
+.sealed .back q{font-family:var(--font-display);font-weight:700;font-size:1.15rem;color:var(--gold);quotes:none}
+.sealed .back::before{content:"";position:absolute;top:0;bottom:0;width:36px;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);
+  animation:sweep 3.4s ease-in-out infinite}
+.sealed .to .back::before{animation-delay:.45s}
+@keyframes sweep{0%{left:-40px}55%,100%{left:100%}}
+.sealed .slot i{font-style:normal;font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,.75);display:block}
+.sealed .from .back{border-color:var(--start)}
+.sealed .to .back{border-color:var(--end)}
+/* Pastilla del conteo: centrada sobre el arco */
+.sealed .count{
+  position:absolute;left:50%;top:2px;transform:translateX(-50%);z-index:2;
+  font-family:var(--font-display);font-weight:700;font-size:.7rem;color:var(--deep);
+  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:2px 10px;white-space:nowrap;
+}
+
+/* Premio + cierre, en UNA fila */
+.potrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(0,0,0,.28);border-radius:11px;padding:9px 12px;margin-top:12px}
+.potrow .lbl{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68);display:block}
+.potrow .amt{font-family:var(--font-display);font-weight:700;font-size:1.2rem;color:var(--gold);line-height:1.1}
+.potrow .clock{font-family:ui-monospace,monospace;font-size:.95rem;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2}
+.potrow .r{text-align:right}
+
+/* Dificultad */
+.levels{display:flex;gap:6px;margin-top:10px}
+.levels button{flex:1;border-radius:10px;padding:8px 3px;cursor:pointer;text-align:center;
+  background:rgba(0,0,0,.26);border:2px solid var(--deep);color:#fff;
+  font-family:var(--font-display);font-weight:600;font-size:.75rem;
+  transition:transform .08s ease,box-shadow .08s ease,background .12s ease}
+.levels button.on{background:var(--gold);color:var(--deep);box-shadow:2px 2px 0 var(--deep)}
+
+.play{display:block;width:100%;margin-top:10px;border-radius:13px;padding:13px 0;cursor:pointer;
+  font-family:var(--font-display);font-weight:700;font-size:1.08rem;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep);
+  transition:transform .08s ease,box-shadow .08s ease}
+.play:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
+
+/* 4 · Modos */
+h3.sec{font-family:var(--font-display);font-size:.7rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:2px 0 -3px;display:flex;align-items:center;gap:6px}
+h3.sec b{color:var(--lavender);font-weight:600}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{border-radius:13px;overflow:hidden;cursor:pointer;background:var(--panel-solid);
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);display:flex;flex-direction:column;
+  transition:transform .08s ease,box-shadow .08s ease}
+.mode:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
+.mode .art{height:78px;position:relative;display:grid;place-items:center;overflow:hidden}
+.mode .art img{width:100%;height:100%;object-fit:cover}
+.mode .art .glyph{font-size:2.2rem}
+.mode .xp{position:absolute;top:6px;right:6px;font-size:.55rem;font-weight:700;color:var(--deep);
+  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:0 5px}
+.mode .foot{display:flex;align-items:center;gap:6px;padding:7px 8px;background:var(--surface)}
+.mode .foot b{font-family:var(--font-display);font-size:.78rem;font-weight:600;flex:1;min-width:0;line-height:1.1}
+.mode .foot .go{flex:none;width:23px;height:23px;border-radius:7px;display:grid;place-items:center;
+  font-size:.64rem;background:var(--gold);color:var(--deep);border:2px solid var(--deep)}
+
+.navbar{flex:none;display:flex;border-top:1px solid rgba(183,156,237,.18);
+  background:rgba(13,4,32,.85);backdrop-filter:blur(8px)}
+.navbar div{flex:1;text-align:center;padding:8px 0 10px;font-size:.58rem;color:var(--muted)}
+.navbar div.on{color:var(--gold)}
+.navbar div span{display:block;font-size:1rem;margin-bottom:1px}
+
+.side{flex:1;min-width:300px;max-width:520px}
+.side h2{font-family:var(--font-display);font-size:1.08rem;font-weight:700;margin:20px 0 6px}
+.side h2:first-child{margin-top:0}
+.side p{color:#c9c2dd;font-size:.88rem;margin-bottom:8px}
+.side code{background:rgba(255,255,255,.07);border-radius:4px;padding:1px 5px;font-size:.85em}
+.side .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;
+  background:var(--gold);color:var(--deep);font-family:var(--font-display);font-weight:700;font-size:.75rem;
+  margin-right:7px;vertical-align:middle}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <h1>Home de modos — v4</h1>
+    <p>Orden del héroe corregido según tu captura: <strong>reto → premio y cierre en una fila → dificultad → jugar</strong>.</p>
+    <div class="tip">👉 <strong>Es interactivo:</strong> toca Fácil / Medio / Difícil y verás cambiar el pot <em>y</em> el número de países del reto.</div>
+    <div class="chg">
+      <strong>Los cinco cambios</strong>
+      <ol>
+        <li><strong>Premio y cierre en una sola fila</strong>, debajo del reto — como en tu captura. El pot deja de vivir dentro de cada botón de nivel.</li>
+        <li><strong>Los 3 botones de dificultad van juntos en su fila</strong>, después del premio.</li>
+        <li><strong>Botón JUGAR justo debajo</strong>, cerrando el héroe.</li>
+        <li><strong>El arco ahora sí conecta</strong> las dos cartas: cruza toda la fila por detrás y remata en un punto sobre cada una.</li>
+        <li><strong>Se ve cuántos países son</strong> aunque el reto esté oculto, y cambia con la dificultad.</li>
+        <li><strong>«Gratis, sin límite» → «Gana experiencia»</strong>, con el XP visible en cada modo.</li>
+      </ol>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <div class="phone">
+      <div class="grid-bg"></div>
+      <div class="screen">
+
+        <div class="topbar">
+          <span class="brand">FRONTLE</span>
+          <span class="chip" style="margin-left:auto">🪙 12</span>
+          <span class="chip">⚙️</span>
+        </div>
+
+        <div class="scroll">
+
+          <!-- Bordy + racha -->
+          <div class="host">
+            <img src="../../frontend/public/bordy-m2.webp" alt="Bordy">
+            <span class="bubble">Llevas <span class="fire">🔥 4 días</span> seguidos. ¡No la rompas hoy!</span>
+          </div>
+
+          <!-- Héroe -->
+          <div class="hero">
+            <span class="live"><b></b> En juego</span>
+            <span class="kicker">Reto de hoy</span>
+
+            <div class="sealed">
+              <!-- El arco vive sobre TODA la fila, por detrás de las cartas -->
+              <svg class="arc" viewBox="0 0 300 40" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="arc" x1="0" y1="0" x2="300" y2="0" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/>
+                  </linearGradient>
+                </defs>
+                <!-- x=73 y x=227: centros reales de las cartas. Cima en y=15,
+                     justo donde va la pastilla del conteo. -->
+                <path d="M73 36 C73 8, 227 8, 227 36" stroke="url(#arc)" stroke-width="2.5"
+                      stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+              </svg>
+
+              <span class="count" id="count">4 países</span>
+
+              <span class="slot from">
+                <span class="back"><q>?</q></span>
+                <i>Salida</i>
+              </span>
+              <span class="slot to">
+                <span class="back"><q>?</q></span>
+                <i>Meta</i>
+              </span>
+            </div>
+
+            <!-- Premio + cierre en UNA fila -->
+            <div class="potrow">
+              <span>
+                <span class="lbl">Premio del día</span>
+                <span class="amt" id="pot">0.48 USDT</span>
+              </span>
+              <span class="r">
+                <span class="lbl">Cierra en</span>
+                <span class="clock">07:10:42</span>
+              </span>
+            </div>
+
+            <!-- Dificultad -->
+            <div class="levels" id="levels">
+              <button data-pot="0.12 USDT" data-n="3">🌱 Fácil</button>
+              <button class="on" data-pot="0.48 USDT" data-n="4">⚡ Medio</button>
+              <button data-pot="0.94 USDT" data-n="6">💀 Difícil</button>
+            </div>
+
+            <button class="play">▶ JUGAR</button>
+          </div>
+
+          <!-- Modos -->
+          <h3 class="sec">Gana experiencia <b>· +2 XP por ronda</b></h3>
+          <div class="modes">
+            <div class="mode">
+              <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""><span class="xp">+2 XP</span></span>
+              <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+            </div>
+            <div class="mode">
+              <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                <svg viewBox="0 0 120 90" width="66%" height="66%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                <span class="xp">+2 XP</span>
+              </span>
+              <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+            </div>
+            <div class="mode">
+              <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""><span class="xp">+3 XP</span></span>
+              <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+            </div>
+            <div class="mode">
+              <span class="art" style="background:linear-gradient(160deg,#2a1257,#150a2e)"><span class="glyph">🎓</span></span>
+              <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="navbar">
+          <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+          <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <h2><span class="num">4</span>El arco que sí conecta</h2>
+      <p>Antes el SVG vivía en la columna del medio, de 60px de ancho: la línea nacía y moría en el hueco entre las cartas, sin tocarlas. Por eso no se leía como conexión — eran dos rayitas sueltas.</p>
+      <p>Ahora el arco es <strong>una capa sobre toda la fila</strong>, dibujada por detrás de las cartas, que arranca con un punto cian sobre la de salida y remata con un punto fucsia sobre la meta. Línea sólida en vez de discontinua, y <code>vector-effect</code> para que el grosor no se deforme al escalar.</p>
+
+      <h2><span class="num">5</span>El conteo, visible</h2>
+      <p>Lo había ocultado por criterio propio: pensé que delataba la dificultad. Tienes razón en que no — la dificultad ya la eliges tú, así que saber que son 4 países es información útil, no un spoiler.</p>
+      <p>La pastilla va centrada sobre el arco y <strong>cambia con el nivel</strong>: Fácil 3, Medio 4, Difícil 6. Lo que sigue oculto es <em>qué</em> países son.</p>
+
+      <h2><span class="num">1·2·3</span>Orden del héroe</h2>
+      <p>Reto → <strong>premio y cierre en una fila</strong> → dificultad → jugar, igual que tu captura. El pot sale de los botones de nivel y vuelve a su fila propia, más grande y legible; los tres botones de dificultad quedan limpios en la suya.</p>
+
+      <h2><span class="num">6</span>Gana experiencia</h2>
+      <p>«Gratis, sin límite» describía lo que <em>no</em> cuesta; «Gana experiencia» describe lo que <em>ganas</em>. Cada modo muestra su XP en la esquina, que es el motivo real para entrar cuando no hay premio en juego.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Cambiar dificultad actualiza pot y conteo de paises. El reto sigue oculto.
+(function(){
+  var levels=document.getElementById('levels');
+  levels.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    levels.querySelectorAll('button').forEach(function(x){x.classList.remove('on')});
+    b.classList.add('on');
+    document.getElementById('pot').textContent=b.dataset.pot;
+    document.getElementById('count').textContent=b.dataset.n+' países';
+  });
+})();
+</script>
+</body>
+</html>
