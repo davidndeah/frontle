@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Direcciones para el Home de modos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Tokens REALES de la app (frontend/app/globals.css, tema default).
+   Copiados a mano porque este mockup se abre suelto en el navegador,
+   sin build de Tailwind. Si los tokens cambian allá, cambian aquí.
+   ============================================================ */
+:root{
+  --bg:#160833; --surface:#1c0b3e; --deep:#0d0420; --panel-solid:#0f0524;
+  --lavender:#b79ced; --gold:#fcff52; --ink:#f3edff; --muted:#8791a8;
+  --violet:#6c2bd9;
+  --body-grad:radial-gradient(120% 90% at 50% 0%,#2a1257 0%,#1c0b3e 50%,#130729 100%);
+  --panel-grad:linear-gradient(160deg,rgba(138,92,245,.26),rgba(76,29,149,.30));
+  --panel-brd:rgba(183,156,237,.28);
+  --grid-line:rgba(183,156,237,.10);
+  --prism-grad:linear-gradient(100deg,#c084fc 0%,#a855f7 28%,#ffffff 52%,#fcff52 100%);
+  /* Semánticos del juego (lib/theme.ts) — informacion, no decoracion */
+  --start:#22d3ee; --end:#e879f9; --good:#22c55e; --lateral:#eab308; --far:#ef4444;
+  --font-display:"Fredoka"; --font-sans:"Geist";
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#0b0518; color:var(--ink);
+  font-family:var(--font-sans),system-ui,sans-serif;
+  padding:32px 20px 80px; line-height:1.5;
+}
+.wrap{max-width:1400px;margin:0 auto}
+
+/* ---------- Encabezado del documento ---------- */
+.doc-head{max-width:70ch;margin-bottom:40px}
+.doc-head h1{font-family:var(--font-display);font-size:1.9rem;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.doc-head p{color:#c9c2dd;margin-bottom:12px}
+.doc-head .diag{
+  background:rgba(239,68,68,.09); border:1px solid rgba(239,68,68,.35);
+  border-radius:12px; padding:14px 16px; margin-top:18px;
+}
+.doc-head .diag strong{color:#fca5a5}
+.doc-head ul{margin:8px 0 0 18px;color:#c9c2dd;font-size:.92rem}
+.doc-head li{margin-bottom:4px}
+
+/* ---------- Rejilla de direcciones ---------- */
+.grid{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.col{flex:1 1 340px;min-width:320px;max-width:400px}
+.col > h2{
+  font-family:var(--font-display);font-size:1.25rem;font-weight:700;
+  margin-bottom:4px;display:flex;align-items:baseline;gap:8px;
+}
+.col > h2 .tag{
+  font-family:var(--font-sans);font-size:.68rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--deep);background:var(--gold);
+  border-radius:999px;padding:2px 8px;
+}
+.col > .idea{color:#c9c2dd;font-size:.9rem;margin-bottom:16px;min-height:3em}
+
+/* ---------- Marco de teléfono (360px = mínimo MiniPay) ---------- */
+.phone{
+  width:360px;height:700px;border-radius:26px;overflow:hidden;position:relative;
+  border:2px solid var(--deep);box-shadow:0 24px 60px rgba(0,0,0,.55);
+  background:var(--body-grad);
+}
+.phone .grid-bg{
+  position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
+  background-size:46px 46px;
+}
+.screen{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding:12px 14px 16px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ---------- Piezas compartidas (fieles a la app) ---------- */
+.brutal{border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep)}
+.brutal-sm{border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep)}
+.topbar{
+  display:flex;align-items:center;gap:8px;padding:10px 14px 6px;flex:none;
+}
+.brand{font-family:var(--font-display);font-weight:700;font-size:1rem;letter-spacing:.06em;
+  background:var(--prism-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{
+  margin-left:auto;display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(183,156,237,.25);
+  border-radius:999px;padding:3px 9px;
+}
+.navbar{
+  flex:none;display:flex;border-top:1px solid rgba(183,156,237,.18);
+  background:rgba(13,4,32,.85);backdrop-filter:blur(8px);
+}
+.navbar div{flex:1;text-align:center;padding:9px 0 11px;font-size:.6rem;color:var(--muted)}
+.navbar div.on{color:var(--gold)}
+.navbar div span{display:block;font-size:1.05rem;margin-bottom:1px}
+h3.sec{font-family:var(--font-display);font-size:.72rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:4px 0 -2px}
+
+/* ============================================================
+   A · CARTELERA — un héroe con el duelo REAL de hoy + rejilla 2x2
+   ============================================================ */
+.marquee{
+  border-radius:16px;background:var(--violet);padding:14px;position:relative;overflow:hidden;
+}
+.marquee .live{
+  position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:5px;
+  font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;
+  background:rgba(0,0,0,.35);border-radius:999px;padding:3px 8px;
+}
+.marquee .live b{width:6px;height:6px;border-radius:50%;background:var(--far);animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.marquee .kicker{font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.65)}
+.duel{display:flex;align-items:center;gap:10px;margin:12px 0 4px}
+.duel .side{flex:1;text-align:center;min-width:0}
+.duel img{width:52px;height:35px;object-fit:cover;border-radius:5px;border:2px solid var(--deep);display:block;margin:0 auto 5px}
+.duel .side b{display:block;font-family:var(--font-display);font-size:.82rem;font-weight:600;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.duel .side i{font-style:normal;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase}
+.duel .from i{color:var(--start)} .duel .to i{color:var(--end)}
+.duel .link{flex:none;width:70px;position:relative;height:36px}
+.duel .link svg{position:absolute;inset:0;width:100%;height:100%}
+.duel .link em{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-style:normal;font-family:var(--font-display);font-weight:700;font-size:.68rem;color:var(--deep);
+  background:var(--gold);border-radius:999px;padding:1px 7px;border:2px solid var(--deep)}
+.pot{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:rgba(0,0,0,.28);border-radius:11px;padding:8px 11px;margin-top:10px;
+}
+.pot .amt{font-family:var(--font-display);font-weight:700;font-size:1.15rem;color:var(--gold);line-height:1}
+.pot .lbl{font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+.pot .clock{font-family:ui-monospace,monospace;font-size:.8rem;color:#fff;font-variant-numeric:tabular-nums}
+.levels{display:flex;gap:6px;margin-top:10px}
+.levels button{
+  flex:1;border-radius:10px;padding:7px 0;font-family:var(--font-display);font-weight:600;font-size:.72rem;
+  background:rgba(0,0,0,.25);color:#fff;border:2px solid var(--deep);cursor:pointer;font-family:var(--font-display);
+}
+.levels button.on{background:var(--gold);color:var(--deep)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{
+  border-radius:14px;background:var(--surface);padding:11px;display:flex;flex-direction:column;gap:7px;
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);cursor:pointer;position:relative;overflow:hidden;
+}
+/* `contain`, no `cover`: una bandera 3:2 recortada a una tira de 46px pierde
+   su composicion y se lee como un bloque de color plano (Ucrania = azul). */
+.tile .art{height:52px;border-radius:9px;display:grid;place-items:center;overflow:hidden;
+  background:var(--panel-solid);padding:6px}
+/* Altura en px, no %: dentro de un grid con `place-items:center` el
+   porcentaje no resuelve y la bandera se desbordaba (81px en caja de 40). */
+.tile .art img{width:100%;height:40px;object-fit:contain;border-radius:3px}
+.tile b{font-family:var(--font-display);font-size:.82rem;font-weight:600;line-height:1.15}
+.tile small{font-size:.62rem;color:var(--muted);display:block;line-height:1.3}
+.tile .stat{font-size:.6rem;color:var(--lavender);font-weight:600}
+
+/* ============================================================
+   B · RUTA — los modos son nodos de un camino (la metafora del juego)
+   ============================================================ */
+.route{position:relative;padding:6px 0 0}
+.route .line{position:absolute;left:31px;top:0;bottom:0;width:3px;
+  background:repeating-linear-gradient(180deg,var(--lavender) 0 7px,transparent 7px 15px);opacity:.35}
+.node{position:relative;display:flex;gap:13px;align-items:flex-start;padding:0 0 15px 0}
+.node .dot{
+  flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:1.25rem;
+  background:var(--surface);border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);z-index:1;
+}
+.node.now .dot{background:var(--gold);box-shadow:0 0 0 5px rgba(252,255,82,.16),3px 3px 0 var(--deep)}
+.node.done .dot{background:var(--good)}
+.node .body{flex:1;padding-top:2px;min-width:0}
+.node .body b{font-family:var(--font-display);font-size:.92rem;font-weight:600;display:block;line-height:1.2}
+.node .body small{font-size:.66rem;color:var(--muted);display:block;margin-top:1px}
+.node .prog{display:flex;align-items:center;gap:6px;margin-top:6px}
+.node .bar{flex:1;height:6px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}
+.node .bar i{display:block;height:100%;border-radius:999px;background:var(--good)}
+.node .prog span{font-size:.6rem;color:var(--lavender);font-weight:700;font-variant-numeric:tabular-nums}
+.node .go{
+  flex:none;align-self:center;font-family:var(--font-display);font-weight:700;font-size:.7rem;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:2px 2px 0 var(--deep);
+  border-radius:9px;padding:5px 10px;cursor:pointer;
+}
+.node.locked{opacity:.5}
+.node.locked .dot{background:var(--panel-solid)}
+.node .lock{font-size:.62rem;color:var(--muted);align-self:center;flex:none}
+.bordy-here{
+  position:absolute;left:52px;margin-top:-6px;font-size:.58rem;font-weight:700;color:var(--deep);
+  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:1px 7px;z-index:2;
+}
+.hdr-route{
+  border-radius:14px;background:var(--panel-grad);border:1px solid var(--panel-brd);
+  padding:11px 13px;display:flex;align-items:center;gap:11px;
+}
+.hdr-route .big{font-family:var(--font-display);font-size:1.6rem;font-weight:700;line-height:1;color:var(--gold)}
+.hdr-route small{font-size:.62rem;color:var(--muted);display:block}
+.hdr-route .sep{width:1px;height:30px;background:rgba(255,255,255,.12)}
+
+/* ============================================================
+   C · MAZO — cada modo es una carta con identidad propia (carrusel)
+   ============================================================ */
+.deck{display:flex;gap:12px;overflow-x:auto;padding:2px 0 10px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.deck::-webkit-scrollbar{display:none}
+.card{
+  flex:none;width:246px;scroll-snap-align:center;border-radius:16px;overflow:hidden;
+  background:var(--surface);border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep);
+  display:flex;flex-direction:column;cursor:pointer;
+}
+.card .top{height:118px;position:relative;display:grid;place-items:center;overflow:hidden}
+.card .top img{width:100%;height:100%;object-fit:cover}
+.card .top .glyph{font-size:3.1rem;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.card .rib{
+  position:absolute;top:9px;left:9px;font-size:.56rem;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--deep);border-radius:999px;padding:2px 8px;border:2px solid var(--deep);
+}
+.card .meta{padding:11px 12px 12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card .meta b{font-family:var(--font-display);font-size:1rem;font-weight:600;line-height:1.15}
+.card .meta p{font-size:.68rem;color:var(--muted);line-height:1.35;flex:1}
+.card .row{display:flex;align-items:center;justify-content:space-between;gap:6px;
+  border-top:1px solid rgba(255,255,255,.09);padding-top:8px}
+.card .row .s{font-size:.6rem;color:var(--lavender);font-weight:700}
+.card .row .s u{display:block;text-decoration:none;color:var(--muted);font-weight:500;font-size:.55rem;
+  letter-spacing:.08em;text-transform:uppercase}
+.card .row button{
+  font-family:var(--font-display);font-weight:700;font-size:.72rem;border-radius:9px;padding:6px 12px;
+  border:2px solid var(--deep);box-shadow:2px 2px 0 var(--deep);cursor:pointer;background:var(--gold);color:var(--deep);
+}
+.dots{display:flex;gap:5px;justify-content:center;padding-top:2px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.22)}
+.dots i.on{background:var(--gold);width:16px;border-radius:999px}
+
+/* ---------- Notas bajo cada dirección ---------- */
+.notes{margin-top:16px;font-size:.82rem}
+.notes dt{font-weight:700;color:var(--gold);margin-top:10px;font-size:.72rem;
+  letter-spacing:.08em;text-transform:uppercase}
+.notes dd{color:#c9c2dd;margin-top:3px}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <h1>Home de modos — tres direcciones</h1>
+    <p>Objetivo: que la pantalla de selección de modos se lea como un <strong>juego</strong>, no como una lista de ajustes. Las tres usan los tokens reales de la app (violeta <code>#1c0b3e</code>, oro Celo <code>#fcff52</code>, bordes brutalistas, Fredoka) — cambia la <em>estructura</em>, no la paleta.</p>
+
+    <div class="diag">
+      <strong>Diagnóstico del Home actual</strong>
+      <ul>
+        <li><strong>Cinco filas casi idénticas</strong> — emoji + título + subtítulo + pill, repetidas. Lo único que distingue al modo con premio real es un fondo violeta.</li>
+        <li><strong>El emoji es el único arte</strong>, al mismo tamaño en las cinco. Y el juego ya tiene arte real sin usar aquí: banderas, siluetas de países, mapas de regiones, el rig de Bordy.</li>
+        <li><strong>Tres pills «NUEVO» iguales</strong> — cuando todo es nuevo, nada lo es.</li>
+        <li><strong>El diferenciador no se ve</strong>: que el reto diario paga premio real vive en un subtítulo de 12px.</li>
+        <li><strong>La racha y el nivel están arriba, sueltos</strong>, sin conexión con los modos que los alimentan.</li>
+      </ul>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- ============================ A ============================ -->
+    <section class="col">
+      <h2>A · Cartelera <span class="tag">1 héroe + 4 fichas</span></h2>
+      <p class="idea">El duelo de hoy se ve <em>de verdad</em>: banderas reales, ruta óptima, pot y cuenta atrás. Los demás modos bajan a fichas compactas.</p>
+
+      <div class="phone">
+        <div class="grid-bg"></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="brand">FRONTLE</span>
+            <span class="chip">🔥 4</span>
+            <span class="chip" style="margin-left:0">🪙 12</span>
+          </div>
+          <div class="scroll">
+
+            <div class="marquee brutal">
+              <span class="live"><b></b> En juego</span>
+              <span class="kicker">Reto de hoy</span>
+              <div class="duel">
+                <span class="side from">
+                  <img src="https://flagcdn.com/w80/eh.png" alt="">
+                  <b>Sáhara Occ.</b><i>Salida</i>
+                </span>
+                <span class="link">
+                  <svg viewBox="0 0 70 36" fill="none">
+                    <path d="M2 30 Q35 -2 68 30" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-dasharray="4 5"/>
+                    <defs><linearGradient id="g" x1="0" y1="0" x2="70" y2="0">
+                      <stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/>
+                    </linearGradient></defs>
+                  </svg>
+                  <em>4 países</em>
+                </span>
+                <span class="side to">
+                  <img src="https://flagcdn.com/w80/ye.png" alt="">
+                  <b>Yemen</b><i>Meta</i>
+                </span>
+              </div>
+              <div class="pot">
+                <span><span class="lbl">Premio del día</span><br><span class="amt">0.48 USDT</span></span>
+                <span style="text-align:right"><span class="lbl">Cierra en</span><br><span class="clock">07:10:42</span></span>
+              </div>
+              <div class="levels">
+                <button>🌱 Fácil</button>
+                <button class="on">⚡ Medio</button>
+                <button>💀 Difícil</button>
+              </div>
+            </div>
+
+            <h3 class="sec">Entrena gratis</h3>
+            <div class="tiles">
+              <div class="tile">
+                <span class="art"><img src="https://flagcdn.com/w160/ua.png" alt=""></span>
+                <span><b>Bandera</b><small>¿De qué país es?</small></span>
+                <span class="stat">Récord · 7 seguidas</span>
+              </div>
+              <div class="tile">
+                <span class="art">
+                  <svg viewBox="0 0 60 46" width="100%" height="100%"><path d="M12 6 L30 3 L46 12 L52 30 L38 42 L18 40 L8 26 Z" fill="#22c55e" stroke="#0d0420" stroke-width="2" stroke-linejoin="round"/></svg>
+                </span>
+                <span><b>Contorno</b><small>Por su silueta</small></span>
+                <span class="stat">Récord · 4 seguidas</span>
+              </div>
+              <div class="tile">
+                <span class="art"><img src="https://flagcdn.com/w160/co.png" alt=""></span>
+                <span><b>Regiones</b><small>Departamentos</small></span>
+                <span class="stat">13 países</span>
+              </div>
+              <div class="tile">
+                <span class="art"><span style="font-size:1.7rem">🎓</span></span>
+                <span><b>Práctica</b><small>Libre, sin premio</small></span>
+                <span class="stat">Sin límite</span>
+              </div>
+            </div>
+
+          </div>
+          <div class="navbar">
+            <div class="on"><span>🌍</span>Jugar</div>
+            <div><span>🏆</span>Ranking</div>
+            <div><span>👤</span>Perfil</div>
+            <div><span>❓</span>Aprender</div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="notes">
+        <dt>La idea</dt>
+        <dd>Una máquina arcade lidera con «la partida de hoy». El dato real (banderas de hoy, pot, reloj) <em>es</em> el arte — no hace falta decorar.</dd>
+        <dt>Qué arregla</dt>
+        <dd>Mata las cinco filas iguales: un héroe grande manda y lo demás es rejilla. El premio real por fin se ve.</dd>
+        <dt>Riesgo</dt>
+        <dd>Revela el reto antes de entrar; hay que confirmar que no arruina la sorpresa. Los 4 modos gratis pierden protagonismo.</dd>
+      </dl>
+    </section>
+
+    <!-- ============================ B ============================ -->
+    <section class="col">
+      <h2>B · Ruta <span class="tag">campaña</span></h2>
+      <p class="idea">Los modos son paradas de un camino — la metáfora del propio juego. Cada nodo muestra tu progreso y hay un «siguiente» claro.</p>
+
+      <div class="phone">
+        <div class="grid-bg"></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="brand">FRONTLE</span>
+            <span class="chip">🪙 12</span>
+          </div>
+          <div class="scroll">
+
+            <div class="hdr-route">
+              <span><span class="big">4</span><small>días de racha</small></span>
+              <span class="sep"></span>
+              <span style="flex:1">
+                <small style="color:#c4b5fd;font-weight:600;margin-bottom:4px">Nivel 3 · Explorador</small>
+                <span class="bar" style="display:block;height:7px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden">
+                  <i style="display:block;height:100%;width:66%;border-radius:999px;background:linear-gradient(90deg,#22d3ee,#22c55e,#fcff52)"></i>
+                </span>
+              </span>
+            </div>
+
+            <h3 class="sec">Tu ruta de hoy</h3>
+
+            <div class="route">
+              <span class="line"></span>
+
+              <div class="node done">
+                <span class="dot">🏳️</span>
+                <span class="body">
+                  <b>Bandera</b>
+                  <small>3 rondas ganadas hoy</small>
+                  <span class="prog"><span class="bar"><i style="width:100%"></i></span><span>3/3</span></span>
+                </span>
+                <span class="lock">✓</span>
+              </div>
+
+              <div class="node now">
+                <span class="dot">🌍</span>
+                <span class="body">
+                  <b>Reto diario</b>
+                  <small>Premio real · 0.48 USDT en juego</small>
+                  <span class="prog"><span class="bar"><i style="width:0%"></i></span><span>0/1</span></span>
+                </span>
+                <button class="go">Jugar</button>
+              </div>
+              <span class="bordy-here">Estás aquí</span>
+
+              <div class="node" style="margin-top:14px">
+                <span class="dot">🗺️</span>
+                <span class="body">
+                  <b>Contorno</b>
+                  <small>Reconoce el país por su forma</small>
+                  <span class="prog"><span class="bar"><i style="width:33%"></i></span><span>1/3</span></span>
+                </span>
+                <button class="go" style="background:var(--surface);color:var(--ink)">Ir</button>
+              </div>
+
+              <div class="node">
+                <span class="dot">🧭</span>
+                <span class="body">
+                  <b>Regiones</b>
+                  <small>Departamentos y estados · 13 países</small>
+                  <span class="prog"><span class="bar"><i style="width:0%"></i></span><span>0/3</span></span>
+                </span>
+                <button class="go" style="background:var(--surface);color:var(--ink)">Ir</button>
+              </div>
+
+              <div class="node locked">
+                <span class="dot">🏆</span>
+                <span class="body">
+                  <b>Liga semanal</b>
+                  <small>Se abre al completar la ruta</small>
+                </span>
+                <span class="lock">🔒</span>
+              </div>
+            </div>
+
+          </div>
+          <div class="navbar">
+            <div class="on"><span>🌍</span>Jugar</div>
+            <div><span>🏆</span>Ranking</div>
+            <div><span>👤</span>Perfil</div>
+            <div><span>❓</span>Aprender</div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="notes">
+        <dt>La idea</dt>
+        <dd>El mapa de campaña es la señal más legible de «esto es un juego». Y aquí no es un tropo prestado: <strong>conectar paradas es la mecánica de Frontle</strong>.</dd>
+        <dt>Qué arregla</dt>
+        <dd>Conecta racha y XP con los modos que los alimentan. Da un «siguiente» obvio en vez de cinco opciones planas.</dd>
+        <dt>Riesgo</dt>
+        <dd>Sugiere un orden donde hoy no lo hay; hay que decidir si la ruta se reinicia cada día. El nodo bloqueado necesita una regla real detrás.</dd>
+      </dl>
+    </section>
+
+    <!-- ============================ C ============================ -->
+    <section class="col">
+      <h2>C · Mazo <span class="tag">selección de personaje</span></h2>
+      <p class="idea">Cada modo es una carta con identidad propia: su color del semáforo, su arte real y su estadística. Carrusel con snap.</p>
+
+      <div class="phone">
+        <div class="grid-bg"></div>
+        <div class="screen">
+          <div class="topbar">
+            <span class="brand">FRONTLE</span>
+            <span class="chip">🔥 4</span>
+            <span class="chip" style="margin-left:0">🪙 12</span>
+          </div>
+          <div class="scroll">
+
+            <h3 class="sec">Elige tu modo</h3>
+
+            <div class="deck">
+              <div class="card">
+                <span class="top" style="background:var(--violet)">
+                  <span class="rib" style="background:var(--gold)">Premio real</span>
+                  <span class="glyph">🌍</span>
+                </span>
+                <span class="meta">
+                  <b>Reto diario</b>
+                  <p>Une dos países por sus fronteras. Uno al día, igual para todos.</p>
+                  <span class="row">
+                    <span class="s">0.48 USDT<u>Pot de hoy</u></span>
+                    <button>Jugar</button>
+                  </span>
+                </span>
+              </div>
+
+              <div class="card">
+                <span class="top" style="background:linear-gradient(160deg,#0e3b52,#0a2536)">
+                  <span class="rib" style="background:var(--start)">Gratis</span>
+                  <img src="https://flagcdn.com/w320/ua.png" alt="">
+                </span>
+                <span class="meta">
+                  <b>Adivina la bandera</b>
+                  <p>Una bandera, un país. Sube la racha sin gastar monedas.</p>
+                  <span class="row">
+                    <span class="s">7 seguidas<u>Tu récord</u></span>
+                    <button style="background:var(--start)">Jugar</button>
+                  </span>
+                </span>
+              </div>
+
+              <div class="card">
+                <span class="top" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                  <span class="rib" style="background:var(--good)">Gratis</span>
+                  <svg viewBox="0 0 120 90" width="78%" height="78%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="meta">
+                  <b>Adivina el contorno</b>
+                  <p>Solo la silueta. Sin nombres, sin banderas, sin pistas.</p>
+                  <span class="row">
+                    <span class="s">4 seguidas<u>Tu récord</u></span>
+                    <button style="background:var(--good)">Jugar</button>
+                  </span>
+                </span>
+              </div>
+
+              <div class="card">
+                <span class="top" style="background:linear-gradient(160deg,#4a1546,#2a0c26)">
+                  <span class="rib" style="background:var(--end)">13 países</span>
+                  <img src="https://flagcdn.com/w320/co.png" alt="">
+                </span>
+                <span class="meta">
+                  <b>Regiones</b>
+                  <p>Conecta departamentos y estados dentro de un país.</p>
+                  <span class="row">
+                    <span class="s">Colombia<u>Último jugado</u></span>
+                    <button style="background:var(--end)">Jugar</button>
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            <div class="dots"><i class="on"></i><i></i><i></i><i></i></div>
+
+            <div style="border-radius:13px;background:var(--surface);border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);padding:11px 13px;display:flex;align-items:center;gap:11px;margin-top:6px">
+              <span style="font-size:1.5rem">🎓</span>
+              <span style="flex:1">
+                <b style="font-family:var(--font-display);font-size:.85rem;display:block">Modo práctica</b>
+                <small style="font-size:.64rem;color:var(--muted)">Sin premios, sin límite. Para aprender.</small>
+              </span>
+              <span style="color:var(--gold);font-size:1.2rem">→</span>
+            </div>
+
+          </div>
+          <div class="navbar">
+            <div class="on"><span>🌍</span>Jugar</div>
+            <div><span>🏆</span>Ranking</div>
+            <div><span>👤</span>Perfil</div>
+            <div><span>❓</span>Aprender</div>
+          </div>
+        </div>
+      </div>
+
+      <dl class="notes">
+        <dt>La idea</dt>
+        <dd>Pantalla de selección de personaje. Cada modo deja de ser una fila y pasa a tener cara: color semántico propio, arte real y una cifra tuya.</dd>
+        <dt>Qué arregla</dt>
+        <dd>Le da personalidad a cada modo y usa el arte que el juego ya tiene. La estadística personal («7 seguidas») da motivo para volver.</dd>
+        <dt>Riesgo</dt>
+        <dd>El carrusel esconde modos fuera de pantalla — hay que probar que se descubren. Es el que más se aleja del Home actual.</dd>
+      </dl>
+    </section>
+
+  </div>
+</div>
+</body>
+</html>
