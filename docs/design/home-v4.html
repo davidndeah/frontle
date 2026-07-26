@@ -39,7 +39,7 @@ body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,
   background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
                    linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:46px 46px}
 .screen{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden}
-.scroll{flex:1;overflow-y:auto;padding:9px 13px 14px;display:flex;flex-direction:column;gap:11px;scrollbar-width:none}
+.scroll{flex:1;overflow-y:auto;padding:9px 13px 10px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
 .scroll::-webkit-scrollbar{display:none}
 
 /* 1 · Header */
@@ -52,7 +52,7 @@ body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,
 /* 2 · Bordy + racha */
 .host{display:flex;align-items:center;gap:9px}
 @keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
-.host img{width:60px;height:72px;object-fit:contain;flex:none;animation:float 4.5s ease-in-out infinite}
+.host img{width:48px;height:58px;object-fit:contain;flex:none;animation:float 4.5s ease-in-out infinite}
 .bubble{position:relative;flex:1;background:var(--surface);border:2px solid var(--deep);
   box-shadow:3px 3px 0 var(--deep);border-radius:13px;padding:9px 11px;font-size:.76rem;line-height:1.35}
 .bubble::after{content:"";position:absolute;left:-9px;top:16px;width:0;height:0;
@@ -60,7 +60,7 @@ body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,
 .bubble .fire{font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:.95rem}
 
 /* 3 · Héroe */
-.hero{border-radius:16px;background:var(--violet);padding:13px;position:relative;overflow:hidden;
+.hero{border-radius:16px;background:var(--violet);padding:11px;position:relative;overflow:hidden;
   border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep)}
 .hero .kicker{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.82)}
 .hero .live{position:absolute;top:11px;right:11px;display:flex;align-items:center;gap:5px;
@@ -74,15 +74,17 @@ body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,
    asi que la linea nacia y moria en el hueco: nunca tocaba las banderas y no
    se leia como conexion. Ahora el arco es UNA capa sobre toda la fila, va por
    detras de las cartas y termina en un punto sobre cada una. */
-.sealed{position:relative;display:flex;align-items:flex-start;gap:8px;margin:11px 0 2px;padding-top:30px}
+.sealed{position:relative;display:flex;align-items:flex-start;gap:8px;margin:7px 0 2px;padding-top:20px}
 /* El viewBox (300 de ancho) coincide con el ancho de .sealed, asi que las X
    del path son pixeles reales: 73 y 227 son los centros exactos de las dos
-   cartas (medido). Termina en y=36, 6px POR DEBAJO del borde superior de la
-   carta (y=30), asi la linea desaparece tras ella y se lee como anclada. */
-.sealed .arc{position:absolute;left:0;right:0;top:0;height:40px;pointer-events:none;z-index:0}
+   cartas (medido). Termina en y=30, 6px POR DEBAJO del borde superior de la
+   carta (y=20), asi la linea desaparece tras ella y se lee como anclada.
+   El arco va mas achatado que en la primera version para subir las banderas
+   y liberar alto: el heroe entero no cabia. */
+.sealed .arc{position:absolute;left:0;right:0;top:0;height:28px;pointer-events:none;z-index:0}
 .sealed .slot{position:relative;z-index:1;flex:1;text-align:center;min-width:0}
 .sealed .back{
-  width:56px;height:37px;margin:0 auto 5px;border-radius:5px;position:relative;overflow:hidden;
+  width:56px;height:32px;margin:0 auto 4px;border-radius:5px;position:relative;overflow:hidden;
   border:2px solid var(--deep);background:var(--panel-solid);display:grid;place-items:center;
   background-image:linear-gradient(rgba(183,156,237,.16) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(183,156,237,.16) 1px,transparent 1px);
@@ -100,28 +102,28 @@ body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,
 .sealed .to .back{border-color:var(--end)}
 /* Pastilla del conteo: centrada sobre el arco */
 .sealed .count{
-  position:absolute;left:50%;top:2px;transform:translateX(-50%);z-index:2;
-  font-family:var(--font-display);font-weight:700;font-size:.7rem;color:var(--deep);
-  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:2px 10px;white-space:nowrap;
+  position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:2;
+  font-family:var(--font-display);font-weight:700;font-size:.68rem;color:var(--deep);
+  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:1px 9px;white-space:nowrap;
 }
 
 /* Premio + cierre, en UNA fila */
 .potrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
-  background:rgba(0,0,0,.28);border-radius:11px;padding:9px 12px;margin-top:12px}
-.potrow .lbl{font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68);display:block}
-.potrow .amt{font-family:var(--font-display);font-weight:700;font-size:1.2rem;color:var(--gold);line-height:1.1}
-.potrow .clock{font-family:ui-monospace,monospace;font-size:.95rem;color:#fff;font-variant-numeric:tabular-nums;line-height:1.2}
+  background:rgba(0,0,0,.28);border-radius:11px;padding:5px 12px;margin-top:7px}
+.potrow .lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68);display:block}
+.potrow .amt{font-family:var(--font-display);font-weight:700;font-size:1.12rem;color:var(--gold);line-height:1.15}
+.potrow .clock{font-family:ui-monospace,monospace;font-size:.9rem;color:#fff;font-variant-numeric:tabular-nums;line-height:1.25}
 .potrow .r{text-align:right}
 
 /* Dificultad */
-.levels{display:flex;gap:6px;margin-top:10px}
+.levels{display:flex;gap:6px;margin-top:6px}
 .levels button{flex:1;border-radius:10px;padding:8px 3px;cursor:pointer;text-align:center;
   background:rgba(0,0,0,.26);border:2px solid var(--deep);color:#fff;
   font-family:var(--font-display);font-weight:600;font-size:.75rem;
   transition:transform .08s ease,box-shadow .08s ease,background .12s ease}
 .levels button.on{background:var(--gold);color:var(--deep);box-shadow:2px 2px 0 var(--deep)}
 
-.play{display:block;width:100%;margin-top:10px;border-radius:13px;padding:13px 0;cursor:pointer;
+.play{display:block;width:100%;margin-top:7px;border-radius:13px;padding:9px 0;cursor:pointer;
   font-family:var(--font-display);font-weight:700;font-size:1.08rem;
   background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep);
   transition:transform .08s ease,box-shadow .08s ease}
@@ -136,7 +138,7 @@ h3.sec b{color:var(--lavender);font-weight:600}
   border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);display:flex;flex-direction:column;
   transition:transform .08s ease,box-shadow .08s ease}
 .mode:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
-.mode .art{height:78px;position:relative;display:grid;place-items:center;overflow:hidden}
+.mode .art{height:60px;position:relative;display:grid;place-items:center;overflow:hidden}
 .mode .art img{width:100%;height:100%;object-fit:cover}
 .mode .art .glyph{font-size:2.2rem}
 .mode .xp{position:absolute;top:6px;right:6px;font-size:.55rem;font-weight:700;color:var(--deep);
@@ -169,19 +171,7 @@ h3.sec b{color:var(--lavender);font-weight:600}
 
   <header class="doc-head">
     <h1>Home de modos — v4</h1>
-    <p>Orden del héroe corregido según tu captura: <strong>reto → premio y cierre en una fila → dificultad → jugar</strong>.</p>
-    <div class="tip">👉 <strong>Es interactivo:</strong> toca Fácil / Medio / Difícil y verás cambiar el pot <em>y</em> el número de países del reto.</div>
-    <div class="chg">
-      <strong>Los cinco cambios</strong>
-      <ol>
-        <li><strong>Premio y cierre en una sola fila</strong>, debajo del reto — como en tu captura. El pot deja de vivir dentro de cada botón de nivel.</li>
-        <li><strong>Los 3 botones de dificultad van juntos en su fila</strong>, después del premio.</li>
-        <li><strong>Botón JUGAR justo debajo</strong>, cerrando el héroe.</li>
-        <li><strong>El arco ahora sí conecta</strong> las dos cartas: cruza toda la fila por detrás y remata en un punto sobre cada una.</li>
-        <li><strong>Se ve cuántos países son</strong> aunque el reto esté oculto, y cambia con la dificultad.</li>
-        <li><strong>«Gratis, sin límite» → «Gana experiencia»</strong>, con el XP visible en cada modo.</li>
-      </ol>
-    </div>
+    <div class="tip">👉 <strong>Es interactivo:</strong> toca Fácil / Medio / Difícil y verás cambiar el pot <em>y</em> el número de países.</div>
   </header>
 
   <div class="layout">
@@ -211,15 +201,15 @@ h3.sec b{color:var(--lavender);font-weight:600}
 
             <div class="sealed">
               <!-- El arco vive sobre TODA la fila, por detrás de las cartas -->
-              <svg class="arc" viewBox="0 0 300 40" preserveAspectRatio="none" fill="none" aria-hidden="true">
+              <svg class="arc" viewBox="0 0 300 28" preserveAspectRatio="none" fill="none" aria-hidden="true">
                 <defs>
                   <linearGradient id="arc" x1="0" y1="0" x2="300" y2="0" gradientUnits="userSpaceOnUse">
                     <stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/>
                   </linearGradient>
                 </defs>
-                <!-- x=73 y x=227: centros reales de las cartas. Cima en y=15,
+                <!-- x=73 y x=227: centros reales de las cartas. Cima en y=9.5,
                      justo donde va la pastilla del conteo. -->
-                <path d="M73 36 C73 8, 227 8, 227 36" stroke="url(#arc)" stroke-width="2.5"
+                <path d="M73 26 C73 4, 227 4, 227 26" stroke="url(#arc)" stroke-width="2.5"
                       stroke-linecap="round" vector-effect="non-scaling-stroke"/>
               </svg>
 
@@ -291,6 +281,25 @@ h3.sec b{color:var(--lavender);font-weight:600}
     </div>
 
     <div class="side">
+      <p style="color:#c9c2dd;font-size:.9rem;margin-bottom:12px">Orden del héroe corregido según tu captura: <strong>reto → premio y cierre en una fila → dificultad → jugar</strong>.</p>
+      <div class="chg" style="margin-top:0;margin-bottom:22px">
+        <strong>Los cambios</strong>
+        <ol>
+          <li><strong>Premio y cierre en una sola fila</strong>, debajo del reto. El pot sale de dentro de los botones de nivel.</li>
+          <li><strong>Los 3 botones de dificultad</strong> juntos en su fila, después del premio.</li>
+          <li><strong>Botón JUGAR justo debajo</strong>, cerrando el héroe.</li>
+          <li><strong>El arco ahora sí conecta</strong> las dos cartas.</li>
+          <li><strong>Se ve cuántos países son</strong>, y cambia con la dificultad.</li>
+          <li><strong>«Gratis, sin límite» → «Gana experiencia»</strong>, con el XP de cada modo.</li>
+          <li><strong>Todo el héroe cabe sin scroll</strong> — ver abajo.</li>
+        </ol>
+      </div>
+
+      <h2><span class="num">7</span>Por qué no veías los botones</h2>
+      <p>Dos cosas a la vez. La primera, dentro del teléfono: el contenido medía <strong>621px en 619 disponibles</strong>, así que desbordaba por poco. Lo engañoso es que <code>scrollHeight</code> nunca baja de <code>clientHeight</code>, así que mis primeras medidas decían «cabe» cuando no cabía.</p>
+      <p>La segunda, y la que de verdad te afectaba: <strong>la cabecera de este documento era tan alta que empujaba el teléfono fuera de la ventana</strong>. Tu captura se corta donde termina la ventana del navegador, no donde termina el diseño. Por eso ahora esta página arranca directo con el teléfono y las notas viven al lado.</p>
+      <p>Subí las banderas como pediste (el arco va más achatado) y recorté alto en el resto: ahora sobran píxeles en vez de faltar.</p>
+
       <h2><span class="num">4</span>El arco que sí conecta</h2>
       <p>Antes el SVG vivía en la columna del medio, de 60px de ancho: la línea nacía y moría en el hueco entre las cartas, sin tocarlas. Por eso no se leía como conexión — eran dos rayitas sueltas.</p>
       <p>Ahora el arco es <strong>una capa sobre toda la fila</strong>, dibujada por detrás de las cartas, que arranca con un punto cian sobre la de salida y remata con un punto fucsia sobre la meta. Línea sólida en vez de discontinua, y <code>vector-effect</code> para que el grosor no se deforme al escalar.</p>
