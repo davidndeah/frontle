@@ -11,6 +11,7 @@ import {
   nextHintCountry,
   msUntilNextDailyUTC,
   connectsThroughKnown,
+  DIFFICULTIES,
   type PlayState,
   type Status,
   type Difficulty,
@@ -54,6 +55,8 @@ import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
 import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
+import { CONTINENT_OUTLINES, CONTINENT_OUTLINE_BOX } from "./lib/continentOutlines";
+import { continentOf } from "./lib/continents";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
@@ -396,6 +399,26 @@ export default function Frontle() {
   // que ya hace `dailyChallenge` para el nivel activo (BFS + reintentos
   // acotados, sin red); memoizada por día para no repetirla en cada render.
   const challengesByLevel = useMemo(() => dailyChallenges(day), [day]);
+
+  // Frase de Bordy sin racha (David: "agregar más diálogos"): rota entre
+  // bordyNoStreak + bordyQuips. bordyNoStreak NO entra al pool (streak>0
+  // ya lo reemplaza aparte arriba; aquí solo se elige la línea para
+  // cuando streak===0, momento en el que no hay ningún número real que
+  // perder por variar el texto). El índice se deriva del día + el nivel
+  // elegido: cambia solo, sin estado nuevo, y de paso Bordy "reacciona"
+  // un poco al tocar una dificultad — más vida en el sitio.
+  const bordyQuipPool = [tr.dailyHero.bordyNoStreak, ...tr.dailyHero.bordyQuips];
+  const bordyQuip = bordyQuipPool[(day + DIFFICULTIES.indexOf(level)) % bordyQuipPool.length];
+
+  // Continente de origen/destino del reto DEL NIVEL ACTIVO (no el país en
+  // sí, que sigue sellado): David pidió reemplazar el "?" de las cartas
+  // por el contorno del continente — es una pista más sin revelar el
+  // reto. `?? "EU"` es puro blindaje de tipos: las ~90 entidades del
+  // grafo (COUNTRIES) están las 197 en continents.ts, así que en la
+  // práctica esto nunca cae al fallback.
+  const heroChallenge = challengesByLevel[level];
+  const heroOriginContinent = continentOf(getCountry(heroChallenge.start)!.code) ?? "EU";
+  const heroDestContinent = continentOf(getCountry(heroChallenge.end)!.code) ?? "EU";
 
   // Persiste la partida del día para que al refrescar NO se pueda volver a
   // jugar gratis (el estado se restaura: en curso o resuelta).
@@ -1048,14 +1071,27 @@ export default function Frontle() {
           <>
         {/* Bordy anfitrión (REDISEÑO-HOME): presenta el reto con la racha en
             su propia frase, arriba del todo — reemplaza el viejo strip
-            racha+nivel. Mockup: docs/design/home-v4.html §1-2. */}
+            racha+nivel. Mockup: docs/design/home-v4.html §1-2.
+            Ahora también abre el menú de Bordy (David: "quitemos a bordy
+            del home, el de la esquina inferior derecha, ya que lo
+            agregamos en el cartel del reto diario") — el FAB flotante
+            queda oculto exactamente mientras este bloque está en pantalla
+            (ver más abajo), así que este es el único Bordy del Home y
+            necesita hacer su trabajo: saludar Y abrir tutorial/tienda/
+            perfil/soporte. Por eso varias de sus frases invitan a
+            tocarlo. */}
         {!started && (
-          <div className="flex items-start gap-2.5 pt-2">
+          <button
+            type="button"
+            onClick={() => setBordyMenu(true)}
+            aria-label={tr.bordyMenu.open}
+            className="flex items-start gap-2.5 pt-2 text-left active:scale-[0.98] transition"
+          >
             <Bordy mood="idle" float className="w-[58px] h-[68px] flex-none" imgClassName="drop-shadow-xl" />
             <div className="bordy-bubble brutal-sm flex-1 rounded-2xl bg-surface px-3.5 py-2.5 text-[13px] leading-snug text-neutral-100">
-              {streak > 0 ? tr.dailyHero.bordyStreak(streak) : tr.dailyHero.bordyNoStreak}
+              {streak > 0 ? tr.dailyHero.bordyStreak(streak) : bordyQuip}
             </div>
-          </div>
+          </button>
         )}
 
         {/* ---- Pre-juego: hero del reto diario + modos gratis (REDISEÑO-HOME) ----
@@ -1107,15 +1143,29 @@ export default function Frontle() {
                 </div>
                 {/* SIN gap: con dos slots flex-1 al 50% exacto, los centros
                     caen justo en el 25%/75% que usa el arco a cualquier ancho
-                    (con gap-2 se desviaban ~2px). Las cartas son w-14, así que
-                    ya sobra aire entre ellas sin necesitar gap. */}
+                    (con gap-2 se desviaban ~2px). Las cartas son w-11, así que
+                    ya sobra aire entre ellas sin necesitar gap.
+                    David: "en lugar de cuadros con un signo ?, que se vea el
+                    contorno del continente en el que está el país" — el país
+                    sigue sellado, pero ahora se insinúa el continente (contorno
+                    + nombre) además del conteo de países que ya se veía. */}
                 <div className="flex items-start">
                   <div className="hero-sealed-sweep flex flex-1 flex-col items-center gap-1 text-center">
-                    <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#22d3ee] bg-black/25 text-lg font-display font-bold text-gold">?</div>
+                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 border-[#22d3ee] bg-black/25 p-1">
+                      <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
+                        <path d={CONTINENT_OUTLINES[heroOriginContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="2.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                      </svg>
+                    </div>
+                    <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[heroOriginContinent]}</span>
                     <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.origin}</span>
                   </div>
                   <div className="hero-sealed-sweep hero-sealed-sweep--delay flex flex-1 flex-col items-center gap-1 text-center">
-                    <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#e879f9] bg-black/25 text-lg font-display font-bold text-gold">?</div>
+                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 border-[#e879f9] bg-black/25 p-1">
+                      <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
+                        <path d={CONTINENT_OUTLINES[heroDestContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="2.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                      </svg>
+                    </div>
+                    <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[heroDestContinent]}</span>
                     <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.destination}</span>
                   </div>
                 </div>
@@ -1749,7 +1799,14 @@ export default function Frontle() {
       </div>
 
       {/* Bordy de esquina (mascota persistente; abre el tutorial completo).
-          Oculto durante la partida activa para no tapar el input/OK. */}
+          Oculto durante la partida activa para no tapar el input/OK, Y
+          oculto en el Home pre-juego (David: "quitemos a bordy del home,
+          el de la esquina inferior derecha, ya que lo agregamos en el
+          cartel del reto diario") — ese es exactamente el momento en que
+          el Bordy-anfitrión de arriba está en pantalla y YA abre este
+          mismo menú al tocarlo, así que tener los dos sería redundante.
+          Sigue apareciendo durante la partida (sus reacciones en vivo no
+          las da nadie más) y en Ranking/Perfil/Aprender. */}
       {/* Bordy flotante. Durante la partida SÍ se queda: es justo cuando tiene
           algo que decir con su reacción. Para no estorbar mientras se escribe
           se encoge a la mitad y baja la opacidad — PERO solo mientras está en
@@ -1757,7 +1814,7 @@ export default function Frontle() {
           brazos miden ~7 px y los ojos ~3 px, así que la expresión del rig era
           literalmente invisible justo en el momento que importa. `transition-all`
           hace que el cambio se lea como que se acerca a opinar. */}
-      {!overlay && (
+      {!overlay && !(tab === "jugar" && !regionMode && !quizMode && !started) && (
         <button
           onClick={() => setBordyMenu(true)}
           aria-label={tr.bordyMenu.open}
