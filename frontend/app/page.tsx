@@ -227,8 +227,6 @@ export default function Frontle() {
   // Menú de Bordy (lo que abre el FAB) + su estado de ánimo reactivo.
   const [bordyMenu, setBordyMenu] = useState(false);
   const [bordyMood, reactBordy] = useBordyMood();
-  // Flujo pre-juego del tab Jugar: elegir modo → dificultad → ver el reto
-  const [jugarStep, setJugarStep] = useState<"modes" | "level" | "reto">("modes");
   // Modo Regiones activo (id de región: "co", "us"…) — null = modo mundial
   const [regionMode, setRegionMode] = useState<string | null>(null);
   // País elegido en el desplegable del selector de Regiones (antes de jugar).
@@ -1044,27 +1042,122 @@ export default function Frontle() {
           </div>
         )}
 
-        {/* ---- Flujo pre-juego: 1) modos ---- */}
-        {!started && jugarStep === "modes" && (
+        {/* ---- Pre-juego: hero del reto diario + modos gratis (REDISEÑO-HOME) ----
+            Colapsa lo que antes eran 3 pantallas (modos → nivel → reto) en
+            una sola: el hero YA es el selector de nivel — tocar una
+            dificultad no navega a otra vista, solo cambia `level` (el mismo
+            cambio que ya disparaba dailyChallenge/ranking/mejor marca por
+            nivel, sin tocar esa lógica). El reto queda sellado (cartas "?")
+            hasta pulsar Jugar. Mockup: docs/design/home-v4.html. */}
+        {!started && (
           <div className="flex flex-col gap-3">
-            {/* Card héroe (el único modo con premio): violeta de marca sólido,
-                lenguaje neo-brutalista — borde grueso + sombra dura. */}
-            <div className="brutal rounded-2xl bg-[#6c2bd9] p-4 flex flex-col gap-3">
-              <button
-                onClick={() => setModeOpen(modeOpen === "daily" ? null : "daily")}
-                className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
-              >
-                <span className="text-3xl">🌍</span>
-                <span className="flex-1">
-                  <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.dailyTitle}</span>
-                  <span className="text-xs text-white/80">{tr.modes.dailySub}</span>
+            <div className="flex justify-end -mb-1">
+              <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
+            </div>
+
+            {/* Héroe: violeta de marca sólido, neo-brutalista */}
+            <div className="brutal rounded-2xl bg-[#6c2bd9] p-3.5 relative overflow-hidden">
+              <span className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                {tr.dailyHero.live}
+              </span>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{tr.daily}</p>
+
+              {/* Cartas selladas + arco que las conecta (SVG en % del ancho:
+                  responsive, no depende de un ancho fijo como el mockup estático). */}
+              <div className="relative mt-6 flex items-start gap-2">
+                <svg className="pointer-events-none absolute inset-x-0 top-0 h-7" viewBox="0 0 100 28" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="dailyHeroArc" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+                      <stop stopColor="#22d3ee" /><stop offset="1" stopColor="#e879f9" />
+                    </linearGradient>
+                  </defs>
+                  {/* x=25/75: centro de cada mitad de la fila (dos slots flex-1
+                      con gap) — coincide con el centro real de cada carta. */}
+                  <path d="M25 26 C25 4, 75 4, 75 26" stroke="url(#dailyHeroArc)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                </svg>
+                <span className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-deep bg-gold px-2.5 py-0.5 font-display text-[11px] font-bold text-deep">
+                  {tr.dailyHero.countryCount(challengesByLevel[level].optimal)}
                 </span>
-                <span className="text-gold text-2xl">{modeOpen === "daily" ? "▾" : "→"}</span>
+                <div className="hero-sealed-sweep flex flex-1 flex-col items-center gap-1 pt-1 text-center">
+                  <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#22d3ee] bg-black/25 text-lg font-display font-bold text-gold">?</div>
+                  <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.origin}</span>
+                </div>
+                <div className="hero-sealed-sweep hero-sealed-sweep--delay flex flex-1 flex-col items-center gap-1 pt-1 text-center">
+                  <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#e879f9] bg-black/25 text-lg font-display font-bold text-gold">?</div>
+                  <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.destination}</span>
+                </div>
+              </div>
+
+              {/* Premio + cierre, en una sola fila */}
+              <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl bg-black/25 px-3 py-2">
+                <span>
+                  <span className="block text-[10px] uppercase tracking-wider text-white/70">{tr.dailyHero.potLabel}</span>
+                  <span className="font-display text-lg font-bold leading-tight text-gold">{levelPot !== null ? fmt(levelPot) : "···"}</span>
+                </span>
+                <span className="font-mono text-sm text-white/90 tabular-nums">🕒 {tr.dailyHero.closesIn(countdown)}</span>
+              </div>
+
+              {/* Dificultad: cada botón con su propio pot — elegir nivel es elegir premio */}
+              <div className="mt-2 flex gap-1.5">
+                {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => {
+                  const META: Record<Difficulty, { icon: string }> = { easy: { icon: "🌱" }, medium: { icon: "⚡" }, hard: { icon: "💀" } };
+                  const on = level === lv;
+                  const lvPot = pot !== null ? (pot * BASE_SHARE[lv]) / 100 : null;
+                  return (
+                    <button
+                      key={lv}
+                      type="button"
+                      onClick={() => setLevel(lv)}
+                      aria-pressed={on}
+                      className={`brutal-shadow brutal-press flex-1 rounded-xl border-2 py-1.5 text-center font-display transition ${
+                        on ? "bg-gold text-deep" : "bg-black/25 text-white"
+                      }`}
+                      style={{ borderColor: on ? "var(--deep)" : "rgba(13,4,32,0.5)" }}
+                    >
+                      <span className="block text-[13px] font-semibold leading-tight">{META[lv].icon} {tr.levels[lv]}</span>
+                      <span className="block font-mono text-[10px] tabular-nums opacity-90">{lvPot !== null ? fmt(lvPot) : "···"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={openPregame}
+                className="brutal brutal-press mt-2 w-full rounded-xl bg-gold py-2.5 font-display text-base font-black text-deep"
+              >
+                {tr.play}
               </button>
-              {modeOpen === "daily" && (
-                <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
+              {/* Zero-click connect: dentro de MiniPay la wallet llega sola vía el
+                  auto-connect del mount; enseñar "Conectar" ahí está prohibido,
+                  incluso en el instante en que `myId` aún no se resolvió. */}
+              {!myId && ((hasWallet && !inMiniPay) || privyActive) && (
+                <div className="mt-2 flex flex-col items-center gap-2">
+                  <p className="text-center text-[11px] text-white/80">{tr.connectBenefit}</p>
+                  <div className="flex items-center gap-2">
+                    {hasWallet && !inMiniPay && (
+                      <button
+                        onClick={connectForRanking}
+                        className="brutal-sm brutal-press rounded-xl bg-[#34d399] px-4 py-2 text-xs font-bold text-[#053b27]"
+                      >
+                        {tr.connectWallet}
+                      </button>
+                    )}
+                    {privyActive && (
+                      <EmailLoginButton
+                        label={tr.emailLogin}
+                        className="brutal-sm brutal-press rounded-xl bg-[#38bdf8] px-4 py-2 text-xs font-bold text-[#082f49]"
+                      />
+                    )}
+                  </div>
+                </div>
               )}
             </div>
+
+            {/* Modos gratis: rejilla 2x2 (REDISEÑO-HOME) */}
+            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+              {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
+            </h3>
             {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa */}
             <div className="brutal rounded-2xl bg-surface p-4 flex flex-col gap-3">
               <button
@@ -1150,29 +1243,17 @@ export default function Frontle() {
           </div>
         )}
 
-        {/* ---- 2) dificultad ---- */}
-        {!started && jugarStep === "level" && (
-          <div className="flex flex-col gap-3">
-            <BackRow onClick={() => setJugarStep("modes")} label="Modos" />
-            <LevelSelect tr={tr} level={level} onChange={(l) => { setLevel(l); setJugarStep("reto"); }} />
-          </div>
-        )}
-
-        {/* ---- 3) reto del nivel elegido ---- */}
-        {!started && jugarStep === "reto" && (
-          <div className="flex items-center justify-between">
-            <BackRow onClick={() => setJugarStep("level")} label={tr.levels[level]} />
-            <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
-          </div>
-        )}
+        {/* Selector de moneda durante la partida — antes de jugar vive dentro
+            del hero (arriba de la carta violeta), no aquí. */}
         {started && (
           <div className="flex justify-center">
             <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
           </div>
         )}
 
-        {/* Reto del día (oculto hasta pulsar Play) */}
-        {(started || jugarStep === "reto") && (
+        {/* Recordatorio del reto MIENTRAS se juega (ya no está sellado: el
+            hero pre-juego, que sí lo sella, desaparece al iniciar). */}
+        {started && (
         <section className={`${panel} p-4`}>
           <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-1">{tr.daily}</p>
           {/* Monto que se lleva el ganador de este nivel (sin % dentro del reto) */}
@@ -1183,18 +1264,16 @@ export default function Frontle() {
           )}
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 flex flex-col items-center text-center">
-              {started ? <Flag code={startC.code} size={46} /> : <Hidden />}
-              <div className="text-sm font-semibold mt-1 text-cyan-300">{started ? cn(challenge.start) : "•••"}</div>
+              <Flag code={startC.code} size={46} />
+              <div className="text-sm font-semibold mt-1 text-cyan-300">{cn(challenge.start)}</div>
             </div>
             <div className="text-2xl text-neutral-400">→</div>
             <div className="flex-1 flex flex-col items-center text-center">
-              {started ? <Flag code={endC.code} size={46} /> : <Hidden />}
-              <div className="text-sm font-semibold mt-1 text-fuchsia-300">{started ? cn(challenge.end) : "•••"}</div>
+              <Flag code={endC.code} size={46} />
+              <div className="text-sm font-semibold mt-1 text-fuchsia-300">{cn(challenge.end)}</div>
             </div>
           </div>
-          <p className="text-center text-xs text-neutral-300 mt-3">
-            {started ? tr.optimal(challenge.optimal) : tr.timerHint}
-          </p>
+          <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(challenge.optimal)}</p>
         </section>
         )}
 
@@ -1225,9 +1304,10 @@ export default function Frontle() {
           </TxOverlay>
         )}
 
-        {/* Mapa o pantalla de Play (solo en el paso reto).
-            Durante el coach: mapa vacío (sin países) para no dar ventaja. */}
-        {started || coaching ? (
+        {/* Mapa de la partida. El botón de Jugar ya no vive aquí — está en
+            el hero, arriba (REDISEÑO-HOME). Durante el coach: mapa vacío
+            (sin países) para no dar ventaja. */}
+        {(started || coaching) && (
           <WorldMap
             statusByCountry={coaching ? {} : statusByCountry}
             loadingLabel={tr.loadingMap}
@@ -1236,43 +1316,7 @@ export default function Frontle() {
             resetKey={`${challenge.start}->${challenge.end}`}
             controls={tr.a11y}
           />
-        ) : jugarStep === "reto" ? (
-          <div className="w-full flex flex-col items-center justify-center gap-3 py-2">
-            {/* FIX-2 (guest play): cualquiera con el link puede JUGAR sin
-                identidad. Wallet/correo solo se piden para ranking, premios
-                y compras — la WinCard ya muestra ese CTA tras ganar. */}
-            <button
-              onClick={openPregame}
-              className="btn-3d font-display font-bold text-2xl px-12 py-4"
-            >
-              {tr.play}
-            </button>
-            {/* Zero-click connect: dentro de MiniPay la wallet llega sola vía el
-                auto-connect del mount; enseñar "Conectar" ahí está prohibido,
-                incluso en el instante en que `myId` aún no se resolvió. */}
-            {!myId && ((hasWallet && !inMiniPay) || privyActive) && (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-[11px] text-neutral-300 text-center">{tr.connectBenefit}</p>
-                <div className="flex items-center gap-2">
-                  {hasWallet && !inMiniPay && (
-                    <button
-                      onClick={connectForRanking}
-                      className="brutal-sm brutal-press rounded-xl bg-[#34d399] px-4 py-2 text-xs font-bold text-[#053b27]"
-                    >
-                      {tr.connectWallet}
-                    </button>
-                  )}
-                  {privyActive && (
-                    <EmailLoginButton
-                      label={tr.emailLogin}
-                      className="brutal-sm brutal-press rounded-xl bg-[#38bdf8] px-4 py-2 text-xs font-bold text-[#082f49]"
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : null}
+        )}
 
         {/* Juego (solo al jugar) */}
         {(started || coaching) && (
@@ -1313,7 +1357,7 @@ export default function Frontle() {
                 retryBusy={paying === "retry"}
                 payError={payError}
                 showDeposit={payLow && inMiniPay}
-                onHome={() => { setStarted(false); setJugarStep("level"); setPayError(null); setPayLow(false); }}
+                onHome={() => { setStarted(false); setPayError(null); setPayLow(false); }}
                 hasWallet={hasWallet}
                 inRanking={!!myId}
                 onConnect={connectForRanking}
@@ -2253,18 +2297,6 @@ function NamePrompt({
   );
 }
 
-function BackRow({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button onClick={onClick} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-      <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center text-base leading-none">←</span>
-      <span className="font-display font-semibold">{label}</span>
-    </button>
-  );
-}
-
-function Hidden() {
-  return <div className="w-[46px] h-[31px] rounded bg-white/10 border border-white/20 flex items-center justify-center text-lg">❓</div>;
-}
 
 function Legend({ color, label }: { color: string; label: string }) {
   return (
