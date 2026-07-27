@@ -958,9 +958,6 @@ export default function Frontle() {
   const guessCount = state.chain.length;
   const silhouettes = showNextSil && nextHint ? [nextHint] : [];
   const panel = "panel";
-  // Gamificación derivada de los días jugados (real, no inventado)
-  const xpLevel = Math.floor(daysPlayed / 3) + 1;
-  const xpPct = ((daysPlayed % 3) / 3) * 100;
 
   return (
     <main className="relative min-h-dvh bg-grid text-white flex flex-col items-center overflow-hidden">
@@ -1028,29 +1025,14 @@ export default function Frontle() {
 
         {tab === "jugar" && !regionMode && !quizMode && (
           <>
-        {/* Título + gamificación (sin hero gigante; Bordy vive en la esquina) */}
+        {/* Bordy anfitrión (REDISEÑO-HOME): presenta el reto con la racha en
+            su propia frase, arriba del todo — reemplaza el viejo strip
+            racha+nivel. Mockup: docs/design/home-v4.html §1-2. */}
         {!started && (
-          <div className="flex flex-col items-center gap-2 pt-2">
-            <h2 className="font-display text-2xl font-bold text-white text-center leading-tight">
-              {tr.home.titlePre} <span className="text-gold">{tr.home.titleWord}</span>
-            </h2>
-            {/* Strip de gamificación: racha + nivel (XP) */}
-            <div className="panel flex items-center w-full py-2.5 px-4 gap-3">
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl">🔥</span>
-                <span key={streak} className={`font-display font-bold text-white text-lg leading-none${streakBump ? " streak-bump" : ""}`}>{streak}</span>
-                <span className="text-[11px] text-neutral-400">{tr.home.streak}</span>
-              </div>
-              <div className="w-px h-7 bg-white/10" />
-              <div className="flex flex-col flex-1">
-                <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="font-semibold text-[#c4b5fd]">{tr.home.level(xpLevel)}</span>
-                  <span className="text-neutral-400 tabular-nums">{daysPlayed % 3}/3</span>
-                </div>
-                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-[#22d3ee] via-[#22c55e] to-gold" style={{ width: `${xpPct}%` }} />
-                </div>
-              </div>
+          <div className="flex items-start gap-2.5 pt-2">
+            <Bordy mood="idle" float className="w-[58px] h-[68px] flex-none" imgClassName="drop-shadow-xl" />
+            <div className="bordy-bubble brutal-sm flex-1 rounded-2xl bg-surface px-3.5 py-2.5 text-[13px] leading-snug text-neutral-100">
+              {streak > 0 ? tr.dailyHero.bordyStreak(streak) : tr.dailyHero.bordyNoStreak}
             </div>
           </div>
         )}

@@ -892,6 +892,24 @@ body {
   animation-delay: 0.45s;
 }
 
+/* Burbuja de Bordy en el Home (REDISEÑO-HOME): mismo panel que el resto de
+   la app (.brutal-sm + bg-surface, en JSX), solo le falta la cola que
+   apunta hacia Bordy. Clase mínima porque todo lo demás ya son utilidades
+   de Tailwind existentes. */
+.bordy-bubble {
+  position: relative;
+}
+.bordy-bubble::after {
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 16px;
+  width: 0;
+  height: 0;
+  border: 7px solid transparent;
+  border-right-color: var(--deep);
+}
+
 /* Texto con gradiente prisma */
 .prism-text {
   background: var(--prism-grad);
