@@ -793,6 +793,9 @@ body {
   /* Dot de reto pendiente: fijo, sin pulso. */
   .tab-dot { animation: none; }
 
+  /* Carta sellada del héroe: sin barrido — el "?" ya comunica que hay algo. */
+  .hero-sealed-sweep::before { animation: none; opacity: 0; }
+
   /* Tab activo: sin pop ni desplazamiento — solo cambia color/glow. */
   .tab-pop { animation: none; }
   .tab-icon { transition: none; }
@@ -860,6 +863,33 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* Carta sellada del héroe del reto diario (REDISEÑO-HOME): un barrido de luz
+   cruza la carta "?" cada pocos segundos para comunicar "hay algo dentro"
+   sin revelarlo. El elemento lleva la carta en sí; el barrido vive en
+   ::before para no interferir con su contenido (el "?"). */
+@keyframes hero-sealed-sweep {
+  0% { left: -40px; }
+  55%, 100% { left: 100%; }
+}
+.hero-sealed-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.hero-sealed-sweep::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  animation: hero-sealed-sweep 3.4s ease-in-out infinite;
+}
+/* La carta de meta arranca el barrido a mitad de ciclo: las dos cartas no
+   destellan al mismo tiempo, lo que se lee como "dos cosas distintas". */
+.hero-sealed-sweep.hero-sealed-sweep--delay::before {
+  animation-delay: 0.45s;
 }
 
 /* Texto con gradiente prisma */
