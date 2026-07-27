@@ -52,6 +52,7 @@ import PracticeGame from "./components/PracticeGame";
 import CountryQuizGame from "./components/CountryQuizGame";
 import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
+import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
@@ -107,11 +108,19 @@ const BASE_SHARE: Record<Difficulty, number> = { easy: 15, medium: 35, hard: 50 
 
 type Tab = "jugar" | "ranking" | "perfil" | "aprender";
 
-// Banderas que rotan en el arte de la ficha "Adivina la bandera" del Home.
-// Cinco muy reconocibles y de regiones distintas a propósito: la ficha tiene
-// que leerse como "países de todo el mundo", no como un continente concreto.
-// El ciclo lo mueve la clase .flag-cycle (CSS puro, sin timers).
-const QUIZ_CARD_FLAGS = ["co", "br", "ng", "jp", "de"];
+// Arte animado de las fichas del Home: banderas en "Adivina la bandera",
+// contornos con sus departamentos/estados en "Regiones". Las DOS recorren
+// REGION_IDS con el mismo reloj (David: "que vaya timeada con la de
+// banderas"), así que la bandera de Colombia se ve exactamente cuando la
+// otra ficha dibuja los departamentos de Colombia — se leen como un par.
+// Una sola fuente de verdad: si mañana entra una séptima región, las dos
+// fichas la recogen solas y siguen en fase.
+//
+// La duración vive en globals.css (.art-cycle); aquí solo se reparte el
+// desfase entre capas. Derivado del número de capas, no hardcodeado a -2s,
+// justo para que añadir una región no descuadre el ciclo.
+const ART_CYCLE_S = 12;
+const artDelay = (i: number, n: number) => `${(-i * ART_CYCLE_S) / n}s`;
 
 // Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
 function Flag({ code, size = 32 }: { code: string; size?: number }) {
@@ -1196,7 +1205,7 @@ export default function Frontle() {
                 aria-expanded={modeOpen === "regions"}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
-                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #4a1d10, #2a0f08)" }}>🧭</span>
+                <span className="h-[84px] flex items-center justify-center text-5xl" style={{ background: "linear-gradient(160deg, #4a1d10, #2a0f08)" }}>🧭</span>
                 <span className="absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.modes.regionsTitle}</span>
@@ -1210,15 +1219,15 @@ export default function Frontle() {
                 {/* `relative`: las capas del ciclo son absolutas y se apilan
                     contra esta caja. `overflow-hidden`: el fotograma de salida
                     escala a 1.14 y no debe asomarse por los bordes. */}
-                <span className="flag-cycle relative h-[62px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #0e3b52, #0a2536)" }}>
-                  {QUIZ_CARD_FLAGS.map((code, i) => (
+                <span className="art-cycle relative h-[84px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #0e3b52, #0a2536)" }}>
+                  {REGION_IDS.map((code, i) => (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       key={code}
                       src={`https://flagcdn.com/${code}.svg`}
                       alt=""
-                      className="w-11 rounded-[3px] border border-white/15 shadow-lg"
-                      style={{ animationDelay: `${-i * 2}s` }}
+                      className="w-[88px] rounded-[3px] border border-white/15 shadow-lg"
+                      style={{ animationDelay: artDelay(i, REGION_IDS.length) }}
                     />
                   ))}
                 </span>
@@ -1231,7 +1240,7 @@ export default function Frontle() {
                 onClick={() => setQuizMode("outline")}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
               >
-                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #123d24, #0b2415)" }}>🗺️</span>
+                <span className="h-[84px] flex items-center justify-center text-5xl" style={{ background: "linear-gradient(160deg, #123d24, #0b2415)" }}>🗺️</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.outlineTitle}</span>
                   <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
@@ -1242,7 +1251,7 @@ export default function Frontle() {
                 onClick={() => { setTab("aprender"); setPracticeOn(true); }}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
               >
-                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #2a1257, #150a2e)" }}>🎓</span>
+                <span className="h-[84px] flex items-center justify-center text-5xl" style={{ background: "linear-gradient(160deg, #2a1257, #150a2e)" }}>🎓</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.practiceMode}</span>
                   <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.practice)}</span>

@@ -796,10 +796,11 @@ body {
   /* Carta sellada del héroe: sin barrido — el "?" ya comunica que hay algo. */
   .hero-sealed-sweep::before { animation: none; opacity: 0; }
 
-  /* Banderas del card de quiz: se queda UNA fija. La ficha sigue diciendo
-     "esto va de banderas"; lo único que se pierde es el ciclo. */
-  .flag-cycle > img { animation: none; }
-  .flag-cycle > img:first-child { opacity: 1; }
+  /* Arte de las fichas del Home: se queda UNA pieza fija. La ficha sigue
+     diciendo "esto va de banderas" / "esto va de mapas"; lo único que se
+     pierde es el ciclo. */
+  .art-cycle > * { animation: none; }
+  .art-cycle > *:first-child { opacity: 1; }
 
   /* Tab activo: sin pop ni desplazamiento — solo cambia color/glow. */
   .tab-pop { animation: none; }
@@ -897,25 +898,33 @@ body {
   animation-delay: 0.45s;
 }
 
-/* Carrusel de banderas del card "Adivina la bandera" (REDISEÑO-HOME): el
-   modo se explica solo si el arte ES una bandera, y varias rotando dicen
-   "aquí hay muchos países" mejor que un emoji fijo. Es CSS puro: N capas
-   apiladas con la MISMA animación y un delay negativo escalonado — no
-   re-renderiza React ni corre timers en JS.
-   Ventana por capa (ciclo de 10s, 5 banderas → 20% cada una): opaca de 8% a
-   25%, con fundidos de 5% a cada lado que se solapan con la vecina, así
+/* Carrusel del arte de las fichas del Home (REDISEÑO-HOME): banderas en
+   "Adivina la bandera", contornos de países en "Regiones". El modo se
+   explica solo si el arte ES lo que vas a jugar, y varias piezas rotando
+   dicen "aquí hay muchos países" mejor que un emoji fijo.
+
+   Es CSS puro: N capas apiladas con la MISMA animación y un delay negativo
+   escalonado — no re-renderiza React ni corre timers en JS.
+
+   Una sola clase para las dos fichas a propósito: David pidió que fueran
+   "timeadas" entre sí, y compartir keyframes + duración + número de capas
+   es la única forma de que no se desfasen nunca (dos animaciones distintas
+   arrancan en momentos distintos y derivan).
+
+   Ventana por capa (ciclo de 12s, 6 países → 16.6% cada uno): opaca de 6% a
+   20.8%, con fundidos de ~4% a cada lado que se solapan con la vecina, así
    nunca hay un hueco en blanco. El delay NEGATIVO importa: con delay
-   positivo la última capa aún no habría arrancado en el primer segundo y
-   la ficha se vería vacía al cargar. */
-@keyframes flag-cycle {
-  0%,  3%        { opacity: 0; transform: scale(0.82) rotate(-5deg); }
-  8%,  25%       { opacity: 1; transform: scale(1)    rotate(0deg); }
-  30%, 100%      { opacity: 0; transform: scale(1.14) rotate(5deg); }
+   positivo la última capa aún no habría arrancado en el primer segundo y la
+   ficha se vería vacía al cargar. */
+@keyframes home-art-cycle {
+  0%,   2.5%     { opacity: 0; transform: scale(0.82) rotate(-5deg); }
+  6%,   20.8%    { opacity: 1; transform: scale(1)    rotate(0deg); }
+  24.5%, 100%    { opacity: 0; transform: scale(1.14) rotate(5deg); }
 }
-.flag-cycle > img {
+.art-cycle > * {
   position: absolute;
   opacity: 0;
-  animation: flag-cycle 10s ease-in-out infinite;
+  animation: home-art-cycle 12s ease-in-out infinite;
 }
 
 /* Burbuja de Bordy en el Home (REDISEÑO-HOME): mismo panel que el resto de
