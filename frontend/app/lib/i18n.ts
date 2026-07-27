@@ -363,6 +363,19 @@ type Dict = {
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
   home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string; milestone: (n: number) => string; pendingToday: string };
+  // Home v2 (REDISEÑO-HOME): Bordy anfitrión + héroe del reto sellado + grilla
+  // de modos gratis. Ver docs/design/home-v4.html — mockup de referencia.
+  dailyHero: {
+    bordyStreak: (n: number) => string;
+    bordyNoStreak: string;
+    live: string;
+    closesIn: (time: string) => string;
+    potLabel: string;
+    countryCount: (n: number) => string;
+    freeTitle: string;
+    freeSub: string;
+    xpBadge: (n: number) => string;
+  };
   // Puntos Frontle (GAM-5): recompensa por resolver aunque no ganes el pot
   points: { earned: (n: number) => string; total: (n: number) => string };
   // Logros del perfil (GAM-3)
@@ -740,6 +753,17 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
+    dailyHero: {
+      bordyStreak: (n) => `Llevas 🔥 ${n} días seguidos. ¡No la rompas hoy!`,
+      bordyNoStreak: "¿Jugamos el reto de hoy? Empecemos una racha 🔥",
+      live: "En juego",
+      closesIn: (time) => `Cierra en ${time}`,
+      potLabel: "Premio del día",
+      countryCount: (n) => `${n} países`,
+      freeTitle: "Gana experiencia",
+      freeSub: "gratis, sin límite",
+      xpBadge: (n) => `+${n} XP`,
+    },
     points: { earned: (n) => `+${n} puntos Frontle`, total: (n) => `${n} puntos` },
     achievements: {
       title: "Logros",
@@ -1107,6 +1131,17 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
+    dailyHero: {
+      bordyStreak: (n) => `You're on a 🔥 ${n}-day streak. Don't break it today!`,
+      bordyNoStreak: "Ready for today's challenge? Let's start a streak 🔥",
+      live: "Live",
+      closesIn: (time) => `Closes in ${time}`,
+      potLabel: "Today's prize",
+      countryCount: (n) => `${n} countries`,
+      freeTitle: "Earn experience",
+      freeSub: "free, unlimited",
+      xpBadge: (n) => `+${n} XP`,
+    },
     points: { earned: (n) => `+${n} Frontle points`, total: (n) => `${n} points` },
     achievements: {
       title: "Achievements",
@@ -1474,6 +1509,17 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
+    dailyHero: {
+      bordyStreak: (n) => `Você está numa sequência de 🔥 ${n} dias. Não quebre hoje!`,
+      bordyNoStreak: "Vamos ao desafio de hoje? Comece uma sequência 🔥",
+      live: "Em jogo",
+      closesIn: (time) => `Fecha em ${time}`,
+      potLabel: "Prêmio de hoje",
+      countryCount: (n) => `${n} países`,
+      freeTitle: "Ganhe experiência",
+      freeSub: "grátis, sem limite",
+      xpBadge: (n) => `+${n} XP`,
+    },
     points: { earned: (n) => `+${n} pontos Frontle`, total: (n) => `${n} pontos` },
     achievements: {
       title: "Conquistas",
@@ -1841,6 +1887,17 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
+    dailyHero: {
+      bordyStreak: (n) => `Tu es sur une série de 🔥 ${n} jours. Ne la casse pas aujourd'hui !`,
+      bordyNoStreak: "On fait le défi du jour ? Lance une série 🔥",
+      live: "En cours",
+      closesIn: (time) => `Ferme dans ${time}`,
+      potLabel: "Prix du jour",
+      countryCount: (n) => `${n} pays`,
+      freeTitle: "Gagne de l'expérience",
+      freeSub: "gratuit, sans limite",
+      xpBadge: (n) => `+${n} XP`,
+    },
     points: { earned: (n) => `+${n} points Frontle`, total: (n) => `${n} points` },
     achievements: {
       title: "Succès",
