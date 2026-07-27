@@ -1063,34 +1063,45 @@ export default function Frontle() {
               </span>
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{tr.daily}</p>
 
-              {/* Cartas selladas + arco que las conecta (SVG en % del ancho:
-                  responsive, no depende de un ancho fijo como el mockup estático). */}
-              <div className="relative mt-6 flex items-start gap-2">
-                {/* w-full explícito: un <svg> es un elemento reemplazado, así
-                    que `inset-x-0` (left:0;right:0) SIN un width no lo estira
-                    al ancho del contenedor como haría un <div> — se queda en
-                    su tamaño intrínseco (el del viewBox, 100px). Por eso el
-                    arco salía angosto y descuadrado. */}
-                <svg className="pointer-events-none absolute inset-x-0 top-0 h-7 w-full" viewBox="0 0 100 28" preserveAspectRatio="none" fill="none" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="dailyHeroArc" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
-                      <stop stopColor="#22d3ee" /><stop offset="1" stopColor="#e879f9" />
-                    </linearGradient>
-                  </defs>
-                  {/* x=25/75: centro de cada mitad de la fila (dos slots flex-1
-                      con gap) — coincide con el centro real de cada carta. */}
-                  <path d="M25 26 C25 4, 75 4, 75 26" stroke="url(#dailyHeroArc)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                </svg>
-                <span className="absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-deep bg-gold px-2.5 py-0.5 font-display text-[11px] font-bold text-deep">
-                  {tr.dailyHero.countryCount(challengesByLevel[level].optimal)}
-                </span>
-                <div className="hero-sealed-sweep flex flex-1 flex-col items-center gap-1 pt-1 text-center">
-                  <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#22d3ee] bg-black/25 text-lg font-display font-bold text-gold">?</div>
-                  <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.origin}</span>
+              {/* Cartas selladas + arco que las conecta. El arco vive en su
+                  PROPIA franja ENCIMA de las cartas: antes compartía caja con
+                  ellas (svg absoluto sobre la fila) y las líneas caían dentro
+                  de los recuadros — David: "el arco se sobrepone sobre los
+                  cuadros". Ahora muere justo en su borde superior. */}
+              <div className="mt-4">
+                <div className="relative h-5">
+                  {/* w-full explícito: un <svg> es un elemento reemplazado, así
+                      que `inset-x-0` (left:0;right:0) SIN un width no lo estira
+                      al ancho del contenedor como haría un <div> — se queda en
+                      su tamaño intrínseco (el del viewBox, 100px). */}
+                  <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 20" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="dailyHeroArc" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+                        <stop stopColor="#22d3ee" /><stop offset="1" stopColor="#e879f9" />
+                      </linearGradient>
+                    </defs>
+                    {/* x=25/75: centro real de cada slot flex-1 de la fila de
+                        abajo. y=19 (+1 del linecap redondo) = el borde superior
+                        de las cartas: el arco las toca, no las invade. */}
+                    <path d="M25 19 C25 2, 75 2, 75 19" stroke="url(#dailyHeroArc)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                  </svg>
+                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border-2 border-deep bg-gold px-2.5 py-0.5 font-display text-[11px] font-bold text-deep">
+                    {tr.dailyHero.countryCount(challengesByLevel[level].optimal)}
+                  </span>
                 </div>
-                <div className="hero-sealed-sweep hero-sealed-sweep--delay flex flex-1 flex-col items-center gap-1 pt-1 text-center">
-                  <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#e879f9] bg-black/25 text-lg font-display font-bold text-gold">?</div>
-                  <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.destination}</span>
+                {/* SIN gap: con dos slots flex-1 al 50% exacto, los centros
+                    caen justo en el 25%/75% que usa el arco a cualquier ancho
+                    (con gap-2 se desviaban ~2px). Las cartas son w-14, así que
+                    ya sobra aire entre ellas sin necesitar gap. */}
+                <div className="flex items-start">
+                  <div className="hero-sealed-sweep flex flex-1 flex-col items-center gap-1 text-center">
+                    <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#22d3ee] bg-black/25 text-lg font-display font-bold text-gold">?</div>
+                    <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.origin}</span>
+                  </div>
+                  <div className="hero-sealed-sweep hero-sealed-sweep--delay flex flex-1 flex-col items-center gap-1 text-center">
+                    <div className="flex h-9 w-14 items-center justify-center rounded border-2 border-[#e879f9] bg-black/25 text-lg font-display font-bold text-gold">?</div>
+                    <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.destination}</span>
+                  </div>
                 </div>
               </div>
 
