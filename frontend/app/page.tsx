@@ -61,7 +61,7 @@ import StreakCard from "./components/StreakCard";
 import CoinShop, { CoinShopCard } from "./components/CoinShop";
 import { getCoinBalance, onCoinsChanged, retryPendingCredit } from "./lib/coins";
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
-import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, type WeeklyStanding } from "./lib/xp";
+import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, XP, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
@@ -1154,11 +1154,11 @@ export default function Frontle() {
               )}
             </div>
 
-            {/* Modos gratis: rejilla 2x2 (REDISEÑO-HOME) */}
-            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
-              {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
-            </h3>
-            {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa */}
+            {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa.
+                Queda como card propia (no en la rejilla 2x2 de abajo): al
+                abrirse mete un desplegable + mapa + botón, algo que no cabe
+                en una ficha compacta sin rediseñar también esa expansión —
+                fuera del alcance de este rediseño del Home. */}
             <div className="brutal rounded-2xl bg-surface p-4 flex flex-col gap-3">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
@@ -1203,41 +1203,47 @@ export default function Frontle() {
               <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </>)}
             </div>
-            {/* Modos quiz: adivina la bandera / el contorno (gratis) */}
-            <button
-              onClick={() => setQuizMode("flag")}
-              className="brutal brutal-press rounded-2xl bg-surface p-4 flex items-center gap-3 text-left"
-            >
-              <span className="text-3xl">🏳️</span>
-              <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.quiz.flagTitle}</span>
-                <span className="text-xs text-neutral-300">{tr.quiz.flagSub}</span>
-              </span>
-              <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
-            </button>
-            <button
-              onClick={() => setQuizMode("outline")}
-              className="brutal brutal-press rounded-2xl bg-surface p-4 flex items-center gap-3 text-left"
-            >
-              <span className="text-3xl">🗺️</span>
-              <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.quiz.outlineTitle}</span>
-                <span className="text-xs text-neutral-300">{tr.quiz.outlineSub}</span>
-              </span>
-              <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
-            </button>
-            {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
-            <button
-              onClick={() => { setTab("aprender"); setPracticeOn(true); }}
-              className="brutal brutal-press rounded-2xl bg-surface p-4 flex items-center gap-3 text-left"
-            >
-              <span className="text-3xl">🎓</span>
-              <span className="flex-1">
-                <span className="font-display font-bold text-white text-lg block leading-tight">{tr.practiceMode}</span>
-                <span className="text-xs text-neutral-300">{tr.practiceFree}</span>
-              </span>
-              <span className="text-gold text-2xl">→</span>
-            </button>
+            {/* Modos gratis: rejilla 2x2, arte por delante del texto
+                (REDISEÑO-HOME — herencia de la dirección "Mazo"). Bandera/
+                Contorno/Práctica navegan directo (a diferencia de Regiones,
+                que expande in-place), así que sí encajan en una ficha
+                compacta sin perder nada. */}
+            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+              {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
+            </h3>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => setQuizMode("flag")}
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+              >
+                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #0e3b52, #0a2536)" }}>🏳️</span>
+                <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
+                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.flagTitle}</span>
+                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
+                </span>
+              </button>
+              <button
+                onClick={() => setQuizMode("outline")}
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+              >
+                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #123d24, #0b2415)" }}>🗺️</span>
+                <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
+                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.outlineTitle}</span>
+                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
+                </span>
+              </button>
+              {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
+              <button
+                onClick={() => { setTab("aprender"); setPracticeOn(true); }}
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+              >
+                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #2a1257, #150a2e)" }}>🎓</span>
+                <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
+                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.practiceMode}</span>
+                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.practice)}</span>
+                </span>
+              </button>
+            </div>
             {/* Tienda de monedas: entrada desde el home */}
             <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
           </div>
