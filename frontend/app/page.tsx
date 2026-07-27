@@ -1205,7 +1205,34 @@ export default function Frontle() {
                 aria-expanded={modeOpen === "regions"}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
-                <span className="h-[84px] flex items-center justify-center text-5xl" style={{ background: "linear-gradient(160deg, #4a1d10, #2a0f08)" }}>🧭</span>
+                {/* Contornos de los países con TODAS sus fronteras internas
+                    de departamentos/estados, en ciclo y en fase con la ficha
+                    de banderas. Cada <svg> lleva w/h explícitos: es un
+                    elemento reemplazado, así que el `position:absolute` de
+                    .art-cycle sin medidas lo dejaría en su tamaño intrínseco.
+                    70px (y no 84) para que el fotograma de salida —scale 1.14
+                    + rotate 5°, que agranda la caja— no se recorte mientras
+                    todavía se ve. */}
+                <span className="art-cycle relative h-[84px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #4a1d10, #2a0f08)" }}>
+                  {REGION_IDS.map((rid, i) => (
+                    <svg
+                      key={rid}
+                      viewBox={`0 0 ${REGION_OUTLINE_BOX} ${REGION_OUTLINE_BOX}`}
+                      className="h-[70px] w-[70px]"
+                      aria-hidden="true"
+                      style={{ animationDelay: artDelay(i, REGION_IDS.length) }}
+                    >
+                      <path
+                        d={REGION_OUTLINES[rid]}
+                        fill="rgba(255,255,255,0.09)"
+                        stroke="var(--gold)"
+                        strokeWidth={0.9}
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
+                  ))}
+                </span>
                 <span className="absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.modes.regionsTitle}</span>
