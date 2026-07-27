@@ -1,6 +1,7 @@
 // ============================================================
 //  Frontle — Genera los contornos simplificados para el arte del Home:
-//  regiones (con departamentos/estados) y siluetas del mundo.
+//  regiones (con departamentos/estados), siluetas del mundo y siluetas
+//  de continente.
 //
 //  Los GeoJSON de public/maps/*.json pesan 1.1 MB entre los seis;
 //  descargarlos para decorar una ficha de 84px sería absurdo. Este
@@ -10,21 +11,27 @@
 //  módulo TS con un único path por país que incluye TODAS las fronteras
 //  internas de departamentos/estados — que es justo lo que se quiere ver.
 //
-//  Uso:  node scripts/gen-outlines.mjs  (necesita red para el atlas mundial)
-//  Reescribe app/lib/regionOutlines.ts y app/lib/countryOutlines.ts. Solo
-//  hay que volver a correrlo si cambia un mapa o la lista de países.
+//  Uso:  node scripts/gen-outlines.mjs  (necesita red: atlas mundial +
+//  un dataset ISO numérico→alpha-2 para las siluetas de continente)
+//  Reescribe app/lib/regionOutlines.ts, app/lib/countryOutlines.ts y
+//  app/lib/continentOutlines.ts. Solo hay que volver a correrlo si
+//  cambia un mapa, la lista de países o continents.ts.
 // ============================================================
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { geoMercator } from "d3-geo";
-import { feature as topoFeature } from "topojson-client";
+import { feature as topoFeature, merge as topoMerge } from "topojson-client";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 // Mismo atlas que lib/atlas.ts usa en runtime para el modo "Adivina el país":
 // si el juego enseña esta silueta, el arte de la ficha debe ser la misma.
 const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+// El atlas solo trae el id ISO 3166-1 NUMÉRICO por país (p.ej. "170" =
+// Colombia); continents.ts está indexado por alpha-2. Este dataset trae
+// la conversión numérico→alpha-2 para las ~177 entradas del atlas.
+const WORLD_COUNTRIES_URL = "https://cdn.jsdelivr.net/npm/world-countries@5/countries.json";
 
 // Caja del viewBox del arte. 100x100 con margen: el CSS lo escala a la
 // ficha, así que las unidades aquí son "porcentaje del arte".
@@ -67,25 +74,61 @@ function ringsOf(geometry) {
   return [];
 }
 
+// Fiji (y solo Fiji, de los países que este script toca) cruza el
+// antimeridiano: su geometría en el atlas trae un anillo con puntos en
+// AMBOS lados de 180°/-180° (ej. 179.4 seguido de -180.0). El intento
+// obvio de arreglarlo — sumar 360° a las longitudes negativas para dejar
+// la secuencia continua (179.4 → 180.2) — NO funciona: se probó y se
+// confirmó con un test aislado que d3 normaliza CUALQUIER longitud de
+// vuelta al rango (-180°,180°] dentro de su pipeline de proyección, sin
+// importar preclip/rotate. O sea que geoMercator([180.2, y]) y
+// geoMercator([-179.8, y]) proyectan al MISMO punto — el "arreglo" se
+// deshace solo. Sin trabajar contra la proyección, la fábrica más simple
+// y honesta es tirar el anillo problemático: es una ficha decorativa de
+// 84px, no el mapa de juego, y ya se tiran islas chicas por MIN_RING —
+// esto es lo mismo en espíritu. Cualquier anillo cuyo span de longitud
+// cruda supere 180° (ningún país real de este script mide tanto — el
+// otro caso, Rusia, ya se excluye antes de llegar aquí) se descarta
+// entero en vez de intentar repararlo.
+function dropAntimeridianRings(geometry) {
+  if (!geometry) return geometry;
+  const spanOf = (ring) => {
+    const lons = ring.map((c) => c[0]);
+    return Math.max(...lons) - Math.min(...lons);
+  };
+  if (geometry.type === "Polygon") {
+    if (spanOf(geometry.coordinates[0]) > 180) return { ...geometry, coordinates: [] };
+    return geometry;
+  }
+  if (geometry.type === "MultiPolygon") {
+    return { ...geometry, coordinates: geometry.coordinates.filter((poly) => spanOf(poly[0]) <= 180) };
+  }
+  return geometry;
+}
+
 const r1 = (n) => {
   const v = Math.round(n * 10) / 10;
   return Object.is(v, -0) ? 0 : v;
 };
 
-function outlineFor(geo) {
-  const fc = { type: "FeatureCollection", features: geo.features };
+function outlineFor(geo, minRing = MIN_RING) {
+  // Antes de construir el fc para fitExtent: si se descarta DESPUÉS, el
+  // fitExtent ya midió su bbox sobre la geometría cruda (con el anillo
+  // que cruza el antimeridiano) y queda corrupto igual.
+  const features = geo.features.map((f) => ({ ...f, geometry: dropAntimeridianRings(f.geometry) }));
+  const fc = { type: "FeatureCollection", features };
   const proj = geoMercator().fitExtent([[PAD, PAD], [BOX - PAD, BOX - PAD]], fc);
   const subpaths = [];
   let ptsIn = 0;
   let ptsOut = 0;
-  for (const f of geo.features) {
+  for (const f of features) {
     for (const ring of ringsOf(f.geometry)) {
       const projected = ring.map((c) => proj(c)).filter((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]));
       if (projected.length < 4) continue;
       const xs = projected.map((p) => p[0]);
       const ys = projected.map((p) => p[1]);
       const side = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
-      if (side < MIN_RING) continue;
+      if (side < minRing) continue;
       ptsIn += projected.length;
       const simple = dp(projected, EPS);
       if (simple.length < 3) continue;
@@ -210,3 +253,121 @@ ${worldEntries.map((e) => `  ["${e.name}", "${e.d}"],`).join("\n")}
 ];
 `, "utf8");
 console.log("→ app/lib/countryOutlines.ts");
+
+// ============================================================
+//  3) Siluetas de continente — cartas selladas del reto diario
+// ============================================================
+//  Un solo path por continente (6), fusionando TODOS los países de
+//  CONTINENT_OF con sus fronteras internas dissueltas: topojson-client
+//  `merge()` está hecho justo para esto (dos países vecinos comparten
+//  arco en la topología, así que la línea entre ellos desaparece sola,
+//  sin necesitar un algoritmo de unión geométrico).
+//
+//  El continente de cada país se PARSEA de continents.ts (no se duplica
+//  a mano): así nunca se desincroniza con las pistas de quiz/logros.
+//  El atlas solo da el id numérico ISO por país, así que hace falta
+//  convertirlo a alpha-2 vía WORLD_COUNTRIES_URL antes de mirar la tabla.
+//
+//  DOS excepciones, solo para esta silueta decorativa — CONTINENT_OF y
+//  toda la lógica real de juego (pistas, logros, niveles) quedan intactas:
+//   · Rusia queda FUERA de "EU". Su propio territorio se extiende de
+//     Portugal a Kamchatka; incluirlo encoge la Europa reconocible
+//     (España↔Ucrania) a una astilla en la esquina de un mapa dominado
+//     por Siberia — lo contrario de "reconocible" en una ficha de 84px.
+//     Efecto colateral aceptado: Escandinavia se separa del resto de
+//     Europa en la silueta, porque su único enlace terrestre real es vía
+//     Rusia — "Europa" queda en 2 piezas en vez de 1, pero las dos se
+//     siguen leyendo bien.
+//   · A Francia se le quita el anillo de la Guayana Francesa: su propia
+//     geometría en el atlas la trae como una pieza en Sudamérica
+//     (lon -54..-51) — un territorio de ultramar, no el continente real
+//     donde vive el resto de Francia.
+const CONTINENT_OF = (() => {
+  const src = readFileSync(join(ROOT, "app/lib/continents.ts"), "utf8");
+  const re = /^\s*([A-Z]{2}):\s*"([A-Z]{2})",?\s*$/gm;
+  const out = {};
+  let m;
+  while ((m = re.exec(src))) out[m[1]] = m[2];
+  return out;
+})();
+console.log(`\ncontinents.ts: ${Object.keys(CONTINENT_OF).length} países con continente asignado`);
+
+const wcRaw = await fetch(WORLD_COUNTRIES_URL).then((r) => {
+  if (!r.ok) throw new Error(`world-countries HTTP ${r.status}`);
+  return r.json();
+});
+const ccn3ToCca2 = {};
+for (const c of wcRaw) if (c.ccn3) ccn3ToCca2[c.ccn3] = c.cca2;
+
+// Territorios cuyo id en el atlas no resuelve a un alpha-2 vía
+// WORLD_COUNTRIES_URL (disputados, o el dataset no los trae con ccn3):
+// continente asignado a mano por geografía real. "010" Antártida y "260"
+// Tierras Australes Francesas quedan FUERA a propósito — ninguno de los
+// 6 continentes del juego las cubre.
+const ID_OVERRIDES = { "238": "SA", "304": "NA", "630": "NA", "275": "AS", "540": "OC" };
+
+const allGeoms = atlasRaw.objects.countries.geometries;
+
+const franceIdx = allGeoms.findIndex((g) => g.properties?.name === "France");
+if (franceIdx < 0) throw new Error("Francia no está en el atlas (necesaria para recortar Guayana Francesa)");
+const franceFeat = topoFeature(atlasRaw, allGeoms[franceIdx]);
+const guianaRingIdx = franceFeat.geometry.coordinates.findIndex((poly) => poly[0].every((c) => c[0] < -40));
+if (guianaRingIdx < 0) throw new Error("no se encontró el anillo de Guayana Francesa en Francia — ¿cambió el atlas?");
+const franceSinGuayana = { ...allGeoms[franceIdx], arcs: allGeoms[franceIdx].arcs.filter((_, i) => i !== guianaRingIdx) };
+
+// Piso de "ruido" más alto que el de países/regiones (0.9): un continente
+// tiene mucha más área total, así que motas de costa que allá eran
+// invisibles aquí siguen siendo visibles — y hay muchas más (islas del
+// Caribe, del Pacífico...). Sin subir el piso la silueta queda con
+// decenas de puntitos ilegibles a 84px.
+const CONTINENT_MIN_RING = 4;
+
+const continentGroups = { AF: [], EU: [], AS: [], NA: [], SA: [], OC: [] };
+let sinContinente = 0;
+for (const g of allGeoms) {
+  if (g.properties?.name === "Russia") continue; // ver nota arriba
+  const cca2 = ccn3ToCca2[g.id];
+  const code = ID_OVERRIDES[g.id] ?? (cca2 ? CONTINENT_OF[cca2] : undefined);
+  if (!code) { sinContinente++; continue; }
+  continentGroups[code].push(g.properties?.name === "France" ? franceSinGuayana : g);
+}
+console.log(`${sinContinente} entradas del atlas sin continente asignado (disputadas/Antártida — se ignoran)`);
+
+const continentEntries = [];
+let contIn = 0;
+let contOut = 0;
+for (const [code, list] of Object.entries(continentGroups)) {
+  const merged = topoMerge(atlasRaw, list);
+  const { d, rings, ptsIn, ptsOut } = outlineFor({ features: [{ type: "Feature", geometry: merged, properties: {} }] }, CONTINENT_MIN_RING);
+  contIn += ptsIn;
+  contOut += ptsOut;
+  continentEntries.push({ code, d, countries: list.length });
+  console.log(`${code}: ${list.length} países, ${rings} anillos, ${ptsIn} → ${ptsOut} puntos, ${(d.length / 1024).toFixed(1)} KB`);
+}
+
+const contBytes = continentEntries.reduce((s, e) => s + e.d.length, 0);
+console.log(`\nContinentes: ${contIn} → ${contOut} puntos (${((1 - contOut / contIn) * 100).toFixed(1)}% menos), ${(contBytes / 1024).toFixed(1)} KB de paths`);
+
+writeFileSync(join(ROOT, "app/lib/continentOutlines.ts"), `// ============================================================
+//  GENERADO — no editar a mano.
+//  Fuentes: ${ATLAS_URL}
+//           ${WORLD_COUNTRIES_URL} (numérico ISO → alpha-2)
+//           app/lib/continents.ts (país → continente, parseado en build)
+//  Generador: scripts/gen-outlines.mjs (necesita red)
+//  Regenerar con:  node scripts/gen-outlines.mjs
+//
+//  Silueta de cada continente (fronteras entre países ya dissueltas vía
+//  topojson merge()) en un viewBox de ${BOX}x${BOX}. Rusia queda fuera de
+//  "EU" y Francia pierde su anillo de Guayana Francesa — ver la nota
+//  larga en el generador. Simplificado con Douglas-Peucker (piso de
+//  ruido más alto que países/regiones: ${CONTINENT_MIN_RING} vs ${MIN_RING}):
+//  ${contIn} → ${contOut} puntos.
+// ============================================================
+
+export const CONTINENT_OUTLINE_BOX = ${BOX};
+
+export const CONTINENT_OUTLINES: Record<"AF" | "EU" | "AS" | "NA" | "SA" | "OC", string> = {
+${continentEntries.map((e) => `  // ${e.code} — ${e.countries} países fusionados\n  ${e.code}: "${e.d}",`).join("\n")}
+};
+`, "utf8");
+console.log("→ app/lib/continentOutlines.ts");
