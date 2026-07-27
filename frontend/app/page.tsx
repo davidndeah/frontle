@@ -1114,6 +1114,11 @@ export default function Frontle() {
                 {tr.dailyHero.live}
               </span>
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{tr.daily}</p>
+              {/* Explicación de una línea del modo (David: "necesito que
+                  expliques rápidamente cómo funciona el modo de juego").
+                  Muted a propósito: no debe competir con el misterio de las
+                  cartas selladas, solo dar el empujón a quien nunca jugó. */}
+              <p className="mt-0.5 text-[10px] leading-snug text-white/60">{tr.dailyHero.howToPlay}</p>
 
               {/* Cartas selladas + arco que las conecta. El arco vive en su
                   PROPIA franja ENCIMA de las cartas: antes compartía caja con
