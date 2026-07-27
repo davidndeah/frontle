@@ -167,8 +167,22 @@ function norm(s) {
 
 // --- 6. banderas regionales locales ---
 {
-  const regionFiles = { co: "colombia.ts", us: "usa.ts", ar: "ar.ts", br: "br.ts", ng: "ng.ts", gh: "gh.ts" };
+  // Derivado de regions/index.ts, no hardcodeado: la lista fija se quedó
+  // obsoleta al añadir España (se generó y registró bien, pero este chequeo
+  // la saltó en silencio, que es justo lo que un auditor no debe hacer).
+  // Se cruza cada entrada de REGIONS con su import para saber el archivo.
+  const indexSrc = read("app/lib/regions/index.ts");
+  const fileOf = Object.fromEntries(
+    [...indexSrc.matchAll(/^import \{\s*(\w+)\s*\} from "\.\/(\w+)";/gm)].map((m) => [m[1], m[2]])
+  );
+  const regionsBlock = indexSrc.match(/export const REGIONS[^=]*=\s*\{([\s\S]*?)\n\};/)?.[1] ?? "";
+  const regionFiles = Object.fromEntries(
+    [...regionsBlock.matchAll(/^\s*(\w+):\s*(\w+),/gm)].map(([, id, exp]) => [id, `${fileOf[exp]}.ts`])
+  );
+  const unresolved = Object.entries(regionFiles).filter(([, f]) => f === "undefined.ts").map(([id]) => id);
+  if (unresolved.length) red.push(`REGIONS sin import resuelto en index.ts: ${unresolved.join(", ")}`);
   for (const [id, file] of Object.entries(regionFiles)) {
+    if (file === "undefined.ts") continue;
     const src = read(`app/lib/regions/${file}`);
     const ents = [...src.matchAll(/\{\s*name:\s*"([^"]+)",\s*code:\s*"([^"]+)"/g)].map((m) => ({ name: m[1], code: m[2] }));
     let missing = 0, tiny = 0;
