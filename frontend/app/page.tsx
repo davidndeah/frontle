@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { getCountry } from "./lib/countries";
 import {
   dailyChallenge,
+  dailyChallenges,
   dateSeed,
   tryGuess,
   nextHintCountry,
@@ -375,6 +376,12 @@ export default function Frontle() {
   const gameKey = `frontle-game-${day}-${level}`;
   // Monto que se lleva el ganador del nivel activo (parte base del pot del día).
   const levelPot = pot !== null ? (pot * BASE_SHARE[level]) / 100 : null;
+  // Los 3 retos del día (uno por nivel), solo para leer `.optimal` — el hero
+  // del reto (REDISEÑO-HOME) muestra cuántos países hacen falta en CADA
+  // nivel aunque el reto siga sellado. Es la misma llamada pura y barata
+  // que ya hace `dailyChallenge` para el nivel activo (BFS + reintentos
+  // acotados, sin red); memoizada por día para no repetirla en cada render.
+  const challengesByLevel = useMemo(() => dailyChallenges(day), [day]);
 
   // Persiste la partida del día para que al refrescar NO se pueda volver a
   // jugar gratis (el estado se restaura: en curso o resuelta).
