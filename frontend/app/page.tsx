@@ -107,6 +107,12 @@ const BASE_SHARE: Record<Difficulty, number> = { easy: 15, medium: 35, hard: 50 
 
 type Tab = "jugar" | "ranking" | "perfil" | "aprender";
 
+// Banderas que rotan en el arte de la ficha "Adivina la bandera" del Home.
+// Cinco muy reconocibles y de regiones distintas a propósito: la ficha tiene
+// que leerse como "países de todo el mundo", no como un continente concreto.
+// El ciclo lo mueve la clase .flag-cycle (CSS puro, sin timers).
+const QUIZ_CARD_FLAGS = ["co", "br", "ng", "jp", "de"];
+
 // Bandera como imagen (Windows no renderiza emojis de bandera en escritorio)
 function Flag({ code, size = 32 }: { code: string; size?: number }) {
   if (!code) return <span style={{ fontSize: size * 0.8 }}>🏳️</span>;
@@ -1201,7 +1207,21 @@ export default function Frontle() {
                 onClick={() => setQuizMode("flag")}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
               >
-                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #0e3b52, #0a2536)" }}>🏳️</span>
+                {/* `relative`: las capas del ciclo son absolutas y se apilan
+                    contra esta caja. `overflow-hidden`: el fotograma de salida
+                    escala a 1.14 y no debe asomarse por los bordes. */}
+                <span className="flag-cycle relative h-[62px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #0e3b52, #0a2536)" }}>
+                  {QUIZ_CARD_FLAGS.map((code, i) => (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      key={code}
+                      src={`https://flagcdn.com/${code}.svg`}
+                      alt=""
+                      className="w-11 rounded-[3px] border border-white/15 shadow-lg"
+                      style={{ animationDelay: `${-i * 2}s` }}
+                    />
+                  ))}
+                </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.flagTitle}</span>
                   <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>

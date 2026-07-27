@@ -796,6 +796,11 @@ body {
   /* Carta sellada del héroe: sin barrido — el "?" ya comunica que hay algo. */
   .hero-sealed-sweep::before { animation: none; opacity: 0; }
 
+  /* Banderas del card de quiz: se queda UNA fija. La ficha sigue diciendo
+     "esto va de banderas"; lo único que se pierde es el ciclo. */
+  .flag-cycle > img { animation: none; }
+  .flag-cycle > img:first-child { opacity: 1; }
+
   /* Tab activo: sin pop ni desplazamiento — solo cambia color/glow. */
   .tab-pop { animation: none; }
   .tab-icon { transition: none; }
@@ -890,6 +895,27 @@ body {
    destellan al mismo tiempo, lo que se lee como "dos cosas distintas". */
 .hero-sealed-sweep.hero-sealed-sweep--delay::before {
   animation-delay: 0.45s;
+}
+
+/* Carrusel de banderas del card "Adivina la bandera" (REDISEÑO-HOME): el
+   modo se explica solo si el arte ES una bandera, y varias rotando dicen
+   "aquí hay muchos países" mejor que un emoji fijo. Es CSS puro: N capas
+   apiladas con la MISMA animación y un delay negativo escalonado — no
+   re-renderiza React ni corre timers en JS.
+   Ventana por capa (ciclo de 10s, 5 banderas → 20% cada una): opaca de 8% a
+   25%, con fundidos de 5% a cada lado que se solapan con la vecina, así
+   nunca hay un hueco en blanco. El delay NEGATIVO importa: con delay
+   positivo la última capa aún no habría arrancado en el primer segundo y
+   la ficha se vería vacía al cargar. */
+@keyframes flag-cycle {
+  0%,  3%        { opacity: 0; transform: scale(0.82) rotate(-5deg); }
+  8%,  25%       { opacity: 1; transform: scale(1)    rotate(0deg); }
+  30%, 100%      { opacity: 0; transform: scale(1.14) rotate(5deg); }
+}
+.flag-cycle > img {
+  position: absolute;
+  opacity: 0;
+  animation: flag-cycle 10s ease-in-out infinite;
 }
 
 /* Burbuja de Bordy en el Home (REDISEÑO-HOME): mismo panel que el resto de
