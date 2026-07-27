@@ -1066,7 +1066,12 @@ export default function Frontle() {
               {/* Cartas selladas + arco que las conecta (SVG en % del ancho:
                   responsive, no depende de un ancho fijo como el mockup estático). */}
               <div className="relative mt-6 flex items-start gap-2">
-                <svg className="pointer-events-none absolute inset-x-0 top-0 h-7" viewBox="0 0 100 28" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                {/* w-full explícito: un <svg> es un elemento reemplazado, así
+                    que `inset-x-0` (left:0;right:0) SIN un width no lo estira
+                    al ancho del contenedor como haría un <div> — se queda en
+                    su tamaño intrínseco (el del viewBox, 100px). Por eso el
+                    arco salía angosto y descuadrado. */}
+                <svg className="pointer-events-none absolute inset-x-0 top-0 h-7 w-full" viewBox="0 0 100 28" preserveAspectRatio="none" fill="none" aria-hidden="true">
                   <defs>
                     <linearGradient id="dailyHeroArc" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
                       <stop stopColor="#22d3ee" /><stop offset="1" stopColor="#e879f9" />
@@ -1154,6 +1159,14 @@ export default function Frontle() {
               )}
             </div>
 
+            {/* Modos gratis: título arriba de TODO lo gratis, incluida
+                Regiones (David: "el botón de regiones no quedó bajo el
+                título de gana experiencia" — corregido, antes quedaba
+                arriba del título por error). */}
+            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+              {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
+            </h3>
+
             {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa.
                 Queda como card propia (no en la rejilla 2x2 de abajo): al
                 abrirse mete un desplegable + mapa + botón, algo que no cabe
@@ -1203,14 +1216,12 @@ export default function Frontle() {
               <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </>)}
             </div>
-            {/* Modos gratis: rejilla 2x2, arte por delante del texto
-                (REDISEÑO-HOME — herencia de la dirección "Mazo"). Bandera/
-                Contorno/Práctica navegan directo (a diferencia de Regiones,
-                que expande in-place), así que sí encajan en una ficha
-                compacta sin perder nada. */}
-            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
-              {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
-            </h3>
+
+            {/* Rejilla 2x2, arte por delante del texto (REDISEÑO-HOME —
+                herencia de la dirección "Mazo"). Bandera/Contorno/Práctica
+                navegan directo (a diferencia de Regiones, que expande
+                in-place), así que sí encajan en una ficha compacta sin
+                perder nada. */}
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setQuizMode("flag")}
