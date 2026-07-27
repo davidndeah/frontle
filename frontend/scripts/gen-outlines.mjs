@@ -1,6 +1,6 @@
 // ============================================================
-//  Frontle — Genera los contornos simplificados de las regiones
-//  para el arte animado de la ficha "Regiones" del Home.
+//  Frontle — Genera los contornos simplificados para el arte del Home:
+//  regiones (con departamentos/estados) y siluetas del mundo.
 //
 //  Los GeoJSON de public/maps/*.json pesan 1.1 MB entre los seis;
 //  descargarlos para decorar una ficha de 84px sería absurdo. Este
@@ -10,16 +10,21 @@
 //  módulo TS con un único path por país que incluye TODAS las fronteras
 //  internas de departamentos/estados — que es justo lo que se quiere ver.
 //
-//  Uso:  node scripts/gen-region-outlines.mjs
-//  Reescribe app/lib/regionOutlines.ts. Solo hay que volver a correrlo
-//  si cambia un public/maps/*.json.
+//  Uso:  node scripts/gen-outlines.mjs  (necesita red para el atlas mundial)
+//  Reescribe app/lib/regionOutlines.ts y app/lib/countryOutlines.ts. Solo
+//  hay que volver a correrlo si cambia un mapa o la lista de países.
 // ============================================================
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { geoMercator } from "d3-geo";
+import { feature as topoFeature } from "topojson-client";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+// Mismo atlas que lib/atlas.ts usa en runtime para el modo "Adivina el país":
+// si el juego enseña esta silueta, el arte de la ficha debe ser la misma.
+const ATLAS_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 // Caja del viewBox del arte. 100x100 con margen: el CSS lo escala a la
 // ficha, así que las unidades aquí son "porcentaje del arte".
@@ -109,6 +114,9 @@ function outlineFor(geo) {
   return { d, rings: subpaths.length, ptsIn, ptsOut };
 }
 
+// ============================================================
+//  1) Regiones — países jugables con sus departamentos/estados
+// ============================================================
 const ids = readdirSync(join(ROOT, "public/maps"))
   .filter((f) => f.endsWith(".json"))
   .map((f) => f.replace(/\.json$/, ""))
@@ -127,18 +135,18 @@ for (const id of ids) {
 }
 
 const bytes = entries.reduce((s, e) => s + e.d.length, 0);
-console.log(`\nTotal: ${totalIn} → ${totalOut} puntos (${((1 - totalOut / totalIn) * 100).toFixed(1)}% menos), ${(bytes / 1024).toFixed(1)} KB de paths`);
+console.log(`\nRegiones: ${totalIn} → ${totalOut} puntos (${((1 - totalOut / totalIn) * 100).toFixed(1)}% menos), ${(bytes / 1024).toFixed(1)} KB de paths`);
 
-const out = `// ============================================================
+writeFileSync(join(ROOT, "app/lib/regionOutlines.ts"), `// ============================================================
 //  GENERADO — no editar a mano.
-//  Fuente: public/maps/*.json  ·  Generador: scripts/gen-region-outlines.mjs
-//  Regenerar con:  node scripts/gen-region-outlines.mjs
+//  Fuente: public/maps/*.json  ·  Generador: scripts/gen-outlines.mjs
+//  Regenerar con:  node scripts/gen-outlines.mjs
 //
 //  Un path por país, en un viewBox de ${BOX}x${BOX}, con TODAS las fronteras
 //  internas de departamentos/estados (cada subdivisión es un subpath \`M…Z\`).
 //  Misma proyección que RegionMapPreview (geoMercator + fitExtent), así que
 //  la silueta del arte es la misma que el jugador ve al abrir el modo.
-//  Simplificado con Douglas-Peucker (ε=${EPS} unidades de caja ≈ 0.4px en la
+//  Simplificado con Douglas-Peucker (ε=${EPS} unidades de caja ≈ 0.7px en la
 //  ficha): ${totalIn} → ${totalOut} puntos.
 // ============================================================
 
@@ -147,7 +155,58 @@ export const REGION_OUTLINE_BOX = ${BOX};
 export const REGION_OUTLINES: Record<string, string> = {
 ${entries.map((e) => `  // ${e.id} — ${e.subs} subdivisiones\n  ${e.id}: "${e.d}",`).join("\n")}
 };
-`;
+`, "utf8");
+console.log("→ app/lib/regionOutlines.ts");
 
-writeFileSync(join(ROOT, "app/lib/regionOutlines.ts"), out, "utf8");
-console.log("\n→ app/lib/regionOutlines.ts");
+// ============================================================
+//  2) Siluetas del mundo — arte de la ficha "Adivina el país"
+// ============================================================
+//  Seis siluetas muy reconocibles y deliberadamente FUERA de las seis
+//  regiones jugables: las dos fichas van en fase, así que si repitieran
+//  país se vería la misma silueta dos veces a la vez.
+//  Nombres tal cual los trae Natural Earth (properties.name); si alguno
+//  dejara de existir, el script revienta en vez de emitir un hueco.
+//  Chile se probó y se descartó: su silueta real es un w/h de 0.18, o sea
+//  una astilla de 11px en la ficha. Auténtico, pero rompe el ritmo del
+//  ciclo — al lado de las otras cinco se lee como un fallo de render.
+const WORLD = ["Italy", "India", "Japan", "Australia", "Madagascar", "United Kingdom"];
+
+const atlasRaw = await fetch(ATLAS_URL).then((r) => {
+  if (!r.ok) throw new Error(`atlas HTTP ${r.status}`);
+  return r.json();
+});
+const world = topoFeature(atlasRaw, atlasRaw.objects.countries);
+
+const worldEntries = [];
+let wIn = 0;
+let wOut = 0;
+for (const name of WORLD) {
+  const f = world.features.find((x) => x.properties?.name === name);
+  if (!f) throw new Error(`país no encontrado en el atlas: ${name}`);
+  // Una sola "subdivisión": aquí no hay fronteras internas, es la silueta.
+  const { d, rings, ptsIn, ptsOut } = outlineFor({ features: [f] });
+  wIn += ptsIn;
+  wOut += ptsOut;
+  worldEntries.push({ name, d });
+  console.log(`${name}: ${rings} anillos, ${ptsIn} → ${ptsOut} puntos, ${(d.length / 1024).toFixed(1)} KB`);
+}
+
+const wBytes = worldEntries.reduce((s, e) => s + e.d.length, 0);
+console.log(`\nMundo: ${wIn} → ${wOut} puntos (${((1 - wOut / wIn) * 100).toFixed(1)}% menos), ${(wBytes / 1024).toFixed(1)} KB de paths`);
+
+writeFileSync(join(ROOT, "app/lib/countryOutlines.ts"), `// ============================================================
+//  GENERADO — no editar a mano.
+//  Fuente: ${ATLAS_URL}
+//  Generador: scripts/gen-outlines.mjs (necesita red para bajar el atlas)
+//  Regenerar con:  node scripts/gen-outlines.mjs
+//
+//  Siluetas de países en un viewBox de ${BOX}x${BOX}, sin fronteras internas
+//  — el mismo atlas 110m que usa CountryOutline en el modo de juego.
+//  Simplificado con Douglas-Peucker: ${wIn} → ${wOut} puntos.
+// ============================================================
+
+export const COUNTRY_OUTLINES: [name: string, d: string][] = [
+${worldEntries.map((e) => `  ["${e.name}", "${e.d}"],`).join("\n")}
+];
+`, "utf8");
+console.log("→ app/lib/countryOutlines.ts");

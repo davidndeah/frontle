@@ -1,13 +1,13 @@
 // ============================================================
 //  GENERADO — no editar a mano.
-//  Fuente: public/maps/*.json  ·  Generador: scripts/gen-region-outlines.mjs
-//  Regenerar con:  node scripts/gen-region-outlines.mjs
+//  Fuente: public/maps/*.json  ·  Generador: scripts/gen-outlines.mjs
+//  Regenerar con:  node scripts/gen-outlines.mjs
 //
 //  Un path por país, en un viewBox de 100x100, con TODAS las fronteras
 //  internas de departamentos/estados (cada subdivisión es un subpath `M…Z`).
 //  Misma proyección que RegionMapPreview (geoMercator + fitExtent), así que
 //  la silueta del arte es la misma que el jugador ve al abrir el modo.
-//  Simplificado con Douglas-Peucker (ε=0.8 unidades de caja ≈ 0.4px en la
+//  Simplificado con Douglas-Peucker (ε=0.8 unidades de caja ≈ 0.7px en la
 //  ficha): 57088 → 2426 puntos.
 // ============================================================
 
