@@ -1302,7 +1302,13 @@ export default function Frontle() {
                 onClick={() => { setTab("aprender"); setPracticeOn(true); }}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
               >
-                <span className="h-[84px] flex items-center justify-center text-5xl" style={{ background: "linear-gradient(160deg, #2a1257, #150a2e)" }}>🎓</span>
+                {/* Práctica es el modo de aprender, así que aquí el arte no es
+                    un mapa: es el propio Bordy graduado, flotando. No entra en
+                    el ciclo de 12s de las otras tres — no hay nada que ciclar,
+                    y su flote y el balanceo de la borla ya tienen su ritmo. */}
+                <span className="h-[84px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #2a1257, #150a2e)" }}>
+                  <Bordy mood="idle" float graduado className="w-[68px] h-[80px]" imgClassName="drop-shadow-xl" alt="" />
+                </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.practiceMode}</span>
                   <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.practice)}</span>
