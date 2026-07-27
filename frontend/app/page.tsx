@@ -1153,12 +1153,19 @@ export default function Frontle() {
                     David: "en lugar de cuadros con un signo ?, que se vea el
                     contorno del continente en el que está el país" — el país
                     sigue sellado, pero ahora se insinúa el continente (contorno
-                    + nombre) además del conteo de países que ya se veía. */}
+                    + nombre) además del conteo de países que ya se veía.
+                    strokeWidth=1: con vectorEffect="non-scaling-stroke" el
+                    trazo se dibuja en PÍXELES DE PANTALLA finales, no en
+                    unidades del viewBox — a 2.4 en una caja de 44px (David:
+                    "los contornos están muy gruesos") salía 4x más grueso,
+                    proporcionalmente, que el mismo trazo en las fichas de
+                    84px del grid de abajo (que usan 0.9-1). 1 iguala esa
+                    proporción. */}
                 <div className="flex items-start">
                   <div className="hero-sealed-sweep flex flex-1 flex-col items-center gap-1 text-center">
                     <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 border-[#22d3ee] bg-black/25 p-1">
                       <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
-                        <path d={CONTINENT_OUTLINES[heroOriginContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="2.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                        <path d={CONTINENT_OUTLINES[heroOriginContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="1" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                       </svg>
                     </div>
                     <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[heroOriginContinent]}</span>
@@ -1167,7 +1174,7 @@ export default function Frontle() {
                   <div className="hero-sealed-sweep hero-sealed-sweep--delay flex flex-1 flex-col items-center gap-1 text-center">
                     <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 border-[#e879f9] bg-black/25 p-1">
                       <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
-                        <path d={CONTINENT_OUTLINES[heroDestContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="2.4" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                        <path d={CONTINENT_OUTLINES[heroDestContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="1" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
                       </svg>
                     </div>
                     <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[heroDestContinent]}</span>
