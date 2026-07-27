@@ -38,12 +38,58 @@ async function loadNaturalEarth() {
 }
 
 // --- Config por país. iso3=geoBoundaries · qid=Wikidata · iso2=flagcdn --------
+//  Opcionales:
+//   source  "gb" → geoBoundaries en vez de Natural Earth.
+//   rename  nombre de la fuente → nombre mostrado (el que el jugador escribe).
+//   aliases nombre mostrado → otras formas aceptadas en el input.
+//  rename/aliases viven AQUÍ y no parcheados sobre el .ts generado a propósito:
+//  el .ts se reescribe entero en cada corrida, así que un parche a mano se
+//  perdería en la siguiente (es lo que pasaría hoy con los aliases curados a
+//  mano de usa.ts / colombia.ts / ng.ts si se regeneraran).
 const CONFIG = {
   ar: { iso3: "ARG", qid: "Q414",  iso2: "ar", title: "Argentina", exportName: "ARGENTINA", nounKey: "province",   lang: "es" },
   ng: { iso3: "NGA", qid: "Q1033", iso2: "ng", title: "Nigeria",   exportName: "NIGERIA",   nounKey: "state",      lang: "en" },
   // Ghana: NE trae las 10 regiones pre-2019; geoBoundaries sí tiene las 16 actuales.
   gh: { iso3: "GHA", qid: "Q117",  iso2: "gh", title: "Ghana",     exportName: "GHANA",     nounKey: "region",     lang: "en", source: "gb" },
   br: { iso3: "BRA", qid: "Q155",  iso2: "br", title: "Brasil",    exportName: "BRASIL",    nounKey: "state",      lang: "pt" },
+  // España: geoBoundaries da las 19 comunidades/ciudades autónomas, que es el
+  // nivel que la gente conoce y el análogo real de los estados/departamentos
+  // de las otras regiones. Natural Earth, en cambio, da las 52 PROVINCIAS
+  // (Soria, Teruel, Palencia…): demasiado fino para el público del juego.
+  // Canarias, Baleares, Ceuta y Melilla se caen solas por no tener vecinos
+  // terrestres → quedan las 15 peninsulares.
+  es: {
+    iso3: "ESP", qid: "Q29", iso2: "es", title: "España", exportName: "ESPANA",
+    nounKey: "region", lang: "es", source: "gb",
+    // geoBoundaries usa la forma oficial larga ("Región de Murcia"); el
+    // jugador escribe la corta. normalizeName() del runtime NO quita
+    // "Región de"/"Comunidad de", así que sin esto no habría match nunca.
+    rename: {
+      "Cataluña/Catalunya": "Cataluña",
+      "País Vasco/Euskadi": "País Vasco",
+      "Comunidad Foral de Navarra": "Navarra",
+      "Comunidad de Madrid": "Madrid",
+      "Comunitat Valenciana": "Comunidad Valenciana",
+      "Principado de Asturias": "Asturias",
+      "Región de Murcia": "Murcia",
+      "Illes Balears": "Baleares",
+      "Ciudad Autónoma de Ceuta": "Ceuta",
+      "Ciudad Autónoma de Melilla": "Melilla",
+    },
+    // Los acentos NO necesitan alias: normalizeName ya los quita (NFD).
+    // Lo que sí hace falta: formas en lengua cooficial, y los casos donde
+    // normalizeName borra el guion SIN dejar espacio ("Castilla-La Mancha"
+    // → "castillala mancha", que nadie va a escribir así).
+    aliases: {
+      "Cataluña": ["Catalunya"],
+      "País Vasco": ["Euskadi"],
+      "Comunidad Valenciana": ["Valencia", "Comunitat Valenciana", "C. Valenciana"],
+      "Castilla-La Mancha": ["Castilla La Mancha"],
+      "Castilla y León": ["Castilla Leon"],
+      "La Rioja": ["Rioja"],
+      "Baleares": ["Islas Baleares", "Illes Balears"],
+    },
+  },
 };
 
 // Precisión/umbral de la derivación de adyacencia (tuneable):
@@ -161,6 +207,22 @@ async function build(id) {
   console.log(`subdivisiones: ${items.length}`);
   if (items.length === 0) throw new Error(`la fuente no trae subdivisiones para ${cfg.iso3}.`);
 
+  // Nombre de la fuente → nombre mostrado. Se guarda `sourceName` porque
+  // Wikidata etiqueta con la forma oficial larga, igual que la fuente: sin
+  // él, renombrar "Región de Murcia"→"Murcia" haría fallar el match de la
+  // bandera. Se avisa si una clave de `rename` no casó con nada: eso
+  // significa que la fuente cambió el nombre y el rename quedó muerto.
+  if (cfg.rename) {
+    const unused = new Set(Object.keys(cfg.rename));
+    for (const it of items) {
+      it.sourceName = it.name;
+      if (cfg.rename[it.name]) { unused.delete(it.name); it.name = cfg.rename[it.name]; }
+    }
+    if (unused.size) console.log(`⚠ rename sin efecto (¿cambió la fuente?): ${[...unused].join(", ")}`);
+  } else {
+    for (const it of items) it.sourceName = it.name;
+  }
+
   // 2. Adyacencia
   const nbrsArr = deriveNeighbors(items);
   items.forEach((it, i) => (it.neighbors = nbrsArr[i]));
@@ -182,7 +244,9 @@ async function build(id) {
   kept.sort((a, b) => a.name.localeCompare(b.name));
   const entLines = kept.map((it) => {
     const nb = it.neighbors.map((n) => JSON.stringify(n)).join(", ");
-    return `  { name: ${JSON.stringify(it.name)}, code: ${JSON.stringify(codes[it.name])}, neighbors: [${nb}] },`;
+    const al = cfg.aliases?.[it.name] ?? [];
+    const alStr = al.length ? ` aliases: [${al.map((a) => JSON.stringify(a)).join(", ")}],` : "";
+    return `  { name: ${JSON.stringify(it.name)}, code: ${JSON.stringify(codes[it.name])},${alStr} neighbors: [${nb}] },`;
   }).join("\n");
   const ts = `// ============================================================
 //  Frontle — Región: ${cfg.title} ${flagEmoji(cfg.iso2)}
@@ -235,7 +299,18 @@ export const ${cfg.exportName}: RegionDef = {
   // 7. Banderas de subdivisiones (Wikidata)
   mkdirSync(`public/flags/${id}`, { recursive: true });
   const rows = await wikidataFlags(cfg.qid, cfg.lang);
-  const byNorm = new Map(kept.map((it) => [norm(it.name), it]));
+  // Se indexa por nombre mostrado, nombre de la fuente Y aliases: Wikidata
+  // etiqueta con la forma oficial ("Comunidad de Madrid"), que tras el rename
+  // ya no es `it.name`. Los nombres mostrados van primero y no se pisan, para
+  // que un alias ambiguo nunca le robe la bandera a otra entidad.
+  const byNorm = new Map();
+  for (const it of kept) byNorm.set(norm(it.name), it);
+  for (const it of kept) {
+    for (const alt of [it.sourceName, ...(cfg.aliases?.[it.name] ?? [])]) {
+      const k = alt && norm(alt);
+      if (k && !byNorm.has(k)) byNorm.set(k, it);
+    }
+  }
   let got = 0;
   for (const row of rows) {
     const it = byNorm.get(norm(row.label));
