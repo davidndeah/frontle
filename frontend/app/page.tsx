@@ -1178,62 +1178,25 @@ export default function Frontle() {
               {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
             </h3>
 
-            {/* Modo Regiones: colapsado por defecto (UX-4); al abrir, país+mapa.
-                Queda como card propia (no en la rejilla 2x2 de abajo): al
-                abrirse mete un desplegable + mapa + botón, algo que no cabe
-                en una ficha compacta sin rediseñar también esa expansión —
-                fuera del alcance de este rediseño del Home. */}
-            <div className="brutal rounded-2xl bg-surface p-4 flex flex-col gap-3">
+            {/* Rejilla 2x2, arte por delante del texto (REDISEÑO-HOME —
+                herencia de la dirección "Mazo"). Regiones entra aquí como una
+                ficha más (David: "el modo regiones está con el UI antiguo,
+                debería ser un card cuadrado pequeño"); su desplegable de
+                país + mapa se abre DEBAJO de la rejilla, a ancho completo,
+                que es donde sí cabe. */}
+            <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
-                className="flex items-center gap-3 text-left active:scale-[0.98] transition w-full"
+                aria-expanded={modeOpen === "regions"}
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
-                <span className="text-3xl">🗺️</span>
-                <span className="flex-1">
-                  <span className="font-display font-bold text-white text-lg block leading-tight">{tr.modes.regionsTitle}</span>
-                  <span className="text-xs text-neutral-300">{tr.modes.regionsSub}</span>
+                <span className="h-[62px] flex items-center justify-center text-3xl" style={{ background: "linear-gradient(160deg, #4a1d10, #2a0f08)" }}>🧭</span>
+                <span className="absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
+                <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
+                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.modes.regionsTitle}</span>
+                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.region)}</span>
                 </span>
-                <span className="text-[9px] uppercase tracking-widest border border-[#22c55e]/50 rounded-full px-2 py-1 text-[#86efac] whitespace-nowrap">{tr.modes.new}</span>
               </button>
-              {modeOpen === "regions" && (<>
-              {/* Desplegable de país */}
-              <div className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/flags/national/${regionPick}.webp`}
-                  alt=""
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-6 h-4 object-cover rounded-sm border border-white/20"
-                />
-                <select
-                  value={regionPick}
-                  onChange={(e) => setRegionPick(e.target.value)}
-                  aria-label={tr.a11y.country}
-                  className="w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
-                >
-                  {REGION_IDS.map((rid) => (
-                    <option key={rid} value={rid} style={{ background: "var(--surface)", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 text-xs">▾</span>
-              </div>
-              {/* Mapa del país elegido */}
-              <RegionMapPreview regionId={regionPick} loadingLabel={tr.loadingMap} />
-              <button
-                onClick={() => setRegionMode(regionPick)}
-                className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-gold text-surface font-display font-black py-2.5"
-              >
-                ▶ {tr.modes.play(REGIONS[regionPick].title)}
-              </button>
-              <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
-              </>)}
-            </div>
-
-            {/* Rejilla 2x2, arte por delante del texto (REDISEÑO-HOME —
-                herencia de la dirección "Mazo"). Bandera/Contorno/Práctica
-                navegan directo (a diferencia de Regiones, que expande
-                in-place), así que sí encajan en una ficha compacta sin
-                perder nada. */}
-            <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setQuizMode("flag")}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
@@ -1266,6 +1229,45 @@ export default function Frontle() {
                 </span>
               </button>
             </div>
+
+            {/* Expansión de Regiones (UX-4: colapsada por defecto). Vive fuera
+                de la rejilla, a ancho completo: el desplegable de país + el
+                mapa + el botón no caben en una ficha compacta. */}
+            {modeOpen === "regions" && (
+              <div className="brutal rounded-2xl bg-surface p-4 flex flex-col gap-3">
+                <p className="text-xs text-neutral-300">{tr.modes.regionsSub}</p>
+                {/* Desplegable de país */}
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/flags/national/${regionPick}.webp`}
+                    alt=""
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-6 h-4 object-cover rounded-sm border border-white/20"
+                  />
+                  <select
+                    value={regionPick}
+                    onChange={(e) => setRegionPick(e.target.value)}
+                    aria-label={tr.a11y.country}
+                    className="w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
+                  >
+                    {REGION_IDS.map((rid) => (
+                      <option key={rid} value={rid} style={{ background: "var(--surface)", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-neutral-300 text-xs">▾</span>
+                </div>
+                {/* Mapa del país elegido */}
+                <RegionMapPreview regionId={regionPick} loadingLabel={tr.loadingMap} />
+                <button
+                  onClick={() => setRegionMode(regionPick)}
+                  className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-gold text-surface font-display font-black py-2.5"
+                >
+                  ▶ {tr.modes.play(REGIONS[regionPick].title)}
+                </button>
+                <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
+              </div>
+            )}
+
             {/* Tienda de monedas: entrada desde el home */}
             <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
           </div>
