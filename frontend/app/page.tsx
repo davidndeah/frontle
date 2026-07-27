@@ -53,6 +53,7 @@ import CountryQuizGame from "./components/CountryQuizGame";
 import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
+import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
@@ -1267,7 +1268,30 @@ export default function Frontle() {
                 onClick={() => setQuizMode("outline")}
                 className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
               >
-                <span className="h-[84px] flex items-center justify-center text-5xl" style={{ background: "linear-gradient(160deg, #123d24, #0b2415)" }}>🗺️</span>
+                {/* Siluetas del mundo, en fase con las otras dos fichas. Sin
+                    fronteras internas y rellenas: en este modo lo único que
+                    se ve del país es su contorno, así que el arte ES el modo.
+                    Mismo tamaño y motivo del 70px que en Regiones. */}
+                <span className="art-cycle relative h-[84px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #123d24, #0b2415)" }}>
+                  {COUNTRY_OUTLINES.map(([name, d], i) => (
+                    <svg
+                      key={name}
+                      viewBox={`0 0 ${REGION_OUTLINE_BOX} ${REGION_OUTLINE_BOX}`}
+                      className="h-[70px] w-[70px]"
+                      aria-hidden="true"
+                      style={{ animationDelay: artDelay(i, COUNTRY_OUTLINES.length) }}
+                    >
+                      <path
+                        d={d}
+                        fill="rgba(134,239,172,0.30)"
+                        stroke="#86efac"
+                        strokeWidth={1}
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    </svg>
+                  ))}
+                </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.outlineTitle}</span>
                   <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
