@@ -223,12 +223,44 @@ const RIG: Partial<Record<BordyMood, {
   },
 };
 
+/**
+ * Birrete de graduado. Va DENTRO del rig y en sus mismas coordenadas de arte
+ * (1280x1520), así que hereda escala, flote y pose sin tener que reposicionar
+ * nada desde fuera.
+ *
+ * Geometría medida sobre el rig, no a ojo: la antena termina en el 14% de la
+ * altura (ahí se pega a la cabeza) y su LED ocupa del 1.5% al 6.8%. El vértice
+ * superior de la tabla se pone en el 10.1% (y=154) para dejar el LED libre por
+ * arriba con un respiro — Bordy sin LED visible parece apagado. La tabla tapa
+ * el tramo de varilla que queda debajo, lo que se lee como que la atraviesa.
+ * Las orejas empiezan en el 29% (y=440), muy por debajo del borde inferior de
+ * la tabla (y=332): no hay solape.
+ */
+function Birrete() {
+  return (
+    <svg className="br-birrete" viewBox="0 0 1280 1520" aria-hidden="true">
+      {/* Canto de la tabla: mismo rombo desplazado hacia abajo, para darle
+          grosor. Va primero para que la cara superior lo tape por detrás. */}
+      <path d="M290 230 L640 306 L990 230 L990 256 L640 332 L290 256 Z" fill="#1b1030" />
+      <path d="M290 230 L640 154 L990 230 L640 306 Z" fill="var(--bordy-purple)" />
+      <circle cx="640" cy="230" r="20" fill="var(--gold)" />
+      {/* La borla cuelga de la punta derecha y se balancea con el flote. */}
+      <g className="br-borla">
+        <path d="M640 230 Q 850 221, 986 231" stroke="var(--gold)" strokeWidth="12" fill="none" strokeLinecap="round" />
+        <path d="M986 231 C 1012 275, 1010 313, 998 343" stroke="var(--gold)" strokeWidth="12" fill="none" strokeLinecap="round" />
+        <ellipse cx="996" cy="370" rx="30" ry="38" fill="var(--gold)" />
+      </g>
+    </svg>
+  );
+}
+
 export default function Bordy({
   mood = "idle",
   className = "",
   imgClassName = "",
   float = true,
   talking = false,
+  graduado = false,
   alt = "Bordy",
 }: {
   mood?: BordyMood;
@@ -240,6 +272,8 @@ export default function Bordy({
   float?: boolean;
   /** Squash & stretch de habla (BordyTutorial). Tiene prioridad sobre `float`. */
   talking?: boolean;
+  /** Birrete de graduado (ficha de práctica del Home). */
+  graduado?: boolean;
   alt?: string;
 }) {
   // `key` re-monta la capa del one-shot para que la animación vuelva a correr
@@ -311,6 +345,9 @@ export default function Bordy({
                   <Ojos forma={rig.cara ?? "normal"} />
                   <Boca forma={rig.boca ?? "real"} />
                 </svg>
+                {/* Al final del rig a propósito: `.br-base` es el cuerpo a
+                    tamaño completo y taparía el birrete si fuera antes. */}
+                {graduado && <Birrete />}
               </div>
               {mood === "racha" && (
                 <>
