@@ -111,6 +111,12 @@ const r1 = (n) => {
   return Object.is(v, -0) ? 0 : v;
 };
 
+function toPath(subpaths) {
+  return subpaths
+    .map((ring) => ring.map(([x, y], i) => `${i === 0 ? "M" : "L"}${r1(x)} ${r1(y)}`).join("") + "Z")
+    .join("");
+}
+
 function outlineFor(geo, minRing = MIN_RING) {
   // Antes de construir el fc para fitExtent: si se descarta DESPUÉS, el
   // fitExtent ya midió su bbox sobre la geometría cruda (con el anillo
@@ -151,10 +157,8 @@ function outlineFor(geo, minRing = MIN_RING) {
   const k = Math.min(inner / (x1 - x0), inner / (y1 - y0));
   const ox = (BOX - (x1 - x0) * k) / 2 - x0 * k;
   const oy = (BOX - (y1 - y0) * k) / 2 - y0 * k;
-  const d = subpaths
-    .map((ring) => ring.map(([x, y], i) => `${i === 0 ? "M" : "L"}${r1(x * k + ox)} ${r1(y * k + oy)}`).join("") + "Z")
-    .join("");
-  return { d, rings: subpaths.length, ptsIn, ptsOut };
+  const scaled = subpaths.map((ring) => ring.map(([x, y]) => [x * k + ox, y * k + oy]));
+  return { d: toPath(scaled), subpaths: scaled, rings: subpaths.length, ptsIn, ptsOut };
 }
 
 // ============================================================
@@ -347,16 +351,39 @@ for (const g of allGeoms) {
 }
 console.log(`${sinContinente} entradas del atlas sin continente asignado (disputadas/Antártida — se ignoran)`);
 
+const continentRaw = [];
+for (const [code, list] of Object.entries(continentGroups)) {
+  const merged = topoMerge(atlasRaw, list);
+  const { subpaths, rings, ptsIn, ptsOut } = outlineFor({ features: [{ type: "Feature", geometry: merged, properties: {} }] }, CONTINENT_MIN_RING);
+  const pts = subpaths.flat();
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const bboxArea = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+  continentRaw.push({ code, subpaths, rings, ptsIn, ptsOut, bboxArea, countries: list.length });
+}
+
+// Igualar el "tamaño" percibido entre continentes (David: "busca la
+// manera de mantener todos los tamaños iguales"). El reencuadre normal de
+// outlineFor ya llena el eje LARGO de cada uno hasta las 92 unidades, pero
+// el ÁREA de esa caja varía muchísimo según qué tan alargado sea el
+// continente: Sudamérica (angosta) queda en ~4900 unidades², Norteamérica
+// (más cuadrada) en ~8400 — casi el doble, se ve bastante más grande aunque
+// los dos "llenen" su eje largo por igual. Se reescala cada uno, centrado
+// en la caja, para que su bounding box tenga la MISMA área que el más
+// chico del grupo — es el único blanco alcanzable sin recortar a ninguno,
+// porque el más chico ya está en su máximo (llenando su eje largo).
+const targetArea = Math.min(...continentRaw.map((c) => c.bboxArea));
 const continentEntries = [];
 let contIn = 0;
 let contOut = 0;
-for (const [code, list] of Object.entries(continentGroups)) {
-  const merged = topoMerge(atlasRaw, list);
-  const { d, rings, ptsIn, ptsOut } = outlineFor({ features: [{ type: "Feature", geometry: merged, properties: {} }] }, CONTINENT_MIN_RING);
-  contIn += ptsIn;
-  contOut += ptsOut;
-  continentEntries.push({ code, d, countries: list.length });
-  console.log(`${code}: ${list.length} países, ${rings} anillos, ${ptsIn} → ${ptsOut} puntos, ${(d.length / 1024).toFixed(1)} KB`);
+for (const c of continentRaw) {
+  const s = Math.sqrt(targetArea / c.bboxArea);
+  const resized = c.subpaths.map((ring) => ring.map(([x, y]) => [BOX / 2 + (x - BOX / 2) * s, BOX / 2 + (y - BOX / 2) * s]));
+  const d = toPath(resized);
+  contIn += c.ptsIn;
+  contOut += c.ptsOut;
+  continentEntries.push({ code: c.code, d, countries: c.countries });
+  console.log(`${c.code}: ${c.countries} países, ${c.rings} anillos, escala de área ×${s.toFixed(2)}, ${c.ptsIn} → ${c.ptsOut} puntos, ${(d.length / 1024).toFixed(1)} KB`);
 }
 
 const contBytes = continentEntries.reduce((s, e) => s + e.d.length, 0);
