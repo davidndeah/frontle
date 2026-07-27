@@ -386,7 +386,7 @@ export default function RegionGame({
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={tr.region.placeholder(nounForms.one)}
+                  placeholder={tr.region.placeholder(nounForms.one, nounForms.gender)}
                   autoComplete="off"
                   className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                 />
@@ -411,14 +411,14 @@ export default function RegionGame({
               )}
 
               {showInitial && hintEntity && (
-                <p className="text-center text-sm text-gold">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one)}</p>
+                <p className="text-center text-sm text-gold">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one, nounForms.gender)}</p>
               )}
               {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
                   lo valida el servidor; sin saldo, se abre la tienda. */}
               <div id="region-hints" className="flex flex-wrap items-center justify-center gap-2">
-                <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one)} · ${tr.coins.cost(3)}`} />
-                <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one)} · ${tr.coins.cost(3)}`} />
-                <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many)} · ${tr.coins.cost(5)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one, nounForms.gender)} · ${tr.coins.cost(3)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one, nounForms.gender)} · ${tr.coins.cost(3)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many, nounForms.gender)} · ${tr.coins.cost(5)}`} />
               </div>
               <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.region.used(guessCount)}</p>
             </section>

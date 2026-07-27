@@ -332,15 +332,17 @@ type Dict = {
     timerStarts: string;
     chooseOtherMode: string;
     modeFooter: (title: string) => string;
-    placeholder: (noun: string) => string;
+    // `gender` solo lo usan es/pt/fr para el artículo/contracción correctos
+    // ("un"/"una", "del"/"de la"…); en/pt-sin-género lo ignoran.
+    placeholder: (noun: string, gender: "m" | "f") => string;
     optimalRoute: (n: number, noun: string) => string;
     winText: (guesses: number, optimal: number, perfect: boolean, noun: string) => string;
     used: (n: number) => string;
     bestToday: (n: number, noun: string) => string;
-    hintInitial: (noun: string) => string;
-    hintSilNext: (noun: string) => string;
-    hintSilAll: (nounMany: string) => string;
-    hintNextInitial: (letter: string, noun: string) => string;
+    hintInitial: (noun: string, gender: "m" | "f") => string;
+    hintSilNext: (noun: string, gender: "m" | "f") => string;
+    hintSilAll: (nounMany: string, gender: "m" | "f") => string;
+    hintNextInitial: (letter: string, noun: string, gender: "m" | "f") => string;
   };
   // Selector de modos (paso "modes" del tab Jugar)
   modes: {
@@ -431,8 +433,15 @@ type Dict = {
     /** Aviso al cambiar de nivel a mitad de ronda: no se rerollea el reto. */
     levelNextRound: string;
   };
-  // Sustantivo localizado por tipo de subdivisión (singular/plural)
-  subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string }>;
+  // Sustantivo localizado por tipo de subdivisión (singular/plural). `gender`
+  // ("m"/"f") es el mismo en es/pt/fr para un nounKey dado (cognados
+  // románicos: provincia/província/province y región/região/région son
+  // femeninas en las tres; departamento/estado son masculinos en las tres) —
+  // en inglés no aplica, pero el campo existe igual por consistencia de tipo.
+  // Lo usan los templates de `region.*` para elegir artículo/contracción
+  // correctos: antes venían fijos en masculino ("un región", "todos los
+  // regiones"), que suena mal apenas la subdivisión es femenina.
+  subdivisionNoun: Record<"department" | "state" | "province" | "region", { one: string; many: string; gender: "m" | "f" }>;
   tutorialSteps: string[];
   tutNext: string;
   tutPlay: string;
@@ -708,15 +717,15 @@ const STRINGS: Record<Locale, Dict> = {
       timerStarts: "El cronómetro arranca al pulsar Jugar",
       chooseOtherMode: "Elegir otro modo",
       modeFooter: (t) => `Modo ${t} · gratis · vuelve mañana para un nuevo reto`,
-      placeholder: (n) => `Escribe un ${n}…`,
+      placeholder: (n, g) => `Escribe ${g === "f" ? "una" : "un"} ${n}…`,
       optimalRoute: (n, noun) => `Ruta óptima: ${n} ${noun}`,
       winText: (g, o, p, noun) => p ? `Conectaste con ${g} ${noun} — la ruta óptima.` : `Conectaste con ${g} ${noun} (la óptima era ${o}).`,
       used: (n) => `Usados: ${n}`,
       bestToday: (n, noun) => `Tu mejor hoy: ${n} ${noun}`,
-      hintInitial: (noun) => `Inicial del siguiente ${noun}`,
-      hintSilNext: (noun) => `Silueta del siguiente ${noun}`,
-      hintSilAll: (nm) => `Silueta de todos los ${nm}`,
-      hintNextInitial: (l, noun) => `El siguiente ${noun} empieza por «${l}»`,
+      hintInitial: (noun, g) => `Inicial de${g === "f" ? " la" : "l"} siguiente ${noun}`,
+      hintSilNext: (noun, g) => `Silueta de${g === "f" ? " la" : "l"} siguiente ${noun}`,
+      hintSilAll: (nm, g) => `Silueta de ${g === "f" ? "todas las" : "todos los"} ${nm}`,
+      hintNextInitial: (l, noun, g) => `${g === "f" ? "La" : "El"} siguiente ${noun} empieza por «${l}»`,
     },
     modes: {
       dailyTitle: "Reto diario", dailySub: "3 niveles · premio real del pot 🏆",
@@ -792,10 +801,10 @@ const STRINGS: Record<Locale, Dict> = {
       },
     },
     subdivisionNoun: {
-      department: { one: "departamento", many: "departamentos" },
-      state: { one: "estado", many: "estados" },
-      province: { one: "provincia", many: "provincias" },
-      region: { one: "región", many: "regiones" },
+      department: { one: "departamento", many: "departamentos", gender: "m" },
+      state: { one: "estado", many: "estados", gender: "m" },
+      province: { one: "provincia", many: "provincias", gender: "f" },
+      region: { one: "región", many: "regiones", gender: "f" },
     },
     tutorialSteps: [
       "¡Hola! Soy Bordy 👋 Tu misión: conectar el ORIGEN con el DESTINO escribiendo países vecinos. Hoy de ejemplo: Portugal → Alemania.",
@@ -1092,7 +1101,7 @@ const STRINGS: Record<Locale, Dict> = {
       timerStarts: "The timer starts when you tap Play",
       chooseOtherMode: "Choose another mode",
       modeFooter: (t) => `${t} mode · free · come back tomorrow for a new challenge`,
-      placeholder: (n) => `Type a ${n}…`,
+      placeholder: (n) => `Type a ${n}…`, // sin 2º parámetro: género sin efecto en inglés
       optimalRoute: (n, noun) => `Best route: ${n} ${noun}`,
       winText: (g, o, p, noun) => p ? `Connected with ${g} ${noun} — the best route.` : `Connected with ${g} ${noun} (the best was ${o}).`,
       used: (n) => `Used: ${n}`,
@@ -1176,10 +1185,12 @@ const STRINGS: Record<Locale, Dict> = {
       },
     },
     subdivisionNoun: {
-      department: { one: "department", many: "departments" },
-      state: { one: "state", many: "states" },
-      province: { one: "province", many: "provinces" },
-      region: { one: "region", many: "regions" },
+      // Género sin efecto en inglés (no hay artículo que concuerde); el
+      // campo va igual por consistencia de tipo con es/pt/fr.
+      department: { one: "department", many: "departments", gender: "m" },
+      state: { one: "state", many: "states", gender: "m" },
+      province: { one: "province", many: "provinces", gender: "f" },
+      region: { one: "region", many: "regions", gender: "f" },
     },
     tutorialSteps: [
       "Hi! I'm Bordy 👋 Your mission: connect the START with the DESTINATION by typing neighboring countries. Today's example: Portugal → Germany.",
@@ -1476,15 +1487,15 @@ const STRINGS: Record<Locale, Dict> = {
       timerStarts: "O cronômetro começa ao tocar em Jogar",
       chooseOtherMode: "Escolher outro modo",
       modeFooter: (t) => `Modo ${t} · grátis · volte amanhã para um novo desafio`,
-      placeholder: (n) => `Digite um ${n}…`,
+      placeholder: (n, g) => `Digite ${g === "f" ? "uma" : "um"} ${n}…`,
       optimalRoute: (n, noun) => `Rota ótima: ${n} ${noun}`,
       winText: (g, o, p, noun) => p ? `Você conectou com ${g} ${noun} — a rota ótima.` : `Você conectou com ${g} ${noun} (a ótima era ${o}).`,
       used: (n) => `Usados: ${n}`,
       bestToday: (n, noun) => `Sua melhor hoje: ${n} ${noun}`,
-      hintInitial: (noun) => `Inicial do próximo ${noun}`,
-      hintSilNext: (noun) => `Silhueta do próximo ${noun}`,
-      hintSilAll: (nm) => `Silhueta de todos os ${nm}`,
-      hintNextInitial: (l, noun) => `O próximo ${noun} começa com “${l}”`,
+      hintInitial: (noun, g) => `Inicial d${g === "f" ? "a" : "o"} próxim${g === "f" ? "a" : "o"} ${noun}`,
+      hintSilNext: (noun, g) => `Silhueta d${g === "f" ? "a" : "o"} próxim${g === "f" ? "a" : "o"} ${noun}`,
+      hintSilAll: (nm, g) => `Silhueta de tod${g === "f" ? "as as" : "os os"} ${nm}`,
+      hintNextInitial: (l, noun, g) => `${g === "f" ? "A" : "O"} próxim${g === "f" ? "a" : "o"} ${noun} começa com “${l}”`,
     },
     modes: {
       dailyTitle: "Desafio diário", dailySub: "3 níveis · prêmio real do pot 🏆",
@@ -1560,10 +1571,10 @@ const STRINGS: Record<Locale, Dict> = {
       },
     },
     subdivisionNoun: {
-      department: { one: "departamento", many: "departamentos" },
-      state: { one: "estado", many: "estados" },
-      province: { one: "província", many: "províncias" },
-      region: { one: "região", many: "regiões" },
+      department: { one: "departamento", many: "departamentos", gender: "m" },
+      state: { one: "estado", many: "estados", gender: "m" },
+      province: { one: "província", many: "províncias", gender: "f" },
+      region: { one: "região", many: "regiões", gender: "f" },
     },
     tutorialSteps: [
       "Olá! Eu sou o Bordy 👋 Sua missão: conectar a ORIGEM com o DESTINO escrevendo países vizinhos. Exemplo de hoje: Portugal → Alemanha.",
@@ -1860,15 +1871,15 @@ const STRINGS: Record<Locale, Dict> = {
       timerStarts: "Le chrono démarre en appuyant sur Jouer",
       chooseOtherMode: "Choisir un autre mode",
       modeFooter: (t) => `Mode ${t} · gratuit · reviens demain pour un nouveau défi`,
-      placeholder: (n) => `Entrez un ${n}…`,
+      placeholder: (n, g) => `Entrez ${g === "f" ? "une" : "un"} ${n}…`,
       optimalRoute: (n, noun) => `Route optimale : ${n} ${noun}`,
       winText: (g, o, p, noun) => p ? `Vous avez relié avec ${g} ${noun} — la route optimale.` : `Vous avez relié avec ${g} ${noun} (l'optimale était ${o}).`,
       used: (n) => `Utilisés : ${n}`,
       bestToday: (n, noun) => `Votre meilleur aujourd'hui : ${n} ${noun}`,
-      hintInitial: (noun) => `Initiale du prochain ${noun}`,
-      hintSilNext: (noun) => `Silhouette du prochain ${noun}`,
-      hintSilAll: (nm) => `Silhouette de tous les ${nm}`,
-      hintNextInitial: (l, noun) => `Le prochain ${noun} commence par « ${l} »`,
+      hintInitial: (noun, g) => `Initiale ${g === "f" ? "de la prochaine" : "du prochain"} ${noun}`,
+      hintSilNext: (noun, g) => `Silhouette ${g === "f" ? "de la prochaine" : "du prochain"} ${noun}`,
+      hintSilAll: (nm, g) => `Silhouette de ${g === "f" ? "toutes les" : "tous les"} ${nm}`,
+      hintNextInitial: (l, noun, g) => `${g === "f" ? "La prochaine" : "Le prochain"} ${noun} commence par « ${l} »`,
     },
     modes: {
       dailyTitle: "Défi quotidien", dailySub: "3 niveaux · vrai prix de la cagnotte 🏆",
@@ -1944,10 +1955,10 @@ const STRINGS: Record<Locale, Dict> = {
       },
     },
     subdivisionNoun: {
-      department: { one: "département", many: "départements" },
-      state: { one: "état", many: "états" },
-      province: { one: "province", many: "provinces" },
-      region: { one: "région", many: "régions" },
+      department: { one: "département", many: "départements", gender: "m" },
+      state: { one: "état", many: "états", gender: "m" },
+      province: { one: "province", many: "provinces", gender: "f" },
+      region: { one: "région", many: "régions", gender: "f" },
     },
     tutorialSteps: [
       "Salut ! Je suis Bordy 👋 Ta mission : relier le DÉPART à l'ARRIVÉE en écrivant des pays voisins. Exemple du jour : Portugal → Allemagne.",
