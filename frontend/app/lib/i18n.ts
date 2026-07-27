@@ -368,6 +368,13 @@ type Dict = {
   dailyHero: {
     bordyStreak: (n: number) => string;
     bordyNoStreak: string;
+    // Frases sueltas de Bordy sin racha que hablar — rotan con
+    // bordyNoStreak (que sigue existiendo por separado: es la única con
+    // información real que perder — "empecemos una racha" — así que no
+    // se mete a rotar con las demás como una más). El header con Bordy
+    // ahora abre el menú (tutorial/tienda/perfil/soporte), así que varias
+    // invitan a tocarlo.
+    bordyQuips: string[];
     live: string;
     closesIn: (time: string) => string;
     potLabel: string;
@@ -756,6 +763,12 @@ const STRINGS: Record<Locale, Dict> = {
     dailyHero: {
       bordyStreak: (n) => `Llevas 🔥 ${n} días seguidos. ¡No la rompas hoy!`,
       bordyNoStreak: "¿Jugamos el reto de hoy? Empecemos una racha 🔥",
+      bordyQuips: [
+        "¿Necesitas ayuda? Toca aquí y te guío 🤖",
+        "¿Buscas algo en especial? Toca aquí",
+        "Puedes jugar sin conectar nada, ¡dale que dale!",
+        "Cada modo te da experiencia. ¡A explorar!",
+      ],
       live: "En juego",
       closesIn: (time) => `Cierra en ${time}`,
       potLabel: "Premio del día",
@@ -1134,6 +1147,12 @@ const STRINGS: Record<Locale, Dict> = {
     dailyHero: {
       bordyStreak: (n) => `You're on a 🔥 ${n}-day streak. Don't break it today!`,
       bordyNoStreak: "Ready for today's challenge? Let's start a streak 🔥",
+      bordyQuips: [
+        "Need help? Tap here and I'll guide you 🤖",
+        "Looking for something specific? Tap here",
+        "You can play without connecting anything — go for it!",
+        "Every mode earns you XP. Go explore!",
+      ],
       live: "Live",
       closesIn: (time) => `Closes in ${time}`,
       potLabel: "Today's prize",
@@ -1512,6 +1531,12 @@ const STRINGS: Record<Locale, Dict> = {
     dailyHero: {
       bordyStreak: (n) => `Você está numa sequência de 🔥 ${n} dias. Não quebre hoje!`,
       bordyNoStreak: "Vamos ao desafio de hoje? Comece uma sequência 🔥",
+      bordyQuips: [
+        "Precisa de ajuda? Toca aqui e eu te guio 🤖",
+        "Procurando algo específico? Toca aqui",
+        "Você pode jogar sem conectar nada, vai fundo!",
+        "Cada modo te dá experiência. Vai explorar!",
+      ],
       live: "Em jogo",
       closesIn: (time) => `Fecha em ${time}`,
       potLabel: "Prêmio de hoje",
@@ -1890,6 +1915,12 @@ const STRINGS: Record<Locale, Dict> = {
     dailyHero: {
       bordyStreak: (n) => `Tu es sur une série de 🔥 ${n} jours. Ne la casse pas aujourd'hui !`,
       bordyNoStreak: "On fait le défi du jour ? Lance une série 🔥",
+      bordyQuips: [
+        "Besoin d'aide ? Touche ici et je te guide 🤖",
+        "Tu cherches quelque chose en particulier ? Touche ici",
+        "Tu peux jouer sans rien connecter, vas-y !",
+        "Chaque mode te donne de l'XP. Va explorer !",
+      ],
       live: "En cours",
       closesIn: (time) => `Ferme dans ${time}`,
       potLabel: "Prix du jour",
