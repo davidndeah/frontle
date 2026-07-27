@@ -377,6 +377,13 @@ type Dict = {
     // ahora abre el menú (tutorial/tienda/perfil/soporte), así que varias
     // invitan a tocarlo.
     bordyQuips: string[];
+    // Explicación breve de la mecánica ("conecta fronteras"), en el propio
+    // tablero del reto — David: "necesito que expliques rápidamente cómo
+    // funciona el modo de juego". Una sola línea a propósito: el tutorial
+    // completo (BordyTutorial) y el "Cómo se juega" del menú de Bordy ya
+    // cubren el resto; esto es solo el empujón de una línea para quien
+    // nunca lo vio.
+    howToPlay: string;
     live: string;
     closesIn: (time: string) => string;
     potLabel: string;
@@ -778,6 +785,7 @@ const STRINGS: Record<Locale, Dict> = {
         "Puedes jugar sin conectar nada, ¡dale que dale!",
         "Cada modo te da experiencia. ¡A explorar!",
       ],
+      howToPlay: "Conecta el origen con el destino cruzando países vecinos, uno a la vez",
       live: "En juego",
       closesIn: (time) => `Cierra en ${time}`,
       potLabel: "Premio del día",
@@ -1162,6 +1170,7 @@ const STRINGS: Record<Locale, Dict> = {
         "You can play without connecting anything — go for it!",
         "Every mode earns you XP. Go explore!",
       ],
+      howToPlay: "Connect the origin to the destination through bordering countries, one at a time",
       live: "Live",
       closesIn: (time) => `Closes in ${time}`,
       potLabel: "Today's prize",
@@ -1548,6 +1557,7 @@ const STRINGS: Record<Locale, Dict> = {
         "Você pode jogar sem conectar nada, vai fundo!",
         "Cada modo te dá experiência. Vai explorar!",
       ],
+      howToPlay: "Conecte a origem ao destino cruzando países vizinhos, um de cada vez",
       live: "Em jogo",
       closesIn: (time) => `Fecha em ${time}`,
       potLabel: "Prêmio de hoje",
@@ -1932,6 +1942,7 @@ const STRINGS: Record<Locale, Dict> = {
         "Tu peux jouer sans rien connecter, vas-y !",
         "Chaque mode te donne de l'XP. Va explorer !",
       ],
+      howToPlay: "Relie l'origine à la destination en traversant des pays voisins, un à la fois",
       live: "En cours",
       closesIn: (time) => `Ferme dans ${time}`,
       potLabel: "Prix du jour",
