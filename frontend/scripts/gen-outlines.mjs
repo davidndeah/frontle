@@ -212,7 +212,21 @@ console.log("→ app/lib/regionOutlines.ts");
 //  Chile se probó y se descartó: su silueta real es un w/h de 0.18, o sea
 //  una astilla de 11px en la ficha. Auténtico, pero rompe el ritmo del
 //  ciclo — al lado de las otras cinco se lee como un fallo de render.
-const WORLD = ["Italy", "India", "Japan", "Australia", "Madagascar", "United Kingdom"];
+//  Y tienen que ser TANTAS como regiones jugables: las tres fichas del Home
+//  comparten un ciclo de 12s repartido entre sus capas, así que si esta lista
+//  y las regiones no miden lo mismo, el reparto por capa cambia y las fichas
+//  se desfasan (pasó al añadir España: regiones 6→7 y esta lista quedó en 6
+//  → 49 puntos de desfase de 120 medidos). El assert de abajo convierte ese
+//  desfase silencioso en un error de build.
+const WORLD = ["Italy", "India", "Japan", "Australia", "Madagascar", "United Kingdom", "Mexico"];
+
+if (WORLD.length !== ids.length) {
+  throw new Error(
+    `WORLD tiene ${WORLD.length} siluetas pero hay ${ids.length} regiones jugables (${ids.join(", ")}).\n` +
+    `Las fichas del Home comparten reloj y se desfasan si no coinciden: añade o quita un país en WORLD\n` +
+    `(recuerda: ninguno puede ser una región jugable, o se vería el mismo país en dos fichas a la vez).`
+  );
+}
 
 const atlasRaw = await fetch(ATLAS_URL).then((r) => {
   if (!r.ok) throw new Error(`atlas HTTP ${r.status}`);
