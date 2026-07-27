@@ -1355,8 +1355,20 @@ export default function Frontle() {
                 {/* Práctica es el modo de aprender, así que aquí el arte no es
                     un mapa: es el propio Bordy graduado, flotando. No entra en
                     el ciclo de 12s de las otras tres — no hay nada que ciclar,
-                    y su flote y el balanceo de la borla ya tienen su ritmo. */}
-                <span className="h-[84px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #2a1257, #150a2e)" }}>
+                    y su flote y el balanceo de la borla ya tienen su ritmo.
+                    Fondo GRANATE, no morado (David: "cambia el fondo de bordy,
+                    esta color morado y no resalta tanto"): el morado anterior
+                    era literalmente la misma familia de color que sus propios
+                    brazos/orejas (--bordy-purple #a855f7) y su cuerpo casi
+                    negro — Bordy se fundía con su propio fondo. El granate
+                    está a ~70° de distancia de hue del morado (y de las otras
+                    tres fichas: naranja/azul/verde), así que separa por color,
+                    no solo por luminancia — que es justo lo que fallaba antes
+                    (el contraste numérico contra el morado sí pasaba, 4:1, pero
+                    "morado sobre morado" se lee igual de fundido aunque el
+                    número pase en teoría). El birrete/dorado no pierde nada:
+                    12.6:1 / 16.8:1 contra este fondo (antes 14.8/17.6). */}
+                <span className="h-[84px] flex items-center justify-center overflow-hidden" style={{ background: "linear-gradient(160deg, #5a1030, #2e0819)" }}>
                   <Bordy mood="idle" float graduado className="w-[68px] h-[80px]" imgClassName="drop-shadow-xl" alt="" />
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
