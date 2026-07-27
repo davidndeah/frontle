@@ -245,15 +245,17 @@
    las del arte fuente (1280x1520) y no hay que reposicionarlo por tamaño. */
 .br-birrete { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 /* La borla cuelga de la punta derecha de la tabla, así que ese es su pivote
-   (986,231 del viewBox). Balanceo lento y corto: el birrete tiene que leerse
+   (1065,232 del viewBox). Amplitud algo mayor que la del primer intento
+   (±6° → ±10°): a 68px de rig, 6° eran menos de 2px de recorrido y el
+   balanceo no se percibía. Sigue siendo lento — el birrete tiene que leerse
    como puesto, no como colgando de un hilo. */
 @keyframes br-borla {
-  0%, 100% { transform: rotate(-6deg); }
-  50%      { transform: rotate(7deg); }
+  0%, 100% { transform: rotate(-9deg); }
+  50%      { transform: rotate(10deg); }
 }
 .br-borla {
   transform-box: view-box;
-  transform-origin: 986px 231px;
+  transform-origin: 1065px 232px;
   animation: br-borla 3.6s ease-in-out infinite;
 }
 
@@ -859,7 +861,7 @@ body {
 
   /* Borla del birrete: queda quieta y ligeramente caída, que es como cuelga
      en reposo. El birrete se sigue viendo igual de puesto. */
-  .br-borla { animation: none; transform: rotate(-6deg); }
+  .br-borla { animation: none; transform: rotate(-9deg); }
 
   .br-brazoI-arriba { animation: none; transform: rotate(-108deg); }
   .br-brazoD-arriba { animation: none; transform: rotate(108deg); }

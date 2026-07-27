@@ -225,30 +225,51 @@ const RIG: Partial<Record<BordyMood, {
 
 /**
  * Birrete de graduado. Va DENTRO del rig y en sus mismas coordenadas de arte
- * (1280x1520), así que hereda escala, flote y pose sin tener que reposicionar
- * nada desde fuera.
+ * (1280x1520), así que hereda escala, flote y pose sin reposicionar nada.
  *
- * Geometría medida sobre el rig, no a ojo: la antena termina en el 14% de la
- * altura (ahí se pega a la cabeza) y su LED ocupa del 1.5% al 6.8%. El vértice
- * superior de la tabla se pone en el 10.1% (y=154) para dejar el LED libre por
- * arriba con un respiro — Bordy sin LED visible parece apagado. La tabla tapa
- * el tramo de varilla que queda debajo, lo que se lee como que la atraviesa.
- * Las orejas empiezan en el 29% (y=440), muy por debajo del borde inferior de
- * la tabla (y=332): no hay solape.
+ * COLORES — la primera versión no se veía y midiendo se entendió por qué:
+ * la coronilla de Bordy es casi negra (muestreada: rgb(4,12,32)) y el fondo
+ * de la ficha también (#2a1257 → #150a2e). El canto de la tabla era #1b1030,
+ * o sea 1.04:1 contra el fondo: la mitad inferior de la silueta literalmente
+ * no existía. Y la cara iba en --bordy-purple, el color del propio cuerpo de
+ * Bordy, así que el birrete se leía como parte de él y no como algo puesto
+ * encima. La paleta de ahora, toda medida contra los tres fondos reales:
+ *   · cara   --ink #f3edff  → 13.9 / 16.5 / 17.0 : 1
+ *   · canto  --bordy-purple → 4.0 / 4.8 / 4.9 : 1  (y 3.5:1 contra la cara,
+ *     que es lo que hace que el grosor se lea como grosor)
+ *   · borla  --gold         → 14.8 / 17.6 : 1 sobre el fondo
+ * Blanco y no dorado en la cara a propósito: el LED en reposo es ámbar
+ * (#fbbf24) y queda justo encima, así que una tabla dorada se fundía con él
+ * por tono (1.56:1). El blanco separa por tono aunque el brillo sea parecido.
+ *
+ * GEOMETRÍA — medida sobre el arte, no a ojo. El LED termina en y=103 y el
+ * visor (la parte clara de la cara) empieza en y≈400, así que la franja
+ * libre es esa. La tabla ocupa 140→358 dejando ~2px de aire arriba y abajo
+ * al tamaño de la ficha. Es ancha (215→1065, el 66%) porque a 68px de rig
+ * una tabla estrecha no se lee como birrete. Las puntas se salen del domo
+ * de la cabeza (que a esa altura va de x=450 a x=830), que es justo lo que
+ * hace un birrete de verdad. La tabla tapa el tramo de antena que queda
+ * debajo, lo que se lee como que la atraviesa.
+ *
+ * La borla cuelga SOLO de la punta derecha, sin cordón cruzando la tabla:
+ * un cordón dorado sobre la cara blanca daría 1.04:1 (invisible), y a este
+ * tamaño un elemento menos siempre se lee mejor.
  */
 function Birrete() {
   return (
     <svg className="br-birrete" viewBox="0 0 1280 1520" aria-hidden="true">
-      {/* Canto de la tabla: mismo rombo desplazado hacia abajo, para darle
-          grosor. Va primero para que la cara superior lo tape por detrás. */}
-      <path d="M290 230 L640 306 L990 230 L990 256 L640 332 L290 256 Z" fill="#1b1030" />
-      <path d="M290 230 L640 154 L990 230 L640 306 Z" fill="var(--bordy-purple)" />
-      <circle cx="640" cy="230" r="20" fill="var(--gold)" />
-      {/* La borla cuelga de la punta derecha y se balancea con el flote. */}
+      {/* Canto: el mismo rombo desplazado hacia abajo. Va primero para que la
+          cara superior lo tape por detrás y solo asome el grosor. */}
+      {/* #a855f7 fijo y no var(--bordy-purple) a propósito: en el tema
+          Premium esa variable vale #d9b45a, exactamente el mismo champagne
+          que --gold, y el canto se fundiría con la borla además de quedar en
+          1.7:1 contra la cara blanca — el grosor dejaría de leerse. Fijo da
+          3.5:1 contra la cara y 4.0:1 contra el fondo en los dos temas. */}
+      <path d="M215 232 L640 324 L1065 232 L1065 266 L640 358 L215 266 Z" fill="#a855f7" />
+      <path d="M215 232 L640 140 L1065 232 L640 324 Z" fill="var(--ink)" />
       <g className="br-borla">
-        <path d="M640 230 Q 850 221, 986 231" stroke="var(--gold)" strokeWidth="12" fill="none" strokeLinecap="round" />
-        <path d="M986 231 C 1012 275, 1010 313, 998 343" stroke="var(--gold)" strokeWidth="12" fill="none" strokeLinecap="round" />
-        <ellipse cx="996" cy="370" rx="30" ry="38" fill="var(--gold)" />
+        <path d="M1065 232 C 1105 270, 1108 305, 1096 338" stroke="var(--gold)" strokeWidth="14" fill="none" strokeLinecap="round" />
+        <ellipse cx="1094" cy="366" rx="30" ry="38" fill="var(--gold)" />
       </g>
     </svg>
   );
