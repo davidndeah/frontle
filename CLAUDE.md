@@ -68,7 +68,7 @@ Gamification/progress layer:
 - **`lib/progress.ts` + `lib/achievements.ts`** — persistent player progress on Supabase (migration 0007): streak, Frontle points, achievements. Streak and points are **derived server-side from `scores`** (view `player_progress`) — the client never asserts them, so they can't be inflated; achievements are insert-only under the same anon-key trust model. Everything degrades silently to local data if Supabase is missing.
 - The daily-game clock is wall-clock based (`startMs` persisted so refreshing can't reset it) minus accumulated pauses (`pausedMs`, accrued only while a hint payment is confirming — a full-screen overlay covers the board during the pause).
 
-Stack: TypeScript · Tailwind CSS v4 · `viem` for the chain · `@privy-io/react-auth` for email login. Deploys to Vercel from GitHub. (`@celo/abis` is a dependency but nothing imports it.)
+Stack: TypeScript · Tailwind CSS v4 · `viem` for the chain · `@privy-io/react-auth` for email login. Deploys to Vercel from GitHub.
 
 ## MiniPay rules that constrain the code
 

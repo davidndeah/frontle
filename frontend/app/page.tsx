@@ -1550,6 +1550,7 @@ export default function Frontle() {
                 onHome={() => { setStarted(false); setPayError(null); setPayLow(false); }}
                 hasWallet={hasWallet}
                 inRanking={!!myId}
+                inMiniPay={inMiniPay}
                 onConnect={connectForRanking}
                 winStats={winStats}
                 panel={panel}
@@ -2869,6 +2870,7 @@ function WinCard({
   onHome,
   hasWallet,
   inRanking,
+  inMiniPay,
   onConnect,
   winStats,
   panel,
@@ -2890,6 +2892,7 @@ function WinCard({
   onHome: () => void;
   hasWallet: boolean;
   inRanking: boolean;
+  inMiniPay: boolean;
   onConnect: () => void;
   winStats: {
     loading: boolean;
@@ -3022,7 +3025,11 @@ function WinCard({
         <button onClick={onHome} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-[#c4b5fd]">
           🎮 {tr.chooseLevel}
         </button>
-        {!inRanking && hasWallet && (
+        {/* Igual que en el sheet y el perfil: nunca "Conectar" dentro de
+            MiniPay. Aquí `inRanking` ya es falso solo si el auto-connect
+            del mount falló, pero ese camino degradado tampoco puede
+            enseñar el botón. */}
+        {!inRanking && hasWallet && !inMiniPay && (
           <button onClick={onConnect} className="brutal-sm brutal-press rounded-xl bg-[#34d399] px-6 py-3 font-bold text-[#053b27]">
             {tr.connectToRank}
           </button>
