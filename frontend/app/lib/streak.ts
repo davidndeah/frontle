@@ -6,7 +6,9 @@
 //  desde el cliente. Aquí solo llamamos a las funciones y traducimos.
 // ============================================================
 
-import { COIN_COSTS, notifyCoinsChanged } from "./coins";
+// Desde `coinsBus`, no desde `coins`: ese importa `payments.ts` y metía viem
+// (~248 KB) en el bundle inicial por la cadena page.tsx -> streak.ts -> coins.
+import { COIN_COSTS, notifyCoinsChanged } from "./coinsBus";
 import { ensureSecret, localSecret, rpc } from "./secret";
 import { xpPlayerId } from "./xp";
 

@@ -53,26 +53,31 @@ import { continentOf } from "./lib/continents";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
-import { getCoinBalance, onCoinsChanged, retryPendingCredit } from "./lib/coins";
+// viem (~248 KB) fuera del bundle inicial. Nada del camino de pagos hace falta
+// para pintar el tablero, y era el bloque grande que quedaba: con él dentro, la
+// hidratación tardaba 2840 ms y el LCP se iba detrás (PageSpeed móvil 55).
+// `lib/coins` entra por la puerta de atrás — importa `payments` —, así que
+// también se carga tarde o no serviría de nada.
+//
+// Los tipos van con `import type`: se borran al compilar y no arrastran el
+// módulo. `import()` cachea, así que llamar al loader N veces pide el chunk una
+// sola vez. Y como el efecto del pot llama a `getDailyPot` al montar, el módulo
+// queda caliente mucho antes de que nadie compre una pista: se difiere fuera
+// del arranque, no se deja para el último momento.
+const loadPayments = () => import("./lib/payments");
+const loadCoins = () => import("./lib/coins");
+// `onCoinsChanged` sí es estático: vive en `coinsBus`, un módulo hoja sin
+// imports, así que no arrastra nada. Solo el saldo y el reintento de crédito
+// (que hablan con Supabase y con la cadena) van diferidos.
+// (el import va arriba, con el resto)
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
 import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, XP, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import {
-  requestPayment,
-  getDailyPot,
-  getWalletAddress,
-  connectWallet,
-  getClaimablePrizes,
-  claimPrize,
-  getWalletBalances,
-  getLastCycleWinners,
-  type ClaimablePrize,
-  type LastCycle,
-  type PayResult,
-} from "./lib/payments";
+import type { ClaimablePrize, LastCycle, PayResult } from "./lib/payments";
+import { onCoinsChanged } from "./lib/coinsBus";
 import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
 import Sheet from "./components/Sheet";
@@ -263,7 +268,7 @@ export default function Frontle() {
   const [shopOpen, setShopOpen] = useState(false);
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const refreshCoins = useCallback(() => {
-    retryPendingCredit().then(() => getCoinBalance().then(setCoinBalance));
+    void loadCoins().then((m) => m.retryPendingCredit().then(() => m.getCoinBalance().then(setCoinBalance))).catch(() => {});
   }, []);
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -657,14 +662,18 @@ export default function Frontle() {
   useEffect(() => {
     if (tab !== "perfil" || !myId) return;
     let alive = true;
-    getWalletBalances().then((b) => { if (alive) setBalances(b); });
+    void loadPayments().then((m) => m.getWalletBalances()).then((b) => { if (alive) setBalances(b); }).catch(() => {});
     return () => { alive = false; };
   }, [tab, myId]);
 
   // Premio (pot) del día: cargar al inicio y refrescar cada 30s para reflejar pagos de otros.
   useEffect(() => {
     let alive = true;
-    const refresh = () => getDailyPot().then((p) => { if (alive && p !== null) setPot(p); });
+    // `.catch` silencioso en todas estas: son lecturas de pantalla y ya
+    // degradaban a "sin dato" si fallaba la red. Lo nuevo es que el `import()`
+    // también puede fallar, y una promesa rechazada sin capturar sale por
+    // consola (Lighthouse lo penaliza en Prácticas recomendadas).
+    const refresh = () => loadPayments().then((m) => m.getDailyPot()).then((p) => { if (alive && p !== null) setPot(p); }).catch(() => {});
     refresh();
     const id = setInterval(refresh, 30_000);
     return () => { alive = false; clearInterval(id); };
@@ -682,7 +691,7 @@ export default function Frontle() {
     const check = async () => {
       if (typeof window !== "undefined" && (window as unknown as { ethereum?: unknown }).ethereum) {
         setHasWallet(true);
-        const addr = await getWalletAddress();
+        const addr = await loadPayments().then((m) => m.getWalletAddress()).catch(() => null);
         if (addr) setMyId(addr);
         return;
       }
@@ -711,7 +720,11 @@ export default function Frontle() {
   const loadPrizes = useCallback(async (addr: string) => {
     if (!addr) return setPrizes([]);
     const entries = await getMyWinDays(addr);
-    setPrizes(await getClaimablePrizes(entries, addr));
+    try {
+      setPrizes(await (await loadPayments()).getClaimablePrizes(entries, addr));
+    } catch {
+      setPrizes([]); // sin el chunk no se puede saber qué es cobrable
+    }
   }, []);
 
   // Sin `myId` (nunca entró, o cerró sesión) `loadPrizes` vacía la lista: los
@@ -723,7 +736,12 @@ export default function Frontle() {
   // Ganadores del último día CERRADO (tab Ranking). El contrato es la fuente de
   // verdad, así que también dice si cada premio ya se reclamó.
   const loadCycle = useCallback(async () => {
-    const c = await getLastCycleWinners();
+    let c: LastCycle | null = null;
+    try {
+      c = await (await loadPayments()).getLastCycleWinners();
+    } catch {
+      return; // se deja el ciclo anterior en pantalla en vez de vaciarlo
+    }
     setCycle(c);
     if (c) setWinnerNames(await getNamesFor(c.winners.map((w) => w.winner)));
   }, []);
@@ -732,8 +750,17 @@ export default function Frontle() {
 
   async function handleClaim(day: number, lv: Difficulty) {
     setClaimingKey(`${day}-${lv}`);
-    const ok = await claimPrize(day, lv);
-    setClaimingKey(null);
+    // El `finally` es obligatorio ahora que hay un `import()` de por medio: si
+    // el chunk no baja, sin él el botón se quedaría en "reclamando…" para
+    // siempre y el jugador no podría reintentar su premio.
+    let ok = false;
+    try {
+      ok = await (await loadPayments()).claimPrize(day, lv);
+    } catch {
+      ok = false;
+    } finally {
+      setClaimingKey(null);
+    }
     if (ok) {
       const key = `${day}-${lv}`;
       setMessage({ text: tr.prizeClaimedMsg, ok: true });
@@ -855,7 +882,10 @@ export default function Frontle() {
   // Si no hay dirección aún, NO envía — el navegador verá el botón "Conectar".
   // Devuelve la dirección con la que se compitió (vacía si no hubo).
   async function enterRanking(score: number, timeMs: number): Promise<string> {
-    const addr = myId || (await getWalletAddress());
+    // El try envuelve el `import()` además de la llamada: si el chunk no baja,
+    // se comporta igual que "no hay dirección" y el jugador no entra al ranking,
+    // en vez de romper el fin de partida con una excepción.
+    const addr = myId || (await loadPayments().then((m) => m.getWalletAddress()).catch(() => "")) || "";
     if (!addr) return "";
     setMyId(addr);
     await pushScore(addr, score, timeMs);
@@ -903,7 +933,7 @@ export default function Frontle() {
 
   // Navegador: el jugador conecta su wallet (abre prompt) para entrar al ranking.
   async function connectForRanking() {
-    const addr = await connectWallet();
+    const addr = await loadPayments().then((m) => m.connectWallet()).catch(() => null);
     if (!addr) return;
     setHasWallet(true);
     setMyId(addr);
@@ -963,7 +993,9 @@ export default function Frontle() {
     setPayLow(false);
     let res: PayResult = "error";
     try {
-      res = await requestPayment(PRICES.retry, "reintento del reto diario");
+      res = await (await loadPayments()).requestPayment(PRICES.retry, "reintento del reto diario");
+    } catch {
+      res = "error"; // el chunk de pagos no bajó — ver la nota en buyHint
     } finally {
       setPaying(null);
     }
@@ -972,7 +1004,7 @@ export default function Frontle() {
       setPayLow(isLowBalance(res));
       return;
     }
-    getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
+    void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
     setState((prev) => ({ challenge: prev.challenge, chain: [], solved: false }));
     setMessage(null);
     setInput("");
@@ -997,7 +1029,13 @@ export default function Frontle() {
     const pauseStart = Date.now();
     let res: PayResult = "error";
     try {
-      res = await requestPayment(price, `pista: ${kind}`);
+      res = await (await loadPayments()).requestPayment(price, `pista: ${kind}`);
+    } catch {
+      // `requestPayment` nunca lanza (captura dentro y devuelve PayResult), pero
+      // el `import()` de delante sí puede si el chunk no baja. Sin este catch la
+      // excepción se saltaba el `if (res !== "success")` de abajo y el jugador se
+      // quedaba con "pagando…" fijo, sin mensaje y sin el desvío a recargar.
+      res = "error";
     } finally {
       pausedMsRef.current += Date.now() - pauseStart;
       // Persistir la pausa: un refresh a mitad de partida no debe perderla.
@@ -1010,7 +1048,7 @@ export default function Frontle() {
       return;
     }
     setMessage(null);
-    getDailyPot().then((p) => p !== null && setPot(p)); // el pago subió el pot
+    void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
     if (kind === "initial") setShowInitial(true);
     if (kind === "next") setShowNextSil(true);
     if (kind === "all") setShowAllSil(true);

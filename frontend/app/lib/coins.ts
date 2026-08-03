@@ -15,6 +15,12 @@
 import { purchaseCoinPack, type PayResult, type PurchaseStep } from "./payments";
 import { xpPlayerId } from "./xp";
 import { ensureSecret, localSecret, rpc } from "./secret";
+import { COIN_COSTS, notifyCoinsChanged, onCoinsChanged, type SpendKind } from "./coinsBus";
+
+// Los precios y el bus viven en `coinsBus.ts` (módulo hoja, sin imports) para
+// que quien solo necesite eso no arrastre `payments.ts` → viem. Se reexportan
+// aquí para no romper a quien ya importaba desde este módulo.
+export { COIN_COSTS, notifyCoinsChanged, onCoinsChanged, type SpendKind };
 
 // Precio unitario del plan §5.1. Los paquetes grandes traen bonus; comprar
 // suelto siempre sale a esta tarifa, sin recargo ni descuento.
@@ -43,21 +49,6 @@ export const COIN_UNITS: readonly CoinLot[] = [1, 2, 5, 10].map((coins) => ({
   usdt: Math.round(coins * COIN_UNIT_USDT * 100) / 100,
 }));
 
-// Ítems de gasto. Deben coincidir con el check `coin_shape` de coin_ledger,
-// hoy en la 0015 — NO en la 0009, que es donde nacieron: el congelador bajó de
-// 15 a 5 🪙 en la 0015 y aquí se quedó en 15. El servidor manda (fija el precio
-// en `buy_streak_freeze`), así que el desajuste solo mentía en pantalla.
-export const COIN_COSTS = {
-  spend_hint: 3,
-  spend_hint_strong: 5,
-  spend_attempt: 5,
-  spend_freeze: 5,
-  spend_repair: 25,
-  spend_repair_long: 50,
-} as const;
-
-export type SpendKind = keyof typeof COIN_COSTS;
-
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const useSupabase = Boolean(SUPA_URL && SUPA_KEY);
@@ -66,24 +57,6 @@ const HEADERS = () => ({
   apikey: SUPA_KEY!,
   Authorization: `Bearer ${SUPA_KEY}`,
 });
-
-// --- Aviso de "el saldo cambió" ---------------------------------------------
-// El contador del header vive en page.tsx, pero se gasta desde dentro de los
-// modos (pistas, reintentos) y desde la tarjeta de racha, que no lo conocen.
-// Un evento de ventana evita pasar callbacks por tres niveles de props: quien
-// mueva monedas avisa, y quien muestre saldo se entera. Mismo patrón que el
-// bus de lib/privy.ts.
-const COINS_EVENT = "frontle:coins";
-
-export function notifyCoinsChanged(): void {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(COINS_EVENT));
-}
-
-export function onCoinsChanged(cb: () => void): () => void {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener(COINS_EVENT, cb);
-  return () => window.removeEventListener(COINS_EVENT, cb);
-}
 
 // Saldo actual del jugador (0 si no tiene movimientos o no hay backend).
 export async function getCoinBalance(): Promise<number> {
