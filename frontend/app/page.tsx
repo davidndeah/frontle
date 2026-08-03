@@ -35,22 +35,15 @@ import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
 import { signalMiniAppReady } from "./lib/farcaster";
-import Coachmarks from "./components/Coachmarks";
 import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
 import TxOverlay from "./components/TxOverlay";
 import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./components/Leaderboard";
 import LevelSelect from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
-import ScoreCard from "./components/ScoreCard";
 import NavIcon from "./components/NavIcons";
-import Achievements from "./components/Achievements";
 import PrecisionStars from "./components/PrecisionStars";
 import { POINTS_PER_SOLVE } from "./lib/progress";
 import type { Square } from "./lib/scoreCard";
-import RegionGame from "./components/RegionGame";
-import RegionMapPreview from "./components/RegionMapPreview";
-import PracticeGame from "./components/PracticeGame";
-import CountryQuizGame from "./components/CountryQuizGame";
 import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
@@ -60,17 +53,12 @@ import { continentOf } from "./lib/continents";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
-import WorldMap from "./components/WorldMap";
-import WeeklyLeague from "./components/WeeklyLeague";
-import StreakCard from "./components/StreakCard";
-import CoinShop, { CoinShopCard } from "./components/CoinShop";
 import { getCoinBalance, onCoinsChanged, retryPendingCredit } from "./lib/coins";
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
 import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, XP, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
-import BordyTutorial, { QuickStart } from "./components/BordyTutorial";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
 import {
   requestPayment,
@@ -104,6 +92,33 @@ const TUTORIAL_KEY = "frontle-tutorial-visto";
 // en MiniPay — montarlo antes descargaría el chunk igual, aunque luego se
 // desmontara, que es justo lo que queremos evitar allí.
 const PrivyGate = dynamic(() => import("./components/PrivyGate"), { ssr: false });
+
+// Todo lo que vive detrás de una pestaña, un modo o un overlay sale del bundle
+// inicial. Antes entraba entero en el primer render: quien abría el reto diario
+// se descargaba también el quiz, las regiones, la práctica, la tienda y los
+// logros sin haberlos tocado (PageSpeed: 983 KiB de JS sin usar, LCP 16,5 s).
+// El tope de MiniPay son 2 MB por ruta, así que esto es cumplimiento, no solo
+// velocidad. Cada uno de estos ya se renderiza bajo condición, así que su chunk
+// se pide justo cuando el jugador entra — nunca antes.
+//
+// Ojo al añadir uno nuevo: si el JSX no está gateado por una condición, el
+// `dynamic()` no ahorra nada (el chunk se pide igual en el primer render).
+const WorldMap = dynamic(() => import("./components/WorldMap"), { ssr: false });
+const RegionGame = dynamic(() => import("./components/RegionGame"), { ssr: false });
+const CountryQuizGame = dynamic(() => import("./components/CountryQuizGame"), { ssr: false });
+const PracticeGame = dynamic(() => import("./components/PracticeGame"), { ssr: false });
+const RegionMapPreview = dynamic(() => import("./components/RegionMapPreview"), { ssr: false });
+const Achievements = dynamic(() => import("./components/Achievements"), { ssr: false });
+const StreakCard = dynamic(() => import("./components/StreakCard"), { ssr: false });
+const WeeklyLeague = dynamic(() => import("./components/WeeklyLeague"), { ssr: false });
+const ScoreCard = dynamic(() => import("./components/ScoreCard"), { ssr: false });
+const Coachmarks = dynamic(() => import("./components/Coachmarks"), { ssr: false });
+// BordyTutorial arrastra `lib/tutorialMap` (~72 KB de trazados) y solo se ve en
+// la primera partida; QuickStart sale del mismo módulo.
+const BordyTutorial = dynamic(() => import("./components/BordyTutorial"), { ssr: false });
+const QuickStart = dynamic(() => import("./components/BordyTutorial").then((m) => m.QuickStart), { ssr: false });
+const CoinShop = dynamic(() => import("./components/CoinShop"), { ssr: false });
+const CoinShopCard = dynamic(() => import("./components/CoinShop").then((m) => m.CoinShopCard), { ssr: false });
 
 // Reparto base del pot por nivel (los 3 con ganador), igual que _computeShares
 // del contrato. Si algún nivel queda vacío, su parte sube al inmediato superior
@@ -159,7 +174,16 @@ export default function Frontle() {
   const [showNextSil, setShowNextSil] = useState(false);
   const [showAllSil, setShowAllSil] = useState(false);
   const [showInitial, setShowInitial] = useState(false);
-  const [countdown, setCountdown] = useState("");
+  // Placeholder del MISMO ancho que "07:08:43", no cadena vacía. Este span es
+  // el elemento LCP de la home (PageSpeed lo señala por su clase). Arrancando
+  // en "" el HTML prerenderizado pinta solo "🕒 Cierra en " y el texto no
+  // alcanza su tamaño final hasta que hidrata — Lighthouse lo contaba como
+  // "retraso de renderizado de elementos: 3780 ms" y el LCP se iba con él.
+  // Con el hueco ya reservado, el elemento llega a su tamaño definitivo en el
+  // primer pintado y luego solo cambia de dígitos. Tiene que ser hidratación-
+  // estable (nada de calcular la hora aquí): la página es estática y el valor
+  // del build llegaría rancio al navegador.
+  const [countdown, setCountdown] = useState("--:--:--");
   const [best, setBest] = useState<number | null>(null);
   const [pot, setPot] = useState<number | null>(null);
   // Moneda de VISUALIZACIÓN (el token real siempre es USDT; esto solo convierte
@@ -1960,7 +1984,13 @@ export default function Frontle() {
 
       {/* Tienda de monedas (compartida por Home, Perfil y el menú de Bordy).
           Al cerrar refresca el saldo por si hubo compra. */}
-      <CoinShop tr={tr} open={shopOpen} onClose={() => { setShopOpen(false); refreshCoins(); }} />
+      {/* Gateado por `shopOpen` además del prop `open`: con el import dinámico,
+          montarlo siempre pediría el chunk en el primer render aunque el modal
+          devolviera null. La tienda reinicia su estado al abrir, así que
+          desmontarla al cerrar no pierde nada. */}
+      {shopOpen && (
+        <CoinShop tr={tr} open={shopOpen} onClose={() => { setShopOpen(false); refreshCoins(); }} />
+      )}
 
       {/* Menú de Bordy (FAB): reusa la tienda real de arriba, no una propia. */}
       {bordyMenu && (
