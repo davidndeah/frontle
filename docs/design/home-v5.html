@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontle — Home compacto v5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens reales de la app (frontend/app/globals.css, tema default). */
+:root{
+  --bg:#160833; --surface:#1c0b3e; --deep:#0d0420; --panel-solid:#0f0524;
+  --lavender:#b79ced; --gold:#fcff52; --ink:#f3edff; --muted:#8791a8; --violet:#6c2bd9;
+  --body-grad:radial-gradient(120% 90% at 50% 0%,#2a1257 0%,#1c0b3e 50%,#130729 100%);
+  --panel-brd:rgba(183,156,237,.28); --grid-line:rgba(183,156,237,.10);
+  --prism-grad:linear-gradient(100deg,#c084fc 0%,#a855f7 28%,#ffffff 52%,#fcff52 100%);
+  --start:#22d3ee; --end:#e879f9; --good:#22c55e;
+  --font-display:"Fredoka"; --font-sans:"Geist";
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0518;color:var(--ink);font-family:var(--font-sans),system-ui,sans-serif;
+  padding:26px 20px 70px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto}
+.doc-head{max-width:70ch;margin-bottom:22px}
+.doc-head h1{font-family:var(--font-display);font-size:1.85rem;font-weight:700;letter-spacing:-.02em;margin-bottom:10px}
+.doc-head p{color:#c9c2dd;margin-bottom:8px}
+.doc-head .tip{background:rgba(252,255,82,.08);border:1px solid rgba(252,255,82,.32);
+  border-radius:12px;padding:11px 14px;margin-top:12px;font-size:.9rem;color:#f0ecc9}
+.chg{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.34);border-radius:12px;padding:14px 16px;margin-top:14px}
+.chg strong{color:#86efac}
+.chg ol{margin:8px 0 0 18px;color:#c9c2dd;font-size:.92rem}
+.chg li{margin-bottom:5px}
+.layout{display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start}
+.phones{display:flex;gap:22px;flex-wrap:wrap}
+.phone-wrap{flex:none}
+.phone-cap{font-family:var(--font-display);font-size:.82rem;font-weight:600;color:var(--lavender);
+  margin-bottom:8px;display:flex;align-items:center;gap:7px}
+.phone-cap em{font-style:normal;font-size:.7rem;color:var(--muted);font-weight:400}
+
+.phone{width:360px;height:718px;border-radius:26px;overflow:hidden;position:relative;flex:none;
+  border:2px solid var(--deep);box-shadow:0 24px 60px rgba(0,0,0,.55);background:var(--body-grad)}
+.phone .grid-bg{position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid-line) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);background-size:46px 46px}
+.screen{position:relative;height:100%;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding:9px 13px 12px;display:flex;flex-direction:column;gap:10px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* 1 · Header — sin cambios respecto a la app en producción */
+.topbar{display:flex;align-items:center;gap:7px;padding:9px 13px 3px;flex:none}
+.brand{font-family:var(--font-display);font-weight:700;font-size:.95rem;letter-spacing:.06em;
+  background:var(--prism-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:flex;align-items:center;gap:4px;font-size:.7rem;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(183,156,237,.25);border-radius:999px;padding:3px 8px}
+
+/* 2 · Bordy: identidad (nuevo) o saludo (veterano) + los 3 pasos ------------
+   El bloque es el MISMO sitio que hoy ocupa la burbuja de Bordy. Lo que
+   cambia es qué dice: a quien nunca jugó le dice qué es Frontle; a quien ya
+   jugó le dice lo de siempre. Así el veterano no paga con altura la
+   explicación que ya no necesita. */
+.host{display:flex;align-items:flex-start;gap:9px}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+.host img{width:52px;height:62px;object-fit:contain;flex:none;animation:float 4.5s ease-in-out infinite;cursor:pointer}
+.bubble{position:relative;flex:1;background:var(--surface);border:2px solid var(--deep);
+  box-shadow:3px 3px 0 var(--deep);border-radius:13px;padding:9px 11px;font-size:.78rem;line-height:1.4}
+.bubble::after{content:"";position:absolute;left:-9px;top:16px;width:0;height:0;
+  border:7px solid transparent;border-right-color:var(--deep)}
+.bubble .fire{font-family:var(--font-display);font-weight:700;color:var(--gold);font-size:.95rem}
+.bubble b.name{font-family:var(--font-display);color:var(--gold);font-weight:700}
+
+/* Los 3 pasos. Plegables: el usuario nuevo los ve abiertos, el veterano los
+   ve como una sola línea tocable. */
+.howto{border-radius:13px;background:var(--panel-solid);border:1px solid var(--panel-brd);overflow:hidden}
+.howto .head{display:flex;align-items:center;gap:7px;width:100%;padding:8px 11px;cursor:pointer;
+  background:none;border:0;color:var(--ink);font-family:var(--font-display);font-weight:600;font-size:.78rem;text-align:left}
+.howto .head .caret{margin-left:auto;color:var(--lavender);font-size:.7rem;transition:transform .16s ease}
+.howto.open .head .caret{transform:rotate(90deg)}
+.howto .steps{display:none;padding:0 11px 10px;flex-direction:column;gap:7px}
+.howto.open .steps{display:flex}
+.howto .step{display:flex;gap:9px;align-items:flex-start;font-size:.74rem;line-height:1.35;color:#d7cfe9}
+.howto .step .n{flex:none;width:19px;height:19px;border-radius:6px;display:grid;place-items:center;
+  background:var(--gold);color:var(--deep);font-family:var(--font-display);font-weight:700;font-size:.66rem}
+.howto .step b{color:#fff;font-weight:600}
+
+/* 3 · Héroe COMPACTO — sin cartas selladas ni arco (se mudan al 3·2·1) */
+.hero{border-radius:16px;background:var(--violet);padding:11px;position:relative;overflow:hidden;
+  border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep)}
+.hero .kicker{font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+.hero .live{position:absolute;top:11px;right:11px;display:flex;align-items:center;gap:5px;
+  font-size:.56rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#fff;
+  background:rgba(0,0,0,.35);border-radius:999px;padding:2px 7px}
+.hero .live b{width:5px;height:5px;border-radius:50%;background:#ef4444;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+.potrow{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:rgba(0,0,0,.28);border-radius:11px;padding:5px 12px;margin-top:8px}
+.potrow .lbl{font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.68);display:block}
+.potrow .amt{font-family:var(--font-display);font-weight:700;font-size:1.12rem;color:var(--gold);line-height:1.15}
+.potrow .clock{font-family:ui-monospace,monospace;font-size:.9rem;color:#fff;font-variant-numeric:tabular-nums;line-height:1.25}
+.potrow .r{text-align:right}
+
+.levels{display:flex;gap:6px;margin-top:6px}
+.levels button{flex:1;border-radius:10px;padding:7px 3px;cursor:pointer;text-align:center;
+  background:rgba(0,0,0,.26);border:2px solid var(--deep);color:#fff;
+  font-family:var(--font-display);font-weight:600;font-size:.74rem;line-height:1.15;
+  transition:transform .08s ease,box-shadow .08s ease,background .12s ease}
+.levels button small{display:block;font-family:ui-monospace,monospace;font-size:.6rem;opacity:.9;font-weight:400}
+.levels button.on{background:var(--gold);color:var(--deep);box-shadow:2px 2px 0 var(--deep)}
+
+.play{display:block;width:100%;margin-top:7px;border-radius:13px;padding:9px 0;cursor:pointer;
+  font-family:var(--font-display);font-weight:700;font-size:1.08rem;
+  background:var(--gold);color:var(--deep);border:2px solid var(--deep);box-shadow:4px 4px 0 var(--deep);
+  transition:transform .08s ease,box-shadow .08s ease}
+.play:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
+
+/* 4 · Modos — igual que v4, ya era compacto */
+h3.sec{font-family:var(--font-display);font-size:.7rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:2px 0 -3px;display:flex;align-items:center;gap:6px}
+h3.sec b{color:var(--lavender);font-weight:600}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{border-radius:13px;overflow:hidden;cursor:pointer;background:var(--panel-solid);
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);display:flex;flex-direction:column;
+  transition:transform .08s ease,box-shadow .08s ease}
+.mode:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--deep)}
+.mode .art{height:58px;position:relative;display:grid;place-items:center;overflow:hidden}
+.mode .art img{width:100%;height:100%;object-fit:cover}
+.mode .art .glyph{font-size:2.1rem}
+.mode .xp{position:absolute;top:6px;right:6px;font-size:.55rem;font-weight:700;color:var(--deep);
+  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:0 5px}
+.mode .foot{display:flex;align-items:center;gap:6px;padding:7px 8px;background:var(--surface)}
+.mode .foot b{font-family:var(--font-display);font-size:.78rem;font-weight:600;flex:1;min-width:0;line-height:1.1}
+.mode .foot .go{flex:none;width:23px;height:23px;border-radius:7px;display:grid;place-items:center;
+  font-size:.64rem;background:var(--gold);color:var(--deep);border:2px solid var(--deep)}
+
+/* 5 · Asomo del ranking — NUEVO -------------------------------------------
+   Sin consulta nueva: el ranking del día ya se carga al montar la app, no al
+   entrar a la pestaña. Filas, no podio: el podio es alto y sigue siendo el
+   premio de entrar a Ranking. */
+.peek{border-radius:13px;background:var(--panel-solid);border:1px solid var(--panel-brd);padding:9px 10px}
+.peek .ptitle{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  text-align:center;margin-bottom:7px}
+.peek ol{list-style:none;display:flex;flex-direction:column;gap:5px}
+.peek li{display:grid;grid-template-columns:1.35rem 1fr auto;align-items:center;gap:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(183,156,237,.16);border-radius:9px;padding:5px 8px}
+.peek li.mine{background:rgba(252,255,82,.09);border-color:rgba(252,255,82,.42)}
+.peek li .pos{font-family:var(--font-display);font-weight:700;font-size:.74rem;color:var(--lavender);text-align:center}
+.peek li.mine .pos{color:var(--gold)}
+.peek li .who{display:flex;align-items:center;gap:6px;min-width:0;font-size:.76rem}
+.peek li .who img{width:17px;height:12px;object-fit:cover;border-radius:2px;flex:none}
+.peek li .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.peek li .stat{font-family:var(--font-display);font-weight:700;font-size:.76rem;color:#fff;text-align:right;line-height:1.1}
+.peek li .stat small{display:block;font-family:ui-monospace,monospace;font-weight:400;font-size:.6rem;color:var(--muted)}
+.peek .gap{text-align:center;color:var(--muted);font-size:.7rem;letter-spacing:.3em;line-height:.7;margin:1px 0}
+.peek .all{display:block;width:100%;margin-top:8px;border-radius:9px;padding:6px 0;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(183,156,237,.3);color:var(--lavender);
+  font-family:var(--font-display);font-weight:600;font-size:.72rem}
+
+/* 6 · Tienda de monedas — sin cambios */
+.shop{display:flex;align-items:center;gap:9px;border-radius:13px;background:var(--surface);
+  border:2px solid var(--deep);box-shadow:3px 3px 0 var(--deep);padding:8px 10px;cursor:pointer}
+.shop .glyph{font-size:1.5rem}
+.shop b{font-family:var(--font-display);font-size:.8rem;flex:1}
+.shop small{display:block;font-weight:400;font-size:.66rem;color:var(--muted)}
+.shop .go{flex:none;width:23px;height:23px;border-radius:7px;display:grid;place-items:center;
+  font-size:.64rem;background:var(--gold);color:var(--deep);border:2px solid var(--deep)}
+
+.navbar{flex:none;display:flex;border-top:1px solid rgba(183,156,237,.18);
+  background:rgba(13,4,32,.85);backdrop-filter:blur(8px)}
+.navbar div{flex:1;text-align:center;padding:8px 0 10px;font-size:.58rem;color:var(--muted)}
+.navbar div.on{color:var(--gold)}
+.navbar div span{display:block;font-size:1rem;margin-bottom:1px}
+
+/* 7 · La pantalla del 3·2·1, que ahora hereda las cartas selladas ---------- */
+.count321{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:11px;padding:0 26px;text-align:center}
+.count321 img{width:86px;height:100px;object-fit:contain;animation:float 4.5s ease-in-out infinite}
+.count321 .ready{font-family:var(--font-display);font-weight:700;font-size:1.05rem}
+.count321 .big{font-family:var(--font-display);font-weight:700;font-size:3.6rem;color:var(--gold);
+  text-shadow:0 0 24px rgba(252,255,82,.45);line-height:1}
+.count321 .link{font-size:.66rem;color:var(--muted);text-decoration:underline;cursor:pointer}
+
+/* Cartas selladas: mismo dibujo que hoy vive en el héroe, mudado aquí */
+.sealed{position:relative;display:flex;align-items:flex-start;width:100%;padding-top:22px}
+.sealed .arc{position:absolute;left:0;right:0;top:0;height:22px;pointer-events:none;z-index:0}
+.sealed .count{position:absolute;left:50%;top:-1px;transform:translateX(-50%);z-index:2;
+  font-family:var(--font-display);font-weight:700;font-size:.7rem;color:var(--deep);
+  background:var(--gold);border:2px solid var(--deep);border-radius:999px;padding:1px 9px;white-space:nowrap}
+.sealed .slot{position:relative;z-index:1;flex:1;text-align:center;min-width:0;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.sealed .back{width:46px;height:46px;border-radius:6px;position:relative;overflow:hidden;
+  border:2px solid var(--deep);background:rgba(0,0,0,.25);display:grid;place-items:center;padding:4px}
+.sealed .back::before{content:"";position:absolute;top:0;bottom:0;width:34px;z-index:1;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);
+  animation:sweep 3.4s ease-in-out infinite}
+.sealed .to .back::before{animation-delay:.45s}
+@keyframes sweep{0%{left:-40px}55%,100%{left:100%}}
+.sealed .from .back{border-color:var(--start)}
+.sealed .to .back{border-color:var(--end)}
+.sealed .cont{font-family:var(--font-display);font-weight:700;font-size:.56rem;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--gold);line-height:1.1}
+.sealed .slot i{font-style:normal;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,.72)}
+
+.side{flex:1;min-width:320px;max-width:560px}
+.side h2{font-family:var(--font-display);font-size:1.08rem;font-weight:700;margin:20px 0 6px}
+.side h2:first-child{margin-top:0}
+.side p{color:#c9c2dd;font-size:.88rem;margin-bottom:8px}
+.side ul{color:#c9c2dd;font-size:.88rem;margin:0 0 8px 18px}
+.side li{margin-bottom:4px}
+.side code{background:rgba(255,255,255,.07);border-radius:4px;padding:1px 5px;font-size:.85em}
+.side .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;
+  background:var(--gold);color:var(--deep);font-family:var(--font-display);font-weight:700;font-size:.75rem;
+  margin-right:7px;vertical-align:middle}
+.side .warn{background:rgba(252,255,82,.07);border:1px solid rgba(252,255,82,.3);border-radius:11px;
+  padding:11px 13px;font-size:.85rem;color:#f0ecc9;margin-bottom:10px}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc-head">
+    <h1>Home compacto — v5</h1>
+    <p>Respuesta al feedback de MiniPay: al abrir la app el jugador no entiende qué es Frontle ni qué se espera de él. El home pasa a leerse de arriba abajo como <strong>qué es → juega hoy → otros modos → cómo va la competencia</strong>.</p>
+    <div class="tip">👉 <strong>Es interactivo:</strong> toca <em>¿Cómo se juega?</em> para plegar los pasos, cambia de dificultad, y toca <strong>JUGAR</strong> en el primer teléfono para ver la pantalla del 3·2·1 con las cartas selladas.</div>
+  </header>
+
+  <div class="layout">
+
+    <div class="phones">
+
+      <!-- ============ Teléfono 1: usuario NUEVO ============ -->
+      <div class="phone-wrap">
+        <div class="phone-cap">① Usuario nuevo <em>· nunca resolvió un reto</em></div>
+        <div class="phone">
+          <div class="grid-bg"></div>
+
+          <!-- Home -->
+          <div class="screen" id="home-nuevo">
+            <div class="topbar">
+              <span class="brand">FRONTLE</span>
+              <span class="chip" style="margin-left:auto">⚙️</span>
+              <span class="chip">Entrar</span>
+            </div>
+
+            <div class="scroll">
+
+              <!-- ② Bordy dice QUÉ ES Frontle -->
+              <div class="host">
+                <img src="../../frontend/public/bordy-m2.webp" alt="Bordy">
+                <span class="bubble">Soy Bordy. En <b class="name">Frontle</b> conectas el país de salida con el de meta cruzando países vecinos, uno a la vez.</span>
+              </div>
+
+              <!-- Los 3 pasos, abiertos -->
+              <div class="howto open" id="howto1">
+                <button class="head" data-howto="1">🧭 ¿Cómo se juega?<span class="caret">▸</span></button>
+                <div class="steps">
+                  <div class="step"><span class="n">1</span><span>Te damos un país de <b>salida</b> y uno de <b>meta</b>.</span></div>
+                  <div class="step"><span class="n">2</span><span>Escribe países que <b>compartan frontera</b>, uno por uno, hasta unirlos.</span></div>
+                  <div class="step"><span class="n">3</span><span><b>Menos países y menos tiempo</b> = mejor puesto.</span></div>
+                </div>
+              </div>
+
+              <!-- ③ Héroe compacto -->
+              <div class="hero">
+                <span class="live"><b></b> En juego</span>
+                <span class="kicker">Reto de hoy</span>
+
+                <div class="potrow">
+                  <span>
+                    <span class="lbl">Premio del día</span>
+                    <span class="amt" id="pot">0.48 USDT</span>
+                  </span>
+                  <span class="r">
+                    <span class="lbl">Cierra en</span>
+                    <span class="clock">07:10:42</span>
+                  </span>
+                </div>
+
+                <div class="levels" id="levels">
+                  <button data-pot="0.12 USDT" data-n="3">🌱 Fácil<small>0.12</small></button>
+                  <button class="on" data-pot="0.48 USDT" data-n="4">⚡ Medio<small>0.48</small></button>
+                  <button data-pot="0.94 USDT" data-n="6">💀 Difícil<small>0.94</small></button>
+                </div>
+
+                <button class="play" id="play">▶ JUGAR</button>
+              </div>
+
+              <!-- ④ Modos -->
+              <h3 class="sec">Gana experiencia <b>· gratis, sin límite</b></h3>
+              <div class="modes">
+                <div class="mode">
+                  <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""><span class="xp">+2 XP</span></span>
+                  <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+                </div>
+                <div class="mode">
+                  <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                    <svg viewBox="0 0 120 90" width="66%" height="66%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                    <span class="xp">+2 XP</span>
+                  </span>
+                  <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+                </div>
+                <div class="mode">
+                  <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""><span class="xp">+3 XP</span></span>
+                  <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+                </div>
+                <div class="mode">
+                  <span class="art" style="background:linear-gradient(160deg,#5a1030,#2e0819)"><span class="glyph">🎓</span></span>
+                  <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+                </div>
+              </div>
+
+              <!-- ⑤ Asomo del ranking. Para el usuario nuevo, sin fila propia -->
+              <div class="peek">
+                <div class="ptitle">🏆 Ranking de hoy · Medio</div>
+                <ol>
+                  <li><span class="pos">1</span><span class="who"><img src="https://flagcdn.com/w40/co.png" alt=""><span>Ana</span></span><span class="stat">4<small>1:02</small></span></li>
+                  <li><span class="pos">2</span><span class="who"><img src="https://flagcdn.com/w40/ng.png" alt=""><span>Chidi</span></span><span class="stat">4<small>1:19</small></span></li>
+                  <li><span class="pos">3</span><span class="who"><img src="https://flagcdn.com/w40/br.png" alt=""><span>Luana</span></span><span class="stat">5<small>0:58</small></span></li>
+                </ol>
+                <button class="all">Ver todo el ranking →</button>
+              </div>
+
+              <!-- ⑥ Tienda -->
+              <div class="shop">
+                <span class="glyph">🪙</span>
+                <b>Tienda de monedas<small>Pistas, congeladores de racha</small></b>
+                <span class="go">▶</span>
+              </div>
+
+            </div>
+
+            <div class="navbar">
+              <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+              <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+            </div>
+          </div>
+
+          <!-- Pantalla del 3·2·1, oculta hasta pulsar JUGAR -->
+          <div class="screen" id="pregame" style="display:none">
+            <div class="count321">
+              <img src="../../frontend/public/bordy-m2.webp" alt="Bordy">
+              <p class="ready">¿Listo?</p>
+
+              <!-- Las cartas selladas, mudadas del héroe a aquí -->
+              <div class="sealed">
+                <svg class="arc" viewBox="0 0 100 22" preserveAspectRatio="none" fill="none" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="arc5" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+                      <stop stop-color="#22d3ee"/><stop offset="1" stop-color="#e879f9"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M25 21 C25 3, 75 3, 75 21" stroke="url(#arc5)" stroke-width="2"
+                        stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+                </svg>
+                <span class="count" id="count">4 países</span>
+
+                <span class="slot from">
+                  <span class="back">
+                    <svg viewBox="0 0 120 90" width="100%" height="100%"><path d="M14 30 L34 16 L58 20 L74 12 L96 26 L104 52 L84 74 L52 78 L28 62 Z" fill="rgba(252,255,82,.25)" stroke="#fcff52" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span class="cont">Europa</span>
+                  <i>Salida</i>
+                </span>
+                <span class="slot to">
+                  <span class="back">
+                    <svg viewBox="0 0 120 90" width="100%" height="100%"><path d="M30 10 L70 8 L92 30 L86 58 L60 82 L34 66 L22 38 Z" fill="rgba(252,255,82,.25)" stroke="#fcff52" stroke-width="1.4" stroke-linejoin="round"/></svg>
+                  </span>
+                  <span class="cont">África</span>
+                  <i>Meta</i>
+                </span>
+              </div>
+
+              <div class="big" id="tick">3</div>
+              <span class="link" id="back">← volver al inicio</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ Teléfono 2: veterano ============ -->
+      <div class="phone-wrap">
+        <div class="phone-cap">② Veterano <em>· ya resolvió algún reto</em></div>
+        <div class="phone">
+          <div class="grid-bg"></div>
+          <div class="screen">
+            <div class="topbar">
+              <span class="brand">FRONTLE</span>
+              <span class="chip" style="margin-left:auto">🔥 4</span>
+              <span class="chip">🪙 12</span>
+              <span class="chip">⚙️</span>
+            </div>
+
+            <div class="scroll">
+
+              <!-- Bordy vuelve a su saludo de siempre -->
+              <div class="host">
+                <img src="../../frontend/public/bordy-m2.webp" alt="Bordy">
+                <span class="bubble">Llevas <span class="fire">🔥 4 días</span> seguidos. ¡No la rompas hoy!</span>
+              </div>
+
+              <!-- Los pasos, plegados a una línea -->
+              <div class="howto" id="howto2">
+                <button class="head" data-howto="2">🧭 ¿Cómo se juega?<span class="caret">▸</span></button>
+                <div class="steps">
+                  <div class="step"><span class="n">1</span><span>Te damos un país de <b>salida</b> y uno de <b>meta</b>.</span></div>
+                  <div class="step"><span class="n">2</span><span>Escribe países que <b>compartan frontera</b>, uno por uno, hasta unirlos.</span></div>
+                  <div class="step"><span class="n">3</span><span><b>Menos países y menos tiempo</b> = mejor puesto.</span></div>
+                </div>
+              </div>
+
+              <div class="hero">
+                <span class="live"><b></b> En juego</span>
+                <span class="kicker">Reto de hoy</span>
+                <div class="potrow">
+                  <span>
+                    <span class="lbl">Premio del día</span>
+                    <span class="amt">0.48 USDT</span>
+                  </span>
+                  <span class="r">
+                    <span class="lbl">Cierra en</span>
+                    <span class="clock">07:10:42</span>
+                  </span>
+                </div>
+                <div class="levels">
+                  <button>🌱 Fácil<small>0.12</small></button>
+                  <button class="on">⚡ Medio<small>0.48</small></button>
+                  <button>💀 Difícil<small>0.94</small></button>
+                </div>
+                <button class="play">▶ JUGAR</button>
+              </div>
+
+              <h3 class="sec">Gana experiencia <b>· gratis, sin límite</b></h3>
+              <div class="modes">
+                <div class="mode">
+                  <span class="art"><img src="https://flagcdn.com/w320/ua.png" alt=""><span class="xp">+2 XP</span></span>
+                  <span class="foot"><b>Bandera</b><span class="go">▶</span></span>
+                </div>
+                <div class="mode">
+                  <span class="art" style="background:linear-gradient(160deg,#123d24,#0b2415)">
+                    <svg viewBox="0 0 120 90" width="66%" height="66%"><path d="M22 12 L60 6 L92 24 L104 60 L76 84 L36 80 L16 52 Z" fill="#22c55e" stroke="#0d0420" stroke-width="3" stroke-linejoin="round"/></svg>
+                    <span class="xp">+2 XP</span>
+                  </span>
+                  <span class="foot"><b>Contorno</b><span class="go">▶</span></span>
+                </div>
+                <div class="mode">
+                  <span class="art"><img src="https://flagcdn.com/w320/co.png" alt=""><span class="xp">+3 XP</span></span>
+                  <span class="foot"><b>Regiones</b><span class="go">▶</span></span>
+                </div>
+                <div class="mode">
+                  <span class="art" style="background:linear-gradient(160deg,#5a1030,#2e0819)"><span class="glyph">🎓</span></span>
+                  <span class="foot"><b>Práctica</b><span class="go">▶</span></span>
+                </div>
+              </div>
+
+              <!-- Aquí sí aparece la fila propia, fuera del top 3 -->
+              <div class="peek">
+                <div class="ptitle">🏆 Ranking de hoy · Medio</div>
+                <ol>
+                  <li><span class="pos">1</span><span class="who"><img src="https://flagcdn.com/w40/co.png" alt=""><span>Ana</span></span><span class="stat">4<small>1:02</small></span></li>
+                  <li><span class="pos">2</span><span class="who"><img src="https://flagcdn.com/w40/ng.png" alt=""><span>Chidi</span></span><span class="stat">4<small>1:19</small></span></li>
+                  <li><span class="pos">3</span><span class="who"><img src="https://flagcdn.com/w40/br.png" alt=""><span>Luana</span></span><span class="stat">5<small>0:58</small></span></li>
+                </ol>
+                <div class="gap">···</div>
+                <ol>
+                  <li class="mine"><span class="pos">7</span><span class="who"><img src="https://flagcdn.com/w40/co.png" alt=""><span>Tú · santi</span></span><span class="stat">5<small>2:11</small></span></li>
+                </ol>
+                <button class="all">Ver todo el ranking →</button>
+              </div>
+
+              <div class="shop">
+                <span class="glyph">🪙</span>
+                <b>Tienda de monedas<small>Pistas, congeladores de racha</small></b>
+                <span class="go">▶</span>
+              </div>
+
+            </div>
+
+            <div class="navbar">
+              <div class="on"><span>🌍</span>Jugar</div><div><span>🏆</span>Ranking</div>
+              <div><span>👤</span>Perfil</div><div><span>❓</span>Aprender</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="side">
+      <div class="chg" style="margin-top:0">
+        <strong>Los cambios</strong>
+        <ol>
+          <li><strong>Bordy dice qué es Frontle</strong> a quien nunca jugó, y su saludo de siempre a quien ya jugó.</li>
+          <li><strong>Los 3 pasos</strong> debajo, abiertos para el nuevo y plegados para el veterano.</li>
+          <li><strong>El héroe adelgaza</strong>: las cartas selladas y el arco se van al 3·2·1.</li>
+          <li><strong>El ranking de hoy asoma en el home</strong>, con tu fila si estás fuera del top 3.</li>
+          <li>Ni una pestaña nueva, ni un tap más para llegar al reto.</li>
+        </ol>
+      </div>
+
+      <h2><span class="num">1</span>Qué pidió MiniPay</h2>
+      <p>Que el arranque no exija esfuerzo cognitivo: un home compacto que explique <strong>qué es el juego, cómo jugarlo, qué modos hay y dónde está el ranking</strong>. La referencia que dieron fue <code>arcadia.uno</code>, por su estructura — no por su diseño visual.</p>
+      <p>Hoy la única explicación de la mecánica es una línea de 10&nbsp;px al 60&nbsp;% de opacidad dentro del héroe. Todo lo demás que ve el recién llegado son números: tres pots, una cuenta atrás, insignias de XP y un saldo de monedas.</p>
+
+      <h2><span class="num">2</span>Por qué la explicación va en la burbuja</h2>
+      <p>Bordy ya está ahí y ya es lo primero que se mira. Meterle la explicación no agrega un bloque nuevo: <strong>cambia lo que dice según a quién</strong>. El veterano recupera su saludo y su racha, y su home no crece ni un píxel.</p>
+      <p>La señal es <code>daysPlayed</code>, que la app ya calcula contando las claves <code>frontle-best-*</code>. Quien pliegue los pasos a mano manda sobre la heurística — la elección se guarda.</p>
+
+      <h2><span class="num">3</span>Las cartas selladas se mudan, no se pierden</h2>
+      <p>Son bonitas y son el misterio del día, pero en el home compiten con la explicación justo cuando el jugador todavía no sabe qué está mirando. Su sitio natural es la pantalla de <strong>«¿Listo? 3 · 2 · 1»</strong> que ya sale al pulsar Jugar: ahí son el teaser del reto un segundo antes de revelarlo.</p>
+      <p>No agrega ningún tap — esa pantalla ya existía y ya duraba 2,25&nbsp;s. Y de paso saca <code>continentOutlines.ts</code> (9,2&nbsp;KB) del chunk inicial del home hacia el de <code>BordyTutorial</code>, que es <code>next/dynamic</code>: ayuda al límite de 2&nbsp;MB por ruta del listing.</p>
+
+      <h2><span class="num">4</span>El ranking, sin consulta nueva</h2>
+      <p>El ranking del día ya se carga al montar la app (efecto de <code>[day, level]</code>), no al entrar a la pestaña. Asomarlo en el home <strong>no cuesta ni una petición más</strong>.</p>
+      <p>Van filas y no podio: el podio es alto y sigue siendo el premio de entrar a Ranking. Si estás fuera del top 3 se añade tu fila real con tu puesto, que es el dato que de verdad hace volver.</p>
+
+      <h2><span class="num">5</span>Lo que NO se toca</h2>
+      <ul>
+        <li>La cabecera, la rejilla de modos, la tienda y la barra de 4 pestañas.</li>
+        <li>El <code>&lt;span&gt;</code> de la cuenta atrás: es el elemento LCP de la ruta y conserva su placeholder de ancho fijo.</li>
+        <li>El bloque de conexión sigue colgando de <code>!inMiniPay</code> — dentro de MiniPay no puede existir un botón «Conectar».</li>
+        <li>Ninguna palabra prohibida por el listing en el texto nuevo (nada de «gas», «crypto», «comprar cripto»), y el token CELO no aparece en ningún sitio.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Plegar/desplegar los pasos, en los dos telefonos.
+document.querySelectorAll('.howto .head').forEach(function(h){
+  h.addEventListener('click',function(){ h.parentElement.classList.toggle('open'); });
+});
+
+// Cambiar dificultad actualiza pot y conteo de paises. El reto sigue oculto.
+(function(){
+  var levels=document.getElementById('levels');
+  levels.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    levels.querySelectorAll('button').forEach(function(x){x.classList.remove('on')});
+    b.classList.add('on');
+    document.getElementById('pot').textContent=b.dataset.pot;
+    document.getElementById('count').textContent=b.dataset.n+' paises';
+  });
+})();
+
+// JUGAR -> pantalla del 3.2.1 con las cartas selladas.
+(function(){
+  var home=document.getElementById('home-nuevo'), pre=document.getElementById('pregame'),
+      tick=document.getElementById('tick'), timer=null;
+  function stop(){ if(timer){clearInterval(timer);timer=null;} }
+  document.getElementById('play').addEventListener('click',function(){
+    home.style.display='none'; pre.style.display='flex'; pre.style.flexDirection='column';
+    var n=3; tick.textContent=n; stop();
+    timer=setInterval(function(){
+      n--; tick.textContent = n>0 ? n : '¡YA!';
+      if(n<0){ stop(); pre.style.display='none'; home.style.display='flex'; }
+    },750);
+  });
+  document.getElementById('back').addEventListener('click',function(){
+    stop(); pre.style.display='none'; home.style.display='flex';
+  });
+})();
+</script>
+</body>
+</html>
