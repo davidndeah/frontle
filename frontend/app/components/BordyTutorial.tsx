@@ -12,6 +12,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { TUTORIAL_MAP } from "../lib/tutorialMap";
 import { countryName, t, type Locale } from "../lib/i18n";
 import { STATUS_COLORS } from "../lib/theme";
+import { CONTINENT_OUTLINES, CONTINENT_OUTLINE_BOX } from "../lib/continentOutlines";
+import type { ContinentCode } from "../lib/continents";
 import Bordy from "./Bordy";
 
 type Dict = ReturnType<typeof t>;
@@ -358,7 +360,27 @@ export default function BordyTutorial({
 }
 
 // --- Pantalla rápida (veteranos): ¿Listo? 3 · 2 · 1 ---
-export function QuickStart({ tr, onDone, onFull }: { tr: Dict; onDone: () => void; onFull: () => void }) {
+//
+// Aquí viven ahora las CARTAS SELLADAS del reto (contorno del continente de
+// origen y de destino + el arco con el conteo de países). Antes ocupaban media
+// pantalla del Home, donde competían con la explicación del juego justo cuando
+// el recién llegado todavía no sabía qué estaba mirando (feedback de MiniPay:
+// demasiado esfuerzo cognitivo al abrir la app). Su sitio natural es este: son
+// el teaser del reto un segundo antes de revelarlo, y esta pantalla ya existía
+// y ya duraba 2,25 s — no añade ni un toque. Ver docs/design/home-v5.html.
+export function QuickStart({
+  tr, onDone, onFull, originContinent, destContinent, optimal,
+}: {
+  tr: Dict;
+  onDone: () => void;
+  onFull: () => void;
+  /** Continente del país de ORIGEN del reto (el país sigue sellado). */
+  originContinent: ContinentCode;
+  /** Continente del país de DESTINO. */
+  destContinent: ContinentCode;
+  /** Países de la ruta óptima — el conteo de la pastilla sobre el arco. */
+  optimal: number;
+}) {
   const [n, setN] = useState(3);
   const { ref: mutedRef } = useMuted();
   useEffect(() => {
@@ -369,14 +391,55 @@ export function QuickStart({ tr, onDone, onFull }: { tr: Dict; onDone: () => voi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [n]);
   return (
-    <div className="fixed inset-0 z-[60] bg-grid flex flex-col items-center justify-center gap-4"
+    <div className="fixed inset-0 z-[60] bg-grid flex flex-col items-center justify-center gap-3 px-8"
       style={{ background: "var(--body-grad)" }}>
-      <Bordy mood="idle" talking className="w-[96px] h-[112px]" imgClassName="drop-shadow-xl" />
+      <Bordy mood="idle" talking className="w-[88px] h-[104px]" imgClassName="drop-shadow-xl" />
       <p className="font-display font-bold text-white text-xl">{tr.ready}</p>
-      <div key={n} className="pop-in font-display font-bold text-7xl text-gold tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
+
+      {/* Cartas selladas + arco. Misma construcción que tenían en el héroe: el
+          arco vive en su PROPIA franja encima de las cartas (compartiendo caja
+          las líneas caían dentro de los recuadros), y x=25/75 son los centros
+          reales de los dos slots flex-1 al 50 %, así que la fila va SIN gap. */}
+      <div className="w-full max-w-[15rem]">
+        <div className="relative h-5">
+          {/* w-full explícito: un <svg> es un elemento reemplazado, así que
+              `inset-0` sin un width no lo estira al ancho del contenedor. */}
+          <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 20" preserveAspectRatio="none" fill="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="quickStartArc" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#22d3ee" /><stop offset="1" stopColor="#e879f9" />
+              </linearGradient>
+            </defs>
+            <path d="M25 19 C25 2, 75 2, 75 19" stroke="url(#quickStartArc)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border-2 border-deep bg-gold px-2.5 py-0.5 font-display text-[11px] font-bold text-deep">
+            {tr.dailyHero.countryCount(optimal)}
+          </span>
+        </div>
+        <div className="flex items-start">
+          {([
+            [originContinent, "#22d3ee", tr.legend.origin, ""],
+            [destContinent, "#e879f9", tr.legend.destination, "hero-sealed-sweep--delay"],
+          ] as const).map(([cont, color, label, delay], i) => (
+            <div key={i} className={`hero-sealed-sweep ${delay} flex flex-1 flex-col items-center gap-1 text-center`}>
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 bg-black/25 p-1" style={{ borderColor: color }}>
+                {/* strokeWidth=1 con non-scaling-stroke: el trazo se dibuja en
+                    píxeles de pantalla, no en unidades del viewBox. */}
+                <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
+                  <path d={CONTINENT_OUTLINES[cont]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="1" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                </svg>
+              </div>
+              <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[cont]}</span>
+              <span className="text-[10px] uppercase tracking-wider text-white/75">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div key={n} className="pop-in font-display font-bold text-6xl text-gold tabular-nums drop-shadow-[0_0_24px_rgba(252,255,82,0.45)]">
         {n > 0 ? n : tr.go}
       </div>
-      <button onClick={onFull} className="text-[11px] text-neutral-400 underline mt-2">{tr.fullTutorial}</button>
+      <button onClick={onFull} className="text-[11px] text-neutral-400 underline">{tr.fullTutorial}</button>
     </div>
   );
 }

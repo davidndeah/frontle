@@ -365,6 +365,25 @@ type Dict = {
   name: { title: string; sub: string; save: string; skip: string };
   // Cabecera del home (título + strip de gamificación)
   home: { titlePre: string; titleWord: string; streak: string; level: (n: number) => string; milestone: (n: number) => string; pendingToday: string };
+  // Home v5 (HOME-COMPACTO): respuesta al feedback de MiniPay — al abrir la
+  // app el jugador no entendía qué es Frontle ni qué se esperaba de él. Ver
+  // docs/design/home-v5.html.
+  homeIntro: {
+    // Qué ES Frontle, en boca de Bordy. Ocupa su burbuja SOLO mientras el
+    // jugador no haya resuelto ningún reto; después vuelve el saludo de
+    // siempre (bordyStreak / bordyQuips), que es lo que le sirve a quien ya
+    // sabe jugar. Sustituye a la vieja línea de 10 px dentro del héroe, que
+    // nadie leía.
+    whatIs: string;
+    // Cabecera plegable de los tres pasos.
+    howTitle: string;
+    // Los tres pasos del reto diario. Exactamente tres: es el resumen, no el
+    // tutorial (ese es BordyTutorial, con su tablero animado).
+    steps: string[];
+    // Pie del asomo del ranking en el home. El título de ese bloque reutiliza
+    // rankingTitle, y la etiqueta de la fila propia, liga.youNamed.
+    seeAll: string;
+  };
   // Home v2 (REDISEÑO-HOME): Bordy anfitrión + héroe del reto sellado + grilla
   // de modos gratis. Ver docs/design/home-v4.html — mockup de referencia.
   dailyHero: {
@@ -377,13 +396,9 @@ type Dict = {
     // ahora abre el menú (tutorial/tienda/perfil/soporte), así que varias
     // invitan a tocarlo.
     bordyQuips: string[];
-    // Explicación breve de la mecánica ("conecta fronteras"), en el propio
-    // tablero del reto — David: "necesito que expliques rápidamente cómo
-    // funciona el modo de juego". Una sola línea a propósito: el tutorial
-    // completo (BordyTutorial) y el "Cómo se juega" del menú de Bordy ya
-    // cubren el resto; esto es solo el empujón de una línea para quien
-    // nunca lo vio.
-    howToPlay: string;
+    // (La vieja `howToPlay` — la línea de 10 px dentro del héroe que explicaba
+    // la mecánica — vive ahora en homeIntro.whatIs, en la burbuja de Bordy y a
+    // tamaño legible. Ver docs/design/home-v5.html.)
     live: string;
     closesIn: (time: string) => string;
     potLabel: string;
@@ -776,6 +791,16 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
+    homeIntro: {
+      whatIs: "Soy Bordy. Frontle es un juego diario de geografía: une dos países cruzando sus vecinos.",
+      howTitle: "¿Cómo se juega?",
+      steps: [
+        "Te damos un país de origen y uno de destino.",
+        "Escribe países que compartan frontera, uno por uno, hasta unirlos.",
+        "Menos países y menos tiempo = mejor puesto.",
+      ],
+      seeAll: "Ver todo el ranking",
+    },
     dailyHero: {
       bordyStreak: (n) => `Llevas 🔥 ${n} días seguidos. ¡No la rompas hoy!`,
       bordyNoStreak: "¿Jugamos el reto de hoy? Empecemos una racha 🔥",
@@ -785,7 +810,6 @@ const STRINGS: Record<Locale, Dict> = {
         "Puedes jugar sin conectar nada, ¡dale que dale!",
         "Cada modo te da experiencia. ¡A explorar!",
       ],
-      howToPlay: "Conecta el origen con el destino cruzando países vecinos, uno a la vez",
       live: "En juego",
       closesIn: (time) => `Cierra en ${time}`,
       potLabel: "Premio del día",
@@ -1161,6 +1185,16 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
+    homeIntro: {
+      whatIs: "I'm Bordy. Frontle is a daily geography game: link two countries by crossing their neighbours.",
+      howTitle: "How do you play?",
+      steps: [
+        "We give you a start country and an end country.",
+        "Type countries that share a border, one by one, until they connect.",
+        "Fewer countries and less time = a better place.",
+      ],
+      seeAll: "See the full ranking",
+    },
     dailyHero: {
       bordyStreak: (n) => `You're on a 🔥 ${n}-day streak. Don't break it today!`,
       bordyNoStreak: "Ready for today's challenge? Let's start a streak 🔥",
@@ -1170,7 +1204,6 @@ const STRINGS: Record<Locale, Dict> = {
         "You can play without connecting anything — go for it!",
         "Every mode earns you XP. Go explore!",
       ],
-      howToPlay: "Connect the origin to the destination through bordering countries, one at a time",
       live: "Live",
       closesIn: (time) => `Closes in ${time}`,
       potLabel: "Today's prize",
@@ -1548,6 +1581,16 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
+    homeIntro: {
+      whatIs: "Sou o Bordy. Frontle é um jogo diário de geografia: uma dois países atravessando os vizinhos deles.",
+      howTitle: "Como se joga?",
+      steps: [
+        "Damos a você um país de origem e um de destino.",
+        "Digite países que façam fronteira, um por um, até ligá-los.",
+        "Menos países e menos tempo = melhor colocação.",
+      ],
+      seeAll: "Ver o ranking completo",
+    },
     dailyHero: {
       bordyStreak: (n) => `Você está numa sequência de 🔥 ${n} dias. Não quebre hoje!`,
       bordyNoStreak: "Vamos ao desafio de hoje? Comece uma sequência 🔥",
@@ -1557,7 +1600,6 @@ const STRINGS: Record<Locale, Dict> = {
         "Você pode jogar sem conectar nada, vai fundo!",
         "Cada modo te dá experiência. Vai explorar!",
       ],
-      howToPlay: "Conecte a origem ao destino cruzando países vizinhos, um de cada vez",
       live: "Em jogo",
       closesIn: (time) => `Fecha em ${time}`,
       potLabel: "Prêmio de hoje",
@@ -1933,6 +1975,16 @@ const STRINGS: Record<Locale, Dict> = {
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
+    homeIntro: {
+      whatIs: "Je suis Bordy. Frontle est un jeu de géographie quotidien : relie deux pays en traversant leurs voisins.",
+      howTitle: "Comment on joue ?",
+      steps: [
+        "On te donne un pays de départ et un pays d'arrivée.",
+        "Écris des pays qui partagent une frontière, un par un, jusqu'à les relier.",
+        "Moins de pays et moins de temps = meilleure place.",
+      ],
+      seeAll: "Voir tout le classement",
+    },
     dailyHero: {
       bordyStreak: (n) => `Tu es sur une série de 🔥 ${n} jours. Ne la casse pas aujourd'hui !`,
       bordyNoStreak: "On fait le défi du jour ? Lance une série 🔥",
@@ -1942,7 +1994,6 @@ const STRINGS: Record<Locale, Dict> = {
         "Tu peux jouer sans rien connecter, vas-y !",
         "Chaque mode te donne de l'XP. Va explorer !",
       ],
-      howToPlay: "Relie l'origine à la destination en traversant des pays voisins, un à la fois",
       live: "En cours",
       closesIn: (time) => `Ferme dans ${time}`,
       potLabel: "Prix du jour",

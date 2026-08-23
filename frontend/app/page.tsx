@@ -48,7 +48,6 @@ import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
 import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
-import { CONTINENT_OUTLINES, CONTINENT_OUTLINE_BOX } from "./lib/continentOutlines";
 import { continentOf } from "./lib/continents";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
@@ -359,6 +358,23 @@ export default function Frontle() {
   const [streakBump, setStreakBump] = useState(false);
   const prevDaysRef = useRef(0);
   const daysReadyRef = useRef(false);
+  // ---- "Cómo se juega" del Home (HOME-COMPACTO) ----
+  // MiniPay: al abrir la app nadie entendía qué es Frontle. Los tres pasos
+  // salen ABIERTOS para quien nunca resolvió un reto y plegados para quien sí
+  // — el veterano no paga con altura una explicación que ya no necesita. Quién
+  // es quién lo decide el efecto de aquí abajo, que es el que ya barre
+  // localStorage contando días jugados.
+  //
+  // Arranca en `true` a propósito: la página se prerenderiza y leer
+  // localStorage en el render rompería la hidratación (ver la nota del
+  // countdown más arriba), así que el primer pintado tiene que elegir un
+  // bando. Elige el del recién llegado, que es a quien esto va dirigido.
+  const [howToOpen, setHowToOpen] = useState(true);
+  function toggleHowTo() {
+    const next = !howToOpen;
+    setHowToOpen(next);
+    try { localStorage.setItem("frontle-howto", next ? "open" : "closed"); } catch {}
+  }
   useEffect(() => {
     try {
       let n = 0;
@@ -368,6 +384,12 @@ export default function Frontle() {
       prevDaysRef.current = n;
       daysReadyRef.current = true;
       setDaysPlayed(n);
+      // Los tres pasos de "cómo se juega" del Home se deciden aquí mismo: la
+      // señal es este mismo `n` (¿ya resolvió algún reto?) y el barrido de
+      // localStorage ya está hecho. La elección manual manda sobre él — quien
+      // los plegó no quiere volver a verlos aunque aún no haya ganado un día.
+      const manual = localStorage.getItem("frontle-howto");
+      setHowToOpen(manual ? manual === "open" : n === 0);
     } catch {}
   }, [best, tab]);
 
@@ -445,6 +467,8 @@ export default function Frontle() {
   // reto. `?? "EU"` es puro blindaje de tipos: las ~90 entidades del
   // grafo (COUNTRIES) están las 197 en continents.ts, así que en la
   // práctica esto nunca cae al fallback.
+  // Las cartas ya no se pintan aquí: estos dos valores viajan como props a
+  // QuickStart, la pantalla del 3·2·1 (ver docs/design/home-v5.html).
   const heroChallenge = challengesByLevel[level];
   const heroOriginContinent = continentOf(getCountry(heroChallenge.start)!.code) ?? "EU";
   const heroDestContinent = continentOf(getCountry(heroChallenge.end)!.code) ?? "EU";
@@ -1143,17 +1167,59 @@ export default function Frontle() {
             perfil/soporte. Por eso varias de sus frases invitan a
             tocarlo. */}
         {!started && (
-          <button
-            type="button"
-            onClick={() => setBordyMenu(true)}
-            aria-label={tr.bordyMenu.open}
-            className="flex items-start gap-2.5 pt-2 text-left active:scale-[0.98] transition"
-          >
-            <Bordy mood="idle" float className="w-[58px] h-[68px] flex-none" imgClassName="drop-shadow-xl" />
-            <div className="bordy-bubble brutal-sm flex-1 rounded-2xl bg-surface px-3.5 py-2.5 text-[13px] leading-snug text-neutral-100">
-              {streak > 0 ? tr.dailyHero.bordyStreak(streak) : bordyQuip}
+          <div className="flex flex-col gap-2 pt-2">
+            {/* Bordy y su burbuja son DOS botones hermanos, no uno anidado
+                dentro del otro (HTML inválido) — los dos abren el mismo menú,
+                así que para el jugador se comporta igual que antes. */}
+            <div className="flex items-start gap-2.5">
+              <button
+                type="button"
+                onClick={() => setBordyMenu(true)}
+                aria-label={tr.bordyMenu.open}
+                className="flex-none active:scale-95 transition"
+              >
+                <Bordy mood="idle" float className="w-[58px] h-[68px]" imgClassName="drop-shadow-xl" />
+              </button>
+              {/* Lo que dice Bordy depende de a quién le habla: a quien nunca
+                  resolvió un reto, QUÉ ES Frontle; a quien ya juega, su saludo
+                  de siempre. Así la explicación no le cuesta altura al
+                  veterano — es el mismo bloque diciendo otra cosa. */}
+              <button
+                type="button"
+                onClick={() => setBordyMenu(true)}
+                aria-label={tr.bordyMenu.open}
+                className="bordy-bubble brutal-sm flex-1 rounded-2xl bg-surface px-3.5 py-2.5 text-left text-[13px] leading-snug text-neutral-100 active:scale-[0.98] transition"
+              >
+                {daysPlayed === 0
+                  ? tr.homeIntro.whatIs
+                  : streak > 0 ? tr.dailyHero.bordyStreak(streak) : bordyQuip}
+              </button>
             </div>
-          </button>
+
+            {/* Los tres pasos. Es el RESUMEN, no el tutorial: el recorrido
+                completo con tablero animado sigue siendo BordyTutorial. */}
+            <div className="panel overflow-hidden">
+              <button
+                type="button"
+                onClick={toggleHowTo}
+                aria-expanded={howToOpen}
+                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left font-display text-[13px] font-semibold text-white"
+              >
+                🧭 {tr.homeIntro.howTitle}
+                <span aria-hidden className={`ml-auto text-xs text-lavender transition-transform ${howToOpen ? "rotate-90" : ""}`}>▸</span>
+              </button>
+              {howToOpen && (
+                <ol className="flex flex-col gap-2 px-3.5 pb-3">
+                  {tr.homeIntro.steps.map((paso, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-xs leading-snug text-neutral-300">
+                      <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
+                      <span>{paso}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </div>
+          </div>
         )}
 
         {/* ---- Pre-juego: hero del reto diario + modos gratis (REDISEÑO-HOME) ----
@@ -1176,74 +1242,13 @@ export default function Frontle() {
                 {tr.dailyHero.live}
               </span>
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{tr.daily}</p>
-              {/* Explicación de una línea del modo (David: "necesito que
-                  expliques rápidamente cómo funciona el modo de juego").
-                  Muted a propósito: no debe competir con el misterio de las
-                  cartas selladas, solo dar el empujón a quien nunca jugó. */}
-              <p className="mt-0.5 text-[10px] leading-snug text-white/60">{tr.dailyHero.howToPlay}</p>
 
-              {/* Cartas selladas + arco que las conecta. El arco vive en su
-                  PROPIA franja ENCIMA de las cartas: antes compartía caja con
-                  ellas (svg absoluto sobre la fila) y las líneas caían dentro
-                  de los recuadros — David: "el arco se sobrepone sobre los
-                  cuadros". Ahora muere justo en su borde superior. */}
-              <div className="mt-4">
-                <div className="relative h-5">
-                  {/* w-full explícito: un <svg> es un elemento reemplazado, así
-                      que `inset-x-0` (left:0;right:0) SIN un width no lo estira
-                      al ancho del contenedor como haría un <div> — se queda en
-                      su tamaño intrínseco (el del viewBox, 100px). */}
-                  <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 20" preserveAspectRatio="none" fill="none" aria-hidden="true">
-                    <defs>
-                      <linearGradient id="dailyHeroArc" x1="0" y1="0" x2="100" y2="0" gradientUnits="userSpaceOnUse">
-                        <stop stopColor="#22d3ee" /><stop offset="1" stopColor="#e879f9" />
-                      </linearGradient>
-                    </defs>
-                    {/* x=25/75: centro real de cada slot flex-1 de la fila de
-                        abajo. y=19 (+1 del linecap redondo) = el borde superior
-                        de las cartas: el arco las toca, no las invade. */}
-                    <path d="M25 19 C25 2, 75 2, 75 19" stroke="url(#dailyHeroArc)" strokeWidth="2" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                  </svg>
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border-2 border-deep bg-gold px-2.5 py-0.5 font-display text-[11px] font-bold text-deep">
-                    {tr.dailyHero.countryCount(challengesByLevel[level].optimal)}
-                  </span>
-                </div>
-                {/* SIN gap: con dos slots flex-1 al 50% exacto, los centros
-                    caen justo en el 25%/75% que usa el arco a cualquier ancho
-                    (con gap-2 se desviaban ~2px). Las cartas son w-11, así que
-                    ya sobra aire entre ellas sin necesitar gap.
-                    David: "en lugar de cuadros con un signo ?, que se vea el
-                    contorno del continente en el que está el país" — el país
-                    sigue sellado, pero ahora se insinúa el continente (contorno
-                    + nombre) además del conteo de países que ya se veía.
-                    strokeWidth=1: con vectorEffect="non-scaling-stroke" el
-                    trazo se dibuja en PÍXELES DE PANTALLA finales, no en
-                    unidades del viewBox — a 2.4 en una caja de 44px (David:
-                    "los contornos están muy gruesos") salía 4x más grueso,
-                    proporcionalmente, que el mismo trazo en las fichas de
-                    84px del grid de abajo (que usan 0.9-1). 1 iguala esa
-                    proporción. */}
-                <div className="flex items-start">
-                  <div className="hero-sealed-sweep flex flex-1 flex-col items-center gap-1 text-center">
-                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 border-[#22d3ee] bg-black/25 p-1">
-                      <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
-                        <path d={CONTINENT_OUTLINES[heroOriginContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="1" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                      </svg>
-                    </div>
-                    <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[heroOriginContinent]}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.origin}</span>
-                  </div>
-                  <div className="hero-sealed-sweep hero-sealed-sweep--delay flex flex-1 flex-col items-center gap-1 text-center">
-                    <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded border-2 border-[#e879f9] bg-black/25 p-1">
-                      <svg viewBox={`0 0 ${CONTINENT_OUTLINE_BOX} ${CONTINENT_OUTLINE_BOX}`} className="h-full w-full" aria-hidden="true">
-                        <path d={CONTINENT_OUTLINES[heroDestContinent]} fill="rgba(252,255,82,0.25)" stroke="var(--gold)" strokeWidth="1" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-                      </svg>
-                    </div>
-                    <span className="text-[9px] font-display font-bold uppercase tracking-wide text-gold leading-tight">{tr.continents[heroDestContinent]}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-white/75">{tr.legend.destination}</span>
-                  </div>
-                </div>
-              </div>
+              {/* Las cartas selladas del reto (contornos de continente +
+                  arco + conteo) YA NO viven aquí: se mudaron a la pantalla
+                  del 3·2·1 (QuickStart, en BordyTutorial.tsx). En el Home
+                  competían con la explicación del juego justo cuando el
+                  recién llegado aún no sabía qué estaba mirando — el motivo
+                  del feedback de MiniPay. Ver docs/design/home-v5.html. */}
 
               {/* Premio + cierre, en una sola fila */}
               <div className="mt-2.5 flex items-center justify-between gap-2 rounded-xl bg-black/25 px-3 py-2">
@@ -1489,6 +1494,17 @@ export default function Frontle() {
                 <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </div>
             )}
+
+            {/* Asomo del ranking de hoy: cierra el recorrido del Home
+                (qué es → juega hoy → otros modos → cómo va la competencia). */}
+            <RankingPeek
+              tr={tr}
+              ranking={ranking}
+              loading={rankingLoading}
+              myId={myId}
+              levelLabel={tr.levels[level]}
+              onSeeAll={() => setTab("ranking")}
+            />
 
             {/* Tienda de monedas: entrada desde el home */}
             <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
@@ -1974,6 +1990,9 @@ export default function Frontle() {
       {overlay === "quick" && (
         <QuickStart
           tr={tr}
+          originContinent={heroOriginContinent}
+          destContinent={heroDestContinent}
+          optimal={challengesByLevel[level].optimal}
           onDone={() => {
             setOverlay(null);
             if (!started) enterGame();
@@ -2836,6 +2855,89 @@ function PrizesCard({
   );
 }
 
+// Traduce una marca del día al modelo común del leaderboard. Compartida por
+// la tabla completa (RankingCard, pestaña Ranking) y por el asomo del Home
+// (RankingPeek): las dos tienen que identificar al jugador igual.
+function scoreToEntry(r: ScoreEntry, tr: ReturnType<typeof t>, myId: string): LeaderEntry {
+  const mine = !!myId && r.playerId === myId;
+  // El nombre manda. Quien jugó antes de que existiera el perfil no tiene
+  // ninguno: se le identifica con la etiqueta genérica y la dirección
+  // truncada, que MiniPay solo admite como pista secundaria, nunca como
+  // identidad principal.
+  const name = r.name || `${tr.anonPlayer} ${shortId(r.playerId)}`;
+  return {
+    id: r.playerId,
+    label: mine ? tr.liga.youNamed(name) : name,
+    mine,
+    // La bandera es del país de la IP, no del jugador: se queda como
+    // adorno junto al nombre, igual que estaba en la tabla anterior.
+    badge: <Flag code={r.countryCode} size={18} />,
+    stat: (
+      <>
+        {r.countries} <span className="text-[10px] opacity-70">{tr.colRoute}</span>
+      </>
+    ),
+    sub: formatTime(r.timeMs),
+  };
+}
+
+// ---- Asomo del ranking del día en el Home (HOME-COMPACTO) ----
+//
+// MiniPay pidió que el inicio enseñara también el ranking, y sale gratis: el
+// ranking del día ya se carga al montar la app (efecto de [day, level]), no al
+// entrar a la pestaña — este bloque no dispara ni una consulta más.
+//
+// Filas y no podio: el podio es alto y sigue siendo el premio de entrar a
+// Ranking. Si el jugador está fuera del top 3 pero dentro de las 10 filas que
+// trae getRanking, se añade su fila real con su puesto — que es el dato que de
+// verdad hace volver. Más abajo del 10 no se inventa nada: para eso está
+// "ver todo".
+function RankingPeek({
+  tr, ranking, loading, myId, levelLabel, onSeeAll,
+}: {
+  tr: ReturnType<typeof t>;
+  ranking: ScoreEntry[];
+  loading: boolean;
+  myId: string;
+  levelLabel: string;
+  onSeeAll: () => void;
+}) {
+  const top = ranking.slice(0, 3);
+  const mineIdx = myId ? ranking.findIndex((r) => r.playerId === myId) : -1;
+  const mineOut = mineIdx > 2 ? ranking[mineIdx] : null;
+
+  return (
+    <section className="panel p-3">
+      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
+      {loading ? (
+        <GlobeLoader label={tr.rankingLoading} size="sm" className="py-3" />
+      ) : ranking.length === 0 ? (
+        <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
+      ) : (
+        <ol className="flex flex-col gap-1.5">
+          {top.map((r, i) => (
+            <RankRow key={r.playerId} pos={i + 1} entry={scoreToEntry(r, tr, myId)} />
+          ))}
+          {mineOut && (
+            <>
+              {/* Marca el salto: sin esto, un 7.º pegado al 3.º se lee como 4.º */}
+              <li aria-hidden className="text-center text-[10px] tracking-[0.3em] text-neutral-500 leading-none">···</li>
+              <RankRow pos={mineIdx + 1} entry={scoreToEntry(mineOut, tr, myId)} />
+            </>
+          )}
+        </ol>
+      )}
+      <button
+        type="button"
+        onClick={onSeeAll}
+        className="mt-2 w-full rounded-xl border border-lavender/30 bg-white/5 py-2 font-display text-xs font-semibold text-lavender active:scale-95 transition"
+      >
+        {tr.homeIntro.seeAll} →
+      </button>
+    </section>
+  );
+}
+
 function RankingCard({
   tr,
   ranking,
@@ -2855,29 +2957,7 @@ function RankingCard({
   alias: string;
   levelLabel: string;
 }) {
-  // Traduce una marca del día al modelo común del leaderboard.
-  const toEntry = (r: ScoreEntry): LeaderEntry => {
-    const mine = !!myId && r.playerId === myId;
-    // El nombre manda. Quien jugó antes de que existiera el perfil no tiene
-    // ninguno: se le identifica con la etiqueta genérica y la dirección
-    // truncada, que MiniPay solo admite como pista secundaria, nunca como
-    // identidad principal.
-    const name = r.name || `${tr.anonPlayer} ${shortId(r.playerId)}`;
-    return {
-      id: r.playerId,
-      label: mine ? tr.liga.youNamed(name) : name,
-      mine,
-      // La bandera es del país de la IP, no del jugador: se queda como
-      // adorno junto al nombre, igual que estaba en la tabla anterior.
-      badge: <Flag code={r.countryCode} size={18} />,
-      stat: (
-        <>
-          {r.countries} <span className="text-[10px] opacity-70">{tr.colRoute}</span>
-        </>
-      ),
-      sub: formatTime(r.timeMs),
-    };
-  };
+  const toEntry = (r: ScoreEntry) => scoreToEntry(r, tr, myId);
 
   const podium = ranking.slice(0, 3).map(toEntry);
   const restRows = ranking.slice(3).map(toEntry);
