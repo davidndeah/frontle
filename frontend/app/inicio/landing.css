@@ -1,0 +1,433 @@
+/* ===========================================================
+   Frontle — landing web (/inicio)
+
+   Direccion: cartografia, no "juego". El heroe no describe el
+   juego: LO EJECUTA. Una cadena de paises que se van uniendo por
+   sus fronteras, que es literalmente la mecanica.
+
+   Tipografia distinta a la de la app a proposito: Fredoka es
+   redonda y simpatica, que sirve dentro del juego y no sirve
+   para una pagina que tiene que dar seriedad a un producto que
+   custodia dinero. Archivo en ancho expandido lee como portada
+   de atlas; JetBrains Mono queda para lo que es dato.
+
+   TODO va colgado de `.landing`. Dos razones, las dos duras:
+     1. Las variables de marca de aqui (--bg, --ink, --gold...) se
+        llaman igual que tokens de globals.css. En `:root` se
+        pisarian entre si y romperian la app entera.
+     2. Next no descarga la hoja de una ruta al navegar a otra (lo
+        dice el propio doc de CSS global). Con todo scopeado, la
+        hoja puede quedarse cargada sin afectar a ninguna otra vista.
+   =========================================================== */
+
+/* Scroll suave solo mientras la landing esta en pantalla. Si el
+   navegador no soporta :has(), los anclajes saltan sin animar. */
+html:has(.landing) { scroll-behavior: smooth; }
+
+.landing {
+  /* Marca (mismos valores que globals.css, aqui en local) */
+  --bg: #120629;
+  --bg-deep: #0b0318;
+  --surface: #1b0b3c;
+  --surface-2: #22114a;
+  --ink: #f3edff;
+  --muted: #9a8fb5;
+  --lav: #b79ced;
+  --gold: #fcff52;
+  --violet: #6c2bd9;
+  --start: #22d3ee;   /* pais de origen, igual que en el juego */
+  --end: #e879f9;     /* pais de destino */
+  --good: #34d399;    /* acierto */
+
+  --line: rgba(183, 156, 237, .16);
+  --line-soft: rgba(183, 156, 237, .08);
+
+  --display: var(--font-landing-display), system-ui, sans-serif;
+  --mono: var(--font-landing-mono), ui-monospace, monospace;
+
+  --pad: clamp(1.25rem, 5vw, 4.5rem);
+  --maxw: 1180px;
+
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--display);
+  font-variation-settings: "wdth" 100, "wght" 400;
+  font-size: clamp(.95rem, .4vw + .85rem, 1.02rem);
+  line-height: 1.62;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing * { box-sizing: border-box; margin: 0; padding: 0; }
+.landing img { max-width: 100%; display: block; }
+.landing a { color: inherit; }
+
+/* Foco visible en todo lo enfocable — no se negocia */
+.landing a:focus-visible,
+.landing button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* --- Graticula: la reticula de un mapa, no una cuadricula generica.
+   Lineas finas cada 44px y una mas marcada cada 5 (como los paralelos
+   de 5 en 5 grados de una plancha de atlas).
+
+   Va SOLO en el heroe y como fondo normal (no `position:fixed` con
+   `mask-image`): fijo + mascara + cuatro gradientes obliga al navegador
+   a recomponer la capa entera en cada scroll, y con eso el render se
+   colgaba. -------------------------------------------------------- */
+.landing .hero {
+  background-image:
+    linear-gradient(var(--line-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-soft) 1px, transparent 1px),
+    linear-gradient(rgba(183, 156, 237, .11) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(183, 156, 237, .11) 1px, transparent 1px);
+  background-size: 44px 44px, 44px 44px, 220px 220px, 220px 220px;
+}
+
+/* ===================== Estructura ===================== */
+.landing .shell { position: relative; z-index: 1; }
+.landing .wrap { max-width: var(--maxw); margin: 0 auto; padding-inline: var(--pad); }
+
+/* La linea divisoria de secciones es LA MISMA linea que une dos paises
+   en el heroe. En este juego una frontera es lo que junta dos cosas:
+   reutilizarla como separador es el hilo conductor de la pagina. */
+.landing .rule { height: 1px; background: var(--line); border: 0; }
+
+.landing .eyebrow {
+  font-family: var(--mono); font-size: .68rem; font-weight: 600;
+  letter-spacing: .24em; text-transform: uppercase; color: var(--lav);
+  display: flex; align-items: center; gap: .7rem;
+}
+.landing .eyebrow::before {
+  content: ""; width: 1.6rem; height: 1px; background: var(--lav); opacity: .55; flex: none;
+}
+
+.landing h1, .landing h2, .landing h3 {
+  font-variation-settings: "wdth" 112, "wght" 800;
+  letter-spacing: -.018em; line-height: 1.02; text-transform: uppercase;
+}
+.landing h1 { font-size: clamp(2.35rem, 7.2vw, 5.4rem); line-height: .94; }
+.landing h2 { font-size: clamp(1.7rem, 3.6vw, 2.9rem); }
+.landing h3 {
+  font-size: 1.02rem; font-variation-settings: "wdth" 106, "wght" 700;
+  letter-spacing: .005em; text-transform: none;
+}
+.landing .lead {
+  color: var(--muted); font-size: clamp(1rem, .6vw + .9rem, 1.18rem); max-width: 46ch;
+}
+
+.landing section { padding-block: clamp(3.5rem, 7vw, 6.5rem); }
+
+/* ===================== Nav ===================== */
+.landing .nav {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.landing .nav .wrap { display: flex; align-items: center; gap: 1.5rem; height: 64px; }
+.landing .brand {
+  font-variation-settings: "wdth" 118, "wght" 800;
+  font-size: 1.05rem; letter-spacing: .1em; text-transform: uppercase;
+  text-decoration: none; flex: none;
+}
+.landing .brand span { color: var(--gold); }
+.landing .nav nav { margin-left: auto; display: flex; gap: 1.6rem; }
+.landing .nav nav a {
+  font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none; transition: color .15s ease;
+}
+.landing .nav nav a:hover { color: var(--ink); }
+@media (max-width: 760px) { .landing .nav nav { display: none; } }
+
+/* ===================== Botones ===================== */
+.landing .btn {
+  display: inline-flex; align-items: center; gap: .6rem;
+  font-variation-settings: "wdth" 108, "wght" 700;
+  font-size: .92rem; letter-spacing: .01em;
+  padding: .78rem 1.4rem; border-radius: 9px; border: 1px solid transparent;
+  text-decoration: none; cursor: pointer;
+  transition: transform .12s ease, background .15s ease, border-color .15s ease;
+}
+.landing .btn-primary { background: var(--gold); color: #160833; }
+.landing .btn-primary:hover { transform: translateY(-2px); }
+.landing .btn-ghost { border-color: var(--line); color: var(--ink); }
+.landing .btn-ghost:hover { border-color: var(--lav); transform: translateY(-2px); }
+.landing .btn-sm { padding: .5rem .95rem; font-size: .8rem; border-radius: 7px; }
+
+/* ===================== Heroe ===================== */
+.landing .hero { padding-top: clamp(3rem, 7vw, 5.5rem); padding-bottom: 0; }
+.landing .hero .eyebrow { margin-bottom: 1.5rem; }
+.landing .hero h1 { max-width: 15ch; }
+.landing .hero h1 em { font-style: normal; color: var(--gold); }
+.landing .hero .lead { margin-top: 1.5rem; }
+.landing .hero .actions { display: flex; flex-wrap: wrap; gap: .85rem; margin-top: 2.2rem; }
+
+/* --- LA FIRMA: la cadena -------------------------------------------
+   Es el juego, no una ilustracion del juego. Portugal -> Alemania es
+   el mismo ejemplo que usa el tutorial dentro de la app, asi que lo
+   que se ve aqui es lo que se encuentra al entrar. Los extremos usan
+   el cian/fucsia de origen y destino del juego; los del medio, el
+   verde de acierto. Se construye una vez al cargar y se queda. */
+.landing .chain-band {
+  margin-top: clamp(3rem, 6vw, 5rem);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, transparent, rgba(108, 43, 217, .10) 50%, transparent);
+  padding-block: clamp(2.2rem, 4.5vw, 3.4rem);
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* display:flex + margin:auto en el hijo centra la cadena Y deja que
+     siga desplazandose hasta el borde en pantallas estrechas, que es lo
+     que rompe `justify-content:center` en un contenedor con overflow. */
+  display: flex;
+}
+.landing .chain-band::-webkit-scrollbar { display: none; }
+.landing .chain {
+  display: flex; align-items: flex-start;
+  min-width: max-content; margin: auto;
+  padding-inline: var(--pad);
+}
+.landing .stop {
+  display: flex; flex-direction: column; align-items: center;
+  gap: .55rem; flex: none; text-align: center;
+}
+.landing .stop .dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid var(--good); background: var(--bg);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 16%, transparent);
+}
+.landing .stop.is-start .dot {
+  border-color: var(--start);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--start) 18%, transparent);
+}
+.landing .stop.is-end .dot {
+  border-color: var(--end);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--end) 18%, transparent);
+}
+.landing .stop .name {
+  font-variation-settings: "wdth" 104, "wght" 700;
+  font-size: clamp(.82rem, 1.5vw, 1.02rem);
+  text-transform: uppercase; letter-spacing: .045em; white-space: nowrap;
+}
+.landing .stop .role {
+  font-family: var(--mono); font-size: .6rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--muted);
+}
+.landing .stop.is-start .role { color: var(--start); }
+.landing .stop.is-end .role { color: var(--end); }
+
+/* El tramo entre dos paises: la frontera que los une. Se dibuja
+   izquierda-derecha, en orden, como cuando el jugador acierta. */
+.landing .leg { flex: none; width: clamp(38px, 7vw, 96px); margin-top: 5px; position: relative; }
+.landing .leg::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, var(--start), var(--end));
+  transform: scaleX(0); transform-origin: left center;
+  animation: frontle-draw .42s ease-out forwards;
+}
+@keyframes frontle-draw { to { transform: scaleX(1); } }
+
+.landing .stop { opacity: 0; animation: frontle-pop .34s cubic-bezier(.2, .9, .3, 1.3) forwards; }
+@keyframes frontle-pop {
+  from { opacity: 0; transform: translateY(7px) scale(.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Secuencia: pais, frontera, pais, frontera... */
+.landing .chain > :nth-child(1) { animation-delay: .15s; }
+.landing .chain > :nth-child(2)::before { animation-delay: .42s; }
+.landing .chain > :nth-child(3) { animation-delay: .72s; }
+.landing .chain > :nth-child(4)::before { animation-delay: .99s; }
+.landing .chain > :nth-child(5) { animation-delay: 1.29s; }
+.landing .chain > :nth-child(6)::before { animation-delay: 1.56s; }
+.landing .chain > :nth-child(7) { animation-delay: 1.86s; }
+
+/* En movil la cadena tiene que caber ENTERA. Se puede desplazar, pero
+   llegar a la pagina con el pais de destino cortado se carga justo lo
+   unico que la pieza tiene que contar: que va de A a B. */
+@media (max-width: 560px) {
+  .landing .chain { padding-inline: .85rem; }
+  .landing .leg { width: 15px; }
+  .landing .stop { gap: .4rem; }
+  .landing .stop .name { font-size: .72rem; letter-spacing: .02em; }
+  .landing .stop .role { font-size: .53rem; letter-spacing: .12em; }
+}
+
+.landing .chain-note {
+  max-width: var(--maxw); margin: 1.6rem auto 0; padding-inline: var(--pad);
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); text-align: center;
+}
+.landing .chain-note b { color: var(--gold); font-weight: 600; }
+
+/* ===================== Cifras ===================== */
+.landing .facts {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--line);
+}
+.landing .fact { padding: clamp(1.4rem, 3vw, 2.2rem) 0; border-right: 1px solid var(--line); }
+.landing .fact:last-child { border-right: 0; }
+.landing .fact .n {
+  font-variation-settings: "wdth" 114, "wght" 800;
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem); line-height: 1; letter-spacing: -.02em;
+  min-height: 1em;
+}
+.landing .fact .k {
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .19em;
+  text-transform: uppercase; color: var(--muted); margin-top: .6rem;
+}
+/* Hueco mientras la cifra viva llega del contrato / de Supabase. Se
+   marca a proposito y NO finge ser un numero: una pagina publica no
+   puede llevar una cifra de relleno inventada, ni siquiera un momento. */
+.landing .slot {
+  display: inline-block;
+  font-family: var(--mono); font-weight: 400;
+  font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold);
+  border: 1px dashed color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 6px; padding: .35rem .7rem;
+  vertical-align: middle;
+}
+@media (max-width: 820px) {
+  .landing .facts { grid-template-columns: 1fr 1fr; }
+  .landing .fact:nth-child(2) { border-right: 0; }
+  .landing .fact:nth-child(1),
+  .landing .fact:nth-child(2) { border-bottom: 1px solid var(--line); }
+}
+
+/* ===================== Como se juega ===================== */
+.landing .how {
+  display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  gap: clamp(2rem, 5vw, 4.5rem); align-items: start;
+}
+@media (max-width: 900px) { .landing .how { grid-template-columns: 1fr; } }
+
+/* Los tres pasos SI son una secuencia (el 2 depende del 1), asi que
+   van numerados. Pero el marcador no es "01/02/03": es una parada de
+   la ruta, con su tramo de frontera hacia la siguiente. */
+.landing .steps { list-style: none; display: flex; flex-direction: column; }
+.landing .step {
+  display: grid; grid-template-columns: auto 1fr; gap: 1.1rem;
+  padding-bottom: 1.9rem; position: relative;
+}
+.landing .step:last-child { padding-bottom: 0; }
+.landing .step .mark {
+  width: 34px; height: 34px; border-radius: 50%; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--line); background: var(--surface);
+  font-family: var(--mono); font-size: .8rem; color: var(--gold);
+}
+.landing .step:not(:last-child)::before {
+  content: ""; position: absolute; left: 17px; top: 38px; bottom: 8px; width: 1px;
+  background: linear-gradient(180deg, var(--line), transparent);
+}
+.landing .step p { color: var(--muted); margin-top: .3rem; max-width: 44ch; }
+
+/* Semaforo: el sistema de aciertos, explicado una vez */
+.landing .legend { margin-top: 2.4rem; display: flex; flex-wrap: wrap; gap: 1.4rem; }
+.landing .key {
+  display: flex; align-items: center; gap: .55rem;
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .11em;
+  text-transform: uppercase; color: var(--muted);
+}
+.landing .key i { width: 9px; height: 9px; border-radius: 2px; flex: none; font-style: normal; }
+
+/* ===================== Modos ===================== */
+.landing .modes {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  background: var(--line); border: 1px solid var(--line);
+  border-radius: 12px; overflow: hidden; margin-top: 2.6rem;
+}
+@media (max-width: 900px) { .landing .modes { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .landing .modes { grid-template-columns: 1fr; } }
+.landing .mode {
+  background: var(--bg); padding: 1.6rem 1.5rem;
+  display: flex; flex-direction: column; gap: .55rem; transition: background .18s ease;
+}
+.landing .mode:hover { background: var(--surface); }
+.landing .mode .tag {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--lav); display: flex; align-items: center; gap: .5rem;
+}
+.landing .mode .tag b { color: var(--gold); font-weight: 600; }
+.landing .mode p { color: var(--muted); font-size: .9rem; }
+.landing .mode.is-flagship { background: var(--surface); position: relative; }
+.landing .mode.is-flagship::after {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--gold);
+}
+
+/* ===================== Celo / MiniPay ===================== */
+.landing .two {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 5vw, 4rem); align-items: start;
+}
+@media (max-width: 900px) { .landing .two { grid-template-columns: 1fr; } }
+.landing .points { list-style: none; margin-top: 1.8rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.landing .points li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: start; }
+.landing .points b { display: block; font-variation-settings: "wdth" 104, "wght" 700; }
+.landing .points span { color: var(--muted); font-size: .92rem; }
+.landing .points .bullet {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+  margin-top: .62rem; flex: none;
+}
+
+/* ===================== Transparencia ===================== */
+.landing .ledger { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 2.4rem; }
+.landing .row {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto; gap: 1rem;
+  align-items: center; padding: 1rem 1.3rem; border-bottom: 1px solid var(--line);
+}
+.landing .row:last-child { border-bottom: 0; }
+.landing .row .what { font-variation-settings: "wdth" 104, "wght" 700; font-size: .92rem; }
+.landing .row .addr { font-family: var(--mono); font-size: .76rem; color: var(--muted); word-break: break-all; }
+.landing .row .state {
+  font-family: var(--mono); font-size: .63rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--good); border: 1px solid color-mix(in srgb, var(--good) 40%, transparent);
+  border-radius: 999px; padding: .18rem .6rem; white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .landing .row { grid-template-columns: 1fr; gap: .35rem; }
+  .landing .row .state { justify-self: start; }
+}
+
+/* ===================== Cierre ===================== */
+.landing .close { text-align: center; border-top: 1px solid var(--line); }
+.landing .close h2 { max-width: 18ch; margin: 1.2rem auto 0; }
+.landing .close .eyebrow { justify-content: center; }
+.landing .close .lead { margin: 1.4rem auto 0; text-align: center; }
+.landing .close .actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .85rem; margin-top: 2.2rem; }
+
+.landing footer { border-top: 1px solid var(--line); padding-block: 2.2rem; }
+.landing footer .wrap { display: flex; flex-wrap: wrap; gap: 1.2rem; align-items: center; }
+.landing footer a {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none;
+}
+.landing footer a:hover { color: var(--ink); }
+.landing footer .sep {
+  margin-left: auto; font-family: var(--mono); font-size: .66rem;
+  color: var(--muted); letter-spacing: .1em;
+}
+
+/* Reveal al hacer scroll — una sola idea, discreta.
+   Colgado de [data-landing-js], que el script en linea del <main> pone
+   antes del primer pintado: sin JS el contenido nace visible en vez de
+   quedarse invisible para siempre. No es estado de React porque tiene
+   que aplicarse ANTES de pintar, no despues de hidratar. */
+.landing[data-landing-js] .reveal {
+  opacity: 0; transform: translateY(14px);
+  transition: opacity .55s ease, transform .55s ease;
+}
+.landing[data-landing-js] .reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.landing) { scroll-behavior: auto; }
+  .landing * { animation: none !important; transition: none !important; }
+  .landing .stop { opacity: 1; }
+  .landing .leg::before { transform: scaleX(1); }
+  .landing[data-landing-js] .reveal { opacity: 1; transform: none; }
+}

@@ -18,6 +18,9 @@ import { join } from "path";
 const ALLOW = new Set([
   "frontle", "bordy", "minipay", "celo", "privy", "ok", "usdt", "usdc",
   "usdm", "copm", "celoscan", "vercel", "language",
+  // El logotipo de la landing parte la marca en dos para pintar "tle" en
+  // amarillo. Es una marca, no copy: no se traduce en ningún idioma.
+  "fron", "tle",
 ]);
 const PROP_ATTRS = ["placeholder", "aria-label", "alt", "title"];
 const ACCENT = /[À-ÖØ-öø-ÿ]/; // letras latinas acentuadas

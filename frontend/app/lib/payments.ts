@@ -337,6 +337,11 @@ export const CONTRACT_INFO = {
   addressWeekly: WEEKLY_ADDRESS,
   explorerWeekly: WEEKLY_ADDRESS ? `${explorerUrl}/address/${WEEKLY_ADDRESS}` : "",
   verifiedWeekly: true,
+  // El token con el que se juega. Va aquí para que ninguna página pública
+  // tenga que volver a escribir la dirección a mano: la landing la enseña
+  // junto a los tres contratos y una copia suelta acabaría desfasada.
+  tokenAddress: TOKEN_ADDRESS,
+  explorerToken: `${explorerUrl}/address/${TOKEN_ADDRESS}`,
 } as const;
 
 export interface PublicStats {
