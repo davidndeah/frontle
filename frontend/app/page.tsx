@@ -544,6 +544,11 @@ export default function Frontle() {
   useEffect(() => {
     setInMiniPay(isMiniPay());
     setMpChecked(true);
+    // Si estamos aquí es que este navegador ya está en el juego. La cookie
+    // saca a `/` del matcher de proxy.ts, así que las siguientes visitas se
+    // sirven sin pasar por el edge — dentro de MiniPay, que es donde se mide
+    // el LCP, eso es un salto menos en cada carga.
+    document.cookie = "frontle-jugar=1; path=/; max-age=31536000; samesite=lax";
   }, []);
 
   // Al conectar, la wallet pasa a ser la identidad de la liga semanal — el

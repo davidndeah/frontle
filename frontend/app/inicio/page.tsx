@@ -64,6 +64,13 @@ const JS_FLAG = 'document.currentScript.parentElement.dataset.landingJs="1"';
 // del repo, nunca se escribe un país a mano en otro idioma.
 const CHAIN = ["Portugal", "Spain", "France", "Germany"] as const;
 
+// Los botones de Jugar no apuntan a `/` a secas. En escritorio el proxy
+// reescribe `/` a esta misma landing, asi que un enlace pelado devolveria
+// al visitante justo de donde viene. `?play` es la senal de "quiero el
+// juego": el proxy la deja pasar y ademas deja una cookie, para que las
+// visitas siguientes a `/` vayan derechas al juego.
+const JUGAR_HREF = "/?play=1";
+
 type Search = Promise<{ [key: string]: string | string[] | undefined }>;
 
 // Idioma sin salto de hidratación: se decide en el servidor con Accept-Language
@@ -175,7 +182,7 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
               <a href="#red">{c.nav.network}</a>
               <a href="#transparencia">{c.nav.transparency}</a>
             </nav>
-            <Link className="btn btn-primary btn-sm" href="/" style={{ marginLeft: "1rem" }}>
+            <Link className="btn btn-primary btn-sm" href={JUGAR_HREF} style={{ marginLeft: "1rem" }}>
               {c.nav.play}
             </Link>
           </div>
@@ -190,7 +197,7 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
             </h1>
             <p className="lead">{c.hero.lead}</p>
             <div className="actions">
-              <Link className="btn btn-primary" href="/">
+              <Link className="btn btn-primary" href={JUGAR_HREF}>
                 {c.hero.ctaPlay}
               </Link>
               <a className="btn btn-ghost" href="#como">
@@ -381,7 +388,7 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
             <h2>{c.close.title}</h2>
             <p className="lead">{c.close.lead}</p>
             <div className="actions">
-              <Link className="btn btn-primary" href="/">
+              <Link className="btn btn-primary" href={JUGAR_HREF}>
                 {c.close.ctaPlay}
               </Link>
               <Link className="btn btn-ghost" href="/stats">
