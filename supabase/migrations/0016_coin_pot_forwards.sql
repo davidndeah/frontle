@@ -30,3 +30,6 @@ create index if not exists coin_pot_forwards_pending
   on public.coin_pot_forwards (created_at) where forwarded_tx is null;
 
 alter table public.coin_pot_forwards enable row level security;
+
+comment on table public.coin_pot_forwards is
+  'Cola de reenvío al pot semanal de las compras de monedas por USDT.transfer a la tesorería (ver credit-coins y migración 0016).';

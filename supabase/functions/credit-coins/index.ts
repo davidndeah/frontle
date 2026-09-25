@@ -191,16 +191,6 @@ Deno.serve(async (req) => {
         .upsert({ player_id: payer, secret_hash: secretHash, updated_at: new Date().toISOString() }, { onConflict: "player_id" });
     }
 
-    // A la cola del pot ANTES de acreditar, e idempotente por hash: si el
-    // crédito sale bien y esto no, el reintento del cliente (alreadyCredited)
-    // vuelve a pasar por aquí.
-    if (needsForward) {
-      const { error: qErr } = await supa
-        .from("coin_pot_forwards")
-        .upsert({ ref: txHash.toLowerCase(), amount_wei: wei.toString() }, { onConflict: "ref", ignoreDuplicates: true });
-      if (qErr) console.error("[credit-coins] no se pudo encolar el reenvío al pot:", qErr);
-    }
-
     const { error } = await supa.from("coin_ledger").insert({
       player_id: payer,
       kind: "purchase",
@@ -211,6 +201,16 @@ Deno.serve(async (req) => {
     if (error && error.code !== "23505") {
       console.error("[credit-coins] insert falló:", error);
       return json(500, { error: "no se pudo acreditar" });
+    }
+
+    // A la cola del pot SOLO si el crédito es nuevo: un hash ya acreditado
+    // (p. ej. un transfer viejo a la tesorería, de antes de este flujo, cuyo
+    // dinero ya se sembró a mano) no debe volver a llenar el pot.
+    if (needsForward && !error) {
+      const { error: qErr } = await supa
+        .from("coin_pot_forwards")
+        .upsert({ ref: txHash.toLowerCase(), amount_wei: wei.toString() }, { onConflict: "ref", ignoreDuplicates: true });
+      if (qErr) console.error("[credit-coins] no se pudo encolar el reenvío al pot, sembrar a mano:", txHash, wei, qErr);
     }
 
     // El reenvío al pot no bloquea la respuesta: el jugador ya tiene sus monedas.
