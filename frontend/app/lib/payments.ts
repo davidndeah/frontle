@@ -624,10 +624,16 @@ export async function getClaimablePrizes(entries: ClaimableEntry[], address: str
   }
 }
 
-// El ganador reclama su parte de un (día, nivel). Devuelve true solo si se confirmó on-chain.
-export async function claimPrize(day: number, level: Difficulty): Promise<boolean> {
+// El ganador reclama su parte de un (día, nivel).
+//   ok      → la tx de claim se confirmó on-chain
+//   already → el contrato dice que ya estaba cobrado (p. ej. desde otro
+//             dispositivo, o una lectura vieja dejó el botón a la vista):
+//             para la UI es lo mismo que "Reclamado", no un error
+//   error   → cancelado o falló
+export type ClaimResult = "ok" | "already" | "error";
+export async function claimPrize(day: number, level: Difficulty): Promise<ClaimResult> {
   const active = getProvider();
-  if (!active) return false;
+  if (!active) return "error";
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transport = custom(active.provider as any);
@@ -636,7 +642,17 @@ export async function claimPrize(day: number, level: Difficulty): Promise<boolea
 
     let [account] = await walletClient.getAddresses();
     if (!account) [account] = await walletClient.requestAddresses();
-    if (!account) return false;
+    if (!account) return "error";
+
+    // Antes de abrir el popup de la wallet: si ya está cobrado, la tx
+    // revertiría con AlreadyClaimed y el jugador vería un fallo sin sentido.
+    const already = await publicClient.readContract({
+      address: GAME_ADDRESS,
+      abi: gameAbi,
+      functionName: "claimed",
+      args: [BigInt(day), LEVEL_INDEX[level]],
+    });
+    if (already) return "already";
 
     const walletChainId = await walletClient.getChainId();
     if (walletChainId !== ACTIVE_CHAIN.id) {
@@ -664,10 +680,10 @@ export async function claimPrize(day: number, level: Difficulty): Promise<boolea
       ...feeOpts,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    return receipt.status === "success";
+    return receipt.status === "success" ? "ok" : "error";
   } catch (err) {
     console.error("[premio] reclamo falló o cancelado:", err);
-    return false;
+    return "error";
   }
 }
 

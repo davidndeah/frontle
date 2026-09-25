@@ -74,7 +74,7 @@ import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWee
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import type { ClaimablePrize, LastCycle, PayResult } from "./lib/payments";
+import type { ClaimablePrize, ClaimResult, LastCycle, PayResult } from "./lib/payments";
 import { onCoinsChanged } from "./lib/coinsBus";
 import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
@@ -252,6 +252,14 @@ export default function Frontle() {
   // `${día}-${nivel}` recién reclamado: dispara la animación de celebración.
   const [justClaimed, setJustClaimed] = useState<string | null>(null);
   const [claimingKey, setClaimingKey] = useState<string | null>(null);
+  // Premios que ESTE dispositivo vio confirmados (recibo on-chain), por
+  // `${día}-${nivel}`. Mandan sobre las lecturas del contrato: el RPC público
+  // reparte entre nodos y uno atrasado un par de bloques sigue diciendo
+  // `claimed=false` justo después del cobro — el botón "Reclamar" volvía a
+  // salir hasta recargar varias veces. Se guarda en localStorage por wallet
+  // para que tampoco reaparezca al recargar.
+  const [claimedRows, setClaimedRows] = useState<ClaimablePrize[]>([]);
+  const claimedKeysRef = useRef<Set<string>>(new Set());
   // Bono de bienvenida recién otorgado (monto en USDT) → aviso de Bordy.
   const [bonus, setBonus] = useState<string | null>(null);
 
@@ -745,17 +753,33 @@ export default function Frontle() {
     if (!addr) return setPrizes([]);
     const entries = await getMyWinDays(addr);
     try {
-      setPrizes(await (await loadPayments()).getClaimablePrizes(entries, addr));
+      const claimable = await (await loadPayments()).getClaimablePrizes(entries, addr);
+      // Lo ya cobrado en este dispositivo no vuelve aunque el nodo vaya atrasado.
+      setPrizes(claimable.filter((p) => !claimedKeysRef.current.has(`${p.day}-${p.level}`)));
     } catch {
       setPrizes([]); // sin el chunk no se puede saber qué es cobrable
     }
   }, []);
 
   // Sin `myId` (nunca entró, o cerró sesión) `loadPrizes` vacía la lista: los
-  // premios de la cuenta anterior no pueden quedar en pantalla.
+  // premios de la cuenta anterior no pueden quedar en pantalla. Los cobrados
+  // se cargan ANTES, porque `loadPrizes` los usa para filtrar.
   useEffect(() => {
+    const rows = readClaimed(myId);
+    claimedKeysRef.current = new Set(rows.map((p) => `${p.day}-${p.level}`));
+    setClaimedRows(rows);
     loadPrizes(myId);
   }, [myId, loadPrizes]);
+
+  // El Ranking también lee `claimed` del contrato: mismo parche que en Perfil.
+  const cycleView = useMemo(() => {
+    if (!cycle) return null;
+    const keys = new Set(claimedRows.map((p) => `${p.day}-${p.level}`));
+    return {
+      ...cycle,
+      winners: cycle.winners.map((w) => (keys.has(`${cycle.day}-${w.level}`) ? { ...w, claimed: true } : w)),
+    };
+  }, [cycle, claimedRows]);
 
   // Ganadores del último día CERRADO (tab Ranking). El contrato es la fuente de
   // verdad, así que también dice si cada premio ya se reclamó.
@@ -773,37 +797,41 @@ export default function Frontle() {
   useEffect(() => { loadCycle(); }, [loadCycle]);
 
   async function handleClaim(day: number, lv: Difficulty) {
-    setClaimingKey(`${day}-${lv}`);
+    const key = `${day}-${lv}`;
+    setClaimingKey(key);
     // El `finally` es obligatorio ahora que hay un `import()` de por medio: si
     // el chunk no baja, sin él el botón se quedaría en "reclamando…" para
     // siempre y el jugador no podría reintentar su premio.
-    let ok = false;
+    let res: ClaimResult = "error";
     try {
-      ok = await (await loadPayments()).claimPrize(day, lv);
+      res = await (await loadPayments()).claimPrize(day, lv);
     } catch {
-      ok = false;
+      res = "error";
     } finally {
       setClaimingKey(null);
     }
-    if (ok) {
-      const key = `${day}-${lv}`;
+    if (res === "error") {
+      setMessage({ text: tr.prizeClaimError, ok: false });
+      return;
+    }
+
+    // Cobrado (o ya lo estaba): la fila pasa YA a "Reclamado", sin esperar a
+    // que el RPC se ponga al día. Sale de `prizes` y entra en `claimedRows`,
+    // que la sigue mostrando, bloqueada, en el mismo sitio.
+    const row = prizes.find((p) => `${p.day}-${p.level}` === key) ?? { day, level: lv, amount: 0 };
+    claimedKeysRef.current.add(key);
+    const rows = [...claimedRows.filter((p) => `${p.day}-${p.level}` !== key), row];
+    setClaimedRows(rows);
+    writeClaimed(myId, rows);
+    setPrizes((ps) => ps.filter((p) => `${p.day}-${p.level}` !== key));
+
+    if (res === "ok") {
       setMessage({ text: tr.prizeClaimedMsg, ok: true });
       sfxWin();
       setJustClaimed(key);
-
-      // La tarjeta de ganadores del Ranking puede refrescarse ya: pasa a
-      // "Reclamado" sin quitar ninguna fila.
-      loadCycle();
-
-      // El Perfil NO: `loadPrizes` borra la fila reclamada, y con ella se
-      // llevaría la animación antes de que se vea. Se refresca al terminar.
-      setTimeout(() => {
-        setJustClaimed(null);
-        loadPrizes(myId);
-      }, 1200);
-    } else {
-      setMessage({ text: tr.prizeClaimError, ok: false });
+      setTimeout(() => setJustClaimed(null), 1200);
     }
+    loadCycle();
   }
 
   const statusByCountry = useMemo(() => {
@@ -1718,7 +1746,7 @@ export default function Frontle() {
                 {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
                 <WinnersCard
                   tr={tr}
-                  cycle={cycle}
+                  cycle={cycleView}
                   names={winnerNames}
                   myId={myId}
                   onGoToProfile={() => setTab("perfil")}
@@ -1796,8 +1824,8 @@ export default function Frontle() {
             {/* Racha v2: congelar / recuperar con monedas */}
             <StreakCard tr={tr} onStreak={setStreak} />
             <Achievements tr={tr} playerId={myId || undefined} />
-            {prizes.length > 0 && (
-              <PrizesCard tr={tr} prizes={prizes} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
+            {(prizes.length > 0 || claimedRows.length > 0) && (
+              <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
             )}
             {/* Ajuste de idioma (además del selector rápido del header) */}
             <section className="panel p-4 flex items-center justify-between gap-3">
@@ -2761,11 +2789,34 @@ function WinnersCard({
   );
 }
 
+// Premios cobrados desde este dispositivo, por wallet (ver `claimedRows`).
+// Se quedan 3 días de contrato: de sobra para que cualquier nodo se ponga al
+// día, y poco para que la tarjeta no acumule filas viejas de "Reclamado".
+const CLAIMED_KEEP_DAYS = 3;
+const contractToday = () => Math.floor(Date.now() / 86_400_000);
+
+function readClaimed(addr: string): ClaimablePrize[] {
+  if (!addr) return [];
+  try {
+    const raw = localStorage.getItem(`frontle-claimed-${addr.toLowerCase()}`);
+    const rows = raw ? (JSON.parse(raw) as ClaimablePrize[]) : [];
+    return rows.filter((p) => p.day >= contractToday() - CLAIMED_KEEP_DAYS);
+  } catch {
+    return [];
+  }
+}
+
+function writeClaimed(addr: string, rows: ClaimablePrize[]) {
+  if (!addr) return;
+  try { localStorage.setItem(`frontle-claimed-${addr.toLowerCase()}`, JSON.stringify(rows)); } catch {}
+}
+
 // El ÚNICO sitio donde se reclama. Lista todos los (día, nivel) que el
 // contrato confirma cobrables, no solo los del último ciclo.
 function PrizesCard({
   tr,
   prizes,
+  claimed,
   claimingKey,
   justClaimed,
   onClaim,
@@ -2774,6 +2825,7 @@ function PrizesCard({
 }: {
   tr: ReturnType<typeof t>;
   prizes: ClaimablePrize[];
+  claimed: ClaimablePrize[];
   claimingKey: string | null;
   justClaimed: string | null;
   onClaim: (day: number, level: Difficulty) => void;
@@ -2786,11 +2838,33 @@ function PrizesCard({
       <ul className="flex flex-col gap-2">
         {prizes.map((p) => {
           const key = `${p.day}-${p.level}`;
-          const celebrating = justClaimed === key;
           return (
             <li
               key={key}
-              className={`relative overflow-hidden flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 ${
+              className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2"
+            >
+              <span className="text-sm text-amber-100">
+                {tr.prizeRow(fmt(p.amount))} <span className="text-amber-300/80">· {tr.levels[p.level]}</span>
+              </span>
+              <button
+                onClick={() => onClaim(p.day, p.level)}
+                disabled={claimingKey !== null}
+                className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-surface disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
+              </button>
+            </li>
+          );
+        })}
+        {/* Ya cobrados: quedan a la vista con el botón bloqueado en
+            "Reclamado", para que el jugador vea que se hizo. */}
+        {claimed.map((p) => {
+          const key = `${p.day}-${p.level}`;
+          const celebrating = justClaimed === key;
+          return (
+            <li
+              key={`done-${key}`}
+              className={`relative overflow-hidden flex items-center justify-between gap-3 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-3 py-2 ${
                 celebrating ? "claim-flash" : ""
               }`}
             >
@@ -2805,18 +2879,15 @@ function PrizesCard({
                     ✨
                   </span>
                 ))}
-
-              <span className="text-sm text-amber-100">
-                {tr.prizeRow(fmt(p.amount))} <span className="text-amber-300/80">· {tr.levels[p.level]}</span>
+              <span className="text-sm text-neutral-200">
+                {p.amount > 0 ? tr.prizeRow(fmt(p.amount)) : tr.prizesTitle}{" "}
+                <span className="text-neutral-400">· {tr.levels[p.level]}</span>
               </span>
-              {/* Durante la celebración la fila sigue visible pero el premio
-                  ya está cobrado: el botón queda bloqueado y marcado. */}
               <button
-                onClick={() => onClaim(p.day, p.level)}
-                disabled={claimingKey !== null || celebrating}
-                className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-surface disabled:opacity-60 disabled:cursor-not-allowed"
+                disabled
+                className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-300 cursor-default"
               >
-                {celebrating ? `✓ ${tr.prizeClaimedLabel}` : claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
+                ✓ {tr.prizeClaimedLabel}
               </button>
             </li>
           );
