@@ -836,14 +836,12 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
 }
 
 // --- Compra de monedas 🪙 (v2, PLAN-FRONTLE-V2 §5) ----------------------
-// El dinero va al contrato del pot semanal (`FrontleWeekly.buyCoins`), que lo
-// suma 100% al pot de la semana en curso. Las monedas en sí NO son un token:
-// son saldo en la base de datos, que `credit-coins` acredita tras verificar
-// esta transacción on-chain.
-//
-// Mientras el contrato no esté desplegado (`NEXT_PUBLIC_WEEKLY_ADDRESS` sin
-// definir), cae al camino interino: transfer directo a la tesorería del
-// operador, que siembra el pot a mano. El edge function acepta ambos.
+// UNA sola firma: `USDT.transfer` a la tesorería (el operador). Antes era
+// approve + `FrontleWeekly.buyCoins`, y MiniPay pidió quitar el approve; sin
+// signTypedData (permit) ni batching en MiniPay, un transfer directo es la
+// única forma de una sola confirmación. `credit-coins` verifica el Transfer,
+// acredita las monedas (saldo en la base de datos, no un token) y reenvía el
+// monto al pot de la semana con `fundPot` — el 100% sigue yendo al pot.
 export const COIN_TREASURY = "0x54E83C8D7B7A77cbf0a2842c1a82d51be8814DD0" as const;
 
 const weeklyAbi = [
@@ -895,7 +893,7 @@ export async function getWeeklyMinPurchase(): Promise<number | null> {
 // wallet embebida: Privy firma con `showWalletUIs:false`, así que el jugador
 // por correo NO ve ninguna pantalla de la wallet — sin esto, treinta segundos
 // de trabajo real se ven exactamente igual que un botón que no hizo nada.
-export type PurchaseStep = "checking" | "approving" | "signing" | "confirming";
+export type PurchaseStep = "checking" | "signing" | "confirming";
 
 // "pending" = el pago YA se emitió pero no se pudo confirmar aquí (timeout,
 // RPC caído, el jugador cerró). No es un fallo: la tx sigue su curso y el
@@ -925,9 +923,9 @@ export async function purchaseCoinPack(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transport = custom(active.provider as any);
     const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
-    // Celo cierra bloque cada ~1 s; el sondeo por defecto de viem es de 4 s.
-    // En la primera compra hay DOS esperas de receipt, así que bajarlo quita
-    // hasta ~8 s de espera que no era de la cadena sino del reloj del cliente.
+    // Celo cierra bloque cada ~1 s; el sondeo por defecto de viem es de 4 s:
+    // bajarlo quita hasta ~4 s de espera que no era de la cadena sino del
+    // reloj del cliente.
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http(), pollingInterval: 1000 });
     let [account] = await walletClient.getAddresses();
     if (!account) [account] = await walletClient.requestAddresses();
@@ -942,52 +940,16 @@ export async function purchaseCoinPack(
     }
     const feeOpts = feeOptsFor(active.embedded);
 
-    let hash: `0x${string}`;
-    if (WEEKLY_ADDRESS) {
-      // El contrato tira del saldo con transferFrom → hace falta approve.
-      const allowance = await publicClient.readContract({
-        address: TOKEN_ADDRESS,
-        abi: erc20Abi,
-        functionName: "allowance",
-        args: [account, WEEKLY_ADDRESS],
-      });
-      if (allowance < wei) {
-        // Paso extra SOLO en la primera compra: el contrato tira del saldo con
-        // transferFrom. Se autoriza el máximo para no repetirlo nunca más.
-        onStep?.("approving");
-        const approveHash = await walletClient.writeContract({
-          account,
-          chain: ACTIVE_CHAIN,
-          address: TOKEN_ADDRESS,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [WEEKLY_ADDRESS, maxUint256],
-          ...feeOpts,
-        });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash, timeout: RECEIPT_TIMEOUT });
-      }
-      onStep?.("signing");
-      hash = await walletClient.writeContract({
-        account,
-        chain: ACTIVE_CHAIN,
-        address: WEEKLY_ADDRESS,
-        abi: weeklyAbi,
-        functionName: "buyCoins",
-        args: [wei],
-        ...feeOpts,
-      });
-    } else {
-      onStep?.("signing");
-      hash = await walletClient.writeContract({
-        account,
-        chain: ACTIVE_CHAIN,
-        address: TOKEN_ADDRESS,
-        abi: erc20Abi,
-        functionName: "transfer",
-        args: [COIN_TREASURY, wei],
-        ...feeOpts,
-      });
-    }
+    onStep?.("signing");
+    const hash = await walletClient.writeContract({
+      account,
+      chain: ACTIVE_CHAIN,
+      address: TOKEN_ADDRESS,
+      abi: erc20Abi,
+      functionName: "transfer",
+      args: [COIN_TREASURY, wei],
+      ...feeOpts,
+    });
     // A partir de aquí el dinero YA salió: el hash se entrega antes de esperar
     // nada, para que quien llama pueda guardarlo y acreditarlo aunque esta
     // función no llegue a devolver.

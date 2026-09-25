@@ -234,7 +234,6 @@ type Dict = {
     // así que este es el único aviso de que algo está pasando.
     steps: {
       checking: string;
-      approving: string;
       signing: string;
       confirming: string;
       crediting: string;
@@ -643,7 +642,6 @@ const STRINGS: Record<Locale, Dict> = {
       needWallet: "Necesitas una billetera para comprar monedas. Entra con tu correo y te creamos una.",
       steps: {
         checking: "Revisando tu saldo…",
-        approving: "Autorizando el pago (paso 1 de 2)…",
         signing: "Enviando el pago…",
         confirming: "Confirmando en la red…",
         crediting: "Acreditando tus monedas…",
@@ -1035,7 +1033,6 @@ const STRINGS: Record<Locale, Dict> = {
       needWallet: "You need a wallet to buy coins. Sign in with your email and we'll create one for you.",
       steps: {
         checking: "Checking your balance…",
-        approving: "Authorising the payment (step 1 of 2)…",
         signing: "Sending the payment…",
         confirming: "Confirming on the network…",
         crediting: "Crediting your coins…",
@@ -1429,7 +1426,6 @@ const STRINGS: Record<Locale, Dict> = {
       needWallet: "Você precisa de uma carteira para comprar moedas. Entre com seu e-mail e criamos uma para você.",
       steps: {
         checking: "Conferindo seu saldo…",
-        approving: "Autorizando o pagamento (passo 1 de 2)…",
         signing: "Enviando o pagamento…",
         confirming: "Confirmando na rede…",
         crediting: "Creditando suas moedas…",
@@ -1821,7 +1817,6 @@ const STRINGS: Record<Locale, Dict> = {
       needWallet: "Il vous faut un portefeuille pour acheter des pièces. Connectez-vous avec votre e-mail et nous en créons un.",
       steps: {
         checking: "Vérification de votre solde…",
-        approving: "Autorisation du paiement (étape 1 sur 2)…",
         signing: "Envoi du paiement…",
         confirming: "Confirmation sur le réseau…",
         crediting: "Ajout de vos pièces…",

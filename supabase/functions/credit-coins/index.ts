@@ -11,11 +11,22 @@
 //  Paquetes exactos (0.50→50, 1.00→110, 2.50→300); cualquier otro monto se
 //  acredita sin bonus a 1 🪙 = $0.01 (floor).
 //
+//  Reenvío al pot (migración 0016): la compra es UN solo `USDT.transfer` a la
+//  tesorería —MiniPay pidió quitar el approve— y la tesorería ES el operador.
+//  Tras acreditar, esta función llama `fundPot` en FrontleWeekly con lo
+//  pendiente, así el 100% sigue yendo al pot de la semana. Va en segundo
+//  plano: el crédito del jugador no espera a esa tx.
+//
 //  Secrets: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (inyectados) ·
-//  CELO_RPC_URL opcional (default forno) · COIN_TREASURY opcional.
+//  CELO_RPC_URL opcional (default forno) · COIN_TREASURY opcional ·
+//  WEEKLY_ADDRESS + OPERATOR_PRIVATE_KEY (los mismos de close-week) para el
+//  reenvío; sin ellos las compras quedan en cola y se reenvían al ponerlos.
 // ============================================================
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createPublicClient, createWalletClient, http, maxUint256 } from "https://esm.sh/viem@2.21.0";
+import { privateKeyToAccount } from "https://esm.sh/viem@2.21.0/accounts";
+import { celo } from "https://esm.sh/viem@2.21.0/chains";
 
 const USDT = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e"; // 6 dec, lowercase
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
@@ -30,6 +41,83 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const erc20Abi = [
+  { type: "function", name: "balanceOf", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "allowance", inputs: [{ name: "o", type: "address" }, { name: "s", type: "address" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
+  { type: "function", name: "approve", inputs: [{ name: "s", type: "address" }, { name: "v", type: "uint256" }], outputs: [{ type: "bool" }], stateMutability: "nonpayable" },
+] as const;
+const weeklyFundAbi = [
+  { type: "function", name: "fundPot", inputs: [{ name: "amount", type: "uint256" }], outputs: [], stateMutability: "nonpayable" },
+] as const;
+
+// Supabase Edge: deja correr una promesa después de responder.
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
+// Reenvía al pot semanal TODAS las compras pendientes de la cola en un solo
+// fundPot. Cada fila se "toma" con un UPDATE condicionado (atómico por fila):
+// dos invocaciones a la vez nunca reenvían la misma compra. Si algo falla
+// ANTES de emitir la tx, las filas vuelven a pendiente y las recoge la
+// próxima compra. fundPot suma a la semana EN CURSO, así que una compra hecha
+// segundos antes del corte del lunes puede caer en la semana nueva.
+async function forwardPendingToPot(supa: SupabaseClient, rpcUrl: string, treasury: string): Promise<void> {
+  const weekly = (Deno.env.get("WEEKLY_ADDRESS") ?? "") as `0x${string}`;
+  const pk = Deno.env.get("OPERATOR_PRIVATE_KEY") as `0x${string}` | undefined;
+  if (!/^0x[0-9a-fA-F]{40}$/.test(weekly) || !pk) return; // queda en cola
+
+  const account = privateKeyToAccount(pk);
+  if (account.address.toLowerCase() !== treasury) {
+    console.error("[credit-coins] OPERATOR_PRIVATE_KEY no es la tesorería: no se reenvía");
+    return;
+  }
+
+  const claim = `claim:${crypto.randomUUID()}`;
+  const { data: rows, error } = await supa
+    .from("coin_pot_forwards")
+    .update({ forwarded_tx: claim, claimed_at: new Date().toISOString() })
+    .is("forwarded_tx", null)
+    .select("ref, amount_wei");
+  if (error) return console.error("[credit-coins] no se pudo tomar la cola:", error);
+  if (!rows?.length) return;
+
+  const total = rows.reduce((acc, r) => acc + BigInt(String(r.amount_wei)), 0n);
+  const release = (tag: string) =>
+    supa.from("coin_pot_forwards").update({ forwarded_tx: null, claimed_at: null }).eq("forwarded_tx", tag);
+
+  const publicClient = createPublicClient({ chain: celo, transport: http(rpcUrl) });
+  const walletClient = createWalletClient({ account, chain: celo, transport: http(rpcUrl) });
+  const usdt = USDT as `0x${string}`;
+  let hash: `0x${string}`;
+  try {
+    const bal = await publicClient.readContract({ address: usdt, abi: erc20Abi, functionName: "balanceOf", args: [account.address] });
+    if (bal < total) throw new Error(`tesorería sin saldo: ${bal} < ${total}`);
+    const allowance = await publicClient.readContract({ address: usdt, abi: erc20Abi, functionName: "allowance", args: [account.address, weekly] });
+    if (allowance < total) {
+      // Una sola vez: la tesorería autoriza al contrato semanal para siempre.
+      const approveHash = await walletClient.writeContract({ address: usdt, abi: erc20Abi, functionName: "approve", args: [weekly, maxUint256] });
+      await publicClient.waitForTransactionReceipt({ hash: approveHash });
+    }
+    hash = await walletClient.writeContract({ address: weekly, abi: weeklyFundAbi, functionName: "fundPot", args: [total] });
+  } catch (err) {
+    console.error("[credit-coins] fundPot no se emitió, vuelve a la cola:", err);
+    await release(claim);
+    return;
+  }
+
+  // Emitida: se anota YA, antes de esperar el receipt, para que un corte aquí
+  // no deje filas "tomadas" sin rastro de la tx que las reenvió.
+  await supa.from("coin_pot_forwards").update({ forwarded_tx: hash }).eq("forwarded_tx", claim);
+  try {
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    if (receipt.status !== "success") {
+      console.error("[credit-coins] fundPot revirtió, vuelve a la cola:", hash);
+      await release(hash);
+    }
+  } catch (err) {
+    // Sin receipt no se sabe si entró: NO se libera (podría duplicar el pot).
+    console.error("[credit-coins] fundPot sin confirmar, revisar a mano:", hash, err);
+  }
+}
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -61,6 +149,8 @@ Deno.serve(async (req) => {
 
     let payer = "";
     let wei = 0n;
+    // Compra por transfer directo a la tesorería → hay que reenviarla al pot.
+    let needsForward = false;
 
     const purchase = weeklyAddr
       ? logs.find(
@@ -82,6 +172,7 @@ Deno.serve(async (req) => {
       if (!transfer) return json(400, { error: "la tx no es una compra de monedas" });
       payer = `0x${String(transfer.topics[1]).slice(-40)}`.toLowerCase();
       wei = BigInt(transfer.data);
+      needsForward = true;
     }
     // 1 🪙 = $0.01 = 10_000 wei de USDT (6 dec). Paquetes exactos con bonus.
     const coins = PACKS[wei.toString()] ?? Number(wei / 10_000n);
@@ -100,6 +191,16 @@ Deno.serve(async (req) => {
         .upsert({ player_id: payer, secret_hash: secretHash, updated_at: new Date().toISOString() }, { onConflict: "player_id" });
     }
 
+    // A la cola del pot ANTES de acreditar, e idempotente por hash: si el
+    // crédito sale bien y esto no, el reintento del cliente (alreadyCredited)
+    // vuelve a pasar por aquí.
+    if (needsForward) {
+      const { error: qErr } = await supa
+        .from("coin_pot_forwards")
+        .upsert({ ref: txHash.toLowerCase(), amount_wei: wei.toString() }, { onConflict: "ref", ignoreDuplicates: true });
+      if (qErr) console.error("[credit-coins] no se pudo encolar el reenvío al pot:", qErr);
+    }
+
     const { error } = await supa.from("coin_ledger").insert({
       player_id: payer,
       kind: "purchase",
@@ -111,6 +212,12 @@ Deno.serve(async (req) => {
       console.error("[credit-coins] insert falló:", error);
       return json(500, { error: "no se pudo acreditar" });
     }
+
+    // El reenvío al pot no bloquea la respuesta: el jugador ya tiene sus monedas.
+    const forward = forwardPendingToPot(supa, rpcUrl, treasury).catch((e) => console.error("[credit-coins] reenvío:", e));
+    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(forward);
+    else await forward;
+
     return json(200, { coins, player: payer, alreadyCredited: Boolean(error) });
   } catch (err) {
     console.error("[credit-coins] error:", err);
