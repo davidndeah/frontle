@@ -51,7 +51,6 @@ import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
 import { continentOf } from "./lib/continents";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
-import { formatMoney, getUsdToCopmRate, type DisplayCurrency } from "./lib/currency";
 // viem (~248 KB) fuera del bundle inicial. Nada del camino de pagos hace falta
 // para pintar el tablero, y era el bloque grande que quedaba: con él dentro, la
 // hidratación tardaba 2840 ms y el LCP se iba detrás (PageSpeed móvil 55).
@@ -192,8 +191,6 @@ export default function Frontle() {
   const [pot, setPot] = useState<number | null>(null);
   // Moneda de VISUALIZACIÓN (el token real siempre es USDT; esto solo convierte
   // los montos mostrados, para los usuarios de Colombia).
-  const [currency, setCurrency] = useState<DisplayCurrency>("USDT");
-  const [copmRate, setCopmRate] = useState(4000);
   const [hasWallet, setHasWallet] = useState(true); // optimista hasta confirmar que no hay wallet
 
   // Cronómetro / fases
@@ -437,7 +434,8 @@ export default function Frontle() {
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
   const tr = t(locale);
-  const fmt = (usdt: number) => formatMoney(usdt, currency, copmRate);
+  // Los montos se muestran siempre en USDT, el token real del juego.
+  const fmt = (usdt: number) => `${usdt.toFixed(2)} USDT`;
   const cn = (canonical: string) => countryName(canonical, locale);
   const day = dateSeed();
   const bestKey = `frontle-best-${day}-${level}`;
@@ -572,7 +570,6 @@ export default function Frontle() {
   // Privy solo tiene sentido fuera de MiniPay: allí el wallet ya viene
   // inyectado y el SDK sería más de un megabyte de código muerto.
   const privyActive = PRIVY_ENABLED && mpChecked && !inMiniPay;
-  useEffect(() => { getUsdToCopmRate().then(setCopmRate); }, []);
   useEffect(() => {
     getIpCountry().then((cc) => {
       setIpCountry(cc);
@@ -707,8 +704,6 @@ export default function Frontle() {
     const id = setInterval(refresh, 30_000);
     return () => { alive = false; clearInterval(id); };
   }, []);
-
-  // Saldo COPm oculto temporalmente (a pedido): no se carga ni se muestra.
 
   // ¿Hay wallet inyectada (MiniPay / extensión)? Reintenta porque puede
   // inyectarse con un pequeño retraso. Si la hay, captura la dirección SIN
@@ -1236,10 +1231,6 @@ export default function Frontle() {
             hasta pulsar Jugar. Mockup: docs/design/home-v4.html. */}
         {!started && (
           <div className="flex flex-col gap-3">
-            <div className="flex justify-end -mb-1">
-              <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
-            </div>
-
             {/* Héroe: violeta de marca sólido, neo-brutalista */}
             <div className="brutal rounded-2xl bg-[#6c2bd9] p-3.5 relative overflow-hidden">
               <span className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-black/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
@@ -1513,14 +1504,6 @@ export default function Frontle() {
 
             {/* Tienda de monedas: entrada desde el home */}
             <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
-          </div>
-        )}
-
-        {/* Selector de moneda durante la partida — antes de jugar vive dentro
-            del hero (arriba de la carta violeta), no aquí. */}
-        {started && (
-          <div className="flex justify-center">
-            <CurrencySelect tr={tr} currency={currency} onChange={setCurrency} />
           </div>
         )}
 
@@ -2612,23 +2595,6 @@ function HintButton({ active, busy, locked, onClick, label, price, fmt }: { acti
     >
       {label} {active ? "✓" : busy ? "⏳" : <span className="opacity-70">· {fmt(price)}</span>}
     </button>
-  );
-}
-
-// Desplegable para elegir en qué moneda VER los montos (USDT real ↔ COP estimado).
-function CurrencySelect({ tr, currency, onChange }: { tr: ReturnType<typeof t>; currency: DisplayCurrency; onChange: (c: DisplayCurrency) => void }) {
-  return (
-    <label className="inline-flex items-center gap-1.5 text-[11px] text-neutral-300">
-      <span>{tr.amountIn}</span>
-      <select
-        value={currency}
-        onChange={(e) => onChange(e.target.value as DisplayCurrency)}
-        className="rounded-md border border-lavender/25 bg-surface/70 px-2 py-1 text-xs font-semibold text-white outline-none focus:border-gold/50"
-      >
-        <option value="USDT">USDT</option>
-        <option value="COPM">COPm</option>
-      </select>
-    </label>
   );
 }
 

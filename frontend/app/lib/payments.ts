@@ -48,9 +48,6 @@ const WEEKLY_ADDRESS = (process.env.NEXT_PUBLIC_WEEKLY_ADDRESS ?? "") as `0x${st
 // y nunca ve "gas" ni CELO (requisito MiniPay). Para USDT/USDC se usa el ADAPTER, no el token.
 const FEE_CURRENCY: Address | undefined = "0x0e2a3e05bc9a16f5292a6170456a710cb89c6f72";
 
-// COPm (peso colombiano de Mento) — para mostrar el saldo local del usuario.
-const COPM_ADDRESS: Address = "0x8A567e2aE79CA692Bd748aB832081C45de4041eA";
-const COPM_DECIMALS = 18;
 
 // Reutiliza los serializers/formatters de Celo (soportan feeCurrency) apuntando a Sepolia.
 const celoSepolia = defineChain({
@@ -697,29 +694,6 @@ export async function getWalletBalances(): Promise<{ usdt: number; celo: number 
   }
 }
 
-// --- Lectura: saldo de COPm (peso colombiano) de la wallet conectada ----
-// Localización para el mercado colombiano de MiniPay. Devuelve el saldo o null.
-export async function getCopmBalance(): Promise<number | null> {
-  const active = getProvider();
-  if (!active) return null;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport: custom(active.provider as any) });
-    const [account] = await walletClient.getAddresses();
-    if (!account) return null;
-    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
-    const bal = await publicClient.readContract({
-      address: COPM_ADDRESS,
-      abi: erc20Abi,
-      functionName: "balanceOf",
-      args: [account],
-    });
-    return Number(formatUnits(bal, COPM_DECIMALS));
-  } catch (err) {
-    console.error("[copm] no se pudo leer el saldo:", err);
-    return null;
-  }
-}
 
 // --- Pago ---------------------------------------------------------------
 // Resultado tipado para que la UI pueda dar el mensaje correcto:

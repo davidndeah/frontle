@@ -17,7 +17,7 @@ import { join } from "path";
 
 const ALLOW = new Set([
   "frontle", "bordy", "minipay", "celo", "privy", "ok", "usdt", "usdc",
-  "usdm", "copm", "celoscan", "vercel", "language",
+  "usdm", "celoscan", "vercel", "language",
   // El logotipo de la landing parte la marca en dos para pintar "tle" en
   // amarillo. Es una marca, no copy: no se traduce en ningún idioma.
   "fron", "tle",

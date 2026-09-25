@@ -288,8 +288,6 @@ type Dict = {
   nextChallenge: (time: string) => string;
   prize: (amount: string) => string;
   levelPrize: (amount: string) => string;
-  copmBalance: (amount: string) => string;
-  amountIn: string;
   noWallet: string;
   connectToRank: string;
   connectWallet: string;
@@ -692,8 +690,6 @@ const STRINGS: Record<Locale, Dict> = {
     nextChallenge: (t) => `Nuevo reto en ${t}`,
     prize: (a) => `🏆 Premio de hoy: ${a}`,
     levelPrize: (a) => `🏅 Premio de este nivel: ${a}`,
-    copmBalance: (a) => `Saldo: ${a} COP`,
-    amountIn: "Ver montos en",
     noWallet: "Abre Frontle en MiniPay para pistas y reintentos.",
     connectToRank: "🔗 Conecta tu billetera para entrar al ranking",
     connectWallet: "🔗 Conectar billetera",
@@ -1086,8 +1082,6 @@ const STRINGS: Record<Locale, Dict> = {
     nextChallenge: (t) => `Next challenge in ${t}`,
     prize: (a) => `🏆 Today's prize: ${a}`,
     levelPrize: (a) => `🏅 This level's prize: ${a}`,
-    copmBalance: (a) => `Balance: ${a} COP`,
-    amountIn: "Show amounts in",
     noWallet: "Open Frontle in MiniPay for hints and retries.",
     connectToRank: "🔗 Connect your wallet to join the ranking",
     connectWallet: "🔗 Connect wallet",
@@ -1482,8 +1476,6 @@ const STRINGS: Record<Locale, Dict> = {
     nextChallenge: (t) => `Próximo desafio em ${t}`,
     prize: (a) => `🏆 Prêmio de hoje: ${a}`,
     levelPrize: (a) => `🏅 Prêmio deste nível: ${a}`,
-    copmBalance: (a) => `Saldo: ${a} COP`,
-    amountIn: "Ver valores em",
     noWallet: "Abra o Frontle no MiniPay para dicas e novas tentativas.",
     connectToRank: "🔗 Conecte sua carteira para entrar no ranking",
     connectWallet: "🔗 Conectar carteira",
@@ -1876,8 +1868,6 @@ const STRINGS: Record<Locale, Dict> = {
     nextChallenge: (t) => `Prochain défi dans ${t}`,
     prize: (a) => `🏆 Prix du jour : ${a}`,
     levelPrize: (a) => `🏅 Prix de ce niveau : ${a}`,
-    copmBalance: (a) => `Solde : ${a} COP`,
-    amountIn: "Afficher les montants en",
     noWallet: "Ouvrez Frontle dans MiniPay pour les indices et les essais.",
     connectToRank: "🔗 Connectez votre portefeuille pour rejoindre le classement",
     connectWallet: "🔗 Connecter portefeuille",

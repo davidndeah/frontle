@@ -45,7 +45,7 @@ const L: Record<Locale, Dict> = {
     intro: ["Lo primero:", "Frontle está diseñado para pedir lo mínimo. Sin registro con datos personales, sin contraseñas, sin rastreadores de publicidad."],
     s1: ["1. Qué guardamos y dónde.", ""],
     s1Items: [
-      ["En tu dispositivo", "(localStorage): tu partida del día, mejores marcas, racha, preferencias (sonido, idioma, moneda) y el nombre de perfil que elijas. Nunca sale de tu navegador salvo el nombre, que acompaña tus marcas en el ranking."],
+      ["En tu dispositivo", "(localStorage): tu partida del día, mejores marcas, racha, preferencias (sonido, idioma) y el nombre de perfil que elijas. Nunca sale de tu navegador salvo el nombre, que acompaña tus marcas en el ranking."],
       ["En nuestro ranking", "(base de datos): día, nivel, nº de países, tiempo, tu dirección de wallet, el nombre de perfil (opcional) y el país de tu conexión."],
       ["En la blockchain de Celo", "(pública por naturaleza): tus pagos de pistas/reintentos y los reclamos de premios, asociados a tu dirección."],
     ],
@@ -70,7 +70,7 @@ const L: Record<Locale, Dict> = {
     intro: ["First things first:", "Frontle is designed to ask for the bare minimum. No sign-up with personal data, no passwords, no advertising trackers."],
     s1: ["1. What we store and where.", ""],
     s1Items: [
-      ["On your device", "(localStorage): your game of the day, best scores, streak, preferences (sound, language, currency) and the profile name you choose. It never leaves your browser except the name, which goes with your scores to the ranking."],
+      ["On your device", "(localStorage): your game of the day, best scores, streak, preferences (sound, language) and the profile name you choose. It never leaves your browser except the name, which goes with your scores to the ranking."],
       ["In our ranking", "(database): day, level, number of countries, time, your wallet address, the profile name (optional) and the country of your connection."],
       ["On the Celo blockchain", "(public by nature): your payments for hints/retries and prize claims, tied to your address."],
     ],
@@ -95,7 +95,7 @@ const L: Record<Locale, Dict> = {
     intro: ["Antes de tudo:", "O Frontle foi desenhado para pedir o mínimo. Sem cadastro com dados pessoais, sem senhas, sem rastreadores de publicidade."],
     s1: ["1. O que guardamos e onde.", ""],
     s1Items: [
-      ["No seu dispositivo", "(localStorage): sua partida do dia, melhores marcas, sequência, preferências (som, idioma, moeda) e o nome de perfil que você escolher. Nunca sai do seu navegador, exceto o nome, que acompanha suas marcas no ranking."],
+      ["No seu dispositivo", "(localStorage): sua partida do dia, melhores marcas, sequência, preferências (som, idioma) e o nome de perfil que você escolher. Nunca sai do seu navegador, exceto o nome, que acompanha suas marcas no ranking."],
       ["No nosso ranking", "(banco de dados): dia, nível, nº de países, tempo, o endereço da sua carteira, o nome de perfil (opcional) e o país da sua conexão."],
       ["Na blockchain da Celo", "(pública por natureza): seus pagamentos de dicas/tentativas e os resgates de prêmios, associados ao seu endereço."],
     ],
@@ -120,7 +120,7 @@ const L: Record<Locale, Dict> = {
     intro: ["D'abord :", "Frontle est conçu pour demander le strict minimum. Pas d'inscription avec des données personnelles, pas de mots de passe, pas de traceurs publicitaires."],
     s1: ["1. Ce que nous stockons et où.", ""],
     s1Items: [
-      ["Sur votre appareil", "(localStorage) : votre partie du jour, meilleurs scores, série, préférences (son, langue, devise) et le nom de profil que vous choisissez. Rien ne quitte votre navigateur sauf le nom, qui accompagne vos scores dans le classement."],
+      ["Sur votre appareil", "(localStorage) : votre partie du jour, meilleurs scores, série, préférences (son, langue) et le nom de profil que vous choisissez. Rien ne quitte votre navigateur sauf le nom, qui accompagne vos scores dans le classement."],
       ["Dans notre classement", "(base de données) : jour, niveau, nombre de pays, temps, l'adresse de votre portefeuille, le nom de profil (optionnel) et le pays de votre connexion."],
       ["Sur la blockchain Celo", "(publique par nature) : vos paiements d'indices/tentatives et les réclamations de prix, associés à votre adresse."],
     ],
