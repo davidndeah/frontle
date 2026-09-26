@@ -1,12 +1,14 @@
 // ============================================================
 //  Frontle — Pagos on-chain (Celo / MiniPay)
 //  Implementa `requestPayment` que el juego ya tiene cableado.
-//  Mapea cada acción del frontend a una función del contrato FrontleGame:
-//    "reintento del reto diario"  -> payAttempt()
-//    "pista: initial|next|all"    -> buyHint(0|1|2)
-//  Devuelve true SOLO si la transacción se confirmó on-chain.
+//  Pistas y reintentos se pagan con UN `USDT.transfer` a la tesorería,
+//  etiquetado al final del calldata (ver DAILY_TAG). `credit-coins` lo
+//  reenvía al pot del día de FrontleGame, igual que hacían antes
+//  payAttempt() / buyHint(0|1|2) — que siguen en el contrato, sin uso.
+//  Devuelve "success" SOLO si la transacción se confirmó on-chain.
 // ============================================================
 
+import { rememberDailyPayment, reportDailyPayment } from "./dailyPayments";
 import {
   createWalletClient,
   createPublicClient,
@@ -16,7 +18,6 @@ import {
   parseUnits,
   parseEther,
   formatUnits,
-  maxUint256,
   type Address,
 } from "viem";
 import { celo } from "viem/chains";
@@ -176,8 +177,19 @@ const erc20Abi = [
   },
 ] as const;
 
-// --- Mapeo reason → función del contrato --------------------------------
+// --- Mapeo reason → qué se paga -------------------------------------------
 type Action = { fn: "payAttempt" } | { fn: "buyHint"; hintType: number };
+
+// Etiqueta de los pagos del juego diario: "FRTL" + 1 byte de propósito, al
+// final del calldata del transfer. El token ignora los bytes sobrantes; el
+// servidor la lee para no confundir una pista de 0.05 con 5 monedas del
+// mismo monto. Va firmada por el jugador, nadie más puede ponerla o quitarla.
+// Debe coincidir con DAILY_TAG / DAILY_PURPOSES en supabase/functions/credit-coins.
+const DAILY_TAG = "0x4652544c";
+function dailySuffix(action: Action): `0x${string}` {
+  const purpose = action.fn === "payAttempt" ? 1 : 2 + action.hintType; // 01 · 02..04
+  return `${DAILY_TAG}${purpose.toString(16).padStart(2, "0")}`;
+}
 
 function resolveAction(reason: string): Action | null {
   if (reason === "reintento del reto diario") return { fn: "payAttempt" };
@@ -785,44 +797,30 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
     });
     if (usdtBal < feeWei) return "no_funds";
     if (active.embedded) {
-      // La embebida paga gas en CELO: bajo ~0.02 ni el approve pasa la
+      // La embebida paga gas en CELO: bajo ~0.02 ni un transfer pasa la
       // validación del nodo (exige saldo >= gas × ~2× baseFee).
       const gasBal = await publicClient.getBalance({ address: account });
       if (gasBal < parseEther("0.02")) return "no_gas";
     }
 
-    // approve una vez si la autorización no alcanza
-    const allowance = await publicClient.readContract({
-      address: TOKEN_ADDRESS,
-      abi: erc20Abi,
-      functionName: "allowance",
-      args: [account, GAME_ADDRESS],
-    });
-    if (allowance < feeWei) {
-      const approveHash = await walletClient.writeContract({
-        account,
-        chain: ACTIVE_CHAIN,
-        address: TOKEN_ADDRESS,
-        abi: erc20Abi,
-        functionName: "approve",
-        args: [GAME_ADDRESS, maxUint256],
-        ...feeOpts,
-      });
-      await publicClient.waitForTransactionReceipt({ hash: approveHash });
-    }
-
-    // pago real
+    // Pago: UN transfer a la tesorería, sin approve (una sola confirmación).
     const hash = await walletClient.writeContract({
       account,
       chain: ACTIVE_CHAIN,
-      address: GAME_ADDRESS,
-      abi: gameAbi,
-      functionName: action.fn,
-      args: action.fn === "buyHint" ? [action.hintType] : [],
+      address: TOKEN_ADDRESS,
+      abi: erc20Abi,
+      functionName: "transfer",
+      args: [COIN_TREASURY, feeWei],
+      dataSuffix: dailySuffix(action),
       ...feeOpts,
     });
+    // El dinero ya salió: el hash se guarda antes de esperar nada, para que
+    // el reenvío al pot se pueda reintentar aunque esta espera se caiga.
+    rememberDailyPayment(hash);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    return receipt.status === "success" ? "success" : "error";
+    if (receipt.status !== "success") return "error";
+    void reportDailyPayment(hash); // reenvío al pot del día, en segundo plano
+    return "success";
   } catch (err) {
     console.error("[pago] falló o cancelado:", err);
     if (isUserRejection(err)) return "cancelled";

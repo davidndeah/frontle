@@ -65,6 +65,8 @@ interface BsTx {
 
 interface BsTransfer {
   transaction_hash?: string;
+  timestamp?: string | null;
+  method?: string | null;
   total?: { value?: string; decimals?: string | number };
   token?: { symbol?: string };
   from?: { hash?: string };
@@ -97,6 +99,20 @@ const ADMIN_METHODS = new Set([
 
 const ADMIN_LABEL = "Administración";
 
+// Desde sep-2026 pistas, reintentos y monedas se pagan con un USDT.transfer
+// directo a la tesorería (una sola confirmación, a pedido de MiniPay): no
+// pasan por los contratos, así que se leen de las transferencias que entran
+// a la tesorería. Qué se pagó exactamente va en el calldata, que Blockscout
+// no trae en esta lista; se agrupan en una sola fila.
+const DIRECT_LABEL = "Pagos directos (pistas, reintentos y monedas)";
+// La tesorería también recibe NUESTRO dinero (fondeo, swaps). Para no
+// contarlo como de jugadores: solo desde que existen los pagos directos,
+// solo `transfer` llano, y nada por encima de lo que un jugador puede pagar
+// (el paquete más caro son 2.50 USDT).
+const DIRECT_SINCE = Date.parse("2026-09-25T00:00:00Z");
+const DIRECT_MAX_USDT = 10;
+const TRANSFER_METHODS = new Set(["transfer", "0xa9059cbb"]);
+
 // Un selector sin decodificar (0x…) también cae en administración: los tres
 // métodos de jugador siempre se decodifican, así que lo que queda es nuestro.
 function labelFor(method: string | null): string {
@@ -124,10 +140,11 @@ async function fetchTxs(address: string): Promise<{ txs: BsTx[]; truncated: bool
   return { txs, truncated: true };
 }
 
-// Transferencias del stablecoin que tocan un contrato (entran o salen).
-async function fetchTransfers(address: string): Promise<BsTransfer[]> {
+// Transferencias del stablecoin que tocan una dirección. `filter` = "to"
+// para solo las que entran (la tesorería); sin él, entran y salen.
+async function fetchTransfers(address: string, filter?: "to"): Promise<{ items: BsTransfer[]; truncated: boolean }> {
   const out: BsTransfer[] = [];
-  let params = "";
+  let params = filter ? `&filter=${filter}` : "";
   for (let page = 0; page < MAX_PAGES; page++) {
     const r = await fetch(`${BLOCKSCOUT}/addresses/${address}/token-transfers?type=ERC-20${params}`);
     if (!r.ok) break;
@@ -135,10 +152,10 @@ async function fetchTransfers(address: string): Promise<BsTransfer[]> {
     const items: BsTransfer[] = Array.isArray(j?.items) ? j.items : [];
     out.push(...items);
     const next = j?.next_page_params;
-    if (!next) break;
-    params = `&${new URLSearchParams(next as Record<string, string>).toString()}`;
+    if (!next) return { items: out, truncated: false };
+    params = `${filter ? `&filter=${filter}` : ""}&${new URLSearchParams(next as Record<string, string>).toString()}`;
   }
-  return out;
+  return { items: out, truncated: true };
 }
 
 // Precio del token nativo en USD. null si la fuente falla: sin él no se
@@ -154,15 +171,30 @@ async function fetchNativePrice(): Promise<number | null> {
   }
 }
 
-export async function getChainActivity(addresses: string[]): Promise<ChainActivity | null> {
+// `treasury`: dirección que recibe los pagos directos (ver DIRECT_LABEL).
+export async function getChainActivity(addresses: string[], treasury?: string): Promise<ChainActivity | null> {
   try {
-    const [pages, transferLists, nativePrice] = await Promise.all([
+    const [pages, transferLists, inflows, nativePrice] = await Promise.all([
       Promise.all(addresses.map(fetchTxs)),
-      Promise.all(addresses.map(fetchTransfers)),
+      Promise.all(addresses.map((a) => fetchTransfers(a))),
+      treasury ? fetchTransfers(treasury, "to") : Promise.resolve({ items: [] as BsTransfer[], truncated: false }),
       fetchNativePrice(),
     ]);
     const txs = pages.flatMap((p) => p.txs);
-    if (txs.length === 0) return null;
+    const tesoreria = treasury?.toLowerCase();
+    const propias = new Set([...addresses.map((a) => a.toLowerCase()), ...(tesoreria ? [tesoreria] : [])]);
+    // Pagos de JUGADORES a la tesorería: USDT que entra desde una dirección
+    // que no es nuestra (ni la tesorería ni un contrato, p. ej. un premio
+    // reclamado y reenviado).
+    const directos = inflows.items.filter((tr) => {
+      if (tr.token?.symbol !== VOLUME_TOKEN || propias.has(tr.from?.hash?.toLowerCase() ?? "")) return false;
+      if (!TRANSFER_METHODS.has(tr.method ?? "")) return false;
+      const t = tr.timestamp ? Date.parse(tr.timestamp) : NaN;
+      if (!(t >= DIRECT_SINCE)) return false;
+      const monto = Number(tr.total?.value ?? 0) / 10 ** Number(tr.total?.decimals ?? 6);
+      return monto > 0 && monto <= DIRECT_MAX_USDT;
+    });
+    if (txs.length === 0 && directos.length === 0) return null;
 
     const senders = new Set<string>();
     const methods = new Map<string, number>();
@@ -200,12 +232,30 @@ export async function getChainActivity(addresses: string[]): Promise<ChainActivi
       }
     }
 
+    for (const tr of directos) {
+      const from = tr.from?.hash?.toLowerCase();
+      if (from) senders.add(from);
+      methods.set(DIRECT_LABEL, (methods.get(DIRECT_LABEL) ?? 0) + 1);
+      const t = tr.timestamp ? Date.parse(tr.timestamp) : NaN;
+      if (Number.isFinite(t)) {
+        const edad = ahora - t;
+        if (edad <= DIA) txDay++;
+        if (edad <= 7 * DIA) txWeek++;
+        if (edad <= 30 * DIA) txMonth++;
+      }
+    }
+
     // Una transferencia entre dos contratos nuestros sale en las dos listas:
     // se deduplica por hash + partes + importe para no contarla dos veces.
+    // Desde que existen los pagos directos, lo que la tesorería mete en un
+    // contrato (su reenvío con fundPot, y la siembra, que on-chain no se
+    // distingue) NO es volumen nuevo: ese dinero ya contó al entrar a la
+    // tesorería. Lo anterior se deja como estaba para no mover el histórico.
     const vistas = new Set<string>();
     let volume = 0;
-    for (const tr of transferLists.flat()) {
+    for (const tr of [...transferLists.flatMap((l) => l.items), ...directos]) {
       if (tr.token?.symbol !== VOLUME_TOKEN) continue;
+      if (tesoreria && tr.from?.hash?.toLowerCase() === tesoreria && Date.parse(tr.timestamp ?? "") >= DIRECT_SINCE) continue;
       const clave = `${tr.transaction_hash}|${tr.from?.hash}|${tr.to?.hash}|${tr.total?.value}`;
       if (vistas.has(clave)) continue;
       vistas.add(clave);
@@ -217,12 +267,15 @@ export async function getChainActivity(addresses: string[]): Promise<ChainActivi
       .map(([method, count]) => ({ method, count }))
       .sort((a, b) => b.count - a.count);
 
+    // Los pagos directos solo aparecen si se confirmaron: no suman fallos.
+    // Sus comisiones de red no vienen en esta lista y no entran en feesUsd.
+    const txTotal = txs.length + directos.length;
     return {
-      txTotal: txs.length,
+      txTotal,
       uniqueUsers: senders.size,
-      failedRate: txs.length ? failed / txs.length : 0,
+      failedRate: txTotal ? failed / txTotal : 0,
       byMethod,
-      truncated: pages.some((p) => p.truncated),
+      truncated: pages.some((p) => p.truncated) || inflows.truncated,
       txDay,
       txWeek,
       txMonth,

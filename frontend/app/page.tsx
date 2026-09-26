@@ -274,6 +274,11 @@ export default function Frontle() {
   const refreshCoins = useCallback(() => {
     void loadCoins().then((m) => m.retryPendingCredit().then(() => m.getCoinBalance().then(setCoinBalance))).catch(() => {});
   }, []);
+  // Pistas/reintentos pagados cuyo aviso al servidor no llegó (app cerrada,
+  // sin red): se reintenta al abrir para que su dinero llegue al pot del día.
+  useEffect(() => {
+    void import("./lib/dailyPayments").then((m) => m.retryDailyPayments()).catch(() => {});
+  }, []);
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   // Menú de Bordy (lo que abre el FAB) + su estado de ánimo reactivo.

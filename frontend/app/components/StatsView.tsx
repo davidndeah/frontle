@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CONTRACT_INFO, getPublicStats, type PublicStats } from "../lib/payments";
+import { COIN_TREASURY, CONTRACT_INFO, getPublicStats, type PublicStats } from "../lib/payments";
 import {
   getCommunityStats,
   getRetention,
@@ -45,7 +45,8 @@ export default function StatsView() {
       getCommunityStats(),
       getTopCountries(),
       getRetention(),
-      getChainActivity(contratos),
+      // + la tesorería: pistas, reintentos y monedas se pagan ahí directo.
+      getChainActivity(contratos, COIN_TREASURY),
       getCoinStats(),
       getWeeklyPlayers(),
     ]).then(([c, s, top, ret, act, coin, liga]) => {
