@@ -188,7 +188,7 @@ const es: LandingCopy = {
   },
   network: {
     eyebrow: "Por qué Celo",
-    title: "Se juega con dólares, no con un token",
+    title: "Se juega con dólares digitales",
     lead:
       "Frontle está hecho para MiniPay, la billetera de Opera. Eso marca cómo funciona el dinero dentro del juego.",
     points: [
@@ -219,7 +219,7 @@ const es: LandingCopy = {
     lead:
       "Celo Mainnet · chainId 42220. Cualquiera puede leer el bote, las comisiones acumuladas y los ganadores de cada día sin pedirnos permiso.",
     verified: "Verificado",
-    token: "Token",
+    token: "Stablecoin (USDT)",
     cta: "Ver las estadísticas públicas",
     rows: {
       game2: "Juego (v2, en uso)",
@@ -343,7 +343,7 @@ const en: LandingCopy = {
   },
   network: {
     eyebrow: "Why Celo",
-    title: "You play with dollars, not with a token",
+    title: "You play with digital dollars",
     lead:
       "Frontle is built for MiniPay, Opera's wallet. That shapes how money works inside the game.",
     points: [
@@ -374,7 +374,7 @@ const en: LandingCopy = {
     lead:
       "Celo Mainnet · chainId 42220. Anyone can read the pot, the accrued fees and each day's winners without asking us.",
     verified: "Verified",
-    token: "Token",
+    token: "Stablecoin (USDT)",
     cta: "See the public stats",
     rows: {
       game2: "Game (v2, in use)",
@@ -493,7 +493,7 @@ const pt: LandingCopy = {
   },
   network: {
     eyebrow: "Por que Celo",
-    title: "Joga-se com dólares, não com um token",
+    title: "Joga-se com dólares digitais",
     lead:
       "O Frontle foi feito para a MiniPay, a carteira da Opera. Isso define como o dinheiro funciona dentro do jogo.",
     points: [
@@ -524,7 +524,7 @@ const pt: LandingCopy = {
     lead:
       "Celo Mainnet · chainId 42220. Qualquer pessoa pode ler o prêmio, as taxas acumuladas e os vencedores de cada dia sem pedir permissão.",
     verified: "Verificado",
-    token: "Token",
+    token: "Stablecoin (USDT)",
     cta: "Ver as estatísticas públicas",
     rows: {
       game2: "Jogo (v2, em uso)",
@@ -649,7 +649,7 @@ const fr: LandingCopy = {
   },
   network: {
     eyebrow: "Pourquoi Celo",
-    title: "On joue avec des dollars, pas avec un token",
+    title: "On joue avec des dollars numériques",
     lead:
       "Frontle est conçu pour MiniPay, le portefeuille d'Opera. Cela détermine comment l'argent fonctionne dans le jeu.",
     points: [
@@ -680,7 +680,7 @@ const fr: LandingCopy = {
     lead:
       "Celo Mainnet · chainId 42220. N'importe qui peut lire la cagnotte, les commissions accumulées et les gagnants de chaque jour sans nous demander la permission.",
     verified: "Vérifié",
-    token: "Token",
+    token: "Stablecoin (USDT)",
     cta: "Voir les statistiques publiques",
     rows: {
       game2: "Jeu (v2, en service)",
