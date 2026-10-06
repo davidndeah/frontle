@@ -1870,7 +1870,10 @@ export default function Frontle() {
             </div>
             {/* neutral-500 medía ~3.8:1 sobre el fondo violeta (falla AA 4.5:1
                 para texto normal). neutral-400 pasa con ~7:1. */}
-            <footer className="text-center text-[11px] text-neutral-400">{tr.footer}</footer>
+            <footer className="text-center text-[11px] text-neutral-400">
+              {tr.footer}
+              <span className="block mt-1">{tr.footerDisclaimer}</span>
+            </footer>
           </>
         )}
 

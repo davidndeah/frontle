@@ -279,6 +279,7 @@ type Dict = {
     otherDevice: string;
   };
   footer: string;
+  footerDisclaimer: string;
   hintsTitle: string;
   hintInitial: string;
   hintSilhouetteNext: string;
@@ -680,6 +681,7 @@ const STRINGS: Record<Locale, Dict> = {
       otherDevice: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
     },
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
+    footerDisclaimer: "Frontle es operado de forma independiente y no está afiliado a Opera ni a MiniPay.",
     hintsTitle: "Pistas",
     hintInitial: "Inicial del siguiente país",
     hintSilhouetteNext: "Silueta del siguiente país",
@@ -1071,6 +1073,7 @@ const STRINGS: Record<Locale, Dict> = {
       otherDevice: "Your account is in use on another device. Buy coins here to activate it.",
     },
     footer: "Frontle · Daily geography game · Made in Colombia",
+    footerDisclaimer: "Frontle is operated independently and is not affiliated with Opera or MiniPay.",
     hintsTitle: "Hints",
     hintInitial: "Next country's initial",
     hintSilhouetteNext: "Next country's silhouette",
@@ -1464,6 +1467,7 @@ const STRINGS: Record<Locale, Dict> = {
       otherDevice: "Sua conta está em uso em outro aparelho. Compre moedas aqui para ativá-lo.",
     },
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
+    footerDisclaimer: "O Frontle é operado de forma independente e não é afiliado à Opera nem ao MiniPay.",
     hintsTitle: "Dicas",
     hintInitial: "Inicial do próximo país",
     hintSilhouetteNext: "Silhueta do próximo país",
@@ -1855,6 +1859,7 @@ const STRINGS: Record<Locale, Dict> = {
       otherDevice: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
     },
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
+    footerDisclaimer: "Frontle est exploité de manière indépendante et n'est pas affilié à Opera ni à MiniPay.",
     hintsTitle: "Indices",
     hintInitial: "Initiale du pays suivant",
     hintSilhouetteNext: "Silhouette du pays suivant",
