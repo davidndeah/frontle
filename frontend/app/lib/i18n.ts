@@ -489,6 +489,7 @@ type Dict = {
   prizeClaiming: string;
   prizeClaimedMsg: string;
   prizeClaimError: string;
+  prizeClaimNoGas: string;
   // Ganadores del último día cerrado (tab Ranking)
   winnersTitle: string;
   winnersDay: (day: number) => string;
@@ -880,6 +881,7 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Reclamando…",
     prizeClaimedMsg: "¡Premio reclamado! 🎉",
     prizeClaimError: "No se pudo reclamar. Intenta de nuevo.",
+    prizeClaimNoGas: "Tu billetera no tiene saldo para la comisión de red de este reclamo. Escríbenos a soporte y te ayudamos a cobrar tu premio.",
     winnersTitle: "Ganadores del ciclo anterior",
     winnersDay: (d) => `día #${d}`,
     winnersEmpty: "Todavía no se ha cerrado ningún ciclo.",
@@ -1274,6 +1276,7 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Claiming…",
     prizeClaimedMsg: "Prize claimed! 🎉",
     prizeClaimError: "Couldn't claim. Try again.",
+    prizeClaimNoGas: "Your wallet has no balance left for this claim's network fee. Contact support and we'll help you collect your prize.",
     winnersTitle: "Last cycle winners",
     winnersDay: (d) => `day #${d}`,
     winnersEmpty: "No cycle has closed yet.",
@@ -1666,6 +1669,7 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Resgatando…",
     prizeClaimedMsg: "Prêmio resgatado! 🎉",
     prizeClaimError: "Não foi possível resgatar. Tente novamente.",
+    prizeClaimNoGas: "Sua carteira não tem saldo para a taxa de rede deste resgate. Fale com o suporte e ajudaremos você a receber seu prêmio.",
     winnersTitle: "Vencedores do ciclo anterior",
     winnersDay: (d) => `dia #${d}`,
     winnersEmpty: "Nenhum ciclo foi encerrado ainda.",
@@ -2058,6 +2062,7 @@ const STRINGS: Record<Locale, Dict> = {
     prizeClaiming: "Réclamation…",
     prizeClaimedMsg: "Prix réclamé ! 🎉",
     prizeClaimError: "Échec de la réclamation. Réessayez.",
+    prizeClaimNoGas: "Votre portefeuille n'a plus de solde pour les frais de réseau de cette réclamation. Contactez le support et nous vous aiderons à récupérer votre prix.",
     winnersTitle: "Gagnants du cycle précédent",
     winnersDay: (d) => `jour n°${d}`,
     winnersEmpty: "Aucun cycle n'est encore clôturé.",

@@ -641,8 +641,10 @@ export async function getClaimablePrizes(entries: ClaimableEntry[], address: str
 //   already → el contrato dice que ya estaba cobrado (p. ej. desde otro
 //             dispositivo, o una lectura vieja dejó el botón a la vista):
 //             para la UI es lo mismo que "Reclamado", no un error
+//   no_gas  → (embebida) sin CELO para la comisión de red: sin este chequeo
+//             la wallet de Privy se quedaba colgada y el botón cargando
 //   error   → cancelado o falló
-export type ClaimResult = "ok" | "already" | "error";
+export type ClaimResult = "ok" | "already" | "no_gas" | "error";
 export async function claimPrize(day: number, level: Difficulty): Promise<ClaimResult> {
   const active = getProvider();
   if (!active) return "error";
@@ -665,6 +667,13 @@ export async function claimPrize(day: number, level: Difficulty): Promise<ClaimR
       args: [BigInt(day), LEVEL_INDEX[level]],
     });
     if (already) return "already";
+
+    if (active.embedded) {
+      // Mismo umbral que requestPayment: la embebida paga la red en CELO y el
+      // nodo exige saldo >= gas × ~2× baseFee antes de aceptar la tx.
+      const gasBal = await publicClient.getBalance({ address: account });
+      if (gasBal < parseEther("0.02")) return "no_gas";
+    }
 
     const walletChainId = await walletClient.getChainId();
     if (walletChainId !== ACTIVE_CHAIN.id) {
@@ -695,6 +704,9 @@ export async function claimPrize(day: number, level: Difficulty): Promise<ClaimR
     return receipt.status === "success" ? "ok" : "error";
   } catch (err) {
     console.error("[premio] reclamo falló o cancelado:", err);
+    if (active.embedded && /insufficient funds|gas required exceeds allowance|exceeds the balance/i.test(String((err as Error)?.message ?? ""))) {
+      return "no_gas";
+    }
     return "error";
   }
 }

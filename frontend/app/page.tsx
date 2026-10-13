@@ -815,8 +815,8 @@ export default function Frontle() {
     } finally {
       setClaimingKey(null);
     }
-    if (res === "error") {
-      setMessage({ text: tr.prizeClaimError, ok: false });
+    if (res === "error" || res === "no_gas") {
+      setMessage({ text: res === "no_gas" ? tr.prizeClaimNoGas : tr.prizeClaimError, ok: false });
       return;
     }
 
