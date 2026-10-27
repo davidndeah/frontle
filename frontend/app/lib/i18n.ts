@@ -485,6 +485,8 @@ type Dict = {
   rankingNote: string;
   prizesTitle: string;
   prizeRow: (amount: string) => string;
+  // Etiqueta de un premio de la liga semanal (en vez del nivel del diario).
+  weeklyPrizeTag: (place: number) => string;
   prizeClaim: string;
   prizeClaiming: string;
   prizeClaimedMsg: string;
@@ -877,6 +879,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (pago automático).",
     prizesTitle: "🏆 Tus premios",
     prizeRow: (amount) => `Ganaste ${amount}`,
+    weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
     prizeClaim: "Reclamar",
     prizeClaiming: "Reclamando…",
     prizeClaimedMsg: "¡Premio reclamado! 🎉",
@@ -1272,6 +1275,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (paid out automatically).",
     prizesTitle: "🏆 Your prizes",
     prizeRow: (amount) => `You won ${amount}`,
+    weeklyPrizeTag: (place) => `Weekly league · #${place}`,
     prizeClaim: "Claim",
     prizeClaiming: "Claiming…",
     prizeClaimedMsg: "Prize claimed! 🎉",
@@ -1665,6 +1669,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (pagamento automático).",
     prizesTitle: "🏆 Seus prêmios",
     prizeRow: (amount) => `Você ganhou ${amount}`,
+    weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
     prizeClaim: "Resgatar",
     prizeClaiming: "Resgatando…",
     prizeClaimedMsg: "Prêmio resgatado! 🎉",
@@ -2058,6 +2063,7 @@ const STRINGS: Record<Locale, Dict> = {
     rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (paiement automatique).",
     prizesTitle: "🏆 Vos prix",
     prizeRow: (amount) => `Vous avez gagné ${amount}`,
+    weeklyPrizeTag: (place) => `Ligue hebdo · ${place === 1 ? "1er" : `${place}e`}`,
     prizeClaim: "Réclamer",
     prizeClaiming: "Réclamation…",
     prizeClaimedMsg: "Prix réclamé ! 🎉",

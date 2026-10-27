@@ -74,7 +74,7 @@ import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWee
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
 // Pago real on-chain (viem → contrato FrontleGame en Celo). Devuelve true solo si se confirmó.
-import type { ClaimablePrize, ClaimResult, LastCycle, PayResult } from "./lib/payments";
+import type { ClaimablePrize, ClaimResult, LastCycle, PayResult, WeeklyPrize } from "./lib/payments";
 import { onCoinsChanged } from "./lib/coinsBus";
 import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
@@ -246,6 +246,12 @@ export default function Frontle() {
 
   // Premios reclamables (días ganados aún no cobrados)
   const [prizes, setPrizes] = useState<ClaimablePrize[]>([]);
+  // Premios de la liga semanal aún no cobrados, y los cobrados en esta sesión
+  // (claves `w${semana}-${puesto}`, para no chocar con las del diario). Si un
+  // nodo atrasado los vuelve a ofrecer, el contrato contesta "already" y la
+  // fila pasa igual a "Reclamado".
+  const [weeklyPrizes, setWeeklyPrizes] = useState<WeeklyPrize[]>([]);
+  const [weeklyClaimed, setWeeklyClaimed] = useState<WeeklyPrize[]>([]);
   // Ganadores del último día cerrado + sus nombres de perfil, para el Ranking.
   const [cycle, setCycle] = useState<LastCycle | null>(null);
   const [winnerNames, setWinnerNames] = useState<Record<string, string>>({});
@@ -755,14 +761,21 @@ export default function Frontle() {
   // Premios reclamables: días que la wallet ganó (tabla `winners`) y que el
   // contrato confirma como cobrables (rolled && winner==yo && !claimed).
   const loadPrizes = useCallback(async (addr: string) => {
-    if (!addr) return setPrizes([]);
+    setWeeklyClaimed([]);
+    if (!addr) {
+      setWeeklyPrizes([]);
+      return setPrizes([]);
+    }
     const entries = await getMyWinDays(addr);
     try {
-      const claimable = await (await loadPayments()).getClaimablePrizes(entries, addr);
+      const pay = await loadPayments();
+      const [claimable, weekly] = await Promise.all([pay.getClaimablePrizes(entries, addr), pay.getClaimableWeeklyPrizes(addr)]);
       // Lo ya cobrado en este dispositivo no vuelve aunque el nodo vaya atrasado.
       setPrizes(claimable.filter((p) => !claimedKeysRef.current.has(`${p.day}-${p.level}`)));
+      setWeeklyPrizes(weekly);
     } catch {
       setPrizes([]); // sin el chunk no se puede saber qué es cobrable
+      setWeeklyPrizes([]);
     }
   }, []);
 
@@ -837,6 +850,33 @@ export default function Frontle() {
       setTimeout(() => setJustClaimed(null), 1200);
     }
     loadCycle();
+  }
+
+  // Mismo flujo que handleClaim, para un premio de la liga semanal.
+  async function handleClaimWeekly(week: number, place: number) {
+    const key = `w${week}-${place}`;
+    setClaimingKey(key);
+    let res: ClaimResult = "error";
+    try {
+      res = await (await loadPayments()).claimWeeklyPrize(week, place);
+    } catch {
+      res = "error";
+    } finally {
+      setClaimingKey(null);
+    }
+    if (res === "error" || res === "no_gas") {
+      setMessage({ text: res === "no_gas" ? tr.prizeClaimNoGas : tr.prizeClaimError, ok: false });
+      return;
+    }
+    const row = weeklyPrizes.find((p) => p.week === week && p.place === place) ?? { week, place, amount: 0 };
+    setWeeklyPrizes((ps) => ps.filter((p) => !(p.week === week && p.place === place)));
+    setWeeklyClaimed((ps) => [...ps.filter((p) => !(p.week === week && p.place === place)), row]);
+    if (res === "ok") {
+      setMessage({ text: tr.prizeClaimedMsg, ok: true });
+      sfxWin();
+      setJustClaimed(key);
+      setTimeout(() => setJustClaimed(null), 1200);
+    }
   }
 
   const statusByCountry = useMemo(() => {
@@ -1822,15 +1862,15 @@ export default function Frontle() {
             <div className="grid grid-cols-3 gap-2">
               <StatCard v={daysPlayed} k={tr.statDays} color="var(--gold)" />
               <StatCard v={best ?? "—"} k={tr.statBestToday} color="#22d3ee" />
-              <StatCard v={prizes.length} k={tr.statPrizes} color="#e879f9" />
+              <StatCard v={prizes.length + weeklyPrizes.length} k={tr.statPrizes} color="#e879f9" />
             </div>
             {/* Tienda de monedas: entrada desde el perfil */}
             <CoinShopCard tr={tr} balance={coinBalance} onOpen={() => setShopOpen(true)} />
             {/* Racha v2: congelar / recuperar con monedas */}
             <StreakCard tr={tr} onStreak={setStreak} />
             <Achievements tr={tr} playerId={myId || undefined} />
-            {(prizes.length > 0 || claimedRows.length > 0) && (
-              <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} panel={panel} fmt={fmt} />
+            {(prizes.length > 0 || claimedRows.length > 0 || weeklyPrizes.length > 0 || weeklyClaimed.length > 0) && (
+              <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} weekly={weeklyPrizes} weeklyClaimed={weeklyClaimed} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} onClaimWeekly={handleClaimWeekly} panel={panel} fmt={fmt} />
             )}
             {/* Ajuste de idioma (además del selector rápido del header) */}
             <section className="panel p-4 flex items-center justify-between gap-3">
@@ -2821,58 +2861,79 @@ function writeClaimed(addr: string, rows: ClaimablePrize[]) {
 }
 
 // El ÚNICO sitio donde se reclama. Lista todos los (día, nivel) que el
-// contrato confirma cobrables, no solo los del último ciclo.
+// contrato diario confirma cobrables, no solo los del último ciclo, y los
+// (semana, puesto) de la liga semanal.
 function PrizesCard({
   tr,
   prizes,
   claimed,
+  weekly,
+  weeklyClaimed,
   claimingKey,
   justClaimed,
   onClaim,
+  onClaimWeekly,
   panel,
   fmt,
 }: {
   tr: ReturnType<typeof t>;
   prizes: ClaimablePrize[];
   claimed: ClaimablePrize[];
+  weekly: WeeklyPrize[];
+  weeklyClaimed: WeeklyPrize[];
   claimingKey: string | null;
   justClaimed: string | null;
   onClaim: (day: number, level: Difficulty) => void;
+  onClaimWeekly: (week: number, place: number) => void;
   panel: string;
   fmt: (usdt: number) => string;
 }) {
+  // Diario y semanal comparten fila: cambian la clave, la etiqueta y a qué
+  // contrato va el reclamo.
+  type Row = { key: string; amount: number; tag: string; claim: () => void };
+  const daily = (p: ClaimablePrize): Row => ({
+    key: `${p.day}-${p.level}`,
+    amount: p.amount,
+    tag: tr.levels[p.level],
+    claim: () => onClaim(p.day, p.level),
+  });
+  const week = (p: WeeklyPrize): Row => ({
+    key: `w${p.week}-${p.place}`,
+    amount: p.amount,
+    tag: tr.weeklyPrizeTag(p.place),
+    claim: () => onClaimWeekly(p.week, p.place),
+  });
+  const pending = [...prizes.map(daily), ...weekly.map(week)];
+  const done = [...claimed.map(daily), ...weeklyClaimed.map(week)];
+
   return (
     <section className={`${panel} p-3`}>
       <p className="text-[10px] uppercase tracking-widest text-amber-300 mb-2 text-center">{tr.prizesTitle}</p>
       <ul className="flex flex-col gap-2">
-        {prizes.map((p) => {
-          const key = `${p.day}-${p.level}`;
-          return (
-            <li
-              key={key}
-              className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2"
+        {pending.map((p) => (
+          <li
+            key={p.key}
+            className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2"
+          >
+            <span className="text-sm text-amber-100">
+              {tr.prizeRow(fmt(p.amount))} <span className="text-amber-300/80">· {p.tag}</span>
+            </span>
+            <button
+              onClick={p.claim}
+              disabled={claimingKey !== null}
+              className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-surface disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span className="text-sm text-amber-100">
-                {tr.prizeRow(fmt(p.amount))} <span className="text-amber-300/80">· {tr.levels[p.level]}</span>
-              </span>
-              <button
-                onClick={() => onClaim(p.day, p.level)}
-                disabled={claimingKey !== null}
-                className="brutal-sm brutal-press rounded-lg bg-amber-300 px-3 py-1.5 text-xs font-bold text-surface disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {claimingKey === key ? tr.prizeClaiming : tr.prizeClaim}
-              </button>
-            </li>
-          );
-        })}
+              {claimingKey === p.key ? tr.prizeClaiming : tr.prizeClaim}
+            </button>
+          </li>
+        ))}
         {/* Ya cobrados: quedan a la vista con el botón bloqueado en
             "Reclamado", para que el jugador vea que se hizo. */}
-        {claimed.map((p) => {
-          const key = `${p.day}-${p.level}`;
-          const celebrating = justClaimed === key;
+        {done.map((p) => {
+          const celebrating = justClaimed === p.key;
           return (
             <li
-              key={`done-${key}`}
+              key={`done-${p.key}`}
               className={`relative overflow-hidden flex items-center justify-between gap-3 rounded-lg border border-emerald-400/30 bg-emerald-400/5 px-3 py-2 ${
                 celebrating ? "claim-flash" : ""
               }`}
@@ -2890,7 +2951,7 @@ function PrizesCard({
                 ))}
               <span className="text-sm text-neutral-200">
                 {p.amount > 0 ? tr.prizeRow(fmt(p.amount)) : tr.prizesTitle}{" "}
-                <span className="text-neutral-400">· {tr.levels[p.level]}</span>
+                <span className="text-neutral-400">· {p.tag}</span>
               </span>
               <button
                 disabled

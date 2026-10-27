@@ -647,6 +647,29 @@ export async function getClaimablePrizes(entries: ClaimableEntry[], address: str
 //   error   → cancelado o falló
 export type ClaimResult = "ok" | "already" | "no_gas" | "error";
 export async function claimPrize(day: number, level: Difficulty): Promise<ClaimResult> {
+  return claimOn(GAME_ADDRESS, BigInt(day), LEVEL_INDEX[level]);
+}
+
+// El diario (día, nivel) y el semanal (semana, puesto) exponen la misma firma
+// claim/claimed(uint256, uint8): un solo ABI y un solo flujo para los dos.
+const claimAbi = [
+  {
+    type: "function",
+    name: "claim",
+    inputs: [{ type: "uint256" }, { type: "uint8" }],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "claimed",
+    inputs: [{ type: "uint256" }, { type: "uint8" }],
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+  },
+] as const;
+
+async function claimOn(contract: Address, period: bigint, slot: number): Promise<ClaimResult> {
   const active = getProvider();
   if (!active) return "error";
   try {
@@ -662,10 +685,10 @@ export async function claimPrize(day: number, level: Difficulty): Promise<ClaimR
     // Antes de abrir el popup de la wallet: si ya está cobrado, la tx
     // revertiría con AlreadyClaimed y el jugador vería un fallo sin sentido.
     const already = await publicClient.readContract({
-      address: GAME_ADDRESS,
-      abi: gameAbi,
+      address: contract,
+      abi: claimAbi,
       functionName: "claimed",
-      args: [BigInt(day), LEVEL_INDEX[level]],
+      args: [period, slot],
     });
     if (already) return "already";
 
@@ -695,10 +718,10 @@ export async function claimPrize(day: number, level: Difficulty): Promise<ClaimR
     const hash = await walletClient.writeContract({
       account,
       chain: ACTIVE_CHAIN,
-      address: GAME_ADDRESS,
-      abi: gameAbi,
+      address: contract,
+      abi: claimAbi,
       functionName: "claim",
-      args: [BigInt(day), LEVEL_INDEX[level]],
+      args: [period, slot],
       ...feeOpts,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -875,11 +898,89 @@ const weeklyAbi = [
     outputs: [{ type: "uint256" }],
     stateMutability: "view",
   },
+  {
+    type: "function",
+    name: "winnerOf",
+    inputs: [{ type: "uint256" }, { type: "uint8" }],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "claimed",
+    inputs: [{ type: "uint256" }, { type: "uint8" }],
+    outputs: [{ type: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "claim",
+    inputs: [
+      { name: "week", type: "uint256" },
+      { name: "place", type: "uint8" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
 ] as const;
 
 // Semana UTC en que se desplegó FrontleWeekly (2026-07-20): inicio de su
 // historial, igual que FIRST_DAY para el contrato diario.
 const FIRST_WEEK = 2951;
+
+// --- Premios de la liga semanal ------------------------------------------
+// rollWeek fija winnerOf/prize de cada (semana, puesto) y el ganador cobra con
+// claim(semana, puesto). Se recorre el contrato entero (pocas semanas, dos
+// multicalls) en vez de la tabla `weekly_winners`: el contrato es la fuente de
+// verdad de quién cobra y de qué ya se cobró.
+export interface WeeklyPrize {
+  week: number;
+  place: number; // 1º, 2º o 3º
+  amount: number; // en USDT
+}
+
+export async function getClaimableWeeklyPrizes(address: string): Promise<WeeklyPrize[]> {
+  if (!WEEKLY_ADDRESS || !address) return [];
+  const me = address.toLowerCase();
+  try {
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
+    const current = await publicClient.readContract({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "currentWeek" });
+    const slots: { week: bigint; place: number }[] = [];
+    for (let w = FIRST_WEEK; w < Number(current); w++) {
+      for (const place of [1, 2, 3]) slots.push({ week: BigInt(w), place });
+    }
+    if (slots.length === 0) return [];
+
+    const winners = await publicClient.multicall({
+      allowFailure: false,
+      contracts: slots.map(
+        (s) => ({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "winnerOf", args: [s.week, s.place] }) as const
+      ),
+    });
+    const mine = slots.filter((_, i) => String(winners[i]).toLowerCase() === me);
+    if (mine.length === 0) return [];
+
+    const reads = await publicClient.multicall({
+      allowFailure: false,
+      contracts: mine.flatMap((s) => [
+        { address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "claimed", args: [s.week, s.place] } as const,
+        { address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "prize", args: [s.week, s.place] } as const,
+      ]),
+    });
+    return mine
+      .map((s, i) => ({ s, claimed: reads[2 * i] as boolean, amount: reads[2 * i + 1] as bigint }))
+      .filter((r) => !r.claimed && r.amount > BigInt(0))
+      .map((r) => ({ week: Number(r.s.week), place: r.s.place, amount: Number(formatUnits(r.amount, TOKEN_DECIMALS)) }));
+  } catch (err) {
+    console.error("[premio] no se pudieron leer los premios semanales:", err);
+    return [];
+  }
+}
+
+export async function claimWeeklyPrize(week: number, place: number): Promise<ClaimResult> {
+  if (!WEEKLY_ADDRESS) return "error";
+  return claimOn(WEEKLY_ADDRESS, BigInt(week), place);
+}
 
 // Compra mínima que acepta el contrato (revierte con AmountTooSmall por debajo).
 // La tienda la consulta para no ofrecer lotes que la transacción rechazaría.
