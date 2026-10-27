@@ -252,6 +252,10 @@ export default function Frontle() {
   // fila pasa igual a "Reclamado".
   const [weeklyPrizes, setWeeklyPrizes] = useState<WeeklyPrize[]>([]);
   const [weeklyClaimed, setWeeklyClaimed] = useState<WeeklyPrize[]>([]);
+  // Popup de premios sin reclamar: una vez por carga de la app y por wallet
+  // (la ref guarda para qué wallet ya salió), no en cada recarga de premios.
+  const [prizePopupOpen, setPrizePopupOpen] = useState(false);
+  const prizePopupShownFor = useRef<string | null>(null);
   // Ganadores del último día cerrado + sus nombres de perfil, para el Ranking.
   const [cycle, setCycle] = useState<LastCycle | null>(null);
   const [winnerNames, setWinnerNames] = useState<Record<string, string>>({});
@@ -788,6 +792,16 @@ export default function Frontle() {
     setClaimedRows(rows);
     loadPrizes(myId);
   }, [myId, loadPrizes]);
+
+  // Al entrar con premios pendientes, se ofrecen en un popup para cobrarlos
+  // ahí mismo. Nunca a mitad de partida ni encima del aviso del bono: espera a
+  // que el jugador esté libre.
+  useEffect(() => {
+    if (!myId || started || bonus || prizePopupShownFor.current === myId) return;
+    if (prizes.length + weeklyPrizes.length === 0) return;
+    prizePopupShownFor.current = myId;
+    setPrizePopupOpen(true);
+  }, [myId, started, bonus, prizes.length, weeklyPrizes.length]);
 
   // El Ranking también lee `claimed` del contrato: mismo parche que en Perfil.
   const cycleView = useMemo(() => {
@@ -2096,6 +2110,30 @@ export default function Frontle() {
           onChangeTheme={onChangeTheme}
           tr={tr}
         />
+      )}
+
+      {/* Premios sin reclamar al entrar: la misma tarjeta del Perfil, así se
+          cobran aquí sin ir a buscarlos. Los cobrados quedan en "Reclamado". */}
+      {prizePopupOpen && (
+        <Sheet onClose={() => setPrizePopupOpen(false)} title={tr.prizePopup.title} className="pop-in">
+          {(() => {
+            const pending = prizes.length + weeklyPrizes.length;
+            const total = [...prizes, ...weeklyPrizes].reduce((acc, p) => acc + p.amount, 0);
+            return (
+              <div className="flex flex-col gap-3">
+                {pending > 0 && <p className="text-sm text-neutral-200">{tr.prizePopup.sub(fmt(total))}</p>}
+                <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} weekly={weeklyPrizes} weeklyClaimed={weeklyClaimed} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} onClaimWeekly={handleClaimWeekly} panel={panel} fmt={fmt} />
+                <button
+                  onClick={() => setPrizePopupOpen(false)}
+                  disabled={claimingKey !== null}
+                  className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-2 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {pending > 0 ? tr.prizePopup.later : tr.prizePopup.done}
+                </button>
+              </div>
+            );
+          })()}
+        </Sheet>
       )}
 
       {/* Reclamo de premio en curso. Va aquí, fuera de las pestañas, porque es

@@ -487,6 +487,8 @@ type Dict = {
   prizeRow: (amount: string) => string;
   // Etiqueta de un premio de la liga semanal (en vez del nivel del diario).
   weeklyPrizeTag: (place: number) => string;
+  // Popup al entrar con premios sin reclamar.
+  prizePopup: { title: string; sub: (total: string) => string; later: string; done: string };
   prizeClaim: string;
   prizeClaiming: string;
   prizeClaimedMsg: string;
@@ -880,6 +882,12 @@ const STRINGS: Record<Locale, Dict> = {
     prizesTitle: "🏆 Tus premios",
     prizeRow: (amount) => `Ganaste ${amount}`,
     weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
+    prizePopup: {
+      title: "🏆 ¡Tienes premios sin reclamar!",
+      sub: (total) => `Te esperan ${total}. Reclámalos y llegan directo a tu wallet.`,
+      later: "Más tarde",
+      done: "Listo",
+    },
     prizeClaim: "Reclamar",
     prizeClaiming: "Reclamando…",
     prizeClaimedMsg: "¡Premio reclamado! 🎉",
@@ -1276,6 +1284,12 @@ const STRINGS: Record<Locale, Dict> = {
     prizesTitle: "🏆 Your prizes",
     prizeRow: (amount) => `You won ${amount}`,
     weeklyPrizeTag: (place) => `Weekly league · #${place}`,
+    prizePopup: {
+      title: "🏆 You have prizes to claim!",
+      sub: (total) => `${total} is waiting for you. Claim it and it goes straight to your wallet.`,
+      later: "Later",
+      done: "Done",
+    },
     prizeClaim: "Claim",
     prizeClaiming: "Claiming…",
     prizeClaimedMsg: "Prize claimed! 🎉",
@@ -1670,6 +1684,12 @@ const STRINGS: Record<Locale, Dict> = {
     prizesTitle: "🏆 Seus prêmios",
     prizeRow: (amount) => `Você ganhou ${amount}`,
     weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
+    prizePopup: {
+      title: "🏆 Você tem prêmios para resgatar!",
+      sub: (total) => `${total} esperando por você. Resgate e vai direto para sua carteira.`,
+      later: "Mais tarde",
+      done: "Pronto",
+    },
     prizeClaim: "Resgatar",
     prizeClaiming: "Resgatando…",
     prizeClaimedMsg: "Prêmio resgatado! 🎉",
@@ -2064,6 +2084,12 @@ const STRINGS: Record<Locale, Dict> = {
     prizesTitle: "🏆 Vos prix",
     prizeRow: (amount) => `Vous avez gagné ${amount}`,
     weeklyPrizeTag: (place) => `Ligue hebdo · ${place === 1 ? "1er" : `${place}e`}`,
+    prizePopup: {
+      title: "🏆 Vous avez des prix à réclamer !",
+      sub: (total) => `${total} vous attendent. Réclamez-les et ils arrivent directement dans votre portefeuille.`,
+      later: "Plus tard",
+      done: "Terminé",
+    },
     prizeClaim: "Réclamer",
     prizeClaiming: "Réclamation…",
     prizeClaimedMsg: "Prix réclamé ! 🎉",
