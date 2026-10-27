@@ -52,6 +52,8 @@ const DAILY_PURPOSES: Record<string, string> = {
   "04": "hint_all",
 };
 // calldata de transfer(address,uint256) = 4 + 32 + 32 bytes; + 5 de etiqueta.
+// Después puede venir la etiqueta de atribución de Celo (ERC-8021), así que la
+// del juego se lee en posición fija, no al final del calldata.
 const TRANSFER_INPUT_LEN = 2 + (4 + 64) * 2;
 const TAGGED_INPUT_LEN = TRANSFER_INPUT_LEN + 10;
 
@@ -197,14 +199,14 @@ Deno.serve(async (req) => {
       input.startsWith(TRANSFER_SELECTOR) &&
       `0x${input.slice(34, 74)}` === treasury;
     const taggedDaily =
-      directTransfer && input.length === TAGGED_INPUT_LEN && input.slice(TRANSFER_INPUT_LEN, TRANSFER_INPUT_LEN + 8) === DAILY_TAG;
+      directTransfer && input.length >= TAGGED_INPUT_LEN &&input.slice(TRANSFER_INPUT_LEN, TRANSFER_INPUT_LEN + 8) === DAILY_TAG;
 
     const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     // ---- Pista / reintento del juego diario --------------------------------
     if (kind === "daily") {
       if (!taggedDaily) return json(400, { error: "la tx no es un pago del juego diario" });
-      const purpose = DAILY_PURPOSES[input.slice(-2)];
+      const purpose = DAILY_PURPOSES[input.slice(TRANSFER_INPUT_LEN + 8, TAGGED_INPUT_LEN)];
       if (!purpose) return json(400, { error: "propósito desconocido" });
       const wei = BigInt(`0x${input.slice(74, 138)}`);
       if (wei <= 0n) return json(400, { error: "monto inválido" });
