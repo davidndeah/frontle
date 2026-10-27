@@ -9,6 +9,7 @@
 // ============================================================
 
 import { rememberDailyPayment, reportDailyPayment } from "./dailyPayments";
+import { attribution } from "./attribution";
 import {
   createWalletClient,
   createPublicClient,
@@ -651,7 +652,7 @@ export async function claimPrize(day: number, level: Difficulty): Promise<ClaimR
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transport = custom(active.provider as any);
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport }).extend(attribution());
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
 
     let [account] = await walletClient.getAddresses();
@@ -771,7 +772,7 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transport = custom(active.provider as any);
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport }).extend(attribution());
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
 
     // Auto-connect: en MiniPay getAddresses ya devuelve la cuenta sin prompt.
@@ -932,7 +933,7 @@ export async function purchaseCoinPack(
     onStep?.("checking");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transport = custom(active.provider as any);
-    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport });
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport }).extend(attribution());
     // Celo cierra bloque cada ~1 s; el sondeo por defecto de viem es de 4 s:
     // bajarlo quita hasta ~4 s de espera que no era de la cadena sino del
     // reloj del cliente.

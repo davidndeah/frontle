@@ -10,6 +10,7 @@
     "i18n-lint": "node i18n-lint.mjs"
   },
   "dependencies": {
+    "@celo/attribution-tags": "^0.5.0",
     "@farcaster/miniapp-sdk": "^0.3.0",
     "@privy-io/react-auth": "^3.32.2",
     "d3-geo": "^3.1.1",
