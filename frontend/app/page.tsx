@@ -32,7 +32,7 @@ import {
 } from "./lib/i18n";
 import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
-import { SUPPORT_MAILTO, SUPPORT_X_URL } from "./lib/support";
+import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
 import { signalMiniAppReady } from "./lib/farcaster";
 import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
@@ -1848,13 +1848,14 @@ export default function Frontle() {
               <AudioToggle label={tr.effects} icon="✨" on={!sfxMuted} onToggle={onToggleSfx} />
             </section>
             {/* Enlaces exigidos por el listado de MiniPay, alcanzables desde
-                dentro de la app. Soporte va al correo: el DM de X no cuenta
-                como canal válido. */}
+                dentro de la app. Soporte va al correo y a Telegram: el DM de X
+                no cuenta como canal válido. */}
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-neutral-400 mt-1">
               <a href="/terms" className="underline">{tr.legalTerms}</a>
               <a href="/privacy" className="underline">{tr.legalPrivacy}</a>
               <a href="/stats" className="underline">{tr.stats.title}</a>
               <a href={SUPPORT_MAILTO} className="underline">{tr.legalSupport}</a>
+              <a href={SUPPORT_TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="underline">Telegram</a>
             </div>
             {/* Redes sociales (separadas de los enlaces legales) */}
             <div className="flex justify-center">

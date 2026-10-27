@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { SUPPORT_TELEGRAM_URL } from "../lib/support";
 
 type Locale = "es" | "en" | "pt" | "fr";
 const LOCALES = ["es", "en", "pt", "fr"];
@@ -58,7 +59,7 @@ const L: Record<Locale, Dict> = {
     ],
     contactTitle: "7. Contacto.",
     contactPre: "Responsable de los datos: Santiago Florez Estrada. Escríbenos a",
-    contactMid: "o por DM en",
+    contactMid: "o en nuestro grupo de Telegram",
     footerBuiltOn: "construido sobre",
     footerTerms: "Términos",
     footerStats: "Transparencia",
@@ -83,7 +84,7 @@ const L: Record<Locale, Dict> = {
     ],
     contactTitle: "7. Contact.",
     contactPre: "Data controller: Santiago Florez Estrada. Write to us at",
-    contactMid: "or DM us on",
+    contactMid: "or in our Telegram group",
     footerBuiltOn: "built on",
     footerTerms: "Terms",
     footerStats: "Transparency",
@@ -108,7 +109,7 @@ const L: Record<Locale, Dict> = {
     ],
     contactTitle: "7. Contato.",
     contactPre: "Responsável pelos dados: Santiago Florez Estrada. Escreva para",
-    contactMid: "ou por DM no",
+    contactMid: "ou no nosso grupo do Telegram",
     footerBuiltOn: "construído na",
     footerTerms: "Termos",
     footerStats: "Transparência",
@@ -133,7 +134,7 @@ const L: Record<Locale, Dict> = {
     ],
     contactTitle: "7. Contact.",
     contactPre: "Responsable des données : Santiago Florez Estrada. Écrivez-nous à",
-    contactMid: "ou par DM sur",
+    contactMid: "ou dans notre groupe Telegram",
     footerBuiltOn: "construit sur",
     footerTerms: "Conditions",
     footerStats: "Transparence",
@@ -172,7 +173,7 @@ export default function PrivacyContent() {
             <b className="text-white">{d.contactTitle}</b> {d.contactPre}{" "}
             <a href="mailto:appfrontle@gmail.com" className="text-gold underline">appfrontle@gmail.com</a>{" "}
             {d.contactMid}{" "}
-            <a href="https://x.com/frontle_app" target="_blank" rel="noopener noreferrer" className="underline">X @frontle_app</a>.
+            <a href={SUPPORT_TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="underline">t.me/frontle</a>.
           </p>
         </section>
 

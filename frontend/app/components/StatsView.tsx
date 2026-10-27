@@ -14,7 +14,7 @@ import {
 import { getChainActivity, type ChainActivity } from "../lib/onchain";
 import { getCoinStats, type CoinStats } from "../lib/coins";
 import { getWeeklyPlayers } from "../lib/xp";
-import { SUPPORT_EMAIL, SUPPORT_MAILTO, SUPPORT_X, SUPPORT_X_URL } from "../lib/support";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO, SUPPORT_TELEGRAM, SUPPORT_TELEGRAM_URL, SUPPORT_X, SUPPORT_X_URL } from "../lib/support";
 import { codeToFlag, detectLocale, regionName, t, type Locale } from "../lib/i18n";
 
 // Cuerpo de /stats. Cliente porque el idioma se detecta del navegador y los
@@ -380,7 +380,7 @@ export default function StatsView() {
       </section>
 
       {/* Soporte alcanzable desde dentro de la app (requisito de MiniPay).
-          El correo es el canal oficial; X es de apoyo, no cuenta como válido. */}
+          Correo y Telegram son los canales oficiales; X es de apoyo, no cuenta como válido. */}
       <section className="panel p-4 flex flex-col gap-2 text-sm">
         <SectionHead title={tr.supportTitle} bare />
         <p className="text-[13px] text-neutral-200">{tr.supportNote}</p>
@@ -390,6 +390,14 @@ export default function StatsView() {
             className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-2 text-[13px] text-white"
           >
             ✉️ {tr.supportEmail} · <span className="text-gold">{SUPPORT_EMAIL}</span>
+          </a>
+          <a
+            href={SUPPORT_TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-2 text-[13px] text-white"
+          >
+            ✈️ Telegram · <span className="text-[#c4b5fd]">t.me/{SUPPORT_TELEGRAM}</span>
           </a>
           <a
             href={SUPPORT_X_URL}
