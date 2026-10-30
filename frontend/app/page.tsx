@@ -69,7 +69,7 @@ const loadCoins = () => import("./lib/coins");
 // (que hablan con Supabase y con la cadena) van diferidos.
 // (el import va arriba, con el resto)
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
-import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, XP, type WeeklyStanding } from "./lib/xp";
+import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, fmtWeekClose, msToWeekClose, XP, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
@@ -278,6 +278,9 @@ export default function Frontle() {
   // Sub-tab dentro de Ranking: el reto diario y la liga semanal son dos
   // competencias distintas (una por marca/tiempo, otra por XP), separadas.
   const [rankTab, setRankTab] = useState<"daily" | "weekly">("daily");
+  // Pot de la liga semanal, para su tarjeta en Ranking. Se lee al entrar a la
+  // pestaña: payments va en chunk aparte y no se baja antes de hacer falta.
+  const [weeklyPot, setWeeklyPot] = useState<number | null>(null);
   // Tienda de monedas: sheet compartido (Home + Perfil) y saldo cacheado.
   const [shopOpen, setShopOpen] = useState(false);
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
@@ -727,6 +730,17 @@ export default function Frontle() {
     const id = setInterval(refresh, 30_000);
     return () => { alive = false; clearInterval(id); };
   }, []);
+
+  // Pot de la liga semanal: solo mientras se mira Ranking, que es donde se
+  // enseña. Mismo refresco que el diario.
+  useEffect(() => {
+    if (tab !== "ranking") return;
+    let alive = true;
+    const refresh = () => loadPayments().then((m) => m.getWeeklyPot()).then((p) => { if (alive && p !== null) setWeeklyPot(p); }).catch(() => {});
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    return () => { alive = false; clearInterval(id); };
+  }, [tab]);
 
   // ¿Hay wallet inyectada (MiniPay / extensión)? Reintenta porque puede
   // inyectarse con un pequeño retraso. Si la hay, captura la dirección SIN
@@ -1776,27 +1790,46 @@ export default function Frontle() {
         {/* ---------- TAB RANKING ---------- */}
         {tab === "ranking" && (
           <>
-            {/* Segmented control: Diario (marca+tiempo) vs Semanal (XP) */}
-            <div className="flex gap-1 p-1 rounded-2xl bg-base border border-lavender/20">
-              {(["daily", "weekly"] as const).map((rt) => (
-                <button
-                  key={rt}
-                  onClick={() => setRankTab(rt)}
-                  className={`flex-1 rounded-xl py-2 text-sm font-display font-bold transition ${
-                    rankTab === rt ? "bg-[#6c2bd9] text-white" : "text-neutral-300 active:scale-95"
-                  }`}
-                >
-                  {rt === "daily" ? tr.rankTabs.daily : tr.rankTabs.weekly}
-                </button>
-              ))}
+            {/* Diario vs Semanal como dos tarjetas con su premio, no un
+                segmented control: con el selector pequeño muchos jugadores no
+                se enteraban de que existía la liga semanal. El premio total
+                en grande es a la vez el gancho y la pestaña. */}
+            <div role="tablist" className="grid grid-cols-2 gap-2">
+              {(["daily", "weekly"] as const).map((rt) => {
+                const active = rankTab === rt;
+                const amount = rt === "daily" ? pot : weeklyPot;
+                return (
+                  <button
+                    key={rt}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setRankTab(rt)}
+                    className={`brutal-sm brutal-press flex flex-col items-start rounded-xl px-3 py-2.5 text-left transition ${
+                      active ? "bg-gold text-surface" : "bg-surface text-white"
+                    }`}
+                  >
+                    <span className={`font-display text-sm font-bold ${active ? "" : "text-lavender"}`}>
+                      {rt === "daily" ? `📅 ${tr.rankTabs.daily}` : `⚡ ${tr.rankTabs.weekly}`}
+                    </span>
+                    <span className={`text-[10px] uppercase tracking-wider ${active ? "text-surface/70" : "text-neutral-400"}`}>
+                      {rt === "daily" ? tr.rankTabs.dailyPrize : tr.rankTabs.weeklyPrize}
+                    </span>
+                    <span className={`font-display text-xl font-black leading-tight tabular-nums ${active ? "" : "text-gold"}`}>
+                      {amount !== null ? fmt(amount) : "···"}
+                    </span>
+                    <span className={`font-mono text-[11px] tabular-nums ${active ? "text-surface/80" : "text-neutral-300"}`}>
+                      🕒 {rt === "daily" ? countdown : fmtWeekClose(msToWeekClose())}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {rankTab === "daily" && (
               <>
                 {levelPot !== null && (
-                  <div className="panel p-3 flex items-center justify-between">
+                  <div className="panel p-3">
                     <span className="text-sm font-bold text-amber-300">{tr.levelPrize(fmt(levelPot))}</span>
-                    <span className="text-xs font-mono text-neutral-300">🕒 {countdown}</span>
                   </div>
                 )}
                 {/* Selector de nivel: cada nivel tiene su ranking */}
@@ -3038,10 +3071,9 @@ function scoreToEntry(r: ScoreEntry, tr: ReturnType<typeof t>, myId: string): Le
 // entrar a la pestaña — este bloque no dispara ni una consulta más.
 //
 // Filas y no podio: el podio es alto y sigue siendo el premio de entrar a
-// Ranking. Si el jugador está fuera del top 3 pero dentro de las 10 filas que
-// trae getRanking, se añade su fila real con su puesto — que es el dato que de
-// verdad hace volver. Más abajo del 10 no se inventa nada: para eso está
-// "ver todo".
+// Ranking. Si el jugador está fuera del top 3 se añade su fila real con su
+// puesto (getRanking trae la tabla entera) — que es el dato que de verdad
+// hace volver.
 function RankingPeek({
   tr, ranking, loading, myId, levelLabel, onSeeAll,
 }: {
@@ -3088,6 +3120,9 @@ function RankingPeek({
   );
 }
 
+// Filas que enseña la tabla diaria (podio incluido). Más abajo solo la propia.
+const RANK_TOP = 20;
+
 function RankingCard({
   tr,
   ranking,
@@ -3109,12 +3144,20 @@ function RankingCard({
 }) {
   const toEntry = (r: ScoreEntry) => scoreToEntry(r, tr, myId);
 
+  // `ranking` es la tabla entera del nivel; se enseña el top y, si el jugador
+  // queda más abajo, su fila al final con su puesto real — para que sepa
+  // dónde está sin tener que recorrer cientos de filas.
   const podium = ranking.slice(0, 3).map(toEntry);
-  const restRows = ranking.slice(3).map(toEntry);
+  const restRows = ranking.slice(3, RANK_TOP).map(toEntry);
+  const mineIdx = myId ? ranking.findIndex((r) => r.playerId === myId) : -1;
+  const mineOut = mineIdx >= RANK_TOP ? toEntry(ranking[mineIdx]) : null;
 
   return (
     <section className={`${panel} p-3`}>
-      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
+      <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">
+        🏆 {tr.rankingTitle} · {levelLabel}
+        {!loading && ranking.length > 0 && <> · {tr.rankTabs.players(ranking.length)}</>}
+      </p>
       {loading ? (
         <GlobeLoader label={tr.rankingLoading} size="sm" className="py-3" />
       ) : ranking.length === 0 ? (
@@ -3137,6 +3180,17 @@ function RankingCard({
                 {restRows.map((entry, i) => (
                   <RankRow key={entry.id} pos={i + 4} entry={entry} />
                 ))}
+              </ol>
+            </div>
+          )}
+          {mineOut && (
+            <div className="mt-1.5 flex flex-col gap-1.5">
+              {/* Marca el salto: sin esto, un 30.º pegado al 20.º se lee como 21.º */}
+              <p className="text-center text-xs leading-none text-neutral-500" aria-hidden>
+                ···
+              </p>
+              <ol>
+                <RankRow pos={mineIdx + 1} entry={mineOut} />
               </ol>
             </div>
           )}

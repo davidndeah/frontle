@@ -14,16 +14,12 @@ import { useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
 import { getWeeklyPot, WEEKLY_PODIUM_SHARE } from "../lib/payments";
 import { getNamesFor, shortId } from "../lib/ranking";
-import { getWeeklyRanking, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry } from "../lib/xp";
+import { getWeeklyRanking, fmtWeekClose, getWeeklyStanding, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry, type WeeklyStanding } from "../lib/xp";
 import GlobeLoader, { withMinDelay } from "./GlobeLoader";
 import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./Leaderboard";
 
-function fmtClose(ms: number): string {
-  const totalH = Math.max(0, Math.floor(ms / 3_600_000));
-  const d = Math.floor(totalH / 24);
-  const h = totalH % 24;
-  return d > 0 ? `${d}d ${h}h` : `${h}h`;
-}
+// Filas que se enseñan (podio incluido). Más abajo solo aparece la propia.
+const TOP = 20;
 
 export default function WeeklyLeague({
   tr,
@@ -39,16 +35,23 @@ export default function WeeklyLeague({
   const [names, setNames] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(false);
   const [pot, setPot] = useState<number | null>(null);
+  // Puesto propio cuando el jugador queda fuera de las filas descargadas.
+  const [standing, setStanding] = useState<WeeklyStanding | null>(null);
   const joined = hasLeagueIdentity();
   const me = xpPlayerId();
 
   useEffect(() => {
     let alive = true;
     (async () => {
-      const rows = await withMinDelay(getWeeklyRanking());
+      const rows = await withMinDelay(getWeeklyRanking(TOP));
       if (!alive) return;
       setEntries(rows);
       setLoaded(true);
+      // Fuera del top no hay fila que pintar: se pide solo el puesto (dos
+      // conteos), en vez de bajarse la liga entera para encontrarlo.
+      if (hasLeagueIdentity() && !rows.some((r) => r.playerId === xpPlayerId())) {
+        void getWeeklyStanding().then((st) => alive && setStanding(st));
+      }
       const n = await getNamesFor(rows.map((r) => r.playerId));
       if (alive) setNames(n);
       // Sin esto un fallo dejaría el loader girando para siempre. Marcar
@@ -72,9 +75,16 @@ export default function WeeklyLeague({
   }, []);
 
   const myIndex = entries.findIndex((e) => e.playerId === me);
-  // El podio son los 3 primeros; el resto va como tabla, hasta el 10.º.
+  // El podio son los 3 primeros; el resto va como tabla, hasta el TOP.
   const podium = entries.slice(0, 3);
-  const rest = entries.slice(3, 10);
+  const rest = entries.slice(3, TOP);
+  // Mi fila fuera del top: con 0 XP aún no compite, no se pinta.
+  const mineOut: { pos: number; entry: WeeklyEntry } | null =
+    myIndex >= TOP
+      ? { pos: myIndex + 1, entry: entries[myIndex] }
+      : myIndex < 0 && standing && standing.xp > 0
+        ? { pos: standing.rank, entry: { playerId: me, xp: standing.xp } }
+        : null;
 
   // Premio de cada puesto del podio. Solo hay premio que enseñar si el pot
   // existe y tiene fondos; con 0 sembrado, prometerlo sería mentir.
@@ -106,7 +116,7 @@ export default function WeeklyLeague({
     <section className="panel p-4 flex flex-col gap-2">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-display font-bold text-white">⚡ {tr.liga.title}</h2>
-        <span className="text-[11px] font-mono text-neutral-300">🕒 {tr.liga.closes(fmtClose(msToWeekClose()))}</span>
+        <span className="text-[11px] font-mono text-neutral-300">🕒 {tr.liga.closes(fmtWeekClose(msToWeekClose()))}</span>
       </div>
 
       {/* Premio de la semana. Mientras el pot no exista (contrato sin
@@ -190,12 +200,12 @@ export default function WeeklyLeague({
 
       {/* Tu fila, si quedaste fuera del top visible. Se separa con un “···”
           para que no se lea como el puesto siguiente al último de la tabla. */}
-      {myIndex >= 10 && (
+      {mineOut && (
         <div className="mt-1.5 flex flex-col gap-1.5">
           <p className="text-center text-xs leading-none text-neutral-500" aria-hidden>
             ···
           </p>
-          <RankRow pos={myIndex + 1} entry={toEntry(entries[myIndex], myIndex)} />
+          <RankRow pos={mineOut.pos} entry={toEntry(mineOut.entry, mineOut.pos - 1)} />
         </div>
       )}
     </section>

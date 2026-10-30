@@ -133,15 +133,16 @@ function bestPerPlayer(entries: ScoreEntry[], limit: number): ScoreEntry[] {
   return out;
 }
 
-// Todas las marcas de (día, nivel), sin deduplicar. El techo de 500 filas es
-// el que ya usaba el ranking: cubre de sobra un día real sin traerse la tabla
-// entera. Lo comparten el top y el cálculo de posición para que ambos ordenen
+// Todas las marcas de (día, nivel), sin deduplicar. El techo de 1000 filas es
+// el máximo que PostgREST devuelve por petición: con la entrada a MiniPay un
+// nivel ya pasa de 100 jugadores (y cada uno puede tener varias marcas), y las
+// 500 de antes se iban a quedar cortas. Lo comparten el top y el cálculo de posición para que ambos ordenen
 // exactamente con el mismo criterio.
 async function fetchDay(day: number, level: Difficulty): Promise<ScoreEntry[]> {
   if (useSupabase) {
     try {
       const r = await fetch(
-        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&level=eq.${level}&order=countries.asc,time_ms.asc&limit=500`,
+        `${SUPA_URL}/rest/v1/scores?day=eq.${day}&level=eq.${level}&order=countries.asc,time_ms.asc&limit=1000`,
         { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       const j = await r.json();
@@ -167,10 +168,13 @@ async function fetchDay(day: number, level: Difficulty): Promise<ScoreEntry[]> {
   }
 }
 
+// Por defecto devuelve la tabla ENTERA (una fila por jugador): la UI corta el
+// top que enseña, y con la tabla completa puede ubicar al jugador aunque esté
+// fuera de ese top sin una segunda consulta.
 export async function getRanking(
   day: number,
   level: Difficulty = "medium",
-  limit = 10
+  limit = Infinity
 ): Promise<ScoreEntry[]> {
   return bestPerPlayer(await fetchDay(day, level), limit);
 }

@@ -261,6 +261,15 @@ export function msToWeekClose(now = new Date()): number {
   return close - now.getTime();
 }
 
+// Tiempo al cierre en corto ("3d 5h", "7h"). Lo comparten la liga y las
+// tarjetas Diario/Semanal de la pestaña Ranking.
+export function fmtWeekClose(ms: number): string {
+  const totalH = Math.max(0, Math.floor(ms / 3_600_000));
+  const d = Math.floor(totalH / 24);
+  const h = totalH % 24;
+  return d > 0 ? `${d}d ${h}h` : `${h}h`;
+}
+
 // Tabla de la semana: UN SOLO ranking global que se reinicia cada lunes.
 // Orden del plan (§3.2): XP desc, y a igualdad gana quien llegó antes.
 export async function getWeeklyRanking(limit = 20): Promise<WeeklyEntry[]> {

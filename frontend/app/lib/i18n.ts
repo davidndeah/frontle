@@ -479,7 +479,9 @@ type Dict = {
   modeCoach: { region: string[]; practice: string[]; quiz: string[] };
   rankingTitle: string;
   // Sub-tabs del ranking: reto diario (marca+tiempo) vs liga semanal (XP).
-  rankTabs: { daily: string; weekly: string };
+  // dailyPrize/weeklyPrize: rótulo del premio en las tarjetas que hacen de
+  // pestañas en Ranking. players: total bajo el título de la tabla.
+  rankTabs: { daily: string; weekly: string; dailyPrize: string; weeklyPrize: string; players: (n: number) => string };
   bestToday: (n: number) => string;
   noScoreYet: string;
   rankingNote: string;
@@ -875,7 +877,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "¡Entendido!",
     coachReplay: "Cómo se juega",
     rankingTitle: "Ranking diario",
-    rankTabs: { daily: "Diario", weekly: "Semanal" },
+    rankTabs: { daily: "Diario", weekly: "Semanal", dailyPrize: "Premio de hoy", weeklyPrize: "Premio de la semana", players: (n) => `${n} jugadores` },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
     rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (pago automático).",
@@ -1277,7 +1279,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "Got it!",
     coachReplay: "How to play",
     rankingTitle: "Daily ranking",
-    rankTabs: { daily: "Daily", weekly: "Weekly" },
+    rankTabs: { daily: "Daily", weekly: "Weekly", dailyPrize: "Today's prize", weeklyPrize: "This week's prize", players: (n) => `${n} players` },
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
     rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (paid out automatically).",
@@ -1677,7 +1679,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "Entendi!",
     coachReplay: "Como se joga",
     rankingTitle: "Ranking diário",
-    rankTabs: { daily: "Diário", weekly: "Semanal" },
+    rankTabs: { daily: "Diário", weekly: "Semanal", dailyPrize: "Prêmio de hoje", weeklyPrize: "Prêmio da semana", players: (n) => `${n} jogadores` },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
     rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (pagamento automático).",
@@ -2077,7 +2079,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "Compris !",
     coachReplay: "Comment jouer",
     rankingTitle: "Classement du jour",
-    rankTabs: { daily: "Quotidien", weekly: "Hebdo" },
+    rankTabs: { daily: "Quotidien", weekly: "Hebdo", dailyPrize: "Prix du jour", weeklyPrize: "Prix de la semaine", players: (n) => `${n} joueurs` },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
     rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (paiement automatique).",
