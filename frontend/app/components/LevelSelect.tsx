@@ -10,6 +10,14 @@
 import { type Difficulty } from "../lib/game";
 import { t } from "../lib/i18n";
 
+// Cada nivel con su identidad: icono + color (estética Violeta Prisma).
+// Exportado: los ganadores del día en Ranking usan la misma identidad.
+export const LEVEL_META: Record<Difficulty, { icon: string; color: string }> = {
+  easy: { icon: "🌱", color: "#22c55e" },
+  medium: { icon: "⚡", color: "var(--gold)" },
+  hard: { icon: "💀", color: "#e879f9" },
+};
+
 export default function LevelSelect({
   tr,
   level,
@@ -19,12 +27,7 @@ export default function LevelSelect({
   level: Difficulty;
   onChange: (l: Difficulty) => void;
 }) {
-  // Cada nivel con su identidad: icono + color (estética Violeta Prisma)
-  const META: Record<Difficulty, { icon: string; color: string }> = {
-    easy: { icon: "🌱", color: "#22c55e" },
-    medium: { icon: "⚡", color: "var(--gold)" },
-    hard: { icon: "💀", color: "#e879f9" },
-  };
+  const META = LEVEL_META;
   const opts: Difficulty[] = ["easy", "medium", "hard"];
   return (
     <div className="flex flex-col items-center gap-1.5">

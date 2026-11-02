@@ -37,8 +37,8 @@ import { SITE_HOST } from "./lib/site";
 import { signalMiniAppReady } from "./lib/farcaster";
 import GlobeLoader, { withMinDelay } from "./components/GlobeLoader";
 import TxOverlay from "./components/TxOverlay";
-import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./components/Leaderboard";
-import LevelSelect from "./components/LevelSelect";
+import { Podium, RankRow, RANK_GRID, PlayerAvatar, type LeaderEntry } from "./components/Leaderboard";
+import LevelSelect, { LEVEL_META } from "./components/LevelSelect";
 import { clearModeCoachSeen } from "./lib/onboarding";
 import NavIcon from "./components/NavIcons";
 import PrecisionStars from "./components/PrecisionStars";
@@ -1838,6 +1838,7 @@ export default function Frontle() {
                 {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
                 <WinnersCard
                   tr={tr}
+                  locale={locale}
                   cycle={cycleView}
                   names={winnerNames}
                   myId={myId}
@@ -2815,16 +2816,24 @@ function CountryChip({ code, name, kind }: { code: string; name: string; kind: C
   );
 }
 
-// Ganadores del último día cerrado, un renglón por nivel. Es INFORMATIVA:
+// Ganadores del último día cerrado, una card por nivel. Es INFORMATIVA:
 // el reclamo vive en un solo sitio, el Perfil, para que el jugador no tenga
 // que buscarlo en dos pantallas. Si el ganador eres tú y aún no lo cobraste,
 // esta tarjeta te lleva allí.
 //
+// Mismo lenguaje que "Ganadores de la semana pasada" de la liga: card
+// neo-brutalista, avatar, borde dorado para el ganador y bloque dorado
+// sólido si eres tú. En vez de puesto, cada fila lleva la identidad de su
+// nivel (icono + color de LevelSelect), y van de mayor a menor premio.
+//
 // El estado "Reclamado" sale de `claimed` del CONTRATO, nunca de un estado
 // local: así sigue diciendo la verdad tras recargar o si cobraste desde otro
 // dispositivo.
+const WINNER_LEVEL_ORDER: Difficulty[] = ["hard", "medium", "easy"];
+
 function WinnersCard({
   tr,
+  locale,
   cycle,
   names,
   myId,
@@ -2833,6 +2842,7 @@ function WinnersCard({
   fmt,
 }: {
   tr: ReturnType<typeof t>;
+  locale: Locale;
   cycle: LastCycle | null;
   names: Record<string, string>;
   myId: string;
@@ -2843,51 +2853,86 @@ function WinnersCard({
   if (!cycle) {
     return (
       <section className={`${panel} p-3`}>
-        <p className="text-[10px] uppercase tracking-widest text-amber-300 mb-1 text-center">{tr.winnersTitle}</p>
+        <h3 className="text-center font-display text-sm font-bold text-white mb-1">🏆 {tr.winnersTitle}</h3>
         <p className="text-sm text-neutral-300 text-center py-2">{tr.winnersEmpty}</p>
       </section>
     );
   }
 
   const me = myId.toLowerCase();
+  // `cycle.day` es el índice del CONTRATO (días desde el epoch), no el
+  // YYYYMMDD de Supabase: se pinta como fecha, que es lo que el jugador
+  // reconoce. En UTC, que es el reloj del juego.
+  const fecha = new Date(cycle.day * 86_400_000).toLocaleDateString(locale, {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+  const winners = [...cycle.winners].sort(
+    (a, b) => WINNER_LEVEL_ORDER.indexOf(a.level) - WINNER_LEVEL_ORDER.indexOf(b.level)
+  );
 
   return (
-    <section className={`${panel} p-3`}>
-      <div className="flex items-baseline justify-between gap-2 mb-2">
-        <p className="text-[10px] uppercase tracking-widest text-amber-300">{tr.winnersTitle}</p>
-        <span className="text-[10px] text-neutral-400 tabular-nums">{tr.winnersDay(cycle.day)}</span>
+    <section className={`${panel} p-3 flex flex-col gap-1.5`}>
+      <div className="flex items-baseline justify-between gap-2 mb-0.5">
+        <h3 className="font-display text-sm font-bold text-white">🏆 {tr.winnersTitle}</h3>
+        <span className="text-[11px] text-neutral-400 tabular-nums">{fecha}</span>
       </div>
 
-      <ul className="flex flex-col gap-2">
-        {cycle.winners.map((w) => {
-          const key = `${cycle.day}-${w.level}`;
+      <ol className="flex flex-col gap-1.5">
+        {winners.map((w) => {
+          const meta = LEVEL_META[w.level];
           const mine = !!w.winner && w.winner === me;
-          const label = w.winner
-            ? names[w.winner] || `${tr.anonPlayer} ${shortId(w.winner)}`
-            : tr.noWinner;
+          const label = w.winner ? names[w.winner] || `${tr.anonPlayer} ${shortId(w.winner)}` : tr.noWinner;
 
           return (
             <li
-              key={key}
-              className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 ${
-                mine ? "border-amber-400/50 bg-amber-400/10" : "border-white/10 bg-white/[0.03]"
+              key={`${cycle.day}-${w.level}`}
+              className={`brutal-sm grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg px-2 py-2 ${
+                mine
+                  ? "bg-gold text-surface"
+                  : w.winner
+                    ? "bg-gold/15 text-neutral-100 ring-2 ring-gold"
+                    : "bg-surface text-neutral-400"
               }`}
             >
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] uppercase tracking-wider text-neutral-400">{tr.levels[w.level]}</span>
-                <span className={`text-sm truncate ${mine ? "text-amber-100 font-semibold" : "text-neutral-200"}`}>
-                  {label} {mine ? "👈" : ""}
+              {w.winner ? (
+                <PlayerAvatar id={w.winner} label={label} size={30} />
+              ) : (
+                <span aria-hidden className="grid h-[30px] w-[30px] place-items-center rounded-full border-2 border-dashed border-lavender/30 text-xs">
+                  —
                 </span>
-              </div>
+              )}
 
-              <div className="flex items-center gap-2 shrink-0">
-                {/* neutral-500 falla AA (~3.8:1); neutral-400 pasa (~7:1). */}
-                <span className={`text-sm tabular-nums ${w.winner ? "text-amber-300" : "text-neutral-400"}`}>
-                  {fmt(w.amount)}
+              <span className="flex min-w-0 flex-col leading-tight">
+                {/* El color del nivel solo sobre fondo oscuro: en la fila
+                    propia (bloque dorado) no tendría contraste. */}
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wider"
+                  style={mine ? undefined : { color: meta.color }}
+                >
+                  {meta.icon} {tr.levels[w.level]}
                 </span>
+                <span className="truncate text-sm font-semibold" title={label}>
+                  {mine ? tr.liga.youNamed(label) : label}
+                </span>
+              </span>
 
-                {mine && w.claimed && (
-                  <span className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-[11px] font-medium text-emerald-300">
+              <span className="flex flex-col items-end gap-1 leading-tight">
+                {w.winner ? (
+                  <span className={`font-mono text-sm font-bold tabular-nums ${mine ? "text-surface" : "text-amber-300"}`}>
+                    {fmt(w.amount)}
+                  </span>
+                ) : (
+                  <span className="font-mono text-xs tabular-nums">—</span>
+                )}
+
+                {w.winner && w.claimed && (
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                      mine ? "bg-surface/15 text-surface" : "bg-emerald-400/10 text-emerald-300"
+                    }`}
+                  >
                     ✓ {tr.prizeClaimedLabel}
                   </span>
                 )}
@@ -2895,16 +2940,16 @@ function WinnersCard({
                 {mine && !w.claimed && (
                   <button
                     onClick={onGoToProfile}
-                    className="brutal-sm brutal-press rounded-lg bg-amber-300 px-2.5 py-1 text-[11px] font-bold text-surface"
+                    className="brutal-sm brutal-press rounded-md bg-surface px-2 py-0.5 text-[10px] font-bold text-gold"
                   >
                     {tr.claimInProfile}
                   </button>
                 )}
-              </div>
+              </span>
             </li>
           );
         })}
-      </ul>
+      </ol>
     </section>
   );
 }
