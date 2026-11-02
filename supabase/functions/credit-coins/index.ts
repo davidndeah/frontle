@@ -24,6 +24,17 @@
 //  Paquetes exactos (0.50→50, 1.00→110, 2.50→300); cualquier otro monto se
 //  acredita sin bonus a 1 🪙 = $0.01 (floor).
 //
+//  REENVÍO POR TANDAS: un pago solo se ENCOLA; el reenvío a los pots lo hace
+//  el cron `frontle-flush-pots` (migración 0018) cada 4 h, a las :50 de
+//  03/07/11/15/19/23 UTC, llamando a esta función con `{ "flush": true }`.
+//  Antes se reenviaba en cada pago, y cada fundPot cuesta la misma comisión
+//  de red mueva 0.04 o 4 USDT: con la entrada a MiniPay eso dejó a la
+//  operadora sin saldo nativo y sin cerrar el día. La tanda de las 23:50 va
+//  10 min antes del corte para que el dinero de un día caiga en su día
+//  (fundPot suma al periodo en curso). Mientras espera, el premio que se
+//  muestra suma lo pendiente (vista `pot_pending`), así que el jugador ve
+//  reflejado su pago al momento.
+//
 //  Secrets: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (inyectados) ·
 //  CELO_RPC_URL opcional (default forno) · COIN_TREASURY opcional ·
 //  WEEKLY_ADDRESS, GAME_ADDRESS y OPERATOR_PRIVATE_KEY (los de close-week /
@@ -80,15 +91,12 @@ const protocolBpsAbi = [
 
 type Target = "weekly" | "daily";
 
-// Supabase Edge: deja correr una promesa después de responder.
-declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
-
 const isAddress = (a: string): a is `0x${string}` => /^0x[0-9a-fA-F]{40}$/.test(a);
 
 // Reenvía al pot de `target` TODO lo pendiente de la cola en un solo fundPot.
 // Cada fila se "toma" con un UPDATE condicionado (atómico por fila): dos
 // invocaciones a la vez nunca reenvían el mismo pago. Si algo falla ANTES de
-// emitir la tx, las filas vuelven a pendiente y las recoge el próximo pago.
+// emitir la tx, las filas vuelven a pendiente y las recoge la próxima tanda.
 // fundPot suma al periodo EN CURSO (día o semana), así que un pago hecho
 // segundos antes del corte puede caer en el siguiente.
 async function forwardPending(
@@ -177,12 +185,22 @@ async function rpcCall(rpcUrl: string, method: string, params: unknown[]) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
-    const { txHash, secret, kind } = await req.json().catch(() => ({}));
-    if (!/^0x[0-9a-fA-F]{64}$/.test(String(txHash ?? ""))) return json(400, { error: "txHash inválido" });
-    const ref = String(txHash).toLowerCase();
+    const { txHash, secret, kind, flush } = await req.json().catch(() => ({}));
 
     const rpcUrl = Deno.env.get("CELO_RPC_URL") || "https://forno.celo.org";
     const treasury = (Deno.env.get("COIN_TREASURY") || DEFAULT_TREASURY).toLowerCase();
+
+    // ---- Tanda de reenvío (cron) ----------------------------------------------
+    // Sin cola pendiente no se emite nada, así que llamarlo de más no cuesta
+    // comisiones: como mucho adelanta una tanda.
+    if (flush === true) {
+      const supa = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await forwardAll(supa, rpcUrl, treasury);
+      return json(200, { ok: true, flushed: true });
+    }
+
+    if (!/^0x[0-9a-fA-F]{64}$/.test(String(txHash ?? ""))) return json(400, { error: "txHash inválido" });
+    const ref = String(txHash).toLowerCase();
 
     const [receipt, tx] = await Promise.all([
       rpcCall(rpcUrl, "eth_getTransactionReceipt", [txHash]),
@@ -227,9 +245,7 @@ Deno.serve(async (req) => {
         return json(500, { error: "no se pudo registrar" });
       }
 
-      const forward = forwardAll(supa, rpcUrl, treasury).catch((e) => console.error("[credit-coins] reenvío:", e));
-      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(forward);
-      else await forward;
+      // Encolado: el reenvío lo hace la próxima tanda del cron.
       return json(200, { ok: true, purpose });
     }
 
@@ -307,11 +323,7 @@ Deno.serve(async (req) => {
       if (qErr) console.error("[credit-coins] no se pudo encolar el reenvío al pot, sembrar a mano:", txHash, wei, qErr);
     }
 
-    // El reenvío al pot no bloquea la respuesta: el jugador ya tiene sus monedas.
-    const forward = forwardAll(supa, rpcUrl, treasury).catch((e) => console.error("[credit-coins] reenvío:", e));
-    if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(forward);
-    else await forward;
-
+    // El jugador ya tiene sus monedas; el reenvío al pot va en la próxima tanda.
     return json(200, { coins, player: payer, alreadyCredited: Boolean(error) });
   } catch (err) {
     console.error("[credit-coins] error:", err);

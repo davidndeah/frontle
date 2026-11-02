@@ -302,17 +302,42 @@ export async function connectWallet(): Promise<string | null> {
 
 // --- Lectura: premio (pot) del día actual ------------------------------
 // No requiere wallet: lee directo del RPC. Devuelve el monto en USDT (number) o null.
+// Pagos ya hechos que esperan su tanda de reenvío al pot (credit-coins los
+// manda cada 4 h, migración 0018). Se suman al pot on-chain para que el
+// premio que se enseña sea el real: sin esto, un jugador pagaba una pista y
+// no veía crecer el premio hasta la siguiente tanda. 0 si Supabase falla:
+// mejor quedarse corto que inventar.
+const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+async function getPendingPot(target: "daily" | "weekly"): Promise<bigint> {
+  if (!SUPA_URL || !SUPA_KEY) return BigInt(0);
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/pot_pending?target=eq.${target}&select=amount_wei`, {
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+    });
+    const j = await r.json();
+    const v = Array.isArray(j) ? j[0]?.amount_wei : null;
+    return v != null ? BigInt(String(v)) : BigInt(0);
+  } catch {
+    return BigInt(0);
+  }
+}
+
 export async function getDailyPot(): Promise<number | null> {
   try {
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
     const day = await publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "currentDay" });
-    const amount = await publicClient.readContract({
-      address: GAME_ADDRESS,
-      abi: gameAbi,
-      functionName: "pot",
-      args: [day],
-    });
-    return Number(formatUnits(amount, TOKEN_DECIMALS));
+    const [amount, pending] = await Promise.all([
+      publicClient.readContract({
+        address: GAME_ADDRESS,
+        abi: gameAbi,
+        functionName: "pot",
+        args: [day],
+      }),
+      getPendingPot("daily"),
+    ]);
+    return Number(formatUnits(amount + pending, TOKEN_DECIMALS));
   } catch (err) {
     console.error("[pago] no se pudo leer el pot:", err);
     return null;
@@ -480,7 +505,7 @@ export async function getPublicStats(): Promise<PublicStats | null> {
 
     // 3) Premios de cada día cerrado. En el v1 el ganador se lleva pot(día);
     //    en el v2 hay un premio por nivel.
-    const [potToday, potsV1, prizesV2] = await Promise.all([
+    const [potToday, potsV1, prizesV2, pendDaily, pendWeekly] = await Promise.all([
       publicClient.readContract({ address: GAME_ADDRESS, abi: gameAbi, functionName: "pot", args: [dayRaw] }),
       publicClient.multicall({
         allowFailure: false,
@@ -492,6 +517,8 @@ export async function getPublicStats(): Promise<PublicStats | null> {
           [0, 1, 2].map((lv) => ({ address: GAME_ADDRESS, abi: gameAbi, functionName: "prize", args: [d, lv] }) as const),
         ),
       }),
+      getPendingPot("daily"),
+      getPendingPot("weekly"),
     ]);
 
     // Se suma en bigint y se formatea una sola vez: sumar floats arrastra error.
@@ -512,12 +539,13 @@ export async function getPublicStats(): Promise<PublicStats | null> {
 
     return {
       day,
-      potToday: usdt(potToday),
+      // Mismas cifras que el juego: on-chain + lo que espera su tanda.
+      potToday: usdt(potToday + pendDaily),
       prizesPaid: usdt(prizesPaid),
       daysClosed,
       playerFunds: usdt(playerFunds),
       protocolFees: usdt(protocolFees),
-      weeklyPot: usdt(weekly.pot),
+      weeklyPot: usdt(weekly.pot + pendWeekly),
       weeklyPrizes: usdt(weekly.prizes),
       weeksClosed: weekly.weeksClosed,
     };
@@ -1098,8 +1126,11 @@ export async function getWeeklyPot(): Promise<number | null> {
   try {
     const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http() });
     const week = await publicClient.readContract({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "currentWeek" });
-    const p = await publicClient.readContract({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "pot", args: [week] });
-    return Number(formatUnits(p, TOKEN_DECIMALS));
+    const [p, pending] = await Promise.all([
+      publicClient.readContract({ address: WEEKLY_ADDRESS, abi: weeklyAbi, functionName: "pot", args: [week] }),
+      getPendingPot("weekly"),
+    ]);
+    return Number(formatUnits(p + pending, TOKEN_DECIMALS));
   } catch {
     return null;
   }
