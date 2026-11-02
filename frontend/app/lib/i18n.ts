@@ -203,6 +203,8 @@ type Dict = {
     // "Tu": en una tabla de nombres, verse por el propio es lo que la hace
     // legible de un vistazo.
     youNamed: (name: string) => string;
+    /** Título del top 10 de la semana cerrada, al final de la liga. */
+    lastWeek: string;
     closes: (time: string) => string;
     needWallet: string;
     // Premio de la semana. Solo se muestran cuando el pot on-chain existe;
@@ -627,6 +629,7 @@ const STRINGS: Record<Locale, Dict> = {
       loading: "Cargando la liga de la semana…",
       you: "Tú",
       youNamed: (n) => `${n} (Tú)`,
+      lastWeek: "Ganadores de la semana pasada",
       closes: (time) => `Cierra en ${time}`,
       needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
       prize: (a) => `🏆 Premio de la semana: ${a}`,
@@ -1027,6 +1030,7 @@ const STRINGS: Record<Locale, Dict> = {
       loading: "Loading this week's league…",
       you: "You",
       youNamed: (n) => `${n} (You)`,
+      lastWeek: "Last week's winners",
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
       prize: (a) => `🏆 This week's prize: ${a}`,
@@ -1429,6 +1433,7 @@ const STRINGS: Record<Locale, Dict> = {
       loading: "Carregando a liga da semana…",
       you: "Você",
       youNamed: (n) => `${n} (Você)`,
+      lastWeek: "Vencedores da semana passada",
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
       prize: (a) => `🏆 Prêmio da semana: ${a}`,
@@ -1829,6 +1834,7 @@ const STRINGS: Record<Locale, Dict> = {
       loading: "Chargement de la ligue de la semaine…",
       you: "Vous",
       youNamed: (n) => `${n} (Vous)`,
+      lastWeek: "Gagnants de la semaine dernière",
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
       prize: (a) => `🏆 Prix de la semaine : ${a}`,

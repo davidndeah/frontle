@@ -290,6 +290,53 @@ export async function getWeeklyRanking(limit = 20): Promise<WeeklyEntry[]> {
   }
 }
 
+export interface LastWeekBoard {
+  /** Lunes UTC (YYYY-MM-DD) de la semana cerrada. */
+  weekStart: string;
+  /** Top de la semana, mismo orden que el cierre (XP desc, llegó antes). */
+  entries: WeeklyEntry[];
+  /** Puesto (1-3) y pot crudo de cada ganador, de `weekly_winners`. */
+  winners: Record<string, { place: number; potRaw: string }>;
+}
+
+// Clasificación final de la semana ANTERIOR, con su podio pagado. El orden es
+// el de `weekly_podium` (lo que usa close-week), así que el 1.º de esta tabla
+// es el 1.º que cobró. Los ganadores salen de `weekly_winners` y no de "los 3
+// primeros": close-week se salta los ids que no son wallet, y entre las 00:00 y
+// el cierre (00:20 UTC) aún no hay podio registrado.
+export async function getLastWeekBoard(limit = 10): Promise<LastWeekBoard | null> {
+  if (!useSupabase) return null;
+  const weekStart = weekStartUTC(new Date(Date.now() - 7 * 86_400_000));
+  try {
+    const [r, w] = await Promise.all([
+      fetch(
+        `${SUPA_URL}/rest/v1/weekly_xp?week=eq.${weekStart}&select=player_id,xp&order=xp.desc,last_event.asc&limit=${limit}`,
+        { headers: HEADERS() }
+      ),
+      fetch(`${SUPA_URL}/rest/v1/weekly_winners?week_start=eq.${weekStart}&select=winner_address,place,pot_raw`, {
+        headers: HEADERS(),
+      }),
+    ]);
+    const rows = await r.json();
+    const wins = await w.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    const winners: LastWeekBoard["winners"] = {};
+    for (const x of Array.isArray(wins) ? wins : []) {
+      winners[String(x.winner_address).toLowerCase()] = { place: Number(x.place), potRaw: String(x.pot_raw ?? "0") };
+    }
+    return {
+      weekStart,
+      entries: rows.map((row: { player_id: string; xp: number }) => ({
+        playerId: String(row.player_id),
+        xp: Number(row.xp ?? 0),
+      })),
+      winners,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Cuántas filas de `weekly_xp` cumplen el filtro, sin traérselas: PostgREST
 // devuelve el total en la cabecera Content-Range ("0-0/42") cuando se le pide
 // count=exact. Así la posición no depende de descargar la tabla entera.

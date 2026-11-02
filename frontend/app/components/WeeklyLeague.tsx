@@ -14,12 +14,13 @@ import { useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
 import { getWeeklyPot, WEEKLY_PODIUM_SHARE } from "../lib/payments";
 import { getNamesFor, shortId } from "../lib/ranking";
-import { getWeeklyRanking, fmtWeekClose, getWeeklyStanding, hasLeagueIdentity, msToWeekClose, xpPlayerId, type WeeklyEntry, type WeeklyStanding } from "../lib/xp";
+import { getWeeklyRanking, fmtWeekClose, getLastWeekBoard, getWeeklyStanding, hasLeagueIdentity, msToWeekClose, xpPlayerId, type LastWeekBoard, type WeeklyEntry, type WeeklyStanding } from "../lib/xp";
 import GlobeLoader, { withMinDelay } from "./GlobeLoader";
 import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./Leaderboard";
 
 // Filas que se enseñan (podio incluido). Más abajo solo aparece la propia.
 const TOP = 20;
+const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function WeeklyLeague({
   tr,
@@ -37,6 +38,8 @@ export default function WeeklyLeague({
   const [pot, setPot] = useState<number | null>(null);
   // Puesto propio cuando el jugador queda fuera de las filas descargadas.
   const [standing, setStanding] = useState<WeeklyStanding | null>(null);
+  // Top 10 de la semana cerrada, con su podio pagado.
+  const [last, setLast] = useState<LastWeekBoard | null>(null);
   const joined = hasLeagueIdentity();
   const me = xpPlayerId();
 
@@ -52,7 +55,11 @@ export default function WeeklyLeague({
       if (hasLeagueIdentity() && !rows.some((r) => r.playerId === xpPlayerId())) {
         void getWeeklyStanding().then((st) => alive && setStanding(st));
       }
-      const n = await getNamesFor(rows.map((r) => r.playerId));
+      // La semana pasada va después: está al final de la pantalla y no debe
+      // retrasar la tabla en curso.
+      const prev = await getLastWeekBoard();
+      if (alive) setLast(prev);
+      const n = await getNamesFor([...rows, ...(prev?.entries ?? [])].map((r) => r.playerId));
       if (alive) setNames(n);
       // Sin esto un fallo dejaría el loader girando para siempre. Marcar
       // `loaded` enseña la tabla vacía, que al menos es un final.
@@ -206,6 +213,36 @@ export default function WeeklyLeague({
             ···
           </p>
           <RankRow pos={mineOut.pos} entry={toEntry(mineOut.entry, mineOut.pos - 1)} />
+        </div>
+      )}
+
+      {/* --- Semana pasada ----------------------------------------------------
+          Cierre de la semana anterior: prueba social de que la liga paga de
+          verdad. Los 3 que cobraron van con medalla, borde dorado y su premio;
+          el premio sale del pot registrado al cerrar × el reparto fijo del
+          contrato, no del pot de hoy. */}
+      {last && (
+        <div className="mt-3 flex flex-col gap-1.5 border-t border-lavender/20 pt-3">
+          <h3 className="text-center font-display text-sm font-bold text-white">🏆 {tr.liga.lastWeek}</h3>
+          <ol className="flex flex-col gap-1.5">
+            {last.entries.map((e, i) => {
+              const win = last.winners[e.playerId.toLowerCase()];
+              const base = toEntry(e, Infinity);
+              const premio = win ? (Number(win.potRaw) / 1e6) * (WEEKLY_PODIUM_SHARE[win.place - 1] / 100) : 0;
+              return (
+                <RankRow
+                  key={e.playerId}
+                  pos={i + 1}
+                  entry={{
+                    ...base,
+                    winner: !!win,
+                    badge: win ? <span aria-hidden>{MEDALS[win.place - 1]}</span> : undefined,
+                    sub: win && premio > 0 ? fmt(premio) : undefined,
+                  }}
+                />
+              );
+            })}
+          </ol>
         </div>
       )}
     </section>

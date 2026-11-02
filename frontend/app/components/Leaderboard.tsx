@@ -59,6 +59,8 @@ export interface LeaderEntry {
   sub?: ReactNode;
   /** Adorno antes del nombre (p. ej. la bandera del país). */
   badge?: ReactNode;
+  /** Ganador de un ciclo cerrado: fila con borde dorado (sin pisar `mine`). */
+  winner?: boolean;
 }
 
 // Rejilla común de cabecera y filas: sin ella los textos de la cabecera no
@@ -135,7 +137,7 @@ export function RankRow({ pos, entry }: { pos: number; entry: LeaderEntry }) {
         // La fila propia va en bloque dorado SÓLIDO, no un tinte: en el
         // sistema de referencia el acento es macizo, y así se encuentra sin
         // buscarla.
-        mine ? "bg-gold text-surface" : "bg-surface text-neutral-100"
+        mine ? "bg-gold text-surface" : entry.winner ? "bg-gold/15 text-neutral-100 ring-2 ring-gold" : "bg-surface text-neutral-100"
       }`}
     >
       <span className={`text-center font-display text-sm font-black ${mine ? "text-surface" : "text-lavender"}`}>
