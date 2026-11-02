@@ -10,13 +10,27 @@
 //  identidad).
 // ============================================================
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
 import { getWeeklyPot, WEEKLY_PODIUM_SHARE } from "../lib/payments";
 import { getNamesFor, shortId } from "../lib/ranking";
 import { getWeeklyRanking, fmtWeekClose, getLastWeekBoard, getWeeklyStanding, hasLeagueIdentity, msToWeekClose, xpPlayerId, type LastWeekBoard, type WeeklyEntry, type WeeklyStanding } from "../lib/xp";
 import GlobeLoader, { withMinDelay } from "./GlobeLoader";
 import { Podium, RankRow, RANK_GRID, type LeaderEntry } from "./Leaderboard";
+
+// Línea de corte de la zona de premio: arriba cobran, abajo no. `as="li"`
+// cuando va dentro de un <ol>, oculta al lector de pantalla (es decorativa:
+// el texto de la regla ya está arriba, en `top3Only` / `lastWeekNote`).
+function PrizeCut({ label, as = "div" }: { label: string; as?: "div" | "li" }) {
+  const Tag = as;
+  return (
+    <Tag aria-hidden className="my-0.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gold/80">
+      <span className="h-0 flex-1 border-t-2 border-dashed border-gold/50" />
+      {label}
+      <span className="h-0 flex-1 border-t-2 border-dashed border-gold/50" />
+    </Tag>
+  );
+}
 
 // Filas que se enseñan (podio incluido). Más abajo solo aparece la propia.
 const TOP = 20;
@@ -135,6 +149,11 @@ export default function WeeklyLeague({
           <p className="brutal-sm rounded-lg bg-gold px-3 py-2 text-center text-sm font-black text-surface">
             {tr.liga.prize(fmt(premioTotal))}
           </p>
+          {/* Que nadie del 4.º para abajo crea que cobra: la regla va antes
+              del reparto, no en la letra pequeña de debajo. */}
+          <p className="text-center font-display text-xs font-bold uppercase tracking-wider text-gold">
+            🏆 {tr.liga.top3Only}
+          </p>
           <div className="grid grid-cols-3 gap-1.5">
             {WEEKLY_PODIUM_SHARE.map((_, i) => (
               <div key={i} className="brutal-sm rounded-lg bg-surface px-2 py-1.5 text-center">
@@ -184,6 +203,10 @@ export default function WeeklyLeague({
       {/* Podio (1-3). El escalonado y el orden del DOM los resuelve Podium. */}
       {podium.length > 0 && <Podium items={podium.map((e, i) => toEntry(e, i))} />}
 
+      {/* Línea de corte: lo que queda arriba cobra, lo de abajo no. Solo con
+          premio de verdad; en temporada seca no hay zona que marcar. */}
+      {conPremio && rest.length > 0 && <PrizeCut label={tr.liga.prizeCut} />}
+
       {/* --- Tabla (4 en adelante) ------------------------------------------
           Una card por jugador en el lenguaje neo-brutalista que la app ya usa
           en botones y niveles: borde grueso, sombra dura desplazada, esquinas
@@ -220,26 +243,40 @@ export default function WeeklyLeague({
           Cierre de la semana anterior: prueba social de que la liga paga de
           verdad. Los 3 que cobraron van con medalla, borde dorado y su premio;
           el premio sale del pot registrado al cerrar × el reparto fijo del
-          contrato, no del pot de hoy. */}
+          contrato, no del pot de hoy.
+
+          Mientras el cierre no se haya registrado (entre las 00:00 y el cron,
+          o si el cron falla) el podio se toma de las 3 primeras filas, que es
+          el mismo orden que usa close-week, y se avisa de que el premio está
+          por asignarse en vez de enseñar un monto que aún no existe. */}
       {last && (
         <div className="mt-3 flex flex-col gap-1.5 border-t border-lavender/20 pt-3">
-          <h3 className="text-center font-display text-sm font-bold text-white">🏆 {tr.liga.lastWeek}</h3>
+          <div className="text-center">
+            <h3 className="font-display text-sm font-bold text-white">🏆 {tr.liga.lastWeek}</h3>
+            <p className="text-[11px] text-neutral-400">
+              {Object.keys(last.winners).length > 0 ? tr.liga.lastWeekNote : tr.liga.lastWeekPending}
+            </p>
+          </div>
           <ol className="flex flex-col gap-1.5">
             {last.entries.map((e, i) => {
+              const registrado = Object.keys(last.winners).length > 0;
               const win = last.winners[e.playerId.toLowerCase()];
+              const place = registrado ? win?.place : i < MEDALS.length ? i + 1 : undefined;
               const base = toEntry(e, Infinity);
               const premio = win ? (Number(win.potRaw) / 1e6) * (WEEKLY_PODIUM_SHARE[win.place - 1] / 100) : 0;
               return (
-                <RankRow
-                  key={e.playerId}
-                  pos={i + 1}
-                  entry={{
-                    ...base,
-                    winner: !!win,
-                    badge: win ? <span aria-hidden>{MEDALS[win.place - 1]}</span> : undefined,
-                    sub: win && premio > 0 ? fmt(premio) : undefined,
-                  }}
-                />
+                <Fragment key={e.playerId}>
+                  {i === MEDALS.length && <PrizeCut label={tr.liga.prizeCut} as="li" />}
+                  <RankRow
+                    pos={i + 1}
+                    entry={{
+                      ...base,
+                      winner: !!place,
+                      badge: place ? <span aria-hidden>{MEDALS[place - 1]}</span> : undefined,
+                      sub: win && premio > 0 ? fmt(premio) : undefined,
+                    }}
+                  />
+                </Fragment>
               );
             })}
           </ol>

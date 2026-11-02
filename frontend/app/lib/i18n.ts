@@ -205,6 +205,12 @@ type Dict = {
     youNamed: (name: string) => string;
     /** Título del top 10 de la semana cerrada, al final de la liga. */
     lastWeek: string;
+    /** Bajo `lastWeek`: con podio registrado / mientras se asigna. */
+    lastWeekNote: string;
+    lastWeekPending: string;
+    /** Regla sobre el reparto y rótulo de la línea de corte tras el 3.º. */
+    top3Only: string;
+    prizeCut: string;
     closes: (time: string) => string;
     needWallet: string;
     // Premio de la semana. Solo se muestran cuando el pot on-chain existe;
@@ -629,6 +635,10 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Tú",
       youNamed: (n) => `${n} (Tú)`,
       lastWeek: "Ganadores de la semana pasada",
+      lastWeekNote: "Los 3 primeros ganaron premio",
+      lastWeekPending: "Asignando los premios del top 3…",
+      top3Only: "Solo el top 3 gana premio",
+      prizeCut: "Fin de la zona de premio",
       closes: (time) => `Cierra en ${time}`,
       needWallet: "Conecta tu billetera para competir en la liga y cobrar el premio.",
       prize: (a) => `🏆 Premio de la semana: ${a}`,
@@ -1029,6 +1039,10 @@ const STRINGS: Record<Locale, Dict> = {
       you: "You",
       youNamed: (n) => `${n} (You)`,
       lastWeek: "Last week's winners",
+      lastWeekNote: "The top 3 won a prize",
+      lastWeekPending: "Awarding the top 3 prizes…",
+      top3Only: "Only the top 3 win a prize",
+      prizeCut: "End of prize zone",
       closes: (time) => `Closes in ${time}`,
       needWallet: "Connect your wallet to compete in the league and collect the prize.",
       prize: (a) => `🏆 This week's prize: ${a}`,
@@ -1431,6 +1445,10 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Você",
       youNamed: (n) => `${n} (Você)`,
       lastWeek: "Vencedores da semana passada",
+      lastWeekNote: "Os 3 primeiros ganharam prêmio",
+      lastWeekPending: "Atribuindo os prêmios do top 3…",
+      top3Only: "Só o top 3 ganha prêmio",
+      prizeCut: "Fim da zona de prêmio",
       closes: (time) => `Fecha em ${time}`,
       needWallet: "Conecte sua carteira para competir na liga e receber o prêmio.",
       prize: (a) => `🏆 Prêmio da semana: ${a}`,
@@ -1831,6 +1849,10 @@ const STRINGS: Record<Locale, Dict> = {
       you: "Vous",
       youNamed: (n) => `${n} (Vous)`,
       lastWeek: "Gagnants de la semaine dernière",
+      lastWeekNote: "Les 3 premiers ont gagné un prix",
+      lastWeekPending: "Attribution des prix du top 3…",
+      top3Only: "Seul le top 3 gagne un prix",
+      prizeCut: "Fin de la zone de prix",
       closes: (time) => `Se termine dans ${time}`,
       needWallet: "Connectez votre portefeuille pour jouer la ligue et recevoir le prix.",
       prize: (a) => `🏆 Prix de la semaine : ${a}`,
