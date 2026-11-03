@@ -195,6 +195,10 @@ export default function Frontle() {
 
   // Cronómetro / fases
   const [started, setStarted] = useState(false);
+  // Responder solo se habilita a los MIN_SUBMIT_MS de empezar: la base
+  // rechaza marcas de menos de 2 s (check scores_min_time, migración 0020),
+  // así nadie resuelve "demasiado rápido" y pierde la marca en silencio.
+  const [armed, setArmed] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const startRef = useRef(0);
   // Tiempo acumulado en pausa (pagos de pistas): la confirmación on-chain
@@ -956,6 +960,7 @@ export default function Frontle() {
 
   function submitCountry(value: string) {
     if (state.solved || !started) return;
+    if (Date.now() - startRef.current - pausedMsRef.current < MIN_SUBMIT_MS) return;
     const canonical = resolveLocalized(value);
     const result = tryGuess(state, value, canonical);
     setMessage({
@@ -1009,8 +1014,27 @@ export default function Frontle() {
     inputRef.current?.focus();
   }
 
+  // Arma el envío a los MIN_SUBMIT_MS de juego (descontando pausas). Cubre
+  // también la partida restaurada tras un refresh: si ya pasó, arma al momento.
+  useEffect(() => {
+    if (!started || state.solved) {
+      setArmed(false);
+      return;
+    }
+    const left = MIN_SUBMIT_MS - (Date.now() - startRef.current - pausedMsRef.current);
+    if (left <= 0) {
+      setArmed(true);
+      return;
+    }
+    setArmed(false);
+    const id = setTimeout(() => setArmed(true), left);
+    return () => clearTimeout(id);
+  }, [started, state.solved]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Enter antes de los 2 s: no hace nada (el texto se queda en el campo).
+    if (!armed) return;
     if (input.trim()) submitCountry(input);
   }
 
@@ -1755,14 +1779,25 @@ export default function Frontle() {
                     autoCapitalize="off"
                     className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                   />
-                  <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
+                  <button type="submit" disabled={!armed} className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface disabled:opacity-40 transition-opacity">OK</button>
                 </form>
 
                 {suggestions.length > 0 && (
                   <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
                     {suggestions.map((s) => (
                       <li key={s}>
-                        <button type="button" onClick={() => submitCountry(s)} className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2">
+                        {/* Antes de los 2 s la sugerencia solo rellena el campo (se puede ir
+                            armando la respuesta); después la envía como siempre. */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (armed) return submitCountry(s);
+                            setInput(cn(s));
+                            setSuggestions([]);
+                            inputRef.current?.focus();
+                          }}
+                          className="w-full text-left px-4 py-2.5 hover:bg-white/10 flex items-center gap-2"
+                        >
                           <Flag code={getCountry(s)!.code} size={22} />
                           <span>{cn(s)}</span>
                         </button>
@@ -3212,6 +3247,8 @@ function RankingPeek({
 
 // Filas que enseña la tabla diaria (podio incluido). Más abajo solo la propia.
 const RANK_TOP = 20;
+// Tiempo mínimo para poder responder en el reto diario (= scores_min_time).
+const MIN_SUBMIT_MS = 2000;
 
 function RankingCard({
   tr,
