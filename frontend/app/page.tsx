@@ -30,7 +30,7 @@ import {
   DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
-import { getRanking, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding } from "./lib/ranking";
+import { getDailyBoard, EMPTY_BOARD, isUnderReview, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
@@ -223,7 +223,8 @@ export default function Frontle() {
 
   // Ranking
   const [ipCountry, setIpCountry] = useState("");
-  const [ranking, setRanking] = useState<ScoreEntry[]>([]);
+  // Top del día + mi puesto + total, resuelto en la base (daily_board).
+  const [board, setBoard] = useState<DailyBoard>(EMPTY_BOARD);
   // Arranca en true: al montar ya hay una consulta en curso, y sin esto la
   // tabla decía "aún no hay marcas" durante la carga — afirmaba vacío lo que
   // solo estaba pendiente.
@@ -327,6 +328,23 @@ export default function Frontle() {
   // Prompt de nombre al registrarse: si hay identidad y aún no eligió nombre,
   // se le pide una vez (así el ranking muestra nombres, no wallets).
   const [nameModal, setNameModal] = useState(false);
+  // Aviso de cuenta en revisión (migración 0020): una vez al día por wallet.
+  // La cuenta sigue jugando con normalidad; solo se le informa.
+  const [reviewModal, setReviewModal] = useState(false);
+  useEffect(() => {
+    if (!myId) return;
+    let alive = true;
+    const key = `frontle-review-seen-${myId.toLowerCase()}-${new Date().toISOString().slice(0, 10)}`;
+    let seen = false;
+    try { seen = localStorage.getItem(key) === "1"; } catch {}
+    if (seen) return;
+    isUnderReview(myId).then((yes) => {
+      if (!alive || !yes) return;
+      try { localStorage.setItem(key, "1"); } catch {}
+      setReviewModal(true);
+    });
+    return () => { alive = false; };
+  }, [myId]);
   useEffect(() => {
     let asked = "1";
     try { asked = localStorage.getItem("frontle-name-asked") ?? "0"; } catch {}
@@ -665,20 +683,22 @@ export default function Frontle() {
     // pintada la tabla del anterior si su consulta volvía después.
     let alive = true;
     setRankingLoading(true);
-    withMinDelay(getRanking(day, level))
-      .then((rows) => {
+    withMinDelay(getDailyBoard(day, level, myId, RANK_TOP))
+      .then((b) => {
         if (!alive) return;
-        setRanking(rows);
+        setBoard(b);
         setRankingLoading(false);
       })
-      // `getRanking` ya traga sus errores, pero el loader no puede quedarse
+      // `getDailyBoard` ya traga sus errores, pero el loader no puede quedarse
       // girando para siempre si eso cambia: apagarlo enseña el estado vacío,
       // que al menos es un final.
       .catch(() => alive && setRankingLoading(false));
     return () => {
       alive = false;
     };
-  }, [day, level]);
+    // `myId`: el puesto propio depende de quién mira; al resolverse la wallet
+    // hay que volver a pedirlo.
+  }, [day, level, myId]);
 
   useEffect(() => {
     setSuggestions(input.length >= 2 ? suggestLocalized(input, locale) : []);
@@ -1000,7 +1020,7 @@ export default function Frontle() {
     // auto-reparadas sin finalMs y contaminaba el ranking. No enviar.
     if (!(timeMs > 0)) return Promise.resolve();
     return submitScore({ day, countries: score, timeMs, countryCode: ipCountry, playerId: addr, level, name: alias || undefined })
-      .then(() => getRanking(day, level).then(setRanking));
+      .then(() => getDailyBoard(day, level, addr, RANK_TOP).then(setBoard));
   }
 
   // Al resolver: si hay wallet (MiniPay), entra al ranking sin fricción.
@@ -1596,7 +1616,7 @@ export default function Frontle() {
                 (qué es → juega hoy → otros modos → cómo va la competencia). */}
             <RankingPeek
               tr={tr}
-              ranking={ranking}
+              board={board}
               loading={rankingLoading}
               myId={myId}
               levelLabel={tr.levels[level]}
@@ -1834,7 +1854,7 @@ export default function Frontle() {
                 )}
                 {/* Selector de nivel: cada nivel tiene su ranking */}
                 <LevelSelect tr={tr} level={level} onChange={setLevel} />
-                <RankingCard tr={tr} ranking={ranking} loading={rankingLoading} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
+                <RankingCard tr={tr} board={board} loading={rankingLoading} best={best} panel={panel} myId={myId} alias={alias} levelLabel={tr.levels[level]} />
                 {/* Ganadores del ciclo cerrado. Informativa: se reclama en Perfil */}
                 <WinnersCard
                   tr={tr}
@@ -2232,6 +2252,8 @@ export default function Frontle() {
       )}
 
       {/* Prompt de nombre al registrarse */}
+      {reviewModal && <ReviewNotice tr={tr} onClose={() => setReviewModal(false)} />}
+
       {nameModal && (
         <NamePrompt
           tr={tr}
@@ -2668,6 +2690,30 @@ function SettingsSheet({
 
 // Botón de "volver" del flujo pre-juego
 // Modal de elección de nombre al registrarse (pendiente i18n como los coachmarks)
+// Aviso para cuentas en revisión: informa sin bloquear nada.
+function ReviewNotice({ tr, onClose }: { tr: ReturnType<typeof t>; onClose: () => void }) {
+  return (
+    <Sheet
+      onClose={onClose}
+      label={tr.review.title}
+      z={66}
+      className="pop-in"
+      title={
+        <div className="flex items-center gap-3 mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
+          <h3 className="font-display font-bold text-white text-lg leading-tight">{tr.review.title}</h3>
+        </div>
+      }
+    >
+      <p className="text-sm text-neutral-200 leading-relaxed">{tr.review.body}</p>
+      <button onClick={onClose} className="btn-3d font-display font-bold text-base px-6 py-3 w-full mt-4">
+        {tr.review.ok}
+      </button>
+    </Sheet>
+  );
+}
+
 function NamePrompt({
   tr,
   initial,
@@ -3117,28 +3163,27 @@ function scoreToEntry(r: ScoreEntry, tr: ReturnType<typeof t>, myId: string): Le
 //
 // Filas y no podio: el podio es alto y sigue siendo el premio de entrar a
 // Ranking. Si el jugador está fuera del top 3 se añade su fila real con su
-// puesto (getRanking trae la tabla entera) — que es el dato que de verdad
+// puesto (getDailyBoard lo trae aparte) — que es el dato que de verdad
 // hace volver.
 function RankingPeek({
-  tr, ranking, loading, myId, levelLabel, onSeeAll,
+  tr, board, loading, myId, levelLabel, onSeeAll,
 }: {
   tr: ReturnType<typeof t>;
-  ranking: ScoreEntry[];
+  board: DailyBoard;
   loading: boolean;
   myId: string;
   levelLabel: string;
   onSeeAll: () => void;
 }) {
-  const top = ranking.slice(0, 3);
-  const mineIdx = myId ? ranking.findIndex((r) => r.playerId === myId) : -1;
-  const mineOut = mineIdx > 2 ? ranking[mineIdx] : null;
+  const top = board.top.slice(0, 3);
+  const mineOut = board.me && board.me.rank > 3 ? board.me : null;
 
   return (
     <section className="panel p-3">
       <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">🏆 {tr.rankingTitle} · {levelLabel}</p>
       {loading ? (
         <GlobeLoader label={tr.rankingLoading} size="sm" className="py-3" />
-      ) : ranking.length === 0 ? (
+      ) : board.players === 0 ? (
         <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
       ) : (
         <ol className="flex flex-col gap-1.5">
@@ -3149,7 +3194,7 @@ function RankingPeek({
             <>
               {/* Marca el salto: sin esto, un 7.º pegado al 3.º se lee como 4.º */}
               <li aria-hidden className="text-center text-[10px] tracking-[0.3em] text-neutral-500 leading-none">···</li>
-              <RankRow pos={mineIdx + 1} entry={scoreToEntry(mineOut, tr, myId)} />
+              <RankRow pos={mineOut.rank} entry={scoreToEntry(mineOut.entry, tr, myId)} />
             </>
           )}
         </ol>
@@ -3170,7 +3215,7 @@ const RANK_TOP = 20;
 
 function RankingCard({
   tr,
-  ranking,
+  board,
   loading,
   best,
   panel,
@@ -3179,7 +3224,7 @@ function RankingCard({
   levelLabel,
 }: {
   tr: ReturnType<typeof t>;
-  ranking: ScoreEntry[];
+  board: DailyBoard;
   loading: boolean;
   best: number | null;
   panel: string;
@@ -3189,23 +3234,22 @@ function RankingCard({
 }) {
   const toEntry = (r: ScoreEntry) => scoreToEntry(r, tr, myId);
 
-  // `ranking` es la tabla entera del nivel; se enseña el top y, si el jugador
-  // queda más abajo, su fila al final con su puesto real — para que sepa
-  // dónde está sin tener que recorrer cientos de filas.
-  const podium = ranking.slice(0, 3).map(toEntry);
-  const restRows = ranking.slice(3, RANK_TOP).map(toEntry);
-  const mineIdx = myId ? ranking.findIndex((r) => r.playerId === myId) : -1;
-  const mineOut = mineIdx >= RANK_TOP ? toEntry(ranking[mineIdx]) : null;
+  // Se enseña el top y, si el jugador queda más abajo, su fila al final con
+  // su puesto real — para que sepa dónde está sin recorrer cientos de filas.
+  // El puesto lo calcula la base: el cliente ya no baja la tabla entera.
+  const podium = board.top.slice(0, 3).map(toEntry);
+  const restRows = board.top.slice(3, RANK_TOP).map(toEntry);
+  const mineOut = board.me && board.me.rank > RANK_TOP ? board.me : null;
 
   return (
     <section className={`${panel} p-3`}>
       <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">
         🏆 {tr.rankingTitle} · {levelLabel}
-        {!loading && ranking.length > 0 && <> · {tr.rankTabs.players(ranking.length)}</>}
+        {!loading && board.players > 0 && <> · {tr.rankTabs.players(board.players)}</>}
       </p>
       {loading ? (
         <GlobeLoader label={tr.rankingLoading} size="sm" className="py-3" />
-      ) : ranking.length === 0 ? (
+      ) : board.players === 0 ? (
         <p className="text-sm text-neutral-300 text-center py-2">{tr.rankingEmpty}</p>
       ) : (
         <>
@@ -3235,7 +3279,7 @@ function RankingCard({
                 ···
               </p>
               <ol>
-                <RankRow pos={mineIdx + 1} entry={mineOut} />
+                <RankRow pos={mineOut.rank} entry={toEntry(mineOut.entry)} />
               </ol>
             </div>
           )}

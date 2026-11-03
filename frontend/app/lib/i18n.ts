@@ -489,6 +489,7 @@ type Dict = {
   // Sub-tabs del ranking: reto diario (marca+tiempo) vs liga semanal (XP).
   // dailyPrize/weeklyPrize: rótulo del premio en las tarjetas que hacen de
   // pestañas en Ranking. players: total bajo el título de la tabla.
+  review: { title: string; body: string; ok: string };
   rankTabs: { daily: string; weekly: string; dailyPrize: string; weeklyPrize: string; players: (n: number) => string };
   bestToday: (n: number) => string;
   noScoreYet: string;
@@ -889,6 +890,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "¡Entendido!",
     coachReplay: "Cómo se juega",
     rankingTitle: "Ranking diario",
+    review: { title: "Tu cuenta está en revisión", body: "El equipo de Frontle está revisando la actividad de tu cuenta. Puedes seguir jugando e interactuando con normalidad mientras terminamos la revisión.", ok: "Entendido" },
     rankTabs: { daily: "Diario", weekly: "Semanal", dailyPrize: "Premio de hoy", weeklyPrize: "Premio de la semana", players: (n) => `${n} jugadores` },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
@@ -1295,6 +1297,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "Got it!",
     coachReplay: "How to play",
     rankingTitle: "Daily ranking",
+    review: { title: "Your account is under review", body: "The Frontle team is reviewing your account activity. You can keep playing and interacting as usual while we finish the review.", ok: "Got it" },
     rankTabs: { daily: "Daily", weekly: "Weekly", dailyPrize: "Today's prize", weeklyPrize: "This week's prize", players: (n) => `${n} players` },
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
@@ -1699,6 +1702,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "Entendi!",
     coachReplay: "Como se joga",
     rankingTitle: "Ranking diário",
+    review: { title: "Sua conta está em análise", body: "A equipe do Frontle está analisando a atividade da sua conta. Você pode continuar jogando e interagindo normalmente enquanto concluímos a análise.", ok: "Entendi" },
     rankTabs: { daily: "Diário", weekly: "Semanal", dailyPrize: "Prêmio de hoje", weeklyPrize: "Prêmio da semana", players: (n) => `${n} jogadores` },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
@@ -2103,6 +2107,7 @@ const STRINGS: Record<Locale, Dict> = {
     coachDone: "Compris !",
     coachReplay: "Comment jouer",
     rankingTitle: "Classement du jour",
+    review: { title: "Ton compte est en cours de vérification", body: "L'équipe Frontle vérifie l'activité de ton compte. Tu peux continuer à jouer et à interagir normalement pendant la vérification.", ok: "Compris" },
     rankTabs: { daily: "Quotidien", weekly: "Hebdo", dailyPrize: "Prix du jour", weeklyPrize: "Prix de la semaine", players: (n) => `${n} joueurs` },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",

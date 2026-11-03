@@ -102,14 +102,34 @@ Deno.serve(async () => {
     }
 
     // Podio del dinero: top 3 global de la semana por XP.
-    const { data: board, error: boardErr } = await supabase.rpc("weekly_podium", { p_week: weekStart });
+    // Mismo orden que `weekly_podium` (xp desc, last_event asc) pero con más
+    // filas: si alguien del top 3 está en revisión, su puesto pasa al 4º.
+    const { data: board, error: boardErr } = await supabase
+      .from("weekly_xp")
+      .select("player_id, xp")
+      .eq("week", weekStart)
+      .order("xp", { ascending: false })
+      .order("last_event", { ascending: true })
+      .limit(50);
     if (boardErr) throw boardErr;
+
+    // Cuentas en revisión (migración 0020): no entran al podio del dinero.
+    const { data: reviewed, error: revErr } = await supabase
+      .from("account_reviews")
+      .select("player_id")
+      .eq("block_prizes", true);
+    if (revErr) throw revErr;
+    const blocked = new Set((reviewed ?? []).map((r) => String(r.player_id).toLowerCase()));
 
     const payable: { address: `0x${string}`; xp: number }[] = [];
     const skipped: { player: string; xp: number }[] = [];
     for (const row of board ?? []) {
       if (payable.length >= PODIUM) break;
       const id = String(row.player_id ?? "").toLowerCase();
+      if (blocked.has(id)) {
+        skipped.push({ player: id, xp: Number(row.xp) });
+        continue;
+      }
       if (/^0x[0-9a-f]{40}$/.test(id)) payable.push({ address: id as `0x${string}`, xp: Number(row.xp) });
       else skipped.push({ player: id, xp: Number(row.xp) });
     }

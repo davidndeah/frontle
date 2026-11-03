@@ -146,16 +146,7 @@ async function fetchDay(day: number, level: Difficulty): Promise<ScoreEntry[]> {
         { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       const j = await r.json();
-      return (Array.isArray(j) ? j : []).map((x: Record<string, unknown>) => ({
-        day: Number(x.day),
-        countries: Number(x.countries),
-        timeMs: Number(x.time_ms),
-        countryCode: String(x.country_code ?? ""),
-        playerId: String(x.player_id ?? ""),
-        level: (x.level as Difficulty) ?? "medium",
-        name: (x.name as string) || undefined,
-        createdAt: x.created_at as string | undefined,
-      }));
+      return (Array.isArray(j) ? j : []).map(rowToEntry);
     } catch {
       return [];
     }
@@ -168,15 +159,76 @@ async function fetchDay(day: number, level: Difficulty): Promise<ScoreEntry[]> {
   }
 }
 
-// Por defecto devuelve la tabla ENTERA (una fila por jugador): la UI corta el
-// top que enseña, y con la tabla completa puede ubicar al jugador aunque esté
-// fuera de ese top sin una segunda consulta.
-export async function getRanking(
+export interface DailyBoard {
+  /** Las primeras filas (una por jugador, su mejor marca), ya ordenadas. */
+  top: ScoreEntry[];
+  /** La fila del jugador y su puesto (1 = primero); null si no ha marcado. */
+  me: { rank: number; entry: ScoreEntry } | null;
+  /** Cuántos jugadores marcaron en (día, nivel). */
+  players: number;
+}
+
+export const EMPTY_BOARD: DailyBoard = { top: [], me: null, players: 0 };
+
+// Fila de `scores` (o de `daily_board`) → modelo del cliente.
+function rowToEntry(x: Record<string, unknown>): ScoreEntry {
+  return {
+    day: Number(x.day),
+    countries: Number(x.countries),
+    timeMs: Number(x.time_ms),
+    countryCode: String(x.country_code ?? ""),
+    playerId: String(x.player_id ?? ""),
+    level: (x.level as Difficulty) ?? "medium",
+    name: (x.name as string) || undefined,
+    createdAt: x.created_at as string | undefined,
+  };
+}
+
+// La misma tabla que antes, resuelta en el cliente: modo local (sin
+// Supabase) y respaldo si la función `daily_board` aún no existe.
+function boardFrom(all: ScoreEntry[], playerId: string, limit: number): DailyBoard {
+  const board = bestPerPlayer(all, all.length);
+  const me = playerId.toLowerCase();
+  const i = me ? board.findIndex((e) => e.playerId.toLowerCase() === me) : -1;
+  return {
+    top: board.slice(0, limit),
+    me: i >= 0 ? { rank: i + 1, entry: board[i] } : null,
+    players: board.length,
+  };
+}
+
+// Ranking del día: top `limit` + la fila propia con su puesto + el total. Lo
+// resuelve la base (`daily_board`, migración 0019) y solo viaja lo que se
+// pinta: antes se bajaban todas las marcas del nivel, y eso crecía al
+// cuadrado con los jugadores.
+export async function getDailyBoard(
   day: number,
-  level: Difficulty = "medium",
-  limit = Infinity
-): Promise<ScoreEntry[]> {
-  return bestPerPlayer(await fetchDay(day, level), limit);
+  level: Difficulty,
+  playerId = "",
+  limit = 20
+): Promise<DailyBoard> {
+  if (useSupabase) {
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/rpc/daily_board`, {
+        method: "POST",
+        headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ p_day: day, p_level: level, p_player: playerId || null, p_limit: limit }),
+      });
+      if (r.ok) {
+        const j = await r.json();
+        const me = j?.me as Record<string, unknown> | null;
+        return {
+          top: (Array.isArray(j?.top) ? j.top : []).map(rowToEntry),
+          me: me ? { rank: Number(me.rank), entry: rowToEntry(me) } : null,
+          players: Number(j?.players ?? 0),
+        };
+      }
+      // Sin la función (404) se cae al cálculo en el cliente.
+    } catch {
+      return EMPTY_BOARD;
+    }
+  }
+  return boardFrom(await fetchDay(day, level), playerId, limit);
 }
 
 export interface DailyStanding {
@@ -190,18 +242,32 @@ export interface DailyStanding {
 // tabla ya deduplicada por jugador —una fila por jugador, su mejor marca— para
 // que el puesto coincida con la lista que el jugador ve en la pestaña Ranking.
 // null si aún no tiene marca enviada (sin wallet no se compite).
+// ¿La wallet está en revisión por el equipo? (migración 0020). Solo devuelve
+// un booleano para la wallet que pregunta: la lista no es pública. false ante
+// cualquier fallo: nunca se acusa a nadie por un error de red.
+export async function isUnderReview(playerId: string): Promise<boolean> {
+  if (!useSupabase || !playerId) return false;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/is_under_review`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_player: playerId }),
+    });
+    return r.ok ? (await r.json()) === true : false;
+  } catch {
+    return false;
+  }
+}
+
 export async function getMyDailyStanding(
   day: number,
   level: Difficulty,
   playerId: string
 ): Promise<DailyStanding | null> {
   if (!playerId) return null;
-  const all = await fetchDay(day, level);
-  const board = bestPerPlayer(all, all.length);
-  const me = playerId.toLowerCase();
-  const i = board.findIndex((e) => e.playerId.toLowerCase() === me);
-  if (i < 0) return null;
-  return { rank: i + 1, players: board.length };
+  // Solo hace falta el puesto: top de 1 fila, el resto lo calcula la base.
+  const board = await getDailyBoard(day, level, playerId, 1);
+  return board.me ? { rank: board.me.rank, players: board.players } : null;
 }
 
 // Mejor marca de UN jugador en (día, nivel). Sirve para recuperar el tiempo

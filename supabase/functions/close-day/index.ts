@@ -28,6 +28,8 @@ import { celo } from "https://esm.sh/viem@2.21.0/chains";
 
 const TOKEN_DECIMALS = 6; // USDT
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
+const MIN_TIME_MS = 2000; // = check scores_min_time (migración 0020)
+const MAX_LEVELS_PER_PLAYER = 2;
 
 // Niveles en orden fácil → medio → difícil (el índice on-chain lo usa el contrato,
 // no lo pasamos aquí: rollDay recibe las 3 direcciones por posición hard/med/easy).
@@ -87,28 +89,49 @@ Deno.serve(async (req) => {
       return json({ ok: true, skipped: "ya rolled on-chain", day: Number(day) });
     }
 
-    // Ganador de cada nivel: menos países, a igualdad menor tiempo.
+    // Ganador de cada nivel: menos países, a igualdad menor tiempo. Reglas
+    // (migración 0020, tras el 3-nov-2026):
+    //  - nadie gana más de MAX_LEVELS_PER_PLAYER niveles el mismo día: si ya
+    //    ganó 2, el tercero pasa al siguiente de la tabla. Se reparte de
+    //    difícil a fácil, así el tope cae en el premio más pequeño;
+    //  - marcas por debajo de MIN_TIME_MS no cuentan (la base ya las rechaza
+    //    desde 0020; esto cubre las históricas);
+    //  - las cuentas en revisión (account_reviews.block_prizes) no ganan.
     const winners: Record<Level, { address: `0x${string}`; countries: number; time_ms: number } | null> = {
       easy: null,
       medium: null,
       hard: null,
     };
-    for (const level of LEVELS) {
-      const { data: top, error: scoreErr } = await supabase
+    const { data: reviewed, error: revErr } = await supabase
+      .from("account_reviews")
+      .select("player_id")
+      .eq("block_prizes", true);
+    if (revErr) throw revErr;
+    const blocked = new Set((reviewed ?? []).map((r) => String(r.player_id).toLowerCase()));
+    const levelsWon = new Map<string, number>();
+
+    for (const level of ["hard", "medium", "easy"] as const) {
+      const { data: rows, error: scoreErr } = await supabase
         .from("scores")
         .select("player_id, countries, time_ms")
         .eq("day", seedDay)
         .eq("level", level)
+        .gte("time_ms", MIN_TIME_MS)
         .order("countries", { ascending: true })
         .order("time_ms", { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: true })
+        .limit(500);
       if (scoreErr) throw scoreErr;
-      if (!top || !top.player_id) continue;
-      const addr = String(top.player_id).toLowerCase();
-      // player_id que no es dirección (jugador sin wallet) → no se puede premiar on-chain.
-      if (!/^0x[0-9a-f]{40}$/.test(addr)) continue;
-      winners[level] = { address: addr as `0x${string}`, countries: top.countries, time_ms: top.time_ms };
+      for (const top of rows ?? []) {
+        const addr = String(top.player_id ?? "").toLowerCase();
+        // player_id que no es dirección (jugador sin wallet) → no se puede premiar on-chain.
+        if (!/^0x[0-9a-f]{40}$/.test(addr)) continue;
+        if (blocked.has(addr)) continue;
+        if ((levelsWon.get(addr) ?? 0) >= MAX_LEVELS_PER_PLAYER) continue;
+        winners[level] = { address: addr as `0x${string}`, countries: top.countries, time_ms: top.time_ms };
+        levelsWon.set(addr, (levelsWon.get(addr) ?? 0) + 1);
+        break;
+      }
     }
 
     if (!winners.hard && !winners.medium && !winners.easy) {
