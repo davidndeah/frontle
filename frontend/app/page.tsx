@@ -30,7 +30,7 @@ import {
   DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
-import { getDailyBoard, EMPTY_BOARD, isUnderReview, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
+import { getDailyBoard, EMPTY_BOARD, isUnderReview, getMyLevelsOn, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
@@ -82,7 +82,7 @@ import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
 import { STATUS_COLORS, savedTheme, applyTheme, type Theme } from "./lib/theme";
 
-const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1 };
+const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1, extraLevel: 0.1 };
 
 // Tutorial visto. Un solo flag para el recorrido completo (modal + coachmarks):
 // antes había dos y podían quedar en estados incoherentes — p. ej. ver el modal
@@ -378,22 +378,92 @@ export default function Frontle() {
       return true;
     }
   }
-  function enterGame() {
+  async function enterGame() {
+    // El tutorial (también el de Aprender) acaba aquí: mismo control de nivel
+    // extra que el botón Jugar, para que no sea un atajo para no pagar.
+    if (!state.solved && !(await levelAllowed())) return;
     if (coachSeen()) startGame();
     else setCoaching(true);
   }
   // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
   const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
-  function openPregame() {
+  // ---- Un nivel gratis al día; los demás se pagan; máximo 2 ganados ----
+  // El primer nivel que el jugador empieza cada día es gratis (el que elija).
+  // Cualquier otro nivel cuesta PRICES.extraLevel antes de empezar. Y como
+  // nadie cobra más de 2 niveles el mismo día (close-day), a quien ya va 1º
+  // en otros 2 no se le deja empezar el tercero: se le avisa.
+  const [levelGate, setLevelGate] = useState<null | { kind: "pay"; used: Difficulty[] } | { kind: "cap" }>(null);
+  const [gateBusy, setGateBusy] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+  const [gateLow, setGateLow] = useState(false);
+  // Nivel "tocado" hoy en este dispositivo: partida guardada (aunque se haya
+  // reintentado) o desbloqueo pagado.
+  function levelTouched(lv: Difficulty): boolean {
+    try {
+      return localStorage.getItem(`frontle-game-${day}-${lv}`) !== null || localStorage.getItem(`frontle-unlock-${day}-${lv}`) === "1";
+    } catch {
+      return false;
+    }
+  }
+  function showPregame() {
+    let hide = false;
+    try { hide = localStorage.getItem("frontle-tutorial-hide") === "1"; } catch {}
+    setOverlay(hide ? "quick" : "full");
+  }
+  async function openPregame() {
     // Reto de hoy ya resuelto (volvió del Home tras ganar): directo a la
     // pantalla de victoria, sin tutorial ni cuenta regresiva.
     if (state.solved) {
       setStarted(true);
       return;
     }
-    let hide = false;
-    try { hide = localStorage.getItem("frontle-tutorial-hide") === "1"; } catch {}
-    setOverlay(hide ? "quick" : "full");
+    if (await levelAllowed()) showPregame();
+  }
+  // true si puede empezar el nivel activo sin más; si no, abre el popup que
+  // toca (pagar el nivel extra o el tope de 2) y devuelve false.
+  async function levelAllowed(): Promise<boolean> {
+    if (gateBusy) return false;
+    if (!myId || levelTouched(level)) return true;
+    setGateBusy(true);
+    try {
+      const server = await getMyLevelsOn(day, myId);
+      if (server.includes(level)) return true;
+      const used = DIFFICULTIES.filter((lv) => lv !== level && (levelTouched(lv) || server.includes(lv)));
+      if (used.length === 0) return true; // su intento gratis del día
+      const boards = await Promise.all(
+        DIFFICULTIES.filter((lv) => lv !== level).map((lv) => getDailyBoard(day, lv, myId, 1))
+      );
+      const leading = boards.filter((b) => b.me?.rank === 1).length;
+      setGateError(null);
+      setGateLow(false);
+      setLevelGate(leading >= 2 ? { kind: "cap" } : { kind: "pay", used });
+      return false;
+    } finally {
+      setGateBusy(false);
+    }
+  }
+  async function payExtraLevel() {
+    if (paying || gateBusy) return;
+    setGateBusy(true);
+    setGateError(null);
+    setGateLow(false);
+    let res: PayResult = "error";
+    try {
+      res = await (await loadPayments()).requestPayment(PRICES.extraLevel, "nivel extra del reto diario");
+    } catch {
+      res = "error";
+    } finally {
+      setGateBusy(false);
+    }
+    if (res !== "success") {
+      setGateError(payFailText(res, PRICES.extraLevel));
+      setGateLow(res === "no_funds" || res === "no_gas");
+      return;
+    }
+    try { localStorage.setItem(`frontle-unlock-${day}-${level}`, "1"); } catch {}
+    void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
+    setLevelGate(null);
+    showPregame();
   }
   const [daysPlayed, setDaysPlayed] = useState(0);
   // Hito de racha (GAM-2): celebra SOLO al llegar a 3 y 7 días, y solo cuando
@@ -2288,6 +2358,58 @@ export default function Frontle() {
 
       {/* Prompt de nombre al registrarse */}
       {reviewModal && <ReviewNotice tr={tr} onClose={() => setReviewModal(false)} />}
+
+      {/* Nivel extra del día: el primero es gratis, los demás se pagan */}
+      {levelGate?.kind === "pay" && (
+        <Sheet
+          onClose={() => !gateBusy && setLevelGate(null)}
+          label={tr.levelGate.title(tr.levels[level])}
+          z={66}
+          className="pop-in"
+          title={<h3 className="font-display font-bold text-white text-lg leading-tight mb-2">{tr.levelGate.title(tr.levels[level])}</h3>}
+        >
+          <p className="text-sm text-neutral-200 leading-relaxed">
+            {tr.levelGate.body(levelGate.used.map((lv) => tr.levels[lv]).join(", "), tr.levels[level], fmt(PRICES.extraLevel))}
+          </p>
+          {gateError && <p className="text-center text-sm text-rose-400 mt-3">{gateError}</p>}
+          {gateLow && inMiniPay && <div className="mt-2"><DepositButton label={tr.deposit} /></div>}
+          <button
+            onClick={payExtraLevel}
+            disabled={gateBusy}
+            className={`btn-3d font-display font-bold text-base px-6 py-3 w-full mt-4 ${gateBusy ? "animate-pulse" : ""}`}
+          >
+            {gateBusy ? <>⏳ {tr.paying}</> : tr.levelGate.pay(fmt(PRICES.extraLevel))}
+          </button>
+          <button
+            onClick={() => !gateBusy && setLevelGate(null)}
+            className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition"
+          >
+            {tr.levelGate.cancel}
+          </button>
+        </Sheet>
+      )}
+
+      {/* Tope de 2 niveles ganados al día */}
+      {levelGate?.kind === "cap" && (
+        <Sheet
+          onClose={() => setLevelGate(null)}
+          label={tr.levelGate.capTitle}
+          z={66}
+          className="pop-in"
+          title={
+            <div className="flex items-center gap-3 mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
+              <h3 className="font-display font-bold text-white text-lg leading-tight">{tr.levelGate.capTitle}</h3>
+            </div>
+          }
+        >
+          <p className="text-sm text-neutral-200 leading-relaxed">{tr.levelGate.capBody}</p>
+          <button onClick={() => setLevelGate(null)} className="btn-3d font-display font-bold text-base px-6 py-3 w-full mt-4">
+            {tr.levelGate.capOk}
+          </button>
+        </Sheet>
+      )}
 
       {nameModal && (
         <NamePrompt

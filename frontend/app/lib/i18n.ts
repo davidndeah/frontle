@@ -306,6 +306,15 @@ type Dict = {
   welcomeBonus: (amount: string) => string;
   bonusDismiss: string;
   levels: { easy: string; medium: string; hard: string };
+  levelGate: {
+    title: (level: string) => string;
+    body: (used: string, level: string, price: string) => string;
+    pay: (price: string) => string;
+    cancel: string;
+    capTitle: string;
+    capBody: string;
+    capOk: string;
+  };
   chooseLevel: string;
   tabs: { jugar: string; ranking: string; perfil: string; aprender: string };
   profileGuest: string;
@@ -720,6 +729,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
     bonusDismiss: "¡Gracias!",
     levels: { easy: "Fácil", medium: "Medio", hard: "Difícil" },
+    levelGate: {
+      title: (lv) => `Jugar ${lv}`,
+      body: (used, lv, price) => `Hoy ya usaste tu intento gratis en ${used}. Jugar ${lv} cuesta ${price}, que van al premio del día.`,
+      pay: (price) => `Pagar ${price} y jugar`,
+      cancel: "Ahora no",
+      capTitle: "Ya vas ganando en 2 niveles",
+      capBody: "Cada jugador puede ganar como máximo 2 de los 3 niveles al día, así que no puedes participar en este. ¡Inténtalo de nuevo mañana!",
+      capOk: "Entendido",
+    },
     chooseLevel: "Elige nivel",
     tabs: { jugar: "Jugar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
     profileGuest: "Invitado",
@@ -1125,6 +1143,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Hi! I'm Bordy 👋 Here's ${a} as a welcome gift for hints or retries. Let's play! 🎁`,
     bonusDismiss: "Thanks!",
     levels: { easy: "Easy", medium: "Medium", hard: "Hard" },
+    levelGate: {
+      title: (lv) => `Play ${lv}`,
+      body: (used, lv, price) => `You already used today's free attempt on ${used}. Playing ${lv} costs ${price}, which goes to today's prize.`,
+      pay: (price) => `Pay ${price} and play`,
+      cancel: "Not now",
+      capTitle: "You're already winning 2 levels",
+      capBody: "Each player can win at most 2 of the 3 levels per day, so you can't take part in this one. Try again tomorrow!",
+      capOk: "Got it",
+    },
     chooseLevel: "Choose level",
     tabs: { jugar: "Play", ranking: "Ranking", perfil: "Profile", aprender: "Learn" },
     profileGuest: "Guest",
@@ -1532,6 +1559,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
     bonusDismiss: "Obrigado!",
     levels: { easy: "Fácil", medium: "Médio", hard: "Difícil" },
+    levelGate: {
+      title: (lv) => `Jogar ${lv}`,
+      body: (used, lv, price) => `Você já usou sua tentativa grátis de hoje em ${used}. Jogar ${lv} custa ${price}, que vão para o prêmio do dia.`,
+      pay: (price) => `Pagar ${price} e jogar`,
+      cancel: "Agora não",
+      capTitle: "Você já está ganhando em 2 níveis",
+      capBody: "Cada jogador pode ganhar no máximo 2 dos 3 níveis por dia, então você não pode participar deste. Tente de novo amanhã!",
+      capOk: "Entendi",
+    },
     chooseLevel: "Escolha o nível",
     tabs: { jugar: "Jogar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
     profileGuest: "Convidado",
@@ -1937,6 +1973,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
     bonusDismiss: "Merci !",
     levels: { easy: "Facile", medium: "Moyen", hard: "Difficile" },
+    levelGate: {
+      title: (lv) => `Jouer ${lv}`,
+      body: (used, lv, price) => `Tu as déjà utilisé ta tentative gratuite du jour en ${used}. Jouer ${lv} coûte ${price}, qui vont au prix du jour.`,
+      pay: (price) => `Payer ${price} et jouer`,
+      cancel: "Pas maintenant",
+      capTitle: "Tu gagnes déjà 2 niveaux",
+      capBody: "Chaque joueur peut gagner au maximum 2 des 3 niveaux par jour, tu ne peux donc pas participer à celui-ci. Réessaie demain !",
+      capOk: "Compris",
+    },
     chooseLevel: "Choisir le niveau",
     tabs: { jugar: "Jouer", ranking: "Classement", perfil: "Profil", aprender: "Apprendre" },
     profileGuest: "Invité",

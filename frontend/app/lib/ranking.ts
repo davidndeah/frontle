@@ -242,6 +242,23 @@ export interface DailyStanding {
 // tabla ya deduplicada por jugador —una fila por jugador, su mejor marca— para
 // que el puesto coincida con la lista que el jugador ve en la pestaña Ranking.
 // null si aún no tiene marca enviada (sin wallet no se compite).
+// Niveles en los que la wallet ya tiene marca en (día). Cubre el caso de
+// haber jugado en otro dispositivo, que el localStorage no ve.
+export async function getMyLevelsOn(day: number, playerId: string): Promise<Difficulty[]> {
+  if (!useSupabase || !playerId) return [];
+  try {
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/scores?day=eq.${day}&player_id=ilike.${encodeURIComponent(playerId)}&select=level`,
+      { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
+    );
+    if (!r.ok) return [];
+    const j = await r.json();
+    return Array.from(new Set((Array.isArray(j) ? j : []).map((x: { level: Difficulty }) => x.level)));
+  } catch {
+    return [];
+  }
+}
+
 // ¿La wallet está en revisión por el equipo? (migración 0020). Solo devuelve
 // un booleano para la wallet que pregunta: la lista no es pública. false ante
 // cualquier fallo: nunca se acusa a nadie por un error de red.
