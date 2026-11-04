@@ -11,6 +11,7 @@ import {
   nextHintCountry,
   msUntilNextDailyUTC,
   connectsThroughKnown,
+  shortestPath,
   DIFFICULTIES,
   type PlayState,
   type Status,
@@ -31,6 +32,7 @@ import {
   type Locale,
 } from "./lib/i18n";
 import { hasMiniPayPhone } from "./lib/phone";
+import { isServerDay, getPreview, startServerGame, finishServerGame, type LevelPreview, type Pause } from "./lib/serverGame";
 import { getDailyBoard, EMPTY_BOARD, getMyLevelsOn, getNameStatus, type NameStatus, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
@@ -512,6 +514,8 @@ export default function Frontle() {
       return;
     }
     try { localStorage.setItem(`frontle-unlock-${day}-${level}`, "1"); } catch {}
+    const extraTx = (await loadPayments().catch(() => null))?.lastPaymentHash();
+    if (extraTx) try { localStorage.setItem(`frontle-paytx-${day}-${level}`, extraTx); } catch {}
     void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
     setLevelGate(null);
     showPregame();
@@ -637,8 +641,31 @@ export default function Frontle() {
   // Las cartas ya no se pintan aquí: estos dos valores viajan como props a
   // QuickStart, la pantalla del 3·2·1 (ver docs/design/home-v5.html).
   const heroChallenge = challengesByLevel[level];
-  const heroOriginContinent = continentOf(getCountry(heroChallenge.start)!.code) ?? "EU";
-  const heroDestContinent = continentOf(getCountry(heroChallenge.end)!.code) ?? "EU";
+  const legacyOrigin = continentOf(getCountry(heroChallenge.start)!.code) ?? "EU";
+  const legacyDest = continentOf(getCountry(heroChallenge.end)!.code) ?? "EU";
+
+  // ---- Reto diario en el servidor (lib/serverGame.ts, migración 0023) ----
+  // Desde SERVER_GAME_FROM el reto es secreto: el inicio solo conoce el
+  // continente y la longitud (preview); origen y destino llegan al abrir la
+  // partida, y la marca la escribe el servidor con su reloj.
+  const serverDay = isServerDay(day);
+  const [preview, setPreview] = useState<Record<Difficulty, LevelPreview> | null>(null);
+  const sessionRef = useRef<string | null>(null);
+  const challengeRef = useRef<{ start: string; end: string; optimal: number } | null>(null);
+  const pausesRef = useRef<Pause[]>([]);
+  const solvedChainRef = useRef<string[] | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!serverDay) return;
+    let alive = true;
+    getPreview().then((p) => alive && p && setPreview(p));
+    return () => { alive = false; };
+  }, [serverDay, day]);
+  const heroPreview = serverDay ? preview?.[level] ?? null : null;
+  const heroOriginContinent = (heroPreview ? heroPreview.startContinent : legacyOrigin) as typeof legacyOrigin;
+  const heroDestContinent = (heroPreview ? heroPreview.endContinent : legacyDest) as typeof legacyDest;
+  const heroOptimal = serverDay ? heroPreview?.optimal ?? 0 : challengesByLevel[level].optimal;
 
   // Persiste la partida del día para que al refrescar NO se pueda volver a
   // jugar gratis (el estado se restaura: en curso o resuelta).
@@ -646,7 +673,12 @@ export default function Frontle() {
     try {
       localStorage.setItem(
         gameKey,
-        JSON.stringify({ started: g.started, startMs: startRef.current, pausedMs: pausedMsRef.current, chain: g.chain, solved: g.solved, finalMs: g.finalMs ?? null })
+        JSON.stringify({
+          started: g.started, startMs: startRef.current, pausedMs: pausedMsRef.current, chain: g.chain, solved: g.solved, finalMs: g.finalMs ?? null,
+          // Reto en el servidor: la partida recuerda su sesión, su reto y las
+          // pausas pagadas (un refresh no debe perderlos).
+          sessionId: sessionRef.current, challenge: challengeRef.current, pauses: pausesRef.current,
+        })
       );
     } catch {}
   }
@@ -755,7 +787,22 @@ export default function Frontle() {
   // su partida guardada, su mejor marca y su ranking. Cada nivel es un juego
   // independiente con persistencia propia (clave por día+nivel).
   useEffect(() => {
-    const challengeForLevel = dailyChallenge(day, level);
+    let challengeForLevel = dailyChallenge(day, level);
+    sessionRef.current = null;
+    challengeRef.current = null;
+    pausesRef.current = [];
+    solvedChainRef.current = null;
+    setStartError(null);
+    try {
+      const saved = JSON.parse(localStorage.getItem(`frontle-game-${day}-${level}`) || "null");
+      if (saved?.challenge?.start && saved?.challenge?.end) {
+        const c = saved.challenge as { start: string; end: string; optimal: number };
+        challengeForLevel = { start: c.start, end: c.end, optimal: c.optimal, path: shortestPath(c.start, c.end) ?? [], level };
+        challengeRef.current = c;
+        sessionRef.current = saved.sessionId ?? null;
+        pausesRef.current = Array.isArray(saved.pauses) ? saved.pauses : [];
+      }
+    } catch {}
     let started = false;
     let chain: PlayState["chain"] = [];
     let solved = false;
@@ -1062,7 +1109,7 @@ export default function Frontle() {
 
   const nextHint = useMemo(() => nextHintCountry(state), [state]);
 
-  function startGame() {
+  async function startGame() {
     // Gate de identidad: fuera de MiniPay no se juega sin wallet/correo. En
     // MiniPay `myId` se auto-setea al cargar, así que esto no añade fricción.
     if (!myId) return;
@@ -1071,6 +1118,48 @@ export default function Frontle() {
     // dejaba el día como "en curso" con la cadena ya ganadora.
     if (state.solved) {
       setStarted(true);
+      return;
+    }
+    if (serverDay) {
+      // El servidor abre (o retoma) la partida y revela el reto. Un nivel
+      // extra o un reintento viajan con su pago (hash guardado al pagar).
+      if (starting) return;
+      setStarting(true);
+      setStartError(null);
+      const payKey = `frontle-paytx-${day}-${level}`;
+      let payTx: string | null = null;
+      try { payTx = localStorage.getItem(payKey); } catch {}
+      const r = await startServerGame(myId, level, payTx);
+      setStarting(false);
+      if (!r.ok) {
+        if (r.error === "payment_required" || r.error === "payment_used" || r.error.startsWith("tx_")) {
+          try { localStorage.removeItem(payKey); } catch {}
+          setGateError(null);
+          setGateLow(false);
+          setLevelGate({ kind: "pay", used: DIFFICULTIES.filter((lv) => lv === level || levelTouched(lv)) });
+        } else {
+          setStartError(tr.serverGame.startError);
+        }
+        return;
+      }
+      try { localStorage.removeItem(payKey); } catch {}
+      const g = r.game;
+      sessionRef.current = g.sessionId;
+      challengeRef.current = g.challenge;
+      pausesRef.current = [];
+      solvedChainRef.current = null;
+      setState({
+        challenge: { ...g.challenge, path: shortestPath(g.challenge.start, g.challenge.end) ?? [], level },
+        chain: [],
+        solved: false,
+      });
+      // Retomar: el reloj sigue desde lo que el servidor ya contó.
+      startRef.current = Date.now() - g.elapsedMs;
+      pausedMsRef.current = 0;
+      setElapsedMs(g.elapsedMs);
+      setStarted(true);
+      saveGame({ started: true, solved: false, chain: [] });
+      setTimeout(() => inputRef.current?.focus(), 50);
       return;
     }
     startRef.current = Date.now();
@@ -1120,6 +1209,7 @@ export default function Frontle() {
       setShowNextSil(false);
       setShowInitial(false);
       const finalMs = solved ? Math.max(0, Date.now() - startRef.current - pausedMsRef.current) : undefined;
+      if (solved) solvedChainRef.current = newChain.map((c) => c.country);
       saveGame({ started: true, solved, chain: newChain, finalMs });
       if (solved) {
         setElapsedMs(finalMs!);
@@ -1168,6 +1258,24 @@ export default function Frontle() {
 
   // Envía la marca al ranking usando la DIRECCIÓN como identidad.
   function pushScore(addr: string, score: number, timeMs: number) {
+    // Reto en el servidor: la marca la escribe `game` (finish) tras revalidar
+    // la cadena y medir el tiempo con su reloj. El tiempo que se enseña pasa a
+    // ser el del servidor, el mismo que verá el ranking.
+    if (sessionRef.current) {
+      const chain = solvedChainRef.current ?? state.chain.map((c) => c.country);
+      return finishServerGame(sessionRef.current, chain, pausesRef.current, ipCountry, alias || undefined).then((r) => {
+        if (r.ok) {
+          setElapsedMs(r.timeMs);
+          try {
+            const raw = localStorage.getItem(gameKey);
+            if (raw) localStorage.setItem(gameKey, JSON.stringify({ ...JSON.parse(raw), finalMs: r.timeMs }));
+          } catch {}
+        } else {
+          setMessage({ text: tr.serverGame.finishError, ok: false });
+        }
+        return getDailyBoard(day, level, addr, RANK_TOP).then(setBoard);
+      });
+    }
     // Un tiempo 0 es imposible (resolver toma segundos): venía de partidas
     // auto-reparadas sin finalMs y contaminaba el ranking. No enviar.
     if (!(timeMs > 0)) return Promise.resolve();
@@ -1302,6 +1410,12 @@ export default function Frontle() {
       return;
     }
     void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
+    // El servidor abre la nueva partida solo con este pago (ver startGame).
+    const retryTx = (await loadPayments().catch(() => null))?.lastPaymentHash();
+    if (retryTx) try { localStorage.setItem(`frontle-paytx-${day}-${level}`, retryTx); } catch {}
+    sessionRef.current = null;
+    pausesRef.current = [];
+    solvedChainRef.current = null;
     setState((prev) => ({ challenge: prev.challenge, chain: [], solved: false }));
     setMessage(null);
     setInput("");
@@ -1343,6 +1457,12 @@ export default function Frontle() {
       setMessage({ text: payFailText(res, price), ok: false });
       setPayLow(isLowBalance(res));
       return;
+    }
+    // Reto en el servidor: la pausa solo se descuenta con el pago que la causó.
+    const hintTx = (await loadPayments().catch(() => null))?.lastPaymentHash();
+    if (hintTx && sessionRef.current) {
+      pausesRef.current = [...pausesRef.current, { tx: hintTx, ms: Date.now() - pauseStart }];
+      saveGame({ started: true, solved: false, chain: state.chain });
     }
     setMessage(null);
     void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
@@ -1554,10 +1674,12 @@ export default function Frontle() {
 
               <button
                 onClick={openPregame}
-                className="brutal brutal-press mt-2 w-full rounded-xl bg-gold py-2.5 font-display text-base font-black text-deep"
+                disabled={starting}
+                className={`brutal brutal-press mt-2 w-full rounded-xl bg-gold py-2.5 font-display text-base font-black text-deep ${starting ? "animate-pulse" : ""}`}
               >
-                {tr.play}
+                {starting ? "⏳" : tr.play}
               </button>
+              {startError && <p className="mt-1.5 text-center text-[11px] text-rose-300">{startError}</p>}
               {/* Zero-click connect: dentro de MiniPay la wallet llega sola vía el
                   auto-connect del mount; enseñar "Conectar" ahí está prohibido,
                   incluso en el instante en que `myId` aún no se resolvió. */}
@@ -2298,7 +2420,7 @@ export default function Frontle() {
           tr={tr}
           originContinent={heroOriginContinent}
           destContinent={heroDestContinent}
-          optimal={challengesByLevel[level].optimal}
+          optimal={heroOptimal}
           onDone={() => {
             setOverlay(null);
             if (!started) enterGame();

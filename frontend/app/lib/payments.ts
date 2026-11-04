@@ -808,7 +808,16 @@ function isUserRejection(err: unknown): boolean {
   return false;
 }
 
+// Hash del último pago confirmado de `requestPayment`. El reto diario lo
+// manda al servidor (función `game`) como prueba de pago de un nivel extra,
+// un reintento o una pista (la pausa del reloj solo cuenta con pago real).
+let lastHash: `0x${string}` | null = null;
+export function lastPaymentHash(): `0x${string}` | null {
+  return lastHash;
+}
+
 export async function requestPayment(amountUSDm: number, reason: string): Promise<PayResult> {
+  lastHash = null;
   const active = getProvider();
   if (!active) {
     console.warn("[pago] No hay wallet (window.ethereum ni embebida). ¿Abierto fuera de MiniPay?");
@@ -884,6 +893,7 @@ export async function requestPayment(amountUSDm: number, reason: string): Promis
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     if (receipt.status !== "success") return "error";
     void reportDailyPayment(hash); // reenvío al pot del día, en segundo plano
+    lastHash = hash;
     return "success";
   } catch (err) {
     console.error("[pago] falló o cancelado:", err);

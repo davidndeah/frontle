@@ -306,6 +306,7 @@ type Dict = {
   welcomeBonus: (amount: string) => string;
   bonusDismiss: string;
   levels: { easy: string; medium: string; hard: string };
+  serverGame: { startError: string; finishError: string };
   phone: { title: string; body: string; how: string; recheck: string; checking: string; still: string; close: string };
   nameLock: { rule: string; locked: (date: string) => string };
   levelGate: {
@@ -731,6 +732,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
     bonusDismiss: "¡Gracias!",
     levels: { easy: "Fácil", medium: "Medio", hard: "Difícil" },
+    serverGame: { startError: "No pudimos abrir la partida. Revisa tu conexión e inténtalo de nuevo.", finishError: "No pudimos registrar tu marca en el ranking. Revisa tu conexión." },
     phone: {
       title: "Verifica tu número en MiniPay",
       body: "Para jugar el reto diario y competir en la liga semanal necesitas tener tu número de teléfono verificado en MiniPay. Así cada jugador es una persona real y la competencia es justa.",
@@ -1155,6 +1157,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Hi! I'm Bordy 👋 Here's ${a} as a welcome gift for hints or retries. Let's play! 🎁`,
     bonusDismiss: "Thanks!",
     levels: { easy: "Easy", medium: "Medium", hard: "Hard" },
+    serverGame: { startError: "We couldn't start the game. Check your connection and try again.", finishError: "We couldn't record your score in the ranking. Check your connection." },
     phone: {
       title: "Verify your number in MiniPay",
       body: "To play the daily challenge and compete in the weekly league you need your phone number verified in MiniPay. That way every player is a real person and the competition is fair.",
@@ -1581,6 +1584,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
     bonusDismiss: "Obrigado!",
     levels: { easy: "Fácil", medium: "Médio", hard: "Difícil" },
+    serverGame: { startError: "Não conseguimos abrir a partida. Verifique sua conexão e tente de novo.", finishError: "Não conseguimos registrar sua marca no ranking. Verifique sua conexão." },
     phone: {
       title: "Verifique seu número no MiniPay",
       body: "Para jogar o desafio diário e competir na liga semanal você precisa ter seu número de telefone verificado no MiniPay. Assim cada jogador é uma pessoa real e a competição é justa.",
@@ -2005,6 +2009,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
     bonusDismiss: "Merci !",
     levels: { easy: "Facile", medium: "Moyen", hard: "Difficile" },
+    serverGame: { startError: "Impossible de lancer la partie. Vérifie ta connexion et réessaie.", finishError: "Impossible d'enregistrer ton score au classement. Vérifie ta connexion." },
     phone: {
       title: "Vérifie ton numéro dans MiniPay",
       body: "Pour jouer au défi du jour et participer à la ligue hebdo, ton numéro de téléphone doit être vérifié dans MiniPay. Ainsi chaque joueur est une vraie personne et la compétition est juste.",

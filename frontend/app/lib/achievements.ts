@@ -35,7 +35,7 @@ export const ACHIEVEMENT_ICONS: Record<AchievementId, string> = {
   hardSolved: "🧠",
 };
 
-type SavedGame = { solved?: boolean; chain?: { country: string }[] };
+type SavedGame = { solved?: boolean; chain?: { country: string }[]; challenge?: { start: string; end: string; optimal: number } };
 const GAME_KEY = /^frontle-game-(\d{8})-(easy|medium|hard)$/;
 const SEEN_KEY = "frontle-achievements-seen";
 
@@ -85,7 +85,9 @@ export function computeAchievements(): Record<AchievementId, boolean> {
     for (const { day, level, game } of games) {
       if (u.optimalRoute && u.twoContinents) break;
       const chain = (game.chain ?? []).map((c) => c.country);
-      const challenge = dailyChallenge(day, level);
+      // Desde el reto en el servidor (0023) la partida guarda su reto: la
+      // semilla de la fecha ya no lo reproduce.
+      const challenge = game.challenge ?? dailyChallenge(day, level);
       if (chain.length <= challenge.optimal) u.optimalRoute = true;
       if (continentsOfRoute(challenge.start, chain, challenge.end).size >= 2) u.twoContinents = true;
     }
