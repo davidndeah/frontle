@@ -30,7 +30,8 @@ import {
   DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
-import { getDailyBoard, EMPTY_BOARD, isUnderReview, getMyLevelsOn, getNameStatus, type NameStatus, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
+import { hasMiniPayPhone } from "./lib/phone";
+import { getDailyBoard, EMPTY_BOARD, getMyLevelsOn, getNameStatus, type NameStatus, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
@@ -267,6 +268,10 @@ export default function Frontle() {
   // `${día}-${nivel}` recién reclamado: dispara la animación de celebración.
   const [justClaimed, setJustClaimed] = useState<string | null>(null);
   const [claimingKey, setClaimingKey] = useState<string | null>(null);
+  // Resultado del último reclamo. Va aparte de `message` porque ese solo se
+  // pinta bajo el input del juego: un reclamo fallido desde Perfil o el popup
+  // no enseñaba nada y el jugador veía un botón muerto.
+  const [claimNotice, setClaimNotice] = useState<{ text: string; ok: boolean } | null>(null);
   // Premios que ESTE dispositivo vio confirmados (recibo on-chain), por
   // `${día}-${nivel}`. Mandan sobre las lecturas del contrato: el RPC público
   // reparte entre nodos y uno atrasado un par de bloques sigue diciendo
@@ -357,23 +362,36 @@ export default function Frontle() {
     if (nameStatus.nextChangeAt.getTime() <= Date.now()) return null;
     return tr.nameLock.locked(nameStatus.nextChangeAt.toLocaleDateString(locale, { day: "numeric", month: "long" }));
   }
-  // Aviso de cuenta en revisión (migración 0020): una vez al día por wallet.
-  // La cuenta sigue jugando con normalidad; solo se le informa.
-  const [reviewModal, setReviewModal] = useState(false);
+  // Teléfono verificado en MiniPay (lib/phone.ts): sin él, en MiniPay no se
+  // juega el reto diario ni se compite en la liga. Se pide al entrar y otra
+  // vez al intentar jugar. null = aún no se sabe o la red falló: no bloquea
+  // (los cierres lo vuelven a comprobar antes de pagar).
+  const [phoneOk, setPhoneOk] = useState<boolean | null>(null);
+  const [phoneModal, setPhoneModal] = useState(false);
+  const [phoneChecking, setPhoneChecking] = useState(false);
+  const [phoneStill, setPhoneStill] = useState(false);
   useEffect(() => {
-    if (!myId) return;
+    setPhoneOk(null);
+    if (!myId || !inMiniPay) return;
     let alive = true;
-    const key = `frontle-review-seen-${myId.toLowerCase()}-${new Date().toISOString().slice(0, 10)}`;
-    let seen = false;
-    try { seen = localStorage.getItem(key) === "1"; } catch {}
-    if (seen) return;
-    isUnderReview(myId).then((yes) => {
-      if (!alive || !yes) return;
-      try { localStorage.setItem(key, "1"); } catch {}
-      setReviewModal(true);
+    hasMiniPayPhone(myId).then((ok) => {
+      if (!alive) return;
+      setPhoneOk(ok);
+      if (ok === false) setPhoneModal(true);
     });
     return () => { alive = false; };
-  }, [myId]);
+  }, [myId, inMiniPay]);
+  const phoneBlocked = inMiniPay && phoneOk === false;
+  async function recheckPhone() {
+    if (!myId || phoneChecking) return;
+    setPhoneChecking(true);
+    setPhoneStill(false);
+    const ok = await hasMiniPayPhone(myId);
+    setPhoneChecking(false);
+    setPhoneOk(ok);
+    if (ok === false) setPhoneStill(true);
+    else setPhoneModal(false);
+  }
   useEffect(() => {
     let asked = "1";
     try { asked = localStorage.getItem("frontle-name-asked") ?? "0"; } catch {}
@@ -404,6 +422,10 @@ export default function Frontle() {
     }
   }
   async function enterGame() {
+    if (phoneBlocked) {
+      setPhoneStill(false);
+      return setPhoneModal(true);
+    }
     // El tutorial (también el de Aprender) acaba aquí: mismo control de nivel
     // extra que el botón Jugar, para que no sea un atajo para no pagar.
     if (!state.solved && !(await levelAllowed())) return;
@@ -441,6 +463,10 @@ export default function Frontle() {
     if (state.solved) {
       setStarted(true);
       return;
+    }
+    if (phoneBlocked) {
+      setPhoneStill(false);
+      return setPhoneModal(true);
     }
     if (await levelAllowed()) showPregame();
   }
@@ -964,6 +990,7 @@ export default function Frontle() {
   async function handleClaim(day: number, lv: Difficulty) {
     const key = `${day}-${lv}`;
     setClaimingKey(key);
+    setClaimNotice(null);
     // El `finally` es obligatorio ahora que hay un `import()` de por medio: si
     // el chunk no baja, sin él el botón se quedaría en "reclamando…" para
     // siempre y el jugador no podría reintentar su premio.
@@ -976,7 +1003,7 @@ export default function Frontle() {
       setClaimingKey(null);
     }
     if (res === "error" || res === "no_gas") {
-      setMessage({ text: res === "no_gas" ? tr.prizeClaimNoGas : tr.prizeClaimError, ok: false });
+      setClaimNotice({ text: res === "no_gas" ? tr.prizeClaimNoGas : tr.prizeClaimError, ok: false });
       return;
     }
 
@@ -991,7 +1018,7 @@ export default function Frontle() {
     setPrizes((ps) => ps.filter((p) => `${p.day}-${p.level}` !== key));
 
     if (res === "ok") {
-      setMessage({ text: tr.prizeClaimedMsg, ok: true });
+      setClaimNotice({ text: tr.prizeClaimedMsg, ok: true });
       sfxWin();
       setJustClaimed(key);
       setTimeout(() => setJustClaimed(null), 1200);
@@ -1003,6 +1030,7 @@ export default function Frontle() {
   async function handleClaimWeekly(week: number, place: number) {
     const key = `w${week}-${place}`;
     setClaimingKey(key);
+    setClaimNotice(null);
     let res: ClaimResult = "error";
     try {
       res = await (await loadPayments()).claimWeeklyPrize(week, place);
@@ -1012,14 +1040,14 @@ export default function Frontle() {
       setClaimingKey(null);
     }
     if (res === "error" || res === "no_gas") {
-      setMessage({ text: res === "no_gas" ? tr.prizeClaimNoGas : tr.prizeClaimError, ok: false });
+      setClaimNotice({ text: res === "no_gas" ? tr.prizeClaimNoGas : tr.prizeClaimError, ok: false });
       return;
     }
     const row = weeklyPrizes.find((p) => p.week === week && p.place === place) ?? { week, place, amount: 0 };
     setWeeklyPrizes((ps) => ps.filter((p) => !(p.week === week && p.place === place)));
     setWeeklyClaimed((ps) => [...ps.filter((p) => !(p.week === week && p.place === place)), row]);
     if (res === "ok") {
-      setMessage({ text: tr.prizeClaimedMsg, ok: true });
+      setClaimNotice({ text: tr.prizeClaimedMsg, ok: true });
       sfxWin();
       setJustClaimed(key);
       setTimeout(() => setJustClaimed(null), 1200);
@@ -1055,6 +1083,11 @@ export default function Frontle() {
 
   function submitCountry(value: string) {
     if (state.solved || !started) return;
+    // Partida empezada antes de que se supiera que no tiene teléfono verificado.
+    if (phoneBlocked) {
+      setPhoneStill(false);
+      return setPhoneModal(true);
+    }
     if (Date.now() - startRef.current - pausedMsRef.current < MIN_SUBMIT_MS) return;
     const canonical = resolveLocalized(value);
     const result = tryGuess(state, value, canonical);
@@ -2078,7 +2111,7 @@ export default function Frontle() {
             <StreakCard tr={tr} onStreak={setStreak} />
             <Achievements tr={tr} playerId={myId || undefined} />
             {(prizes.length > 0 || claimedRows.length > 0 || weeklyPrizes.length > 0 || weeklyClaimed.length > 0) && (
-              <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} weekly={weeklyPrizes} weeklyClaimed={weeklyClaimed} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} onClaimWeekly={handleClaimWeekly} panel={panel} fmt={fmt} />
+              <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} weekly={weeklyPrizes} weeklyClaimed={weeklyClaimed} claimingKey={claimingKey} notice={claimNotice} justClaimed={justClaimed} onClaim={handleClaim} onClaimWeekly={handleClaimWeekly} panel={panel} fmt={fmt} />
             )}
             {/* Ajuste de idioma (además del selector rápido del header) */}
             <section className="panel p-4 flex items-center justify-between gap-3">
@@ -2316,7 +2349,7 @@ export default function Frontle() {
             return (
               <div className="flex flex-col gap-3">
                 {pending > 0 && <p className="text-sm text-neutral-200">{tr.prizePopup.sub(fmt(total))}</p>}
-                <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} weekly={weeklyPrizes} weeklyClaimed={weeklyClaimed} claimingKey={claimingKey} justClaimed={justClaimed} onClaim={handleClaim} onClaimWeekly={handleClaimWeekly} panel={panel} fmt={fmt} />
+                <PrizesCard tr={tr} prizes={prizes} claimed={claimedRows} weekly={weeklyPrizes} weeklyClaimed={weeklyClaimed} claimingKey={claimingKey} notice={claimNotice} justClaimed={justClaimed} onClaim={handleClaim} onClaimWeekly={handleClaimWeekly} panel={panel} fmt={fmt} />
                 <button
                   onClick={() => setPrizePopupOpen(false)}
                   disabled={claimingKey !== null}
@@ -2392,7 +2425,15 @@ export default function Frontle() {
       )}
 
       {/* Prompt de nombre al registrarse */}
-      {reviewModal && <ReviewNotice tr={tr} onClose={() => setReviewModal(false)} />}
+      {phoneModal && phoneBlocked && (
+        <PhoneRequired
+          tr={tr}
+          checking={phoneChecking}
+          still={phoneStill}
+          onRecheck={recheckPhone}
+          onClose={() => setPhoneModal(false)}
+        />
+      )}
 
       {/* Nivel extra del día: el primero es gratis, los demás se pagan */}
       {levelGate?.kind === "pay" && (
@@ -2882,25 +2923,43 @@ function SettingsSheet({
 
 // Botón de "volver" del flujo pre-juego
 // Modal de elección de nombre al registrarse (pendiente i18n como los coachmarks)
-// Aviso para cuentas en revisión: informa sin bloquear nada.
-function ReviewNotice({ tr, onClose }: { tr: ReturnType<typeof t>; onClose: () => void }) {
+// Teléfono sin verificar en MiniPay: explica por qué y deja volver a
+// comprobar tras verificarlo (MiniPay no tiene deeplink a esa pantalla).
+function PhoneRequired({
+  tr, checking, still, onRecheck, onClose,
+}: {
+  tr: ReturnType<typeof t>;
+  checking: boolean;
+  still: boolean;
+  onRecheck: () => void;
+  onClose: () => void;
+}) {
   return (
     <Sheet
       onClose={onClose}
-      label={tr.review.title}
+      label={tr.phone.title}
       z={66}
       className="pop-in"
       title={
         <div className="flex items-center gap-3 mb-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/bordy-m2.webp" alt="Bordy" className="w-12 h-14 object-contain flex-none bordy-float-sm" />
-          <h3 className="font-display font-bold text-white text-lg leading-tight">{tr.review.title}</h3>
+          <h3 className="font-display font-bold text-white text-lg leading-tight">📱 {tr.phone.title}</h3>
         </div>
       }
     >
-      <p className="text-sm text-neutral-200 leading-relaxed">{tr.review.body}</p>
-      <button onClick={onClose} className="btn-3d font-display font-bold text-base px-6 py-3 w-full mt-4">
-        {tr.review.ok}
+      <p className="text-sm text-neutral-200 leading-relaxed">{tr.phone.body}</p>
+      <p className="text-sm text-gold mt-2 leading-relaxed">{tr.phone.how}</p>
+      {still && <p className="text-center text-sm text-rose-400 mt-3">{tr.phone.still}</p>}
+      <button
+        onClick={onRecheck}
+        disabled={checking}
+        className={`btn-3d font-display font-bold text-base px-6 py-3 w-full mt-4 ${checking ? "animate-pulse" : ""}`}
+      >
+        {checking ? tr.phone.checking : tr.phone.recheck}
+      </button>
+      <button onClick={onClose} className="block mx-auto mt-3 text-[11px] text-neutral-400 underline active:scale-95 transition">
+        {tr.phone.close}
       </button>
     </Sheet>
   );
@@ -3224,6 +3283,7 @@ function PrizesCard({
   weekly,
   weeklyClaimed,
   claimingKey,
+  notice,
   justClaimed,
   onClaim,
   onClaimWeekly,
@@ -3236,6 +3296,7 @@ function PrizesCard({
   weekly: WeeklyPrize[];
   weeklyClaimed: WeeklyPrize[];
   claimingKey: string | null;
+  notice: { text: string; ok: boolean } | null;
   justClaimed: string | null;
   onClaim: (day: number, level: Difficulty) => void;
   onClaimWeekly: (week: number, place: number) => void;
@@ -3317,6 +3378,9 @@ function PrizesCard({
           );
         })}
       </ul>
+      {notice && (
+        <p role="status" className={`mt-2 text-center text-sm ${notice.ok ? "text-emerald-400" : "text-rose-400"}`}>{notice.text}</p>
+      )}
     </section>
   );
 }

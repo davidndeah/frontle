@@ -38,6 +38,72 @@ const TOKEN_DECIMALS = 6; // USDT
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
 const PODIUM = 3;
 
+// Teléfono verificado en MiniPay (FederatedAttestations, emisor de MiniPay):
+// requisito para cobrar desde el 4-nov-2026. Las cuentas falsas no lo tienen;
+// el 98% de los jugadores sí. Ver frontend/app/lib/phone.ts.
+const FEDERATED_ATTESTATIONS = "0x0aD5b1d0C25ecF6266Dd951403723B2687d6aff2" as const;
+const MINIPAY_ISSUER = "0x7888612486844Bb9BE598668081c59A9f7367FBc" as const;
+const faAbi = [
+  {
+    type: "function",
+    name: "lookupIdentifiers",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }, { name: "trustedIssuers", type: "address[]" }],
+    outputs: [{ type: "uint256[]" }, { type: "bytes32[]" }],
+  },
+] as const;
+// deno-lint-ignore no-explicit-any
+async function hasMiniPayPhone(client: any, addr: `0x${string}`): Promise<boolean> {
+  const [counts] = await client.readContract({
+    address: FEDERATED_ATTESTATIONS,
+    abi: faAbi,
+    functionName: "lookupIdentifiers",
+    args: [addr, [MINIPAY_ISSUER]],
+  });
+  return counts.length > 0 && counts[0] > 0n;
+}
+
+// Wallets de correo (wallet embebida de Privy): por ahora compiten sin
+// teléfono. Se confirma con Privy (no con lo que diga el cliente) que la
+// dirección es la wallet embebida de un usuario con correo verificado.
+// Mismos secrets que welcome-bonus. Cualquier fallo → false.
+async function isPrivyEmailWallet(addr: string): Promise<boolean> {
+  const appId = Deno.env.get("PRIVY_APP_ID");
+  const secret = Deno.env.get("PRIVY_APP_SECRET");
+  if (!appId || !secret) return false;
+  try {
+    const r = await fetch("https://api.privy.io/v1/users/wallet/address", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${appId}:${secret}`)}`,
+        "privy-app-id": appId,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ address: addr }),
+    });
+    if (!r.ok) return false;
+    const u = await r.json();
+    // deno-lint-ignore no-explicit-any
+    const accts: any[] = u?.linked_accounts ?? [];
+    const hasEmail = accts.some((a) => a.type === "email");
+    const embedded = accts.some(
+      (a) =>
+        a.type === "wallet" &&
+        (a.wallet_client_type === "privy" || a.walletClientType === "privy") &&
+        String(a.address ?? "").toLowerCase() === addr.toLowerCase(),
+    );
+    return hasEmail && embedded;
+  } catch {
+    return false;
+  }
+}
+
+// Puede cobrar: teléfono verificado en MiniPay o wallet de correo (Privy).
+// deno-lint-ignore no-explicit-any
+async function canWinPrize(client: any, addr: `0x${string}`): Promise<boolean> {
+  return (await hasMiniPayPhone(client, addr)) || (await isPrivyEmailWallet(addr));
+}
+
 const weeklyAbi = [
   { type: "function", name: "currentWeek", inputs: [], outputs: [{ type: "uint256" }], stateMutability: "view" },
   { type: "function", name: "pot", inputs: [{ name: "week", type: "uint256" }], outputs: [{ type: "uint256" }], stateMutability: "view" },
@@ -113,7 +179,9 @@ Deno.serve(async () => {
       .limit(50);
     if (boardErr) throw boardErr;
 
-    // Cuentas en revisión (migración 0020): no entran al podio del dinero.
+    // Cuentas en revisión (migración 0020) y wallets sin teléfono verificado
+    // en MiniPay (salvo wallets de correo de Privy): no entran al podio del
+    // dinero; su puesto pasa al siguiente.
     const { data: reviewed, error: revErr } = await supabase
       .from("account_reviews")
       .select("player_id")
@@ -127,6 +195,10 @@ Deno.serve(async () => {
       if (payable.length >= PODIUM) break;
       const id = String(row.player_id ?? "").toLowerCase();
       if (blocked.has(id)) {
+        skipped.push({ player: id, xp: Number(row.xp) });
+        continue;
+      }
+      if (/^0x[0-9a-f]{40}$/.test(id) && !(await canWinPrize(publicClient, id as `0x${string}`))) {
         skipped.push({ player: id, xp: Number(row.xp) });
         continue;
       }

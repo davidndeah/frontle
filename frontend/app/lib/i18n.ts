@@ -306,6 +306,7 @@ type Dict = {
   welcomeBonus: (amount: string) => string;
   bonusDismiss: string;
   levels: { easy: string; medium: string; hard: string };
+  phone: { title: string; body: string; how: string; recheck: string; checking: string; still: string; close: string };
   nameLock: { rule: string; locked: (date: string) => string };
   levelGate: {
     title: (level: string) => string;
@@ -730,6 +731,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
     bonusDismiss: "¡Gracias!",
     levels: { easy: "Fácil", medium: "Medio", hard: "Difícil" },
+    phone: {
+      title: "Verifica tu número en MiniPay",
+      body: "Para jugar el reto diario y competir en la liga semanal necesitas tener tu número de teléfono verificado en MiniPay. Así cada jugador es una persona real y la competencia es justa.",
+      how: "Abre tu perfil en MiniPay, verifica tu número de teléfono y vuelve aquí.",
+      recheck: "Ya lo verifiqué",
+      checking: "Comprobando…",
+      still: "Todavía no vemos tu número verificado. Puede tardar unos minutos.",
+      close: "Ahora no",
+    },
     nameLock: { rule: "Solo puedes cambiar tu nombre una vez cada 7 días.", locked: (d) => `Podrás cambiar tu nombre de nuevo el ${d}.` },
     levelGate: {
       title: (lv) => `Jugar ${lv}`,
@@ -1145,6 +1155,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Hi! I'm Bordy 👋 Here's ${a} as a welcome gift for hints or retries. Let's play! 🎁`,
     bonusDismiss: "Thanks!",
     levels: { easy: "Easy", medium: "Medium", hard: "Hard" },
+    phone: {
+      title: "Verify your number in MiniPay",
+      body: "To play the daily challenge and compete in the weekly league you need your phone number verified in MiniPay. That way every player is a real person and the competition is fair.",
+      how: "Open your profile in MiniPay, verify your phone number and come back here.",
+      recheck: "I've verified it",
+      checking: "Checking…",
+      still: "We can't see your verified number yet. It may take a few minutes.",
+      close: "Not now",
+    },
     nameLock: { rule: "You can only change your name once every 7 days.", locked: (d) => `You can change your name again on ${d}.` },
     levelGate: {
       title: (lv) => `Play ${lv}`,
@@ -1562,6 +1581,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
     bonusDismiss: "Obrigado!",
     levels: { easy: "Fácil", medium: "Médio", hard: "Difícil" },
+    phone: {
+      title: "Verifique seu número no MiniPay",
+      body: "Para jogar o desafio diário e competir na liga semanal você precisa ter seu número de telefone verificado no MiniPay. Assim cada jogador é uma pessoa real e a competição é justa.",
+      how: "Abra seu perfil no MiniPay, verifique seu número de telefone e volte aqui.",
+      recheck: "Já verifiquei",
+      checking: "Verificando…",
+      still: "Ainda não vemos seu número verificado. Pode levar alguns minutos.",
+      close: "Agora não",
+    },
     nameLock: { rule: "Você só pode mudar seu nome uma vez a cada 7 dias.", locked: (d) => `Você poderá mudar seu nome de novo em ${d}.` },
     levelGate: {
       title: (lv) => `Jogar ${lv}`,
@@ -1977,6 +2005,15 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
     bonusDismiss: "Merci !",
     levels: { easy: "Facile", medium: "Moyen", hard: "Difficile" },
+    phone: {
+      title: "Vérifie ton numéro dans MiniPay",
+      body: "Pour jouer au défi du jour et participer à la ligue hebdo, ton numéro de téléphone doit être vérifié dans MiniPay. Ainsi chaque joueur est une vraie personne et la compétition est juste.",
+      how: "Ouvre ton profil dans MiniPay, vérifie ton numéro de téléphone et reviens ici.",
+      recheck: "C'est fait",
+      checking: "Vérification…",
+      still: "Nous ne voyons pas encore ton numéro vérifié. Cela peut prendre quelques minutes.",
+      close: "Pas maintenant",
+    },
     nameLock: { rule: "Tu ne peux changer ton nom qu'une fois tous les 7 jours.", locked: (d) => `Tu pourras changer ton nom à nouveau le ${d}.` },
     levelGate: {
       title: (lv) => `Jouer ${lv}`,

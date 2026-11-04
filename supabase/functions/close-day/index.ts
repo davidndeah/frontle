@@ -30,6 +30,72 @@ const TOKEN_DECIMALS = 6; // USDT
 const ZERO = "0x0000000000000000000000000000000000000000" as const;
 const MIN_TIME_MS = 2000; // = check scores_min_time (migración 0020)
 const MAX_LEVELS_PER_PLAYER = 2;
+// Teléfono verificado en MiniPay (FederatedAttestations, emisor de MiniPay):
+// requisito para cobrar desde el 4-nov-2026. Las cuentas falsas no lo tienen;
+// el 98% de los jugadores sí. Ver frontend/app/lib/phone.ts.
+const FEDERATED_ATTESTATIONS = "0x0aD5b1d0C25ecF6266Dd951403723B2687d6aff2" as const;
+const MINIPAY_ISSUER = "0x7888612486844Bb9BE598668081c59A9f7367FBc" as const;
+const faAbi = [
+  {
+    type: "function",
+    name: "lookupIdentifiers",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }, { name: "trustedIssuers", type: "address[]" }],
+    outputs: [{ type: "uint256[]" }, { type: "bytes32[]" }],
+  },
+] as const;
+// deno-lint-ignore no-explicit-any
+async function hasMiniPayPhone(client: any, addr: `0x${string}`): Promise<boolean> {
+  const [counts] = await client.readContract({
+    address: FEDERATED_ATTESTATIONS,
+    abi: faAbi,
+    functionName: "lookupIdentifiers",
+    args: [addr, [MINIPAY_ISSUER]],
+  });
+  return counts.length > 0 && counts[0] > 0n;
+}
+
+// Wallets de correo (wallet embebida de Privy): por ahora compiten sin
+// teléfono. Se confirma con Privy (no con lo que diga el cliente) que la
+// dirección es la wallet embebida de un usuario con correo verificado.
+// Mismos secrets que welcome-bonus. Cualquier fallo → false.
+async function isPrivyEmailWallet(addr: string): Promise<boolean> {
+  const appId = Deno.env.get("PRIVY_APP_ID");
+  const secret = Deno.env.get("PRIVY_APP_SECRET");
+  if (!appId || !secret) return false;
+  try {
+    const r = await fetch("https://api.privy.io/v1/users/wallet/address", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${appId}:${secret}`)}`,
+        "privy-app-id": appId,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ address: addr }),
+    });
+    if (!r.ok) return false;
+    const u = await r.json();
+    // deno-lint-ignore no-explicit-any
+    const accts: any[] = u?.linked_accounts ?? [];
+    const hasEmail = accts.some((a) => a.type === "email");
+    const embedded = accts.some(
+      (a) =>
+        a.type === "wallet" &&
+        (a.wallet_client_type === "privy" || a.walletClientType === "privy") &&
+        String(a.address ?? "").toLowerCase() === addr.toLowerCase(),
+    );
+    return hasEmail && embedded;
+  } catch {
+    return false;
+  }
+}
+
+// Puede cobrar: teléfono verificado en MiniPay o wallet de correo (Privy).
+// deno-lint-ignore no-explicit-any
+async function canWinPrize(client: any, addr: `0x${string}`): Promise<boolean> {
+  return (await hasMiniPayPhone(client, addr)) || (await isPrivyEmailWallet(addr));
+}
+
 
 // Niveles en orden fácil → medio → difícil (el índice on-chain lo usa el contrato,
 // no lo pasamos aquí: rollDay recibe las 3 direcciones por posición hard/med/easy).
@@ -96,7 +162,9 @@ Deno.serve(async (req) => {
     //    difícil a fácil, así el tope cae en el premio más pequeño;
     //  - marcas por debajo de MIN_TIME_MS no cuentan (la base ya las rechaza
     //    desde 0020; esto cubre las históricas);
-    //  - las cuentas en revisión (account_reviews.block_prizes) no ganan.
+    //  - las cuentas en revisión (account_reviews.block_prizes) no ganan;
+    //  - sin teléfono verificado en MiniPay no se gana (pasa al siguiente),
+    //    salvo las wallets de correo (Privy), que por ahora compiten igual.
     const winners: Record<Level, { address: `0x${string}`; countries: number; time_ms: number } | null> = {
       easy: null,
       medium: null,
@@ -109,6 +177,12 @@ Deno.serve(async (req) => {
     if (revErr) throw revErr;
     const blocked = new Set((reviewed ?? []).map((r) => String(r.player_id).toLowerCase()));
     const levelsWon = new Map<string, number>();
+    const phoneCache = new Map<string, boolean>();
+    const phoneOk = async (a: `0x${string}`) => {
+      if (!phoneCache.has(a)) phoneCache.set(a, await canWinPrize(publicClient, a));
+      return phoneCache.get(a)!;
+    };
+    const noPhone: string[] = [];
 
     for (const level of ["hard", "medium", "easy"] as const) {
       const { data: rows, error: scoreErr } = await supabase
@@ -128,6 +202,10 @@ Deno.serve(async (req) => {
         if (!/^0x[0-9a-f]{40}$/.test(addr)) continue;
         if (blocked.has(addr)) continue;
         if ((levelsWon.get(addr) ?? 0) >= MAX_LEVELS_PER_PLAYER) continue;
+        if (!(await phoneOk(addr as `0x${string}`))) {
+          if (!noPhone.includes(addr)) noPhone.push(addr);
+          continue;
+        }
         winners[level] = { address: addr as `0x${string}`, countries: top.countries, time_ms: top.time_ms };
         levelsWon.set(addr, (levelsWon.get(addr) ?? 0) + 1);
         break;
@@ -175,6 +253,7 @@ Deno.serve(async (req) => {
       day: Number(day),
       pot: formatUnits(potRaw, TOKEN_DECIMALS),
       winners: rows.map((r) => ({ level: r.level, winner: r.winner_address })),
+      skippedNoPhone: noPhone,
       roll_tx: rollTx,
     });
   } catch (err) {
