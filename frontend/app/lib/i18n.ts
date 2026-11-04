@@ -306,6 +306,7 @@ type Dict = {
   welcomeBonus: (amount: string) => string;
   bonusDismiss: string;
   levels: { easy: string; medium: string; hard: string };
+  nameLock: { rule: string; locked: (date: string) => string };
   levelGate: {
     title: (level: string) => string;
     body: (used: string, level: string, price: string) => string;
@@ -729,6 +730,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `¡Hola! Soy Bordy 👋 Te regalé ${a} de bienvenida para pistas o reintentos. ¡A jugar! 🎁`,
     bonusDismiss: "¡Gracias!",
     levels: { easy: "Fácil", medium: "Medio", hard: "Difícil" },
+    nameLock: { rule: "Solo puedes cambiar tu nombre una vez cada 7 días.", locked: (d) => `Podrás cambiar tu nombre de nuevo el ${d}.` },
     levelGate: {
       title: (lv) => `Jugar ${lv}`,
       body: (used, lv, price) => `Hoy ya usaste tu intento gratis en ${used}. Jugar ${lv} cuesta ${price}, que van al premio del día.`,
@@ -1143,6 +1145,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Hi! I'm Bordy 👋 Here's ${a} as a welcome gift for hints or retries. Let's play! 🎁`,
     bonusDismiss: "Thanks!",
     levels: { easy: "Easy", medium: "Medium", hard: "Hard" },
+    nameLock: { rule: "You can only change your name once every 7 days.", locked: (d) => `You can change your name again on ${d}.` },
     levelGate: {
       title: (lv) => `Play ${lv}`,
       body: (used, lv, price) => `You already used today's free attempt on ${used}. Playing ${lv} costs ${price}, which goes to today's prize.`,
@@ -1559,6 +1562,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Oi! Sou o Bordy 👋 Ganhou ${a} de boas-vindas para dicas ou novas tentativas. Bora jogar! 🎁`,
     bonusDismiss: "Obrigado!",
     levels: { easy: "Fácil", medium: "Médio", hard: "Difícil" },
+    nameLock: { rule: "Você só pode mudar seu nome uma vez a cada 7 dias.", locked: (d) => `Você poderá mudar seu nome de novo em ${d}.` },
     levelGate: {
       title: (lv) => `Jogar ${lv}`,
       body: (used, lv, price) => `Você já usou sua tentativa grátis de hoje em ${used}. Jogar ${lv} custa ${price}, que vão para o prêmio do dia.`,
@@ -1973,6 +1977,7 @@ const STRINGS: Record<Locale, Dict> = {
     welcomeBonus: (a) => `Salut ! Je suis Bordy 👋 Voici ${a} de bienvenue pour des indices ou des essais. On joue ! 🎁`,
     bonusDismiss: "Merci !",
     levels: { easy: "Facile", medium: "Moyen", hard: "Difficile" },
+    nameLock: { rule: "Tu ne peux changer ton nom qu'une fois tous les 7 jours.", locked: (d) => `Tu pourras changer ton nom à nouveau le ${d}.` },
     levelGate: {
       title: (lv) => `Jouer ${lv}`,
       body: (used, lv, price) => `Tu as déjà utilisé ta tentative gratuite du jour en ${used}. Jouer ${lv} coûte ${price}, qui vont au prix du jour.`,

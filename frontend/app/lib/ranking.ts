@@ -259,6 +259,30 @@ export async function getMyLevelsOn(day: number, playerId: string): Promise<Diff
   }
 }
 
+// Nombre vigente de la wallet en la base y desde cuándo puede cambiarlo
+// (migración 0022: un cambio cada 7 días). null si aún no tiene nombre
+// registrado — el primero es libre — o si Supabase falla.
+export interface NameStatus {
+  name: string;
+  nextChangeAt: Date;
+}
+export async function getNameStatus(playerId: string): Promise<NameStatus | null> {
+  if (!useSupabase || !playerId) return null;
+  try {
+    const r = await fetch(`${SUPA_URL}/rest/v1/rpc/name_status`, {
+      method: "POST",
+      headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_player: playerId }),
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j?.name) return null;
+    return { name: String(j.name), nextChangeAt: new Date(j.next_change_at) };
+  } catch {
+    return null;
+  }
+}
+
 // ¿La wallet está en revisión por el equipo? (migración 0020). Solo devuelve
 // un booleano para la wallet que pregunta: la lista no es pública. false ante
 // cualquier fallo: nunca se acusa a nadie por un error de red.
@@ -450,7 +474,8 @@ export async function getNamesFor(addresses: string[]): Promise<Record<string, s
   try {
     const list = ids.map((a) => `"${a}"`).join(",");
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/scores?player_id=in.(${list})&name=not.is.null&select=player_id,name`,
+      // Más reciente primero: el nombre vigente gana a los que usó antes.
+      `${SUPA_URL}/rest/v1/scores?player_id=in.(${list})&name=not.is.null&select=player_id,name&order=created_at.desc`,
       { headers: { apikey: SUPA_KEY!, Authorization: `Bearer ${SUPA_KEY}` } }
     );
     const j = await r.json();

@@ -30,7 +30,7 @@ import {
   DEFAULT_LOCALE,
   type Locale,
 } from "./lib/i18n";
-import { getDailyBoard, EMPTY_BOARD, isUnderReview, getMyLevelsOn, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
+import { getDailyBoard, EMPTY_BOARD, isUnderReview, getMyLevelsOn, getNameStatus, type NameStatus, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
 import { SITE_HOST } from "./lib/site";
@@ -332,6 +332,31 @@ export default function Frontle() {
   // Prompt de nombre al registrarse: si hay identidad y aún no eligió nombre,
   // se le pide una vez (así el ranking muestra nombres, no wallets).
   const [nameModal, setNameModal] = useState(false);
+  // Nombre vigente en la base (migración 0022: un cambio cada 7 días). Manda
+  // sobre el alias local: si la wallet ya tiene nombre, se adopta aquí y no
+  // se vuelve a pedir.
+  const [nameStatus, setNameStatus] = useState<NameStatus | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  useEffect(() => {
+    setNameStatus(null);
+    if (!myId) return;
+    let alive = true;
+    getNameStatus(myId).then((st) => {
+      if (!alive || !st) return;
+      setNameStatus(st);
+      setAlias(st.name);
+      setAliasState(st.name);
+      setNameModal(false);
+    });
+    return () => { alive = false; };
+  }, [myId]);
+  // null si el nombre se puede guardar; si no, el texto de por qué no.
+  function nameBlocked(next: string): string | null {
+    const clean = next.trim();
+    if (!nameStatus || !clean || clean === nameStatus.name) return null;
+    if (nameStatus.nextChangeAt.getTime() <= Date.now()) return null;
+    return tr.nameLock.locked(nameStatus.nextChangeAt.toLocaleDateString(locale, { day: "numeric", month: "long" }));
+  }
   // Aviso de cuenta en revisión (migración 0020): una vez al día por wallet.
   // La cuenta sigue jugando con normalidad; solo se le informa.
   const [reviewModal, setReviewModal] = useState(false);
@@ -1993,11 +2018,20 @@ export default function Frontle() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
+                      const why = nameBlocked(nameDraft);
+                      if (why) return setNameError(why);
+                      setNameError(null);
+                      // Cambio aceptado: el plazo de 7 días arranca ya (la base lo
+                      // fija al llegar la próxima marca, que es casi lo mismo).
+                      const clean = nameDraft.trim();
+                      if (nameStatus && clean && clean !== nameStatus.name) {
+                        setNameStatus({ name: clean, nextChangeAt: new Date(Date.now() + 7 * 86_400_000) });
+                      }
                       setAlias(nameDraft);
                       setAliasState(getAlias());
                       setEditingName(false);
                     }}
-                    className="flex gap-1.5"
+                    className="flex flex-wrap gap-1.5"
                   >
                     <input
                       value={nameDraft}
@@ -2008,10 +2042,11 @@ export default function Frontle() {
                       className="w-full min-w-0 rounded-lg bg-base border border-lavender/40 px-2 py-1 text-sm text-white outline-none focus:border-gold/70"
                     />
                     <button type="submit" className="brutal-sm brutal-press rounded-lg bg-gold text-surface font-bold text-xs px-2.5">OK</button>
+                    <p className={`basis-full text-[10px] ${nameError ? "text-rose-400" : "text-neutral-400"}`}>{nameError ?? tr.nameLock.rule}</p>
                   </form>
                 ) : (
                   <button
-                    onClick={() => { setNameDraft(alias); setEditingName(true); }}
+                    onClick={() => { setNameDraft(alias); setNameError(null); setEditingName(true); }}
                     className="font-bold text-white truncate flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <span className="truncate">{alias || (myId ? shortId(myId) : tr.profileGuest)}</span>
