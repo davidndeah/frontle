@@ -8,7 +8,7 @@
 //  cronómetro competitivo ni ranking; es puro entrenamiento.
 // ============================================================
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
   randomChallenge,
   tryGuess,
@@ -29,7 +29,7 @@ import Coachmarks from "./Coachmarks";
 import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { winMood, greenGuessMood } from "../lib/streakMood";
-import { awardPracticeSolve, beginXpRound, freeRoundsLeft } from "../lib/xp";
+import { awardPracticeSolve, beginXpRound, buyXpRound, freeRoundsLeft, paidXpRoundsLeft, ROUND_XP } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
@@ -92,8 +92,18 @@ export default function PracticeGame({
   const { win, celebrate, close: closeWin } = useXpWin();
   // Rondas con XP que quedan hoy; después, la ronda extra se paga.
   const freeLeft = freeRoundsLeft("practice");
+  // Tras las gratis, hasta PAID_XP_ROUNDS rondas pagadas que también dan XP.
+  const paidLeft = paidXpRoundsLeft("practice");
+  const [, refresh] = useReducer((n: number) => n + 1, 0);
   async function playAgain() {
     if (freeLeft > 0) { newRound(); return; }
+    if (paidLeft > 0) {
+      const b = await buyXpRound("practice");
+      if (b === "ok" || b === "free") { newRound(); return; }
+      if (b === "insufficient") { setShopOpen(true); return; }
+      refresh();
+      return;
+    }
     const r = await spendCoins("spend_attempt", "practice");
     if (r === "ok") newRound();
     else setShopOpen(true);
@@ -351,10 +361,10 @@ ${SITE_HOST}`}
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <button onClick={() => void playAgain()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-              🔄 {freeLeft > 0 ? tr.practiceNextRound : tr.replay.paid(COIN_COSTS.spend_attempt)}
+              🔄 {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP.practice) : tr.replay.paid(COIN_COSTS.spend_attempt)}
             </button>
             <p className="text-[11px] text-neutral-400">
-              {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : tr.replay.paidNote}
+              {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
             </p>
             <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.practiceExit}

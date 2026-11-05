@@ -13,6 +13,8 @@
 // ============================================================
 
 import type { Difficulty } from "./game";
+import { ensureSecret, localSecret } from "./secret";
+import { notifyCoinsChanged } from "./coinsBus";
 
 // Valores de XP por fuente. Deben coincidir con el check `xp_shape` de la
 // migración 0008 — el servidor rechaza cualquier otro valor.
@@ -31,10 +33,16 @@ export const XP = {
 // Topes diarios de las fuentes con seq (el servidor los impone vía PK+check).
 const CAPS = { quiz_flag: 5, quiz_outline: 5, practice: 3, region: 1 } as const;
 
-// Fuente con tope diario. Las rondas dentro del tope son las que dan XP —y por
-// eso son las GRATIS. Pasado el tope se puede seguir jugando pagando monedas,
-// pero ya no otorga XP: si lo hiciera, las monedas comprarían posición en la
-// liga (y premio), que es justo lo que FrontleWeekly prohíbe por diseño.
+// Rondas pagadas con monedas que TAMBIÉN dan XP, por modo y día, una vez
+// agotado el tope gratis (migración 0028, decisión del dueño 5-nov-2026).
+// Pasadas estas, se puede seguir jugando pagando, pero ya sin XP.
+export const PAID_XP_ROUNDS = 3;
+
+// XP de cada ronda con XP, por fuente (mismo valor gratis o pagada).
+export const ROUND_XP = { quiz_flag: XP.quiz, quiz_outline: XP.quiz, practice: XP.practice, region: XP.region } as const;
+
+// Fuente con tope diario: las primeras rondas con XP del día son gratis; las
+// siguientes PAID_XP_ROUNDS se pagan con monedas y también dan XP.
 export type CappedSource = keyof typeof CAPS;
 
 // Fuente de XP de cada modo de quiz.
@@ -42,14 +50,24 @@ export function quizSource(mode: "flag" | "outline"): CappedSource {
   return mode === "flag" ? "quiz_flag" : "quiz_outline";
 }
 
-// Rondas gratis (= con XP) que le quedan hoy al jugador en esa fuente. El
+// Rondas con XP ya otorgadas hoy en esa fuente (gratis + pagadas). El
 // contador local espeja el del servidor; el techo real lo impone la PK.
-export function freeRoundsLeft(source: CappedSource, day = todayUTC()): number {
-  let n = 0;
+function usedRounds(source: CappedSource, day = todayUTC()): number {
   try {
-    n = Number(localStorage.getItem(`frontle-xp-seq-${day}-${source}`) || "0");
-  } catch {}
-  return Math.max(0, CAPS[source] - n);
+    return Number(localStorage.getItem(`frontle-xp-seq-${day}-${source}`) || "0") || 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Rondas gratis (con XP) que le quedan hoy al jugador en esa fuente.
+export function freeRoundsLeft(source: CappedSource, day = todayUTC()): number {
+  return Math.max(0, CAPS[source] - usedRounds(source, day));
+}
+
+// Rondas pagadas con XP que le quedan hoy (cuentan solo tras agotar las gratis).
+export function paidXpRoundsLeft(source: CappedSource, day = todayUTC()): number {
+  return Math.max(0, CAPS[source] + PAID_XP_ROUNDS - Math.max(usedRounds(source, day), CAPS[source]));
 }
 
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -101,6 +119,9 @@ export function todayUTC(): number {
 // (0 si se agotó el tope o la ronda no se pudo abrir).
 
 const openRounds: Partial<Record<CappedSource, Promise<string | null>>> = {};
+// Ronda pagada ya cobrada y abierta, a la espera de que el juego empiece la
+// ronda siguiente (`beginXpRound` la toma en vez de abrir otra).
+const prepaidRounds: Partial<Record<CappedSource, string>> = {};
 
 async function gameCall(body: Record<string, unknown>): Promise<Record<string, unknown> | null> {
   if (!useSupabase) return null;
@@ -117,17 +138,51 @@ async function gameCall(body: Record<string, unknown>): Promise<Record<string, u
   }
 }
 
-// Espeja en local cuántas rondas con XP quedan (lo que enseña la UI).
-function syncLocalSeq(source: CappedSource, remaining: unknown, day = todayUTC()): void {
-  if (typeof remaining !== "number") return;
+// Espeja en local cuántas rondas con XP lleva hoy (lo que enseña la UI). El
+// servidor manda `used`; las respuestas viejas solo traen `remaining`.
+function syncLocalSeq(source: CappedSource, j: Record<string, unknown>, day = todayUTC()): void {
+  const used = typeof j.used === "number" ? j.used
+    : typeof j.remaining === "number" ? Math.max(0, CAPS[source] - j.remaining) : null;
+  if (used === null) return;
   try {
-    localStorage.setItem(`frontle-xp-seq-${day}-${source}`, String(Math.max(0, CAPS[source] - remaining)));
+    localStorage.setItem(`frontle-xp-seq-${day}-${source}`, String(used));
   } catch {}
+}
+
+export type BuyXpRoundResult = "ok" | "free" | "insufficient" | "identity" | "exhausted" | "error";
+
+// Compra una ronda con XP (5 🪙): el servidor cobra y la deja abierta para la
+// próxima ronda. "free" = aún quedaban gratis (no se cobró); "exhausted" = ya
+// usó las pagadas con XP de hoy (no se cobró). En "error" no se reintenta con
+// otro cobro: no se sabe si el servidor llegó a cobrar.
+export async function buyXpRound(source: CappedSource): Promise<BuyXpRoundResult> {
+  const player = xpPlayerId();
+  if (!/^0x[0-9a-f]{40}$/.test(player)) return "identity";
+  if (!(await ensureSecret())) return "identity";
+  const j = await gameCall({ action: "xp_start", player, source, paid: true, secret: localSecret() });
+  if (!j) return "error";
+  syncLocalSeq(source, j);
+  if (j.ok && typeof j.roundId === "string") {
+    prepaidRounds[source] = j.roundId;
+    notifyCoinsChanged();
+    return "ok";
+  }
+  if (j.error === "free_left") return "free";
+  if (j.error === "paid_exhausted") return "exhausted";
+  if (j.error === "insufficient") return "insufficient";
+  if (j.error === "identity") return "identity";
+  return "error";
 }
 
 // Abre la ronda de una fuente al empezar a jugarla. Sin wallet o con el tope
 // agotado no abre nada (la ronda se juega igual, sin XP).
 export function beginXpRound(source: CappedSource): void {
+  const prepaid = prepaidRounds[source];
+  if (prepaid) {
+    delete prepaidRounds[source];
+    openRounds[source] = Promise.resolve(prepaid);
+    return;
+  }
   const player = xpPlayerId();
   if (!/^0x[0-9a-f]{40}$/.test(player) || freeRoundsLeft(source) === 0) {
     delete openRounds[source];
@@ -135,7 +190,7 @@ export function beginXpRound(source: CappedSource): void {
   }
   openRounds[source] = gameCall({ action: "xp_start", player, source }).then((j) => {
     if (!j?.ok) return null;
-    syncLocalSeq(source, j.remaining);
+    syncLocalSeq(source, j);
     return typeof j.roundId === "string" ? j.roundId : null;
   });
 }
@@ -147,7 +202,7 @@ async function finishXpRound(source: CappedSource, proof?: Record<string, unknow
   if (!roundId) return 0;
   const j = await gameCall({ action: "xp_finish", roundId, ...(proof ? { proof } : {}) });
   if (!j?.ok) return 0;
-  syncLocalSeq(source, j.remaining);
+  syncLocalSeq(source, j);
   return Number(j.xp) || 0;
 }
 

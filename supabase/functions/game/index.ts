@@ -67,6 +67,9 @@ const XP_ROUNDS: Record<string, { cap: number; xp: number; minMs: number }> = {
   region: { cap: 1, xp: 10, minMs: 5000 },
 };
 const XP_ROUNDS_PER_DAY = 200; // rondas abiertas por jugador y día (anti-spam)
+// Rondas pagadas con monedas que también dan XP, por modo y día, una vez
+// agotado el tope gratis (0028). Pasado esto se juega pagando, sin XP.
+const XP_PAID_ROUNDS = 3;
 const transferEvent = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 const CORS = {
@@ -298,10 +301,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === "xp_start") {
-      // Abre una ronda de un modo libre. Si ya agotó el tope de hoy, no hay
-      // ronda (se juega sin XP, pagando con monedas como hasta ahora).
+      // Abre una ronda de un modo libre. Gratis mientras quede tope gratis.
+      // Con `paid: true` (y el tope gratis agotado) cobra la ronda con monedas
+      // y esa ronda también da XP, hasta XP_PAID_ROUNDS por modo y día (0028).
+      // Sin cupo de ninguno de los dos, no hay ronda: se juega sin XP.
       const player = String(body.player ?? "").toLowerCase();
       const source = String(body.source ?? "");
+      const paid = body.paid === true;
       if (!/^0x[0-9a-f]{40}$/.test(player)) return json({ ok: false, error: "bad_player" }, 400);
       const cfg = XP_ROUNDS[source];
       if (!cfg) return json({ ok: false, error: "bad_source" }, 400);
@@ -310,8 +316,11 @@ Deno.serve(async (req) => {
         .from("xp_events")
         .select("seq", { count: "exact", head: true })
         .eq("player_id", player).eq("day", day).eq("source", source);
-      const remaining = Math.max(0, cfg.cap - (got ?? 0));
-      if (remaining === 0) return json({ ok: true, roundId: null, remaining: 0 });
+      const used = got ?? 0;
+      const remaining = Math.max(0, cfg.cap - used);
+      if (!paid && remaining === 0) return json({ ok: true, roundId: null, remaining: 0, used });
+      if (paid && remaining > 0) return json({ ok: false, error: "free_left", remaining, used });
+      if (paid && used >= cfg.cap + XP_PAID_ROUNDS) return json({ ok: false, error: "paid_exhausted", remaining: 0, used });
       const { count: opened } = await supabase
         .from("xp_rounds")
         .select("id", { count: "exact", head: true })
@@ -319,11 +328,27 @@ Deno.serve(async (req) => {
       if ((opened ?? 0) >= XP_ROUNDS_PER_DAY) return json({ ok: false, error: "too_many_rounds" }, 429);
       const { data: round, error: rErr } = await supabase
         .from("xp_rounds")
-        .insert({ player_id: player, day, source })
+        .insert({ player_id: player, day, source, paid })
         .select("id")
         .single();
       if (rErr) throw rErr;
-      return json({ ok: true, roundId: round.id, remaining });
+      if (paid) {
+        // Mismo cobro que la app (identidad por secreto, precio fijo en el
+        // servidor, saldo nunca negativo). Si falla, la ronda no existe.
+        const { error: sErr } = await supabase.rpc("spend_coins", {
+          p_player: player,
+          p_secret: String(body.secret ?? ""),
+          p_kind: "spend_attempt",
+          p_ref: `xp:${round.id}`,
+        });
+        if (sErr) {
+          await supabase.from("xp_rounds").delete().eq("id", round.id);
+          if (sErr.code === "P0001") return json({ ok: false, error: "insufficient" }, 402);
+          if (sErr.code === "P0002") return json({ ok: false, error: "identity" }, 403);
+          throw sErr;
+        }
+      }
+      return json({ ok: true, roundId: round.id, remaining, used });
     }
 
     if (action === "xp_finish") {
@@ -333,7 +358,7 @@ Deno.serve(async (req) => {
       if (!/^[0-9a-f-]{36}$/.test(id)) return json({ ok: false, error: "bad_round" }, 400);
       const { data: rd, error: rdErr } = await supabase
         .from("xp_rounds")
-        .select("id, player_id, day, source, started_at, finished_at")
+        .select("id, player_id, day, source, paid, started_at, finished_at")
         .eq("id", id)
         .maybeSingle();
       if (rdErr) throw rdErr;
@@ -356,16 +381,18 @@ Deno.serve(async (req) => {
         .select("id");
       if (!closed || closed.length === 0) return json({ ok: false, error: "bad_round" }, 404);
       // Siguiente seq libre del día; si dos rondas cierran a la vez, la que
-      // choque con la PK prueba el siguiente.
+      // choque con la PK prueba el siguiente. Una ronda gratis solo llega al
+      // tope gratis; una pagada, hasta el tope gratis + XP_PAID_ROUNDS.
+      const limit = rd.paid ? cfg.cap + XP_PAID_ROUNDS : cfg.cap;
       for (let attempt = 0; attempt < 3; attempt++) {
         const { count: got } = await supabase
           .from("xp_events")
           .select("seq", { count: "exact", head: true })
           .eq("player_id", rd.player_id).eq("day", rd.day).eq("source", rd.source);
         const seq = (got ?? 0) + 1;
-        if (seq > cfg.cap) return json({ ok: true, xp: 0, remaining: 0 });
+        if (seq > limit) return json({ ok: true, xp: 0, remaining: 0, used: got ?? 0 });
         const xp = await grantXp(rd.player_id, rd.day, [{ source: rd.source, seq, xp: cfg.xp }]);
-        if (xp > 0) return json({ ok: true, xp, remaining: cfg.cap - seq });
+        if (xp > 0) return json({ ok: true, xp, remaining: Math.max(0, cfg.cap - seq), used: seq });
       }
       return json({ ok: true, xp: 0, remaining: 0 });
     }

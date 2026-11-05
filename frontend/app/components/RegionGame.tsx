@@ -8,7 +8,7 @@
 //  regiones = PR futura (migración `mode` en Supabase).
 // ============================================================
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { dateSeed, type Status } from "../lib/game";
 import { formatTime } from "../lib/ranking";
 import {
@@ -18,7 +18,7 @@ import {
   nextRegionHint,
   type RegionPlayState,
 } from "../lib/regionGame";
-import { awardRegionWin, beginXpRound, freeRoundsLeft } from "../lib/xp";
+import { awardRegionWin, beginXpRound, buyXpRound, freeRoundsLeft, paidXpRoundsLeft, ROUND_XP } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
@@ -132,6 +132,9 @@ export default function RegionGame({
   // Aviso de XP + puesto en la liga al resolver.
   const { win, celebrate, close: closeWin } = useXpWin();
   const freeLeft = freeRoundsLeft("region");
+  // Tras la gratis, hasta PAID_XP_ROUNDS partidas pagadas que también dan XP.
+  const paidLeft = paidXpRoundsLeft("region");
+  const [, refresh] = useReducer((n: number) => n + 1, 0);
   // Recorrido de bienvenida del modo (1 vez). Arranca solo cuando la partida
   // ya empezó, porque señala las pistas, que no existen en la pantalla previa.
   const [coach, setCoach] = useState(false);
@@ -197,7 +200,11 @@ export default function RegionGame({
   // resolver el reto diario esta ronda siempre se paga — que es justo lo
   // pedido: la segunda partida del modo se compra con monedas.
   async function playAgain() {
-    if (freeLeft === 0) {
+    if (freeLeft === 0 && paidLeft > 0) {
+      const b = await buyXpRound("region");
+      if (b === "insufficient") { setShopOpen(true); return; }
+      if (b !== "ok" && b !== "free") { refresh(); return; }
+    } else if (freeLeft === 0) {
       const r = await spendCoins("spend_attempt", `region:${regionId}`);
       if (r !== "ok") { setShopOpen(true); return; }
     }
@@ -382,7 +389,7 @@ export default function RegionGame({
           </section>
 
           {state.solved ? (
-            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} squares={["start", ...state.chain.map((c) => c.quality), "end"]} onPlayAgain={() => void playAgain()} freeLeft={freeLeft} />
+            <RegionWin tr={tr} noun={noun} guesses={guessCount} optimal={challenge.optimal} timeMs={elapsedMs} onExit={onExit} def={def} squares={["start", ...state.chain.map((c) => c.quality), "end"]} onPlayAgain={() => void playAgain()} freeLeft={freeLeft} paidLeft={paidLeft} />
           ) : (
             <section className="relative flex flex-col gap-3">
               <form onSubmit={(e) => { e.preventDefault(); if (input.trim()) submit(input); }} className="flex gap-2">
@@ -459,13 +466,15 @@ function RChip({ regionId, name, code, kind }: { regionId: string; name: string;
 }
 
 function RegionWin({
-  tr, noun, guesses, optimal, timeMs, onExit, def, squares, onPlayAgain, freeLeft,
+  tr, noun, guesses, optimal, timeMs, onExit, def, squares, onPlayAgain, freeLeft, paidLeft,
 }: {
   tr: ReturnType<typeof t>; noun: string; guesses: number; optimal: number; timeMs: number; onExit: () => void;
   def: { flag: string; title: string }; squares: Square[];
   onPlayAgain: () => void;
   /** Rondas con XP que quedan hoy; a 0, volver a jugar cuesta monedas. */
   freeLeft: number;
+  /** Partidas pagadas que aún dan XP hoy (tras agotar las gratis). */
+  paidLeft: number;
 }) {
   const perfect = guesses <= optimal;
   const stars = perfect ? 3 : guesses <= optimal + 1 ? 2 : 1;
@@ -492,10 +501,10 @@ function RegionWin({
         />
       </div>
       <button onClick={onPlayAgain} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-        🔄 {freeLeft > 0 ? tr.practiceNextRound : tr.replay.paid(COIN_COSTS.spend_attempt)}
+        🔄 {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP.region) : tr.replay.paid(COIN_COSTS.spend_attempt)}
       </button>
       <p className="mt-1.5 text-[11px] text-neutral-400">
-        {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : tr.replay.paidNote}
+        {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
       </p>
       <button onClick={onExit} className="brutal-sm brutal-press mt-2 w-full rounded-xl bg-surface px-6 py-3 font-bold text-white">
         {tr.region.chooseOtherMode}

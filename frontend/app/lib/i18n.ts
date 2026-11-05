@@ -272,6 +272,9 @@ type Dict = {
     freeLeft: (n: number) => string;
     paid: (coins: number) => string;
     paidNote: string;
+    /** Botón de ronda pagada que SÍ da XP (tras agotar las gratis). */
+    paidXp: (coins: number, xp: number) => string;
+    paidXpLeft: (n: number) => string;
   };
   // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
   streakCard: {
@@ -699,6 +702,8 @@ const STRINGS: Record<Locale, Dict> = {
       freeLeft: (n) => `Te quedan ${n} con XP hoy`,
       paid: (coins) => `Jugar otra vez · ${coins} 🪙`,
       paidNote: "Ya no suma XP: es solo para practicar.",
+      paidXp: (coins, xp) => `Jugar otra vez · ${coins} 🪙 · +${xp} XP`,
+      paidXpLeft: (n) => (n === 1 ? "Te queda 1 ronda pagada con XP hoy" : `Te quedan ${n} rondas pagadas con XP hoy`),
     },
     streakCard: {
       days: "días seguidos",
@@ -1124,6 +1129,8 @@ const STRINGS: Record<Locale, Dict> = {
       freeLeft: (n) => `${n} left with XP today`,
       paid: (coins) => `Play again · ${coins} 🪙`,
       paidNote: "No XP from here on: practice only.",
+      paidXp: (coins, xp) => `Play again · ${coins} 🪙 · +${xp} XP`,
+      paidXpLeft: (n) => (n === 1 ? "1 paid round with XP left today" : `${n} paid rounds with XP left today`),
     },
     streakCard: {
       days: "days in a row",
@@ -1551,6 +1558,8 @@ const STRINGS: Record<Locale, Dict> = {
       freeLeft: (n) => `Faltam ${n} com XP hoje`,
       paid: (coins) => `Jogar de novo · ${coins} 🪙`,
       paidNote: "Não soma mais XP: é só para treinar.",
+      paidXp: (coins, xp) => `Jogar de novo · ${coins} 🪙 · +${xp} XP`,
+      paidXpLeft: (n) => (n === 1 ? "Falta 1 rodada paga com XP hoje" : `Faltam ${n} rodadas pagas com XP hoje`),
     },
     streakCard: {
       days: "dias seguidos",
@@ -1976,6 +1985,8 @@ const STRINGS: Record<Locale, Dict> = {
       freeLeft: (n) => `Il en reste ${n} avec XP aujourd'hui`,
       paid: (coins) => `Rejouer · ${coins} 🪙`,
       paidNote: "Plus d'XP à partir d'ici : entraînement seulement.",
+      paidXp: (coins, xp) => `Rejouer · ${coins} 🪙 · +${xp} XP`,
+      paidXpLeft: (n) => (n === 1 ? "Il reste 1 partie payante avec XP aujourd'hui" : `Il reste ${n} parties payantes avec XP aujourd'hui`),
     },
     streakCard: {
       days: "jours d'affilée",

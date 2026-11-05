@@ -8,13 +8,13 @@
 //  una y cada pista resta estrellas. Endless: al acertar, "otra ronda".
 // ============================================================
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { type Difficulty } from "../lib/game";
 import { countryName, t, type Locale } from "../lib/i18n";
 import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCountries, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
-import { awardQuizCorrect, beginXpRound, freeRoundsLeft, quizSource } from "../lib/xp";
+import { awardQuizCorrect, beginXpRound, buyXpRound, freeRoundsLeft, paidXpRoundsLeft, quizSource, ROUND_XP } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
@@ -90,9 +90,20 @@ export default function CountryQuizGame({
   // Rondas con XP que quedan hoy. Se recalcula en cada render: `solved` cambia
   // justo después de otorgar, así que el botón ya refleja el cupo consumido.
   const freeLeft = freeRoundsLeft(quizSource(mode));
-  // Volver a jugar: gratis mientras queden rondas con XP; después, con monedas.
+  const paidLeft = paidXpRoundsLeft(quizSource(mode));
+  // Re-render tras una compra rechazada (el cupo local se actualizó).
+  const [, refresh] = useReducer((n: number) => n + 1, 0);
+  // Volver a jugar: gratis mientras queden rondas con XP; después, hasta
+  // PAID_XP_ROUNDS rondas pagadas que también dan XP; después, pagadas sin XP.
   async function playAgain() {
     if (freeLeft > 0) { newRound(); return; }
+    if (paidLeft > 0) {
+      const b = await buyXpRound(quizSource(mode));
+      if (b === "ok" || b === "free") { newRound(); return; }
+      if (b === "insufficient") { setShopOpen(true); return; }
+      refresh();
+      return;
+    }
     const r = await spendCoins("spend_attempt", `quiz:${mode}`);
     if (r === "ok") newRound();
     else setShopOpen(true);
@@ -304,10 +315,10 @@ ${SITE_HOST}`}
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <button onClick={() => void playAgain()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-              🔄 {freeLeft > 0 ? tr.practiceNextRound : tr.replay.paid(COIN_COSTS.spend_attempt)}
+              🔄 {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP[quizSource(mode)]) : tr.replay.paid(COIN_COSTS.spend_attempt)}
             </button>
             <p className="text-[11px] text-neutral-400">
-              {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : tr.replay.paidNote}
+              {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
             </p>
             <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.region.chooseOtherMode}
