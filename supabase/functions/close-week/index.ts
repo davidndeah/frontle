@@ -15,7 +15,7 @@
 //  (el epoch cayó en jueves). Aquí se convierte una sola vez.
 //
 //  Un solo ranking GLOBAL: el pot lo gana el top 3 de la semana por XP, que
-//  resuelve `weekly_podium()`. (Las divisiones se retiraron mientras no haya
+//  resuelve `weekly_leaderboard()` (XP y, a igualdad, la marca del reto diario). (Las divisiones se retiraron mientras no haya
 //  volumen de jugadores — ver migración 0014.)
 //
 //  Jugar la liga exige wallet (misma regla que el ranking diario), así que
@@ -167,16 +167,12 @@ Deno.serve(async () => {
       return json({ ok: true, skipped: "ya rolled on-chain", week: Number(week), weekStart });
     }
 
-    // Podio del dinero: top 3 global de la semana por XP.
-    // Mismo orden que `weekly_podium` (xp desc, last_event asc) pero con más
-    // filas: si alguien del top 3 está en revisión, su puesto pasa al 4º.
+    // Podio del dinero: top 3 global de la semana por XP. El orden (y el
+    // desempate por la marca del reto diario) lo da `weekly_leaderboard`
+    // (migración 0027), el mismo que ve la app. Se piden más filas: si alguien
+    // del top 3 está en revisión, su puesto pasa al 4º.
     const { data: board, error: boardErr } = await supabase
-      .from("weekly_xp")
-      .select("player_id, xp")
-      .eq("week", weekStart)
-      .order("xp", { ascending: false })
-      .order("last_event", { ascending: true })
-      .limit(50);
+      .rpc("weekly_leaderboard", { p_week: weekStart, p_limit: 50 });
     if (boardErr) throw boardErr;
 
     // Cuentas en revisión (migración 0020) y wallets sin teléfono verificado
