@@ -193,7 +193,8 @@ function dailySuffix(action: Action): `0x${string}` {
 }
 
 function resolveAction(reason: string): Action | null {
-  if (reason === "reintento del reto diario") return { fn: "payAttempt" };
+  // Reintento y nivel extra son el mismo pago (0.10 al pot del día).
+  if (reason === "reintento del reto diario" || reason === "nivel extra del reto diario") return { fn: "payAttempt" };
   if (reason.startsWith("pista:")) {
     const kind = reason.slice("pista:".length).trim();
     const hintType = kind === "initial" ? 0 : kind === "next" ? 1 : kind === "all" ? 2 : -1;
