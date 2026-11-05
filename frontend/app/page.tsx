@@ -575,7 +575,10 @@ export default function Frontle() {
       if (!alive) return;
       // Solo celebra/paga si la racha SUBE dentro de la sesión: al cargar va
       // de 0 al valor real, y una racha estancada en 7 no debe re-pagar XP.
-      if (streakReadyRef.current && s > prevStreakRef.current) {
+      // Y solo si sube UN día: el primer sync puede correr antes de fijar la
+      // identidad (myId vacío → 0) y el siguiente salta de 0 a la racha real;
+      // eso re-pagaba el hito de 7 el día después de alcanzarlo.
+      if (streakReadyRef.current && s === prevStreakRef.current + 1) {
         setStreakBump(true);
         if (s === 3 || s === 7 || s === 30 || s === 100) setMilestone(s);
         awardStreakMilestone(todayUTC(), s); // idempotente y solo 7/30/100
