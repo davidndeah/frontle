@@ -14,7 +14,7 @@ import { countryName, t, type Locale } from "../lib/i18n";
 import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCountries, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
-import { awardQuizCorrect, freeRoundsLeft, quizSource } from "../lib/xp";
+import { awardQuizCorrect, beginXpRound, freeRoundsLeft, quizSource } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
@@ -151,6 +151,7 @@ export default function CountryQuizGame({
     setRevealed(0);
     setTries(0);
     setSolved(false);
+    beginXpRound(quizSource(mode)); // la ronda (y su reloj) se abre en el servidor
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 

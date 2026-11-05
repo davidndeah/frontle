@@ -18,7 +18,7 @@ import {
   nextRegionHint,
   type RegionPlayState,
 } from "../lib/regionGame";
-import { awardRegionWin, freeRoundsLeft } from "../lib/xp";
+import { awardRegionWin, beginXpRound, freeRoundsLeft } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
@@ -151,6 +151,7 @@ export default function RegionGame({
           startRef.current = g.startMs || Date.now();
           setStarted(true);
           setState({ challenge: g.challenge, chain: g.chain ?? [], solved: !!g.solved });
+          if (!g.solved) beginXpRound("region"); // partida retomada: ronda nueva en el servidor
           setElapsedMs(g.solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now()));
           return;
         }
@@ -162,6 +163,7 @@ export default function RegionGame({
           startRef.current = g.startMs || Date.now();
           setStarted(true);
           setState((p) => ({ ...p, chain: g.chain ?? [], solved: !!g.solved }));
+          if (!g.solved) beginXpRound("region");
           setElapsedMs(g.solved ? g.finalMs ?? 0 : Date.now() - (g.startMs || Date.now()));
         }
       }
@@ -208,6 +210,7 @@ export default function RegionGame({
     setShowNextSil(false);
     setShowAllSil(false);
     setMessage(null);
+    beginXpRound("region");
     try {
       localStorage.setItem(
         extraKey,
@@ -222,6 +225,7 @@ export default function RegionGame({
     setElapsedMs(0);
     setStarted(true);
     save({ started: true, solved: false, chain: [] });
+    beginXpRound("region"); // la ronda (y su reloj) se abre en el servidor
     setTimeout(() => inputRef.current?.focus(), 50);
     if (!modeCoachSeen("region")) setCoach(true);
   }

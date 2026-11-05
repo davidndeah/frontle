@@ -1,10 +1,10 @@
 // ============================================================
 //  Frontle v2 — XP y liga semanal (Fase 1, PLAN-FRONTLE-V2 §4)
 //
-//  · Los eventos se insertan en `xp_events` (migración 0008) con la anon
-//    key — mismo modelo de confianza que `scores`. El VALOR y el TOPE de
-//    cada fuente los valida el servidor (check + primary key), no este
-//    archivo: aquí solo evitamos requests que sabemos que rebotarían.
+//  · Los eventos de `xp_events` (migración 0008) los escribe el SERVIDOR
+//    (función `game`, migración 0025): el del diario al cerrar la partida y
+//    el de los modos libres al cerrar cada ronda abierta en el servidor.
+//    Aquí solo se abren/cierran rondas y se lee la liga.
 //  · Identidad: SIEMPRE la wallet. Igual que el ranking diario, la liga
 //    exige wallet — sin ella no se emite XP (el servidor además lo impone
 //    con un check de formato de dirección). `bindXpIdentity` la fija al
@@ -86,61 +86,6 @@ export function hasLeagueIdentity(): boolean {
   return /^0x[0-9a-f]{40}$/.test(xpPlayerId());
 }
 
-// --- Inserción de eventos ----------------------------------------------------
-
-interface XpEvent {
-  source: string;
-  level?: string;
-  seq?: number;
-  xp: number;
-}
-
-// Inserta un lote de eventos. `ignore-duplicates`: lo ya otorgado (misma PK)
-// se descarta en el servidor sin error — reenviar es seguro e idempotente.
-async function postEvents(day: number, events: XpEvent[]): Promise<void> {
-  if (!useSupabase || events.length === 0) return;
-  const player = xpPlayerId();
-  if (!player) return;
-  try {
-    await fetch(`${SUPA_URL}/rest/v1/xp_events?on_conflict=player_id,day,source,level,seq`, {
-      method: "POST",
-      headers: {
-        ...HEADERS(),
-        "Content-Type": "application/json",
-        Prefer: "return=minimal,resolution=ignore-duplicates",
-      },
-      body: JSON.stringify(
-        events.map((e) => ({
-          player_id: player,
-          day,
-          source: e.source,
-          level: e.level ?? "-",
-          seq: e.seq ?? 1,
-          xp: e.xp,
-        }))
-      ),
-    });
-  } catch {
-    /* silencioso: el XP nunca bloquea el juego */
-  }
-}
-
-// Contador local por (día, fuente) para elegir el `seq` siguiente. Es solo
-// una optimización: el techo real lo impone el servidor. Devuelve null si el
-// tope del día ya se alcanzó.
-function nextSeq(day: number, source: keyof typeof CAPS): number | null {
-  const key = `frontle-xp-seq-${day}-${source}`;
-  let n = 0;
-  try {
-    n = Number(localStorage.getItem(key) || "0");
-  } catch {}
-  if (n >= CAPS[source]) return null;
-  try {
-    localStorage.setItem(key, String(n + 1));
-  } catch {}
-  return n + 1;
-}
-
 // Día UTC actual en formato YYYYMMDD (el mismo de `scores.day`).
 export function todayUTC(): number {
   const d = new Date();
@@ -149,95 +94,77 @@ export function todayUTC(): number {
 
 // --- Otorgamiento por modo ---------------------------------------------------
 
-// Clave de un evento en el mirror local: espeja la PK de `xp_events`
-// (player_id, day, source, level, seq) con seq siempre 1 en el diario.
-const eventKey = (e: XpEvent) => `${e.source}:${e.level ?? "-"}`;
+// Los tres modos libres: cada ronda se ABRE en el servidor al empezar
+// (`beginXpRound`) y se cierra al resolverla (`award*`). El servidor cuenta el
+// tope del día, exige un tiempo mínimo de juego y escribe el XP — el cliente
+// ya no inserta eventos (migración 0025). Devuelven el XP realmente otorgado
+// (0 si se agotó el tope o la ronda no se pudo abrir).
 
-// Cuáles de estos eventos son NUEVOS hoy. Mismo papel que `nextSeq` en los
-// modos con tope: no impone nada —el techo real es la PK del servidor— solo
-// evita anunciar XP que el servidor va a descartar por duplicado. Importa
-// porque el diario se puede reintentar pagando: la segunda victoria del mismo
-// nivel no vuelve a pagar XP y la pantalla no debe decir que sí.
-// La clave incluye el nivel, así que `streak_day` (level "-") se otorga una
-// sola vez aunque el jugador resuelva easy y medium el mismo día.
-function markNewDailyEvents(day: number, events: XpEvent[]): XpEvent[] {
-  const key = `frontle-xp-daily-${day}`;
-  let granted: string[] = [];
+const openRounds: Partial<Record<CappedSource, Promise<string | null>>> = {};
+
+async function gameCall(body: Record<string, unknown>): Promise<Record<string, unknown> | null> {
+  if (!useSupabase) return null;
   try {
-    const raw = JSON.parse(localStorage.getItem(key) || "[]");
-    if (Array.isArray(raw)) granted = raw.map(String);
-  } catch {}
-  const seen = new Set(granted);
-  const fresh = events.filter((e) => !seen.has(eventKey(e)));
-  if (fresh.length > 0) {
-    try {
-      localStorage.setItem(key, JSON.stringify([...seen, ...fresh.map(eventKey)]));
-    } catch {}
+    const r = await fetch(`${SUPA_URL}/functions/v1/game`, {
+      method: "POST",
+      headers: { ...HEADERS(), "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json().catch(() => null);
+    return j && typeof j === "object" ? (j as Record<string, unknown>) : null;
+  } catch {
+    return null;
   }
-  return fresh;
 }
 
-// Reto diario resuelto: XP del nivel + calidad (estrellas) + sin pistas +
-// racha mantenida. `stars` es la misma métrica de la win card (3 óptima,
-// 2 = +1 país, 1 = más). Todo idempotente por (día, nivel).
-//
-// Devuelve el XP realmente otorgado (0 si el jugador ya lo cobró hoy) y espera
-// a que el evento esté insertado: la pantalla de victoria lee la posición en la
-// liga justo después y necesita ver este XP ya contado. Se postean SIEMPRE
-// todos los eventos, no solo los nuevos — reenviar es idempotente y repara el
-// caso de un localStorage perdido o de otro dispositivo.
-export async function awardDailySolve(
-  day: number,
-  level: Difficulty,
-  stars: 1 | 2 | 3,
-  usedHints: boolean
-): Promise<number> {
-  const events: XpEvent[] = [
-    { source: "daily", level, xp: XP.daily[level] },
-    { source: "streak_day", xp: XP.streakDay },
-  ];
-  if (stars === 3) events.push({ source: "stars", level, xp: XP.stars3 });
-  if (stars === 2) events.push({ source: "stars", level, xp: XP.stars2 });
-  if (!usedHints) events.push({ source: "nohints", level, xp: XP.noHints });
-  const fresh = markNewDailyEvents(day, events);
-  await postEvents(day, events);
-  return fresh.reduce((sum, e) => sum + e.xp, 0);
+// Espeja en local cuántas rondas con XP quedan (lo que enseña la UI).
+function syncLocalSeq(source: CappedSource, remaining: unknown, day = todayUTC()): void {
+  if (typeof remaining !== "number") return;
+  try {
+    localStorage.setItem(`frontle-xp-seq-${day}-${source}`, String(Math.max(0, CAPS[source] - remaining)));
+  } catch {}
 }
 
-// Hito de racha (7/30/100) al alcanzarlo. Re-alcanzarlo tras perder la racha
-// vuelve a pagar — reconstruirla entera es el mérito (diseño Duolingo).
-export function awardStreakMilestone(day: number, streak: number): void {
-  if (streak !== 7 && streak !== 30 && streak !== 100) return;
-  void postEvents(day, [{ source: "streak_milestone", level: String(streak), xp: XP.streakMilestone }]);
+// Abre la ronda de una fuente al empezar a jugarla. Sin wallet o con el tope
+// agotado no abre nada (la ronda se juega igual, sin XP).
+export function beginXpRound(source: CappedSource): void {
+  const player = xpPlayerId();
+  if (!/^0x[0-9a-f]{40}$/.test(player) || freeRoundsLeft(source) === 0) {
+    delete openRounds[source];
+    return;
+  }
+  openRounds[source] = gameCall({ action: "xp_start", player, source }).then((j) => {
+    if (!j?.ok) return null;
+    syncLocalSeq(source, j.remaining);
+    return typeof j.roundId === "string" ? j.roundId : null;
+  });
 }
 
-// Los tres modos libres devuelven el XP realmente otorgado (0 si ya se agotó
-// el tope del día) y esperan a que el evento esté insertado: la pantalla de
-// victoria lee la posición en la liga justo después y necesita ver este XP ya
-// contado. El diario no lo necesita y sigue siendo fire-and-forget.
+async function finishXpRound(source: CappedSource, proof?: Record<string, unknown>): Promise<number> {
+  const pending = openRounds[source];
+  delete openRounds[source];
+  const roundId = pending ? await pending : null;
+  if (!roundId) return 0;
+  const j = await gameCall({ action: "xp_finish", roundId, ...(proof ? { proof } : {}) });
+  if (!j?.ok) return 0;
+  syncLocalSeq(source, j.remaining);
+  return Number(j.xp) || 0;
+}
 
 // Regiones: completar un país (máx 1 país con XP por día).
-export async function awardRegionWin(day = todayUTC()): Promise<number> {
-  const seq = nextSeq(day, "region");
-  if (seq === null) return 0;
-  await postEvents(day, [{ source: "region", seq, xp: XP.region }]);
-  return XP.region;
+export function awardRegionWin(): Promise<number> {
+  return finishXpRound("region");
 }
 
 // Quiz: acierto (máx 5 con XP por día y por modo).
-export async function awardQuizCorrect(mode: "flag" | "outline", day = todayUTC()): Promise<number> {
-  const seq = nextSeq(day, quizSource(mode));
-  if (seq === null) return 0;
-  await postEvents(day, [{ source: quizSource(mode), seq, xp: XP.quiz }]);
-  return XP.quiz;
+export function awardQuizCorrect(mode: "flag" | "outline"): Promise<number> {
+  return finishXpRound(quizSource(mode));
 }
 
-// Práctica: reto resuelto (máx 3 con XP por día).
-export async function awardPracticeSolve(day = todayUTC()): Promise<number> {
-  const seq = nextSeq(day, "practice");
-  if (seq === null) return 0;
-  await postEvents(day, [{ source: "practice", seq, xp: XP.practice }]);
-  return XP.practice;
+// Práctica: reto resuelto (máx 3 con XP por día). El servidor revalida la
+// cadena contra el reto jugado.
+export function awardPracticeSolve(proof: { start: string; end: string; chain: string[] }): Promise<number> {
+  return finishXpRound("practice", proof);
 }
 
 // --- Lectura de la liga ------------------------------------------------------

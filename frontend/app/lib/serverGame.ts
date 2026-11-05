@@ -90,15 +90,18 @@ export async function finishServerGame(
   chain: string[],
   pauses: Pause[],
   countryCode: string,
-  name?: string
-): Promise<{ ok: true; countries: number; timeMs: number } | { ok: false; error: string }> {
-  const r = await call<{ countries: number; timeMs: number }>({
+  name: string | undefined,
+  usedHints: boolean
+): Promise<{ ok: true; countries: number; timeMs: number; xp: number } | { ok: false; error: string }> {
+  const r = await call<{ countries: number; timeMs: number; xp?: number }>({
     action: "finish",
     sessionId,
     chain,
     pauses,
     countryCode,
+    usedHints,
     ...(name ? { name } : {}),
   });
-  return r.ok ? { ok: true, countries: r.data.countries, timeMs: r.data.timeMs } : r;
+  // `xp`: XP del diario que el servidor otorgó al cerrar (0 si ya lo tenía).
+  return r.ok ? { ok: true, countries: r.data.countries, timeMs: r.data.timeMs, xp: Number(r.data.xp) || 0 } : r;
 }

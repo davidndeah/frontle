@@ -29,7 +29,7 @@ import Coachmarks from "./Coachmarks";
 import LevelSelect from "./LevelSelect";
 import { markModeCoachSeen, modeCoachSeen } from "../lib/onboarding";
 import { winMood, greenGuessMood } from "../lib/streakMood";
-import { awardPracticeSolve, freeRoundsLeft } from "../lib/xp";
+import { awardPracticeSolve, beginXpRound, freeRoundsLeft } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
@@ -112,6 +112,7 @@ export default function PracticeGame({
     startRef.current = Date.now();
     setElapsedMs(0);
     setRound((r) => r + 1);
+    beginXpRound("practice"); // la ronda (y su reloj) se abre en el servidor
     setTimeout(() => inputRef.current?.focus(), 50);
   }
   // Pantalla previa: se elige la dificultad antes de la primera ronda (como
@@ -190,7 +191,7 @@ export default function PracticeGame({
         setElapsedMs(Date.now() - startRef.current);
         // Liga v2: reto de práctica resuelto da XP (tope diario en el servidor).
         // El aviso espera al insert para mostrar el puesto ya actualizado.
-        celebrate(awardPracticeSolve());
+        celebrate(awardPracticeSolve({ start: state.challenge.start, end: state.challenge.end, chain: chain.map((c) => c.country) }));
       }
     }
     setInput("");

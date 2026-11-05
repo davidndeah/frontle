@@ -72,7 +72,7 @@ const loadCoins = () => import("./lib/coins");
 // (que hablan con Supabase y con la cadena) van diferidos.
 // (el import va arriba, con el resto)
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
-import { awardDailySolve, awardStreakMilestone, bindXpIdentity, todayUTC, getWeeklyStanding, fmtWeekClose, msToWeekClose, XP, type WeeklyStanding } from "./lib/xp";
+import { bindXpIdentity, getWeeklyStanding, fmtWeekClose, msToWeekClose, XP, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
 import { winMood, greenGuessMood } from "./lib/streakMood";
@@ -580,8 +580,8 @@ export default function Frontle() {
       // eso re-pagaba el hito de 7 el día después de alcanzarlo.
       if (streakReadyRef.current && s === prevStreakRef.current + 1) {
         setStreakBump(true);
+        // El XP del hito lo otorga el servidor al cerrar el diario (`game`).
         if (s === 3 || s === 7 || s === 30 || s === 100) setMilestone(s);
-        awardStreakMilestone(todayUTC(), s); // idempotente y solo 7/30/100
       }
       prevStreakRef.current = s;
       streakReadyRef.current = true;
@@ -1224,10 +1224,9 @@ export default function Frontle() {
           setBest(score);
           try { localStorage.setItem(bestKey, String(score)); } catch {}
         }
-        // Liga v2: XP por nivel + calidad (estrellas de la win card) + sin
-        // pistas + racha del día. Idempotente por (día, nivel) en el servidor.
-        const stars = score <= challenge.optimal ? 3 : score === challenge.optimal + 1 ? 2 : 1;
-        void closeDaily(score, finalMs!, stars, showInitial || showNextSil || showAllSil);
+        // Liga v2: XP por nivel + estrellas + sin pistas + racha del día; lo
+        // otorga el servidor al cerrar la partida, idempotente por (día, nivel).
+        void closeDaily(score, finalMs!, showInitial || showNextSil || showAllSil);
       }
     }
     setInput("");
@@ -1266,7 +1265,8 @@ export default function Frontle() {
     // ser el del servidor, el mismo que verá el ranking.
     if (sessionRef.current) {
       const chain = solvedChainRef.current ?? state.chain.map((c) => c.country);
-      return finishServerGame(sessionRef.current, chain, pausesRef.current, ipCountry, alias || undefined).then((r) => {
+      return finishServerGame(sessionRef.current, chain, pausesRef.current, ipCountry, alias || undefined, usedHintsRef.current).then((r) => {
+        finishXpRef.current = r.ok ? r.xp : 0;
         if (r.ok) {
           setElapsedMs(r.timeMs);
           try {
@@ -1304,11 +1304,17 @@ export default function Frontle() {
   // las dos posiciones. El orden importa: si se leyeran antes, el puesto del
   // día no incluiría esta marca y el de la liga no incluiría este XP, así que
   // la pantalla mostraría números viejos justo en el momento que más pesan.
-  async function closeDaily(score: number, timeMs: number, stars: 1 | 2 | 3, usedHints: boolean) {
+  const usedHintsRef = useRef(false);
+  const finishXpRef = useRef(0);
+  async function closeDaily(score: number, timeMs: number, usedHints: boolean) {
     setWinStats({ loading: true, xp: 0, weekly: null, daily: null });
     try {
+      // El XP lo otorga el servidor al cerrar la partida (`finish`): aquí solo
+      // se lee lo que devolvió (estrellas incluidas, calculadas con la cadena).
+      usedHintsRef.current = usedHints;
+      finishXpRef.current = 0;
       const addr = await enterRanking(score, timeMs);
-      const xp = await awardDailySolve(day, level, stars, usedHints);
+      const xp = finishXpRef.current;
       const [weekly, daily] = await Promise.all([
         getWeeklyStanding(),
         addr ? getMyDailyStanding(day, level, addr) : Promise.resolve(null),
