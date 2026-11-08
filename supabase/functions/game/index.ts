@@ -35,6 +35,10 @@
 //       abrir y cerrar. Práctica manda {start, end, chain} y se revalida.
 //       Ver la migración 0025.
 //
+//   · {action:"challenge_event", kind, seed, level, client, player?, result?}
+//       Medición del reto entre amigos "¿Me ganas?" (migración 0030): share,
+//       open, play o solve. Solo cuenta: no da XP ni toca premios.
+//
 //  El reto sale de crypto.getRandomValues: ya no hay semilla pública con la
 //  que conocerlo de antemano. Ver _shared/engine.ts y la migración 0023.
 // ============================================================
@@ -70,6 +74,10 @@ const XP_ROUNDS_PER_DAY = 200; // rondas abiertas por jugador y día (anti-spam)
 // Rondas pagadas con monedas que también dan XP, por modo y día, una vez
 // agotado el tope gratis (0028). Pasado esto se juega pagando, sin XP.
 const XP_PAID_ROUNDS = 3;
+// "¿Me ganas?" (0030): tipos de evento y tope por navegador en 24 h contra el spam.
+const CHALLENGE_KINDS = ["share", "open", "play", "solve"];
+const CHALLENGE_RESULTS = ["win", "lose", "tie"];
+const CHALLENGE_EVENTS_PER_DAY = 200;
 const transferEvent = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 const CORS = {
@@ -395,6 +403,42 @@ Deno.serve(async (req) => {
         if (xp > 0) return json({ ok: true, xp, remaining: Math.max(0, cfg.cap - seq), used: seq });
       }
       return json({ ok: true, xp: 0, remaining: 0 });
+    }
+
+    if (action === "challenge_event") {
+      // Embudo del reto entre amigos. Un evento por (tipo, semilla, cliente):
+      // el upsert ignora los repetidos. La semilla va en el mismo rango que
+      // lib/challenge.ts (fuera de las fechas YYYYMMDD).
+      const kind = String(body.kind ?? "");
+      const seed = Number(body.seed);
+      const level = String(body.level ?? "") as Level;
+      const client = String(body.client ?? "").toLowerCase();
+      const player = String(body.player ?? "").toLowerCase();
+      const result = String(body.result ?? "");
+      if (!CHALLENGE_KINDS.includes(kind)) return json({ ok: false, error: "bad_kind" }, 400);
+      if (!Number.isInteger(seed) || seed < 1_000_000_000 || seed > 2_147_483_646) return json({ ok: false, error: "bad_seed" }, 400);
+      if (!LEVELS.includes(level)) return json({ ok: false, error: "bad_level" }, 400);
+      if (!/^[a-z0-9-]{8,40}$/.test(client)) return json({ ok: false, error: "bad_client" }, 400);
+      const since = new Date(Date.now() - 86_400_000).toISOString();
+      const { count } = await supabase
+        .from("challenge_events")
+        .select("id", { count: "exact", head: true })
+        .eq("client_id", client)
+        .gte("created_at", since);
+      if ((count ?? 0) >= CHALLENGE_EVENTS_PER_DAY) return json({ ok: false, error: "too_many_events" }, 429);
+      const { error } = await supabase.from("challenge_events").upsert(
+        {
+          kind,
+          seed,
+          level,
+          client_id: client,
+          player_id: /^0x[0-9a-f]{40}$/.test(player) ? player : null,
+          result: kind === "solve" && CHALLENGE_RESULTS.includes(result) ? result : null,
+        },
+        { onConflict: "kind,seed,client_id", ignoreDuplicates: true },
+      );
+      if (error) throw error;
+      return json({ ok: true });
     }
 
     return json({ ok: false, error: "bad_action" }, 400);
