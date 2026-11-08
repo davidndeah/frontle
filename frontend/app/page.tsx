@@ -84,6 +84,7 @@ import { EmailLoginButton } from "./components/PrivyLogin";
 import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
 import { STATUS_COLORS, savedTheme, applyTheme, type Theme } from "./lib/theme";
+import { takeChallengeFromUrl, type RivalMark } from "./lib/challenge";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1, extraLevel: 0.1 };
 
@@ -320,6 +321,8 @@ export default function Frontle() {
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
+  // Reto recibido por link ("¿Me ganas?", lib/challenge.ts), aún sin empezar.
+  const [rival, setRival] = useState<RivalMark | null>(null);
   // Señal para pedirle a un modo que reproduzca su recorrido (coachmarks).
   // Es un nonce: al incrementarlo, el componente del modo activo lo detecta y
   // muestra su tutorial. Lo dispara el menú de Bordy según el modo en curso.
@@ -685,6 +688,18 @@ export default function Frontle() {
       );
     } catch {}
   }
+
+  // "¿Me ganas?": un link con ?reto= abre Práctica con ese reto
+  // (takeChallengeFromUrl lo lee una vez y lo borra de la URL).
+  useEffect(() => {
+    try {
+      const m = takeChallengeFromUrl();
+      if (!m) return;
+      setRival(m);
+      setTab("aprender");
+      setPracticeOn(true);
+    } catch {}
+  }, []);
 
   // Reset de desarrollo: /?reset=1 limpia la partida del día y el tutorial
   useEffect(() => {
@@ -2292,7 +2307,15 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
+          <PracticeGame
+            locale={locale}
+            onExit={() => { setPracticeOn(false); setRival(null); }}
+            reactBordy={reactBordy}
+            coachSignal={coachSignal}
+            dailyStreak={streak}
+            rival={rival}
+            onRivalConsumed={() => setRival(null)}
+          />
         )}
 
         {tab === "aprender" && !practiceOn && (

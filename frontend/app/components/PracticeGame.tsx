@@ -6,11 +6,13 @@
 //  tras otro. Ayuda a aprender: contornos de TODOS los países visibles
 //  y pistas GRATIS y progresivas (silueta → inicial → nombre). No hay
 //  cronómetro competitivo ni ranking; es puro entrenamiento.
+//  "¿Me ganas?": al ganar se comparte el mismo reto por link, y quien
+//  llega por uno juega ese reto contra la marca de su amigo
+//  (lib/challenge.ts).
 // ============================================================
 
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import {
-  randomChallenge,
   tryGuess,
   nextHintCountry,
   type PlayState,
@@ -35,6 +37,16 @@ import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
 import GlobeLoader from "./GlobeLoader";
 import { SITE_HOST } from "../lib/site";
+import {
+  challengeFromSeed,
+  challengeUrl,
+  compareMarks,
+  newChallengeSeed,
+  shareChallenge,
+  trackChallenge,
+  type ChallengeResult,
+  type RivalMark,
+} from "../lib/challenge";
 
 // Bandera de país (SVG de flagcdn), igual que el juego principal.
 function CFlag({ name, size = 28 }: { name: string; size?: number }) {
@@ -53,7 +65,7 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function PracticeGame({
-  locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0,
+  locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0, rival = null, onRivalConsumed,
 }: {
   locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
@@ -62,6 +74,10 @@ export default function PracticeGame({
   coachSignal?: number;
   /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
   dailyStreak?: number;
+  /** Reto recibido por link ("¿Me ganas?"): la primera ronda es ESE reto. */
+  rival?: RivalMark | null;
+  /** Avisa que el reto recibido ya se empezó (page.tsx lo suelta). */
+  onRivalConsumed?: () => void;
 }) {
   const tr = t(locale);
   const [state, setState] = useState<PlayState | null>(null);
@@ -109,11 +125,24 @@ export default function PracticeGame({
     else setShopOpen(true);
   }
   const inputRef = useRef<HTMLInputElement>(null);
+  // Semilla de la ronda en curso: es lo que viaja en el link "¿Me ganas?".
+  const seedRef = useRef(0);
+  // Marca del amigo si esta ronda es un reto recibido, y cómo terminó.
+  const [rivalRound, setRivalRound] = useState<RivalMark | null>(null);
+  const [rivalResult, setRivalResult] = useState<ChallengeResult | null>(null);
+  const [shareNote, setShareNote] = useState<string | null>(null);
 
-  // Reto aleatorio nuevo (arranca en cliente para no romper la hidratación).
-  function newRound(lv: Difficulty = level) {
-    setRoundLevel(lv);
-    setState({ challenge: randomChallenge(lv), chain: [], solved: false });
+  // Reto nuevo (arranca en cliente para no romper la hidratación). Con `mark`,
+  // la ronda es el reto recibido por link: su semilla y su nivel mandan.
+  function newRound(lv: Difficulty = level, mark: RivalMark | null = null) {
+    const seed = mark?.seed ?? newChallengeSeed();
+    const lvl = mark?.level ?? lv;
+    seedRef.current = seed;
+    setRivalRound(mark);
+    setRivalResult(null);
+    setShareNote(null);
+    setRoundLevel(lvl);
+    setState({ challenge: challengeFromSeed(seed, lvl), chain: [], solved: false });
     setInput("");
     setMessage(null);
     setSuggestions([]);
@@ -133,9 +162,23 @@ export default function PracticeGame({
   const [coach, setCoach] = useState(false);
 
   function begin() {
-    newRound(level);
+    if (rival) {
+      newRound(rival.level, rival);
+      trackChallenge("play", rival);
+      onRivalConsumed?.();
+    } else {
+      newRound(level);
+    }
     setStarted(true);
     if (!modeCoachSeen("practice")) setCoach(true);
+  }
+
+  // Comparte la ronda recién ganada: mismo reto + mi marca.
+  async function challengeFriend(countries: number, timeMs: number) {
+    const url = challengeUrl({ seed: seedRef.current, level: roundLevel, countries, timeMs });
+    const r = await shareChallenge(tr.challenge.shareText(countries, formatTime(timeMs)), url);
+    if (r === "shared" || r === "copied") trackChallenge("share", { seed: seedRef.current, level: roundLevel });
+    setShareNote(r === "copied" ? tr.challenge.copied : null);
   }
 
   // Reproducir el tutorial a pedido del menú de Bordy (ver CountryQuizGame).
@@ -198,7 +241,13 @@ export default function PracticeGame({
       setShowInitial(false);
       setShowNextSil(false);
       if (solved) {
-        setElapsedMs(Date.now() - startRef.current);
+        const finalMs = Date.now() - startRef.current;
+        setElapsedMs(finalMs);
+        if (rivalRound) {
+          const result = compareMarks({ countries: chain.length, timeMs: finalMs }, rivalRound);
+          setRivalResult(result);
+          trackChallenge("solve", rivalRound, result);
+        }
         // Liga v2: reto de práctica resuelto da XP (tope diario en el servidor).
         // El aviso espera al insert para mostrar el puesto ya actualizado.
         celebrate(awardPracticeSolve({ start: state.challenge.start, end: state.challenge.end, chain: chain.map((c) => c.country) }));
@@ -217,17 +266,31 @@ export default function PracticeGame({
           <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
           <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
         </button>
-        <section className="panel p-5 flex flex-col items-center gap-4 text-center">
-          <span className="text-5xl">🎓</span>
-          <div>
-            <h2 className="font-display text-xl font-bold text-white">{tr.practiceMode}</h2>
-            <p className="text-xs text-neutral-300 mt-0.5">{tr.practiceFree}</p>
-          </div>
-          <LevelSelect tr={tr} level={level} onChange={setLevel} />
-          <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
-            {tr.play}
-          </button>
-        </section>
+        {rival ? (
+          <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+            <span className="text-5xl">🤝</span>
+            <div>
+              <h2 className="font-display text-xl font-bold text-white">{tr.challenge.invitedTitle}</h2>
+              <p className="text-sm text-neutral-200 mt-1">{tr.challenge.invitedBody(rival.countries, formatTime(rival.timeMs))}</p>
+              <p className="text-xs text-neutral-400 mt-1">{tr.levels[rival.level]} · {tr.practiceFree}</p>
+            </div>
+            <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
+              {tr.challenge.accept}
+            </button>
+          </section>
+        ) : (
+          <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+            <span className="text-5xl">🎓</span>
+            <div>
+              <h2 className="font-display text-xl font-bold text-white">{tr.practiceMode}</h2>
+              <p className="text-xs text-neutral-300 mt-0.5">{tr.practiceFree}</p>
+            </div>
+            <LevelSelect tr={tr} level={level} onChange={setLevel} />
+            <button onClick={begin} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1">
+              {tr.play}
+            </button>
+          </section>
+        )}
       </div>
     );
   }
@@ -340,9 +403,31 @@ export default function PracticeGame({
 
       {state.solved ? (
         <section className="panel p-5 text-center">
-          <div className="text-2xl font-black prism-text">{stars === 3 ? tr.winPerfect : tr.winNormal}</div>
+          <div className="text-2xl font-black prism-text">
+            {rivalResult === "win" ? tr.challenge.win
+              : rivalResult === "lose" ? tr.challenge.lose
+              : rivalResult === "tie" ? tr.challenge.tie
+              : stars === 3 ? tr.winPerfect : tr.winNormal}
+          </div>
           <PrecisionStars count={stars} label={tr.starsLabel(stars)} />
           <p className="text-neutral-200 mt-2">{tr.winText(guessCount, optimal, stars === 3)}</p>
+          {rivalRound && (
+            <p className="text-sm text-neutral-300 mt-1">
+              {tr.challenge.versus(
+                tr.challenge.mark(guessCount, formatTime(elapsedMs)),
+                tr.challenge.mark(rivalRound.countries, formatTime(rivalRound.timeMs)),
+              )}
+            </p>
+          )}
+          {/* "¿Me ganas?": el mismo reto con mi marca, para un amigo. */}
+          <button
+            onClick={() => void challengeFriend(guessCount, elapsedMs)}
+            className="brutal-sm brutal-press rounded-xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49] mt-4 w-full"
+          >
+            🤝 {tr.challenge.cta}
+          </button>
+          {rivalRound && <p className="text-[11px] text-neutral-400 mt-1">{tr.challenge.replyHint}</p>}
+          {shareNote && <p className="text-[11px] text-emerald-300 mt-1" role="status">{shareNote}</p>}
           <div className="mt-4">
             <ScoreCard
               data={{

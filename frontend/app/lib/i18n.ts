@@ -347,6 +347,21 @@ type Dict = {
   practiceHint: string;
   practiceNextRound: string;
   practiceExit: string;
+  // "¿Me ganas?": reto de Práctica compartible por link (lib/challenge.ts)
+  challenge: {
+    cta: string;
+    shareText: (countries: number, time: string) => string;
+    copied: string;
+    invitedTitle: string;
+    invitedBody: (countries: number, time: string) => string;
+    accept: string;
+    win: string;
+    lose: string;
+    tie: string;
+    mark: (countries: number, time: string) => string;
+    versus: (mine: string, rival: string) => string;
+    replyHint: string;
+  };
   // Modo Regiones (marco del juego; los nombres de subdivisiones van en idioma local)
   region: {
     challengeOfDay: string;
@@ -787,6 +802,20 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Pista (gratis)",
     practiceNextRound: "Otra ronda",
     practiceExit: "Salir de práctica",
+    challenge: {
+      cta: "Reta a un amigo",
+      shareText: (n, t) => `🌍 Resolví este reto de Frontle en ${n} países y ${t}. ¿Me ganas?`,
+      copied: "Link copiado: pégalo en tu chat",
+      invitedTitle: "Te retaron",
+      invitedBody: (n, t) => `Tu amigo lo resolvió en ${n} países y ${t}. ¿Le ganas?`,
+      accept: "Aceptar el reto",
+      win: "¡Le ganaste!",
+      lose: "Esta vez te ganó tu amigo",
+      tie: "¡Empate!",
+      mark: (n, t) => `${n} países · ${t}`,
+      versus: (mine, rival) => `Tú: ${mine} · Tu amigo: ${rival}`,
+      replyHint: "Devuélvele el reto con tu marca",
+    },
     region: {
       challengeOfDay: "Reto del día",
       timerStarts: "El cronómetro arranca al pulsar Jugar",
@@ -1214,6 +1243,20 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Hint (free)",
     practiceNextRound: "Another round",
     practiceExit: "Exit practice",
+    challenge: {
+      cta: "Challenge a friend",
+      shareText: (n, t) => `🌍 I solved this Frontle challenge in ${n} countries and ${t}. Can you beat me?`,
+      copied: "Link copied: paste it in your chat",
+      invitedTitle: "You've been challenged",
+      invitedBody: (n, t) => `Your friend solved it in ${n} countries and ${t}. Can you beat that?`,
+      accept: "Accept the challenge",
+      win: "You won!",
+      lose: "Your friend won this time",
+      tie: "It's a tie!",
+      mark: (n, t) => `${n} countries · ${t}`,
+      versus: (mine, rival) => `You: ${mine} · Your friend: ${rival}`,
+      replyHint: "Send the challenge back with your score",
+    },
     region: {
       challengeOfDay: "Daily challenge",
       timerStarts: "The timer starts when you tap Play",
@@ -1643,6 +1686,20 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Dica (grátis)",
     practiceNextRound: "Outra rodada",
     practiceExit: "Sair da prática",
+    challenge: {
+      cta: "Desafie um amigo",
+      shareText: (n, t) => `🌍 Resolvi este desafio do Frontle em ${n} países e ${t}. Consegue me vencer?`,
+      copied: "Link copiado: cole no seu chat",
+      invitedTitle: "Chegou um desafio para você",
+      invitedBody: (n, t) => `Seu amigo resolveu em ${n} países e ${t}. Consegue fazer melhor?`,
+      accept: "Aceitar o desafio",
+      win: "Você ganhou!",
+      lose: "Desta vez seu amigo ganhou",
+      tie: "Empate!",
+      mark: (n, t) => `${n} países · ${t}`,
+      versus: (mine, rival) => `Você: ${mine} · Seu amigo: ${rival}`,
+      replyHint: "Devolva o desafio com a sua marca",
+    },
     region: {
       challengeOfDay: "Desafio do dia",
       timerStarts: "O cronômetro começa ao tocar em Jogar",
@@ -2070,6 +2127,20 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Indice (gratuit)",
     practiceNextRound: "Autre manche",
     practiceExit: "Quitter l'entraînement",
+    challenge: {
+      cta: "Défie un ami",
+      shareText: (n, t) => `🌍 J'ai résolu ce défi Frontle en ${n} pays et ${t}. Tu me bats ?`,
+      copied: "Lien copié : colle-le dans ta discussion",
+      invitedTitle: "On te lance un défi",
+      invitedBody: (n, t) => `Ton ami l'a résolu en ${n} pays et ${t}. Tu fais mieux ?`,
+      accept: "Relever le défi",
+      win: "Tu as gagné !",
+      lose: "Ton ami a gagné cette fois",
+      tie: "Égalité !",
+      mark: (n, t) => `${n} pays · ${t}`,
+      versus: (mine, rival) => `Toi : ${mine} · Ton ami : ${rival}`,
+      replyHint: "Renvoie-lui le défi avec ton score",
+    },
     region: {
       challengeOfDay: "Défi du jour",
       timerStarts: "Le chrono démarre en appuyant sur Jouer",
