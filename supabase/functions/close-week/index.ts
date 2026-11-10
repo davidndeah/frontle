@@ -177,11 +177,14 @@ Deno.serve(async () => {
 
     // Cuentas en revisión (migración 0020) y wallets sin teléfono verificado
     // en MiniPay (salvo wallets de correo de Privy): no entran al podio del
-    // dinero; su puesto pasa al siguiente.
+    // dinero; su puesto pasa al siguiente. Cuentan las dos sanciones (scope
+    // 'all' y 'weekly', 0030) mientras sigan vigentes: la detección automática
+    // del lunes 00:05 marca con 'weekly' a quien copió respuestas esta semana.
     const { data: reviewed, error: revErr } = await supabase
       .from("account_reviews")
       .select("player_id")
-      .eq("block_prizes", true);
+      .eq("block_prizes", true)
+      .or(`until.is.null,until.gt.${new Date().toISOString()}`);
     if (revErr) throw revErr;
     const blocked = new Set((reviewed ?? []).map((r) => String(r.player_id).toLowerCase()));
 
