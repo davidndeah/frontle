@@ -524,6 +524,169 @@ html:has(.landing) { scroll-behavior: smooth; }
   color: var(--muted); letter-spacing: .1em;
 }
 
+/* ===================== CTA principal =====================
+   Un anillo que late detras del boton de Jugar del heroe: la llamada
+   a la accion se nota sin moverse el texto. */
+.landing .btn-pulse { position: relative; isolation: isolate; }
+.landing .btn-pulse::after {
+  content: ""; position: absolute; inset: -3px; z-index: -1;
+  border-radius: 16px; border: 3px solid var(--gold);
+  animation: cta-ring 2.2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes cta-ring {
+  0% { transform: scale(1); opacity: .8; }
+  70%, 100% { transform: scale(1.18, 1.45); opacity: 0; }
+}
+
+/* ===================== Popup de Jugar =====================
+   <dialog> nativo. Entra con un "pop" de pegatina (escala + giro) y
+   sale encogiendo; el fondo se oscurece y desenfoca. */
+.landing .play-dialog {
+  margin: auto; padding: 0; border: 0; background: transparent;
+  color: var(--ink); max-width: min(460px, calc(100vw - 2rem)); width: 100%;
+  overflow: visible;
+}
+.landing .play-dialog::backdrop {
+  background: rgba(13, 4, 32, .72);
+  backdrop-filter: blur(6px);
+  animation: pd-fade .25s ease both;
+}
+.landing .play-dialog[open] .pd-panel { animation: pd-pop .5s cubic-bezier(.2, .9, .3, 1.35) both; }
+.landing .play-dialog[data-closing] .pd-panel { animation: pd-out .18s ease-in both; }
+.landing .play-dialog[data-closing]::backdrop { animation: pd-fade .18s ease reverse both; }
+@keyframes pd-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pd-pop {
+  from { opacity: 0; transform: translateY(40px) scale(.7) rotate(-6deg); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pd-out { to { opacity: 0; transform: translateY(16px) scale(.92) rotate(2deg); } }
+
+.landing .pd-panel {
+  position: relative; text-align: center;
+  background: var(--surface);
+  border: 3px solid var(--deep); border-radius: 22px;
+  box-shadow: 10px 10px 0 var(--deep);
+  padding: 2.2rem 1.6rem 1.6rem;
+  display: flex; flex-direction: column; align-items: center;
+}
+/* Franja de color arriba: los tres colores del juego */
+.landing .pd-panel::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 10px;
+  border-radius: 19px 19px 0 0;
+  background: linear-gradient(90deg, var(--start) 0 33%, var(--gold) 33% 66%, var(--end) 66%);
+  border-bottom: 3px solid var(--deep);
+}
+.landing .pd-close {
+  position: absolute; top: 18px; right: 14px;
+  width: 36px; height: 36px; border-radius: 10px; cursor: pointer;
+  background: var(--surface-2); color: var(--ink);
+  border: 2px solid var(--deep); box-shadow: 2px 2px 0 var(--deep);
+  font-size: 1.4rem; line-height: 1; display: grid; place-items: center;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+.landing .pd-close:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--deep); }
+
+/* Pines que flotan: salida, intermedio y llegada */
+.landing .pd-pin {
+  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  border: 3px solid var(--deep); box-shadow: 2px 2px 0 var(--deep);
+  animation: pd-float 3.2s ease-in-out infinite;
+}
+.landing .pd-pin-a { background: var(--start); top: 64px; left: 22px; }
+.landing .pd-pin-b { background: var(--gold); top: 150px; right: 24px; animation-delay: -1.1s; width: 14px; height: 14px; }
+.landing .pd-pin-c { background: var(--end); bottom: 120px; left: 18px; animation-delay: -2.2s; width: 12px; height: 12px; }
+@keyframes pd-float { 50% { transform: translateY(-9px); } }
+
+.landing .pd-badge {
+  margin-top: .6rem;
+  font-family: var(--mono); font-size: .66rem; font-weight: 800;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--deep); background: var(--good);
+  border: 2px solid var(--deep); border-radius: 999px;
+  padding: .28rem .8rem; box-shadow: 3px 3px 0 var(--deep);
+  transform: rotate(-3deg);
+  animation: pd-wiggle 2.6s ease-in-out .6s infinite;
+}
+@keyframes pd-wiggle {
+  0%, 80%, 100% { transform: rotate(-3deg); }
+  85% { transform: rotate(3deg) scale(1.06); }
+  90% { transform: rotate(-5deg); }
+  95% { transform: rotate(2deg); }
+}
+
+/* El icono de la app MiniPay, como pieza brutal: borde, sombra dura y
+   un balanceo suave, como una app que pide que la abras. */
+.landing .pd-logo {
+  margin-top: 1.3rem; display: grid; place-items: center;
+  animation: pd-pop .55s cubic-bezier(.2, .9, .3, 1.5) .12s both;
+}
+.landing .pd-logo img {
+  width: 96px; height: 96px; border-radius: 24px;
+  border: 3px solid var(--deep); box-shadow: 5px 5px 0 var(--deep);
+  animation: pd-bob 3s ease-in-out .7s infinite;
+}
+@keyframes pd-bob {
+  0%, 100% { transform: rotate(-4deg) translateY(0); }
+  50% { transform: rotate(3deg) translateY(-6px); }
+}
+.landing .pd-wordmark {
+  font-variation-settings: "wdth" 110, "wght" 900;
+  font-size: 1.6rem; letter-spacing: -.02em; color: #fff;
+  background: #1f9d5c; border: 3px solid var(--deep); border-radius: 20px;
+  box-shadow: 5px 5px 0 var(--deep); padding: .9rem 1.1rem;
+}
+
+.landing .pd-title {
+  margin-top: 1.3rem; font-size: clamp(1.5rem, 5vw, 1.95rem); max-width: 16ch;
+}
+.landing .pd-lead { margin-top: .8rem; color: var(--muted); font-size: .95rem; max-width: 36ch; }
+
+.landing .pd-hint {
+  margin-top: 1.4rem;
+  font-family: var(--mono); font-size: .64rem; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--lav);
+}
+.landing .pd-stores { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; width: 100%; margin-top: .7rem; }
+.landing .pd-store {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  padding: .8rem .9rem; border-radius: 14px; text-decoration: none;
+  border: var(--bw) solid var(--deep); box-shadow: 4px 4px 0 var(--deep);
+  color: var(--deep); text-align: left;
+  font-variation-settings: "wdth" 108, "wght" 800; font-size: 1rem; line-height: 1.1;
+  transition: transform .08s ease, box-shadow .08s ease;
+  animation: rise .45s cubic-bezier(.2, .8, .2, 1) both;
+}
+.landing .pd-store small {
+  display: block; font-family: var(--mono); font-size: .58rem; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase; opacity: .7;
+}
+.landing .pd-android { background: var(--gold); animation-delay: .22s; }
+.landing .pd-ios { background: var(--start); animation-delay: .3s; }
+@media (hover: hover) {
+  .landing .pd-store:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--deep); }
+  .landing .pd-close:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--deep); }
+}
+.landing .pd-store:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--deep); }
+
+/* La segunda opcion: texto, sin peso de boton */
+.landing .pd-browser {
+  margin-top: 1.3rem; padding: .3rem .2rem;
+  font-family: var(--mono); font-size: .76rem; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); text-decoration: underline; text-underline-offset: 4px;
+  text-decoration-color: rgba(183, 156, 237, .45);
+  transition: color .15s ease;
+}
+.landing .pd-browser:hover { color: var(--ink); text-decoration-color: var(--gold); }
+.landing .pd-browser span { display: inline-block; transition: transform .15s ease; }
+.landing .pd-browser:hover span { transform: translateX(4px); }
+
+@media (max-width: 420px) {
+  .landing .pd-panel { padding: 2rem 1.1rem 1.3rem; }
+  .landing .pd-stores { grid-template-columns: 1fr; }
+}
+
 /* ===================== Reveal al hacer scroll =====================
    Colgado de [data-landing-js], que el script en linea del <main> pone
    antes del primer pintado: sin JS el contenido nace visible en vez de

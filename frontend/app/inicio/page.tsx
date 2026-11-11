@@ -9,6 +9,7 @@ import Reveal from "./Reveal";
 import { Suspense } from "react";
 import LiveFacts, { LiveFactsFallback } from "./LiveFacts";
 import CountUp from "./CountUp";
+import PlayDialog from "./PlayDialog";
 import Globe, { type GlobeRoute } from "./Globe";
 import { shortestPath } from "../lib/game";
 import { COUNTRY_NAMES } from "../lib/countries";
@@ -216,9 +217,9 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
               <a href="#red">{c.nav.network}</a>
               <a href="#transparencia">{c.nav.transparency}</a>
             </nav>
-            <Link className="btn btn-primary btn-sm" href={JUGAR_HREF}>
+            <a className="btn btn-primary btn-sm" href={JUGAR_HREF} data-play>
               {c.nav.play}
-            </Link>
+            </a>
           </div>
         </header>
 
@@ -232,9 +233,9 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
               </h1>
               <p className="lead">{c.hero.lead}</p>
               <div className="actions">
-                <Link className="btn btn-primary btn-lg" href={JUGAR_HREF}>
+                <a className="btn btn-primary btn-lg btn-pulse" href={JUGAR_HREF} data-play>
                   {c.hero.ctaPlay} <span aria-hidden="true">→</span>
-                </Link>
+                </a>
                 <a className="btn btn-ghost btn-lg" href="#como">
                   {c.hero.ctaHow}
                 </a>
@@ -426,9 +427,9 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
               <h2>{c.close.title}</h2>
               <p className="lead">{c.close.lead}</p>
               <div className="actions">
-                <Link className="btn btn-dark btn-lg" href={JUGAR_HREF}>
+                <a className="btn btn-dark btn-lg" href={JUGAR_HREF} data-play>
                   {c.close.ctaPlay} <span aria-hidden="true">→</span>
-                </Link>
+                </a>
                 <Link className="btn btn-outline-dark btn-lg" href="/stats">
                   {c.close.ctaStats}
                 </Link>
@@ -446,6 +447,9 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
           </div>
         </footer>
       </div>
+
+      {/* Los botones de Jugar (data-play) abren esto: MiniPay primero. */}
+      <PlayDialog copy={c.playDialog} browserHref={JUGAR_HREF} />
     </main>
   );
 }

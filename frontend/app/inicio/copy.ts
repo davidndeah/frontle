@@ -87,6 +87,17 @@ export interface LandingCopy {
   };
   close: { eyebrow: string; title: string; lead: string; ctaPlay: string; ctaStats: string };
   footer: { privacy: string; terms: string; stats: string; sep: string };
+  /** Popup de "Jugar": MiniPay como vía principal, navegador como segunda. */
+  playDialog: {
+    badge: string;
+    title: string;
+    lead: string;
+    android: string;
+    ios: string;
+    storeHint: string;
+    browser: string;
+    close: string;
+  };
 }
 
 const es: LandingCopy = {
@@ -243,6 +254,16 @@ const es: LandingCopy = {
     stats: "Estadísticas",
     sep: "Frontle · Celo Mainnet",
   },
+  playDialog: {
+    badge: "Ya disponible",
+    title: "Frontle ya está en MiniPay",
+    lead: "Juega el reto diario desde la billetera MiniPay: entras directo, sin registro, y los premios llegan en dólares digitales a tu cuenta.",
+    android: "Android",
+    ios: "iPhone",
+    storeHint: "Descarga MiniPay",
+    browser: "o juega en el navegador",
+    close: "Cerrar",
+  },
 };
 
 const en: LandingCopy = {
@@ -393,6 +414,16 @@ const en: LandingCopy = {
     ctaStats: "See the stats",
   },
   footer: { privacy: "Privacy", terms: "Terms", stats: "Stats", sep: "Frontle · Celo Mainnet" },
+  playDialog: {
+    badge: "Now live",
+    title: "Frontle is now on MiniPay",
+    lead: "Play the daily challenge from the MiniPay wallet: you go straight in, no sign-up, and prizes land in digital dollars in your account.",
+    android: "Android",
+    ios: "iPhone",
+    storeHint: "Get MiniPay",
+    browser: "or play in your browser",
+    close: "Close",
+  },
 };
 
 const pt: LandingCopy = {
@@ -547,6 +578,16 @@ const pt: LandingCopy = {
     terms: "Termos",
     stats: "Estatísticas",
     sep: "Frontle · Celo Mainnet",
+  },
+  playDialog: {
+    badge: "Já disponível",
+    title: "Frontle já está no MiniPay",
+    lead: "Jogue o desafio diário pela carteira MiniPay: você entra direto, sem cadastro, e os prêmios chegam em dólares digitais na sua conta.",
+    android: "Android",
+    ios: "iPhone",
+    storeHint: "Baixe o MiniPay",
+    browser: "ou jogue no navegador",
+    close: "Fechar",
   },
 };
 
@@ -703,6 +744,16 @@ const fr: LandingCopy = {
     terms: "Conditions",
     stats: "Statistiques",
     sep: "Frontle · Celo Mainnet",
+  },
+  playDialog: {
+    badge: "Disponible",
+    title: "Frontle est sur MiniPay",
+    lead: "Jouez au défi du jour depuis le portefeuille MiniPay : accès direct, sans inscription, et les gains arrivent en dollars numériques sur votre compte.",
+    android: "Android",
+    ios: "iPhone",
+    storeHint: "Télécharger MiniPay",
+    browser: "ou jouer dans le navigateur",
+    close: "Fermer",
   },
 };
 
