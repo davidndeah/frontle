@@ -43,9 +43,11 @@ export interface LandingCopy {
   };
   facts: {
     challenges: string;
-    languages: string;
-    plays: string;
-    prizes: string;
+    /** Transacciones on-chain totales: las mismas que cuenta /stats. */
+    transactions: string;
+    modes: string;
+    /** Personas distintas que han jugado cualquier modo (diario, regiones, quiz, práctica). */
+    players: string;
     /** Marca del hueco mientras la cifra viva aún no ha llegado. */
     pending: string;
   };
@@ -117,9 +119,9 @@ const es: LandingCopy = {
   },
   facts: {
     challenges: "Retos cada día",
-    languages: "Idiomas",
-    plays: "Partidas jugadas",
-    prizes: "Repartido a ganadores",
+    transactions: "Transacciones",
+    modes: "Modos de juego",
+    players: "Jugadores",
     pending: "cargando",
   },
   how: {
@@ -273,9 +275,9 @@ const en: LandingCopy = {
   },
   facts: {
     challenges: "Challenges a day",
-    languages: "Languages",
-    plays: "Games played",
-    prizes: "Paid out to winners",
+    transactions: "Transactions",
+    modes: "Game modes",
+    players: "Players",
     pending: "loading",
   },
   how: {
@@ -423,9 +425,9 @@ const pt: LandingCopy = {
   },
   facts: {
     challenges: "Desafios por dia",
-    languages: "Idiomas",
-    plays: "Partidas jogadas",
-    prizes: "Pago aos vencedores",
+    transactions: "Transações",
+    modes: "Modos de jogo",
+    players: "Jogadores",
     pending: "carregando",
   },
   how: {
@@ -578,9 +580,9 @@ const fr: LandingCopy = {
   },
   facts: {
     challenges: "Défis par jour",
-    languages: "Langues",
-    plays: "Parties jouées",
-    prizes: "Versé aux gagnants",
+    transactions: "Transactions",
+    modes: "Modes de jeu",
+    players: "Joueurs",
     pending: "chargement",
   },
   how: {

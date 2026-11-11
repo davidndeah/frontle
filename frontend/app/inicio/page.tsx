@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
@@ -7,7 +6,12 @@ import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./landing.css";
 import { landingCopy } from "./copy";
 import Reveal from "./Reveal";
-import LiveFacts from "./LiveFacts";
+import { Suspense } from "react";
+import LiveFacts, { LiveFactsFallback } from "./LiveFacts";
+import CountUp from "./CountUp";
+import Globe, { type GlobeRoute } from "./Globe";
+import { shortestPath } from "../lib/game";
+import { COUNTRY_NAMES } from "../lib/countries";
 import { CONTRACT_INFO } from "../lib/payments";
 import { XP } from "../lib/xp";
 import { countryName, DEFAULT_LOCALE, LOCALES, type Locale } from "../lib/i18n";
@@ -23,8 +27,8 @@ import { SITE_URL } from "../lib/site";
 //
 //  Es un Server Component. Eso importa: el diccionario de textos, la tabla
 //  de países y CONTRACT_INFO se resuelven en el servidor y al cliente solo
-//  llega HTML. Lo único que se hidrata son dos islas mínimas (Reveal y
-//  LiveFacts).
+//  llega HTML. Lo único que se hidrata son islas pequeñas: Reveal, CountUp
+//  y el globo del héroe (d3-geo + canvas, sin más dependencias).
 // ============================================================
 
 // Tipografía distinta de la de la app a propósito. Fredoka es redonda y
@@ -58,11 +62,27 @@ const mono = JetBrains_Mono({
 // padre es el <main>. Corre antes de que se pinte nada de la landing.
 const JS_FLAG = 'document.currentScript.parentElement.dataset.landingJs="1"';
 
-// Ruta de ejemplo del héroe. Es la misma que usa el tutorial dentro de la app,
-// así que lo que se ve aquí es literalmente lo que se encuentra al entrar.
+// Retos que recorre el globo del héroe. Solo se fijan salida y llegada: la
+// ruta la calcula `shortestPath`, así que lo que se enseña es siempre una
+// solución óptima de verdad. El primero es el mismo del tutorial de la app.
 // Nombres canónicos: los traduce `countryName` vía Intl.DisplayNames — regla
 // del repo, nunca se escribe un país a mano en otro idioma.
-const CHAIN = ["Portugal", "Spain", "France", "Germany"] as const;
+const GLOBE_CHALLENGES: [string, string][] = [
+  ["Portugal", "Germany"],
+  ["Colombia", "Argentina"],
+  ["Kenya", "Namibia"],
+  ["India", "Mongolia"],
+  ["Canada", "Guatemala"],
+];
+
+// Modos jugables: reto diario, regiones, bandera, silueta y práctica. La liga
+// semanal no cuenta: es una clasificación sobre esos modos, no un modo más
+// (por eso la sección de modos dice "un reto con premio, cuatro para practicar").
+const GAME_MODES = 5;
+
+// Países de la cinta que se desplaza bajo el héroe. Una muestra fija (no
+// aleatoria) para que el HTML del servidor y el del cliente coincidan.
+const TICKER = COUNTRY_NAMES.filter((_, i) => i % 5 === 0).slice(0, 28);
 
 // Los botones de Jugar no apuntan a `/` a secas. En escritorio el proxy
 // reescribe `/` a esta misma landing, asi que un enlace pelado devolveria
@@ -127,9 +147,15 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
   const locale = await resolveLocale(searchParams);
   const c = landingCopy(locale);
 
-  const stops = CHAIN.map((canonical) => countryName(canonical, locale));
-  // "Resuelto en 2 países": los intermedios, que es lo que puntúa.
-  const optimal = stops.length - 2;
+  const routes: GlobeRoute[] = GLOBE_CHALLENGES.map(([from, to]) => {
+    const path = shortestPath(from, to) ?? [from, to];
+    return {
+      stops: path.map((canonical) => ({ canonical, label: countryName(canonical, locale) })),
+      // "Resuelto en 2 países": los intermedios, que es lo que puntúa.
+      note: c.hero.noteCountries(path.length - 2),
+    };
+  });
+  const tickerNames = TICKER.map((n) => countryName(n, locale));
 
   const modeTags = [
     `${c.modes.prized} · `,
@@ -169,6 +195,14 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
     >
       <script dangerouslySetInnerHTML={{ __html: JS_FLAG }} />
 
+      {/* Fondo: auroras violeta que derivan despacio. Sustituye a la
+          retícula, que envejecía la página. Solo transform: lo mueve la GPU
+          sin repintar nada. */}
+      <div className="aurora" aria-hidden="true">
+        <span className="a1" />
+        <span className="a2" />
+        <span className="a3" />
+      </div>
 
       <div className="shell">
         <header className="nav">
@@ -182,7 +216,7 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
               <a href="#red">{c.nav.network}</a>
               <a href="#transparencia">{c.nav.transparency}</a>
             </nav>
-            <Link className="btn btn-primary btn-sm" href={JUGAR_HREF} style={{ marginLeft: "1rem" }}>
+            <Link className="btn btn-primary btn-sm" href={JUGAR_HREF}>
               {c.nav.play}
             </Link>
           </div>
@@ -190,125 +224,130 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
 
         {/* ============ HÉROE ============ */}
         <section className="hero" id="top">
-          <div className="wrap">
-            <p className="eyebrow">{c.hero.eyebrow}</p>
-            <h1>
-              {c.hero.titleLead} <em>{c.hero.titleAccent}</em>
-            </h1>
-            <p className="lead">{c.hero.lead}</p>
-            <div className="actions">
-              <Link className="btn btn-primary" href={JUGAR_HREF}>
-                {c.hero.ctaPlay}
-              </Link>
-              <a className="btn btn-ghost" href="#como">
-                {c.hero.ctaHow}
-              </a>
+          <div className="wrap hero-grid">
+            <div className="hero-copy">
+              <p className="eyebrow">{c.hero.eyebrow}</p>
+              <h1>
+                {c.hero.titleLead} <em>{c.hero.titleAccent}</em>
+              </h1>
+              <p className="lead">{c.hero.lead}</p>
+              <div className="actions">
+                <Link className="btn btn-primary btn-lg" href={JUGAR_HREF}>
+                  {c.hero.ctaPlay} <span aria-hidden="true">→</span>
+                </Link>
+                <a className="btn btn-ghost btn-lg" href="#como">
+                  {c.hero.ctaHow}
+                </a>
+              </div>
             </div>
-          </div>
 
-          {/* La firma de la página: la mecánica, ejecutándose */}
-          <div className="chain-band" role="img" aria-label={c.hero.chainAria(stops.join(" → "))}>
-            {/* Fragment y no un <span> envolvente: la secuencia de la
-                animación se apoya en `.chain > :nth-child(n)`, así que las
-                paradas y los tramos tienen que ser hijos DIRECTOS de .chain. */}
-            <div className="chain" aria-hidden="true">
-              {stops.map((name, i) => {
-                const first = i === 0;
-                const last = i === stops.length - 1;
-                const role = first ? c.hero.roleStart : last ? c.hero.roleEnd : `+${i}`;
-                return (
-                  <Fragment key={name}>
-                    {i > 0 && <span className="leg" />}
-                    <span className={`stop${first ? " is-start" : ""}${last ? " is-end" : ""}`}>
-                      <span className="dot" />
-                      <span className="name">{name}</span>
-                      <span className="role">{role}</span>
-                    </span>
-                  </Fragment>
-                );
-              })}
-            </div>
+            {/* La firma de la página: el juego, ejecutándose sobre el globo. */}
+            <Globe
+              routes={routes}
+              roleStart={c.hero.roleStart}
+              roleEnd={c.hero.roleEnd}
+              noteBefore={c.hero.noteBefore}
+              noteAfter={c.hero.noteAfter}
+              ariaLabel={c.hero.chainAria(routes[0].stops.map((s) => s.label).join(" → "))}
+            />
           </div>
-          <p className="chain-note">
-            {c.hero.noteBefore}
-            <b>{c.hero.noteCountries(optimal)}</b>
-            {c.hero.noteAfter}
-          </p>
         </section>
 
+        {/* ============ CINTA ============ */}
+        <div className="ticker" aria-hidden="true">
+          {/* Dos copias seguidas: cuando la primera sale, la segunda ocupa
+              su sitio y el bucle no se nota. */}
+          <div className="ticker-track">
+            {[0, 1].map((copy) => (
+              <span className="ticker-run" key={copy}>
+                {tickerNames.map((name) => (
+                  <span key={`${copy}-${name}`}>
+                    {name}
+                    <i>→</i>
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* ============ CIFRAS ============ */}
-        <section style={{ paddingTop: "clamp(2.5rem,5vw,4rem)" }}>
+        <section className="facts-section">
           <div className="wrap">
-            <div className="facts">
-              <div className="fact">
-                <p className="n">3</p>
-                <p className="k">{c.facts.challenges}</p>
+            <Reveal>
+              <div className="facts stagger">
+                <div className="fact card">
+                  <p className="n">
+                    <CountUp value={3} />
+                  </p>
+                  <p className="k">{c.facts.challenges}</p>
+                </div>
+                <div className="fact card">
+                  <p className="n">
+                    <CountUp value={GAME_MODES} />
+                  </p>
+                  <p className="k">{c.facts.modes}</p>
+                </div>
+                {/* Cifras vivas: se calculan en el servidor (con caché de un
+                    día) y llegan en el mismo stream sin frenar el resto. */}
+                <Suspense
+                  fallback={
+                    <LiveFactsFallback
+                      txLabel={c.facts.transactions}
+                      playersLabel={c.facts.players}
+                      pending={c.facts.pending}
+                    />
+                  }
+                >
+                  <LiveFacts locale={locale} txLabel={c.facts.transactions} playersLabel={c.facts.players} />
+                </Suspense>
               </div>
-              <div className="fact">
-                <p className="n">{LOCALES.length}</p>
-                <p className="k">{c.facts.languages}</p>
-              </div>
-              <LiveFacts
-                locale={locale}
-                playsLabel={c.facts.plays}
-                prizesLabel={c.facts.prizes}
-                pending={c.facts.pending}
-              />
-            </div>
+            </Reveal>
           </div>
         </section>
 
         {/* ============ CÓMO SE JUEGA ============ */}
         <section id="como">
-          <div className="wrap how">
-            <div>
+          <div className="wrap">
+            <div className="section-head">
               <p className="eyebrow">{c.how.eyebrow}</p>
-              <h2 style={{ marginTop: "1.3rem" }}>{c.how.title}</h2>
-              <p className="lead" style={{ marginTop: "1.3rem" }}>
-                {c.how.lead}
-              </p>
-
-              <div className="legend">
-                <span className="key">
-                  <i style={{ background: "var(--good)" }} /> {c.how.legendGood}
-                </span>
-                <span className="key">
-                  <i style={{ background: "var(--gold)" }} /> {c.how.legendClose}
-                </span>
-                <span className="key">
-                  <i style={{ background: "#f87171" }} /> {c.how.legendFar}
-                </span>
-              </div>
+              <h2>{c.how.title}</h2>
+              <p className="lead">{c.how.lead}</p>
             </div>
 
             <Reveal>
-              <ol className="steps">
+              <ol className="steps stagger">
                 {c.how.steps.map((step, i) => (
-                  <li className="step" key={step.title}>
+                  <li className="step card" key={step.title}>
                     <span className="mark">{i + 1}</span>
-                    <div>
-                      <h3>{step.title}</h3>
-                      <p>{step.text}</p>
-                    </div>
+                    <h3>{step.title}</h3>
+                    <p>{step.text}</p>
                   </li>
                 ))}
               </ol>
             </Reveal>
+
+            {/* Semáforo: el sistema de aciertos, explicado una vez */}
+            <div className="legend">
+              <span className="key key-good">{c.how.legendGood}</span>
+              <span className="key key-close">{c.how.legendClose}</span>
+              <span className="key key-far">{c.how.legendFar}</span>
+            </div>
           </div>
         </section>
-
-        <hr className="rule" />
 
         {/* ============ MODOS ============ */}
         <section id="modos">
           <div className="wrap">
-            <p className="eyebrow">{c.modes.eyebrow}</p>
-            <h2 style={{ marginTop: "1.3rem", maxWidth: "20ch" }}>{c.modes.title}</h2>
+            <div className="section-head">
+              <p className="eyebrow">{c.modes.eyebrow}</p>
+              <h2>{c.modes.title}</h2>
+            </div>
 
             <Reveal>
-              <div className="modes">
+              <div className="modes stagger">
                 {c.modes.items.map((mode, i) => (
-                  <div className={`mode${i === 0 ? " is-flagship" : ""}`} key={mode.title}>
+                  <div className={`mode card${i === 0 ? " is-flagship" : ""}`} key={mode.title}>
                     <p className="tag">
                       {modeTags[i]}
                       <b>{modeValues[i]}</b>
@@ -322,58 +361,56 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
           </div>
         </section>
 
-        <hr className="rule" />
-
         {/* ============ POR QUÉ CELO ============ */}
         <section id="red">
           <div className="wrap two">
-            <div>
+            <div className="section-head">
               <p className="eyebrow">{c.network.eyebrow}</p>
-              <h2 style={{ marginTop: "1.3rem", maxWidth: "16ch" }}>{c.network.title}</h2>
-              <p className="lead" style={{ marginTop: "1.3rem" }}>
-                {c.network.lead}
-              </p>
+              <h2>{c.network.title}</h2>
+              <p className="lead">{c.network.lead}</p>
             </div>
-            <ul className="points">
-              {c.network.points.map((point) => (
-                <li key={point.title}>
-                  <span className="bullet" />
-                  <span>
-                    <b>{point.title}</b>
-                    <span>{point.text}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <Reveal>
+              <ul className="points stagger">
+                {c.network.points.map((point, i) => (
+                  <li key={point.title} className="card">
+                    <span className="bullet">{String(i + 1).padStart(2, "0")}</span>
+                    <span>
+                      <b>{point.title}</b>
+                      <span>{point.text}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
           </div>
         </section>
-
-        <hr className="rule" />
 
         {/* ============ TRANSPARENCIA ============ */}
         <section id="transparencia">
           <div className="wrap">
-            <p className="eyebrow">{c.transparency.eyebrow}</p>
-            <h2 style={{ marginTop: "1.3rem", maxWidth: "19ch" }}>{c.transparency.title}</h2>
-            <p className="lead" style={{ marginTop: "1.3rem" }}>
-              {c.transparency.lead}
-            </p>
-
-            <div className="ledger">
-              {ledger.map((row) => (
-                <div className="row" key={row.addr}>
-                  <span className="what">{row.what}</span>
-                  {/* La dirección enlaza al explorador: en una sección que dice
-                      "compruébalo tú" el texto suelto no basta. */}
-                  <a className="addr" href={row.href} target="_blank" rel="noopener noreferrer">
-                    {row.addr}
-                  </a>
-                  <span className="state">{row.state}</span>
-                </div>
-              ))}
+            <div className="section-head">
+              <p className="eyebrow">{c.transparency.eyebrow}</p>
+              <h2>{c.transparency.title}</h2>
+              <p className="lead">{c.transparency.lead}</p>
             </div>
 
-            <p style={{ marginTop: "1.4rem" }}>
+            <Reveal>
+              <div className="ledger card">
+                {ledger.map((row) => (
+                  <div className="row" key={row.addr}>
+                    <span className="what">{row.what}</span>
+                    {/* La dirección enlaza al explorador: en una sección que dice
+                        "compruébalo tú" el texto suelto no basta. */}
+                    <a className="addr" href={row.href} target="_blank" rel="noopener noreferrer">
+                      {row.addr}
+                    </a>
+                    <span className="state">{row.state}</span>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+
+            <p className="after-ledger">
               <Link className="btn btn-ghost btn-sm" href="/stats">
                 {c.transparency.cta}
               </Link>
@@ -384,16 +421,18 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
         {/* ============ CIERRE ============ */}
         <section className="close">
           <div className="wrap">
-            <p className="eyebrow">{c.close.eyebrow}</p>
-            <h2>{c.close.title}</h2>
-            <p className="lead">{c.close.lead}</p>
-            <div className="actions">
-              <Link className="btn btn-primary" href={JUGAR_HREF}>
-                {c.close.ctaPlay}
-              </Link>
-              <Link className="btn btn-ghost" href="/stats">
-                {c.close.ctaStats}
-              </Link>
+            <div className="close-slab">
+              <p className="eyebrow">{c.close.eyebrow}</p>
+              <h2>{c.close.title}</h2>
+              <p className="lead">{c.close.lead}</p>
+              <div className="actions">
+                <Link className="btn btn-dark btn-lg" href={JUGAR_HREF}>
+                  {c.close.ctaPlay} <span aria-hidden="true">→</span>
+                </Link>
+                <Link className="btn btn-outline-dark btn-lg" href="/stats">
+                  {c.close.ctaStats}
+                </Link>
+              </div>
             </div>
           </div>
         </section>
