@@ -347,6 +347,66 @@ type Dict = {
   practiceHint: string;
   practiceNextRound: string;
   practiceExit: string;
+  // Duelos 1 contra 1 (lib/duels.ts, components/DuelsGame.tsx)
+  duels: {
+    title: string;
+    cardSub: (pending: number) => string;
+    intro: string;
+    tabPending: string;
+    tabNew: string;
+    tabHistory: string;
+    noWallet: string;
+    identity: string;
+    loadError: string;
+    retry: string;
+    emptyPending: string;
+    emptyHistory: string;
+    from: (name: string) => string;
+    aPlayer: string;
+    expiresIn: (time: string) => string;
+    waitingFor: (name: string | null) => string;
+    play: string;
+    resume: string;
+    haveCode: string;
+    codePlaceholder: string;
+    join: string;
+    codeErrors: Record<string, string>;
+    pickRival: string;
+    searchPlaceholder: string;
+    recentPlayers: string;
+    noPlayers: string;
+    anyone: string;
+    anyoneSub: string;
+    level: string;
+    start: string;
+    hintPenalty: (seconds: number) => string;
+    penalty: (hints: number, seconds: number) => string;
+    mark: (countries: number, time: string) => string;
+    target: (name: string, mark: string) => string;
+    sentTitle: string;
+    sentTo: (name: string) => string;
+    sentOpen: string;
+    codeLabel: string;
+    share: string;
+    copy: string;
+    copied: string;
+    shareFailed: string;
+    shareText: (mark: string, code: string) => string;
+    win: string;
+    lose: string;
+    tie: string;
+    expired: string;
+    you: string;
+    rival: string;
+    rematch: string;
+    back: string;
+    record: (wins: number, losses: number, name: string) => string;
+    askName: string;
+    setName: string;
+    practiceCta: string;
+    genericError: string;
+    tooMany: string;
+  };
   // Modo Regiones (marco del juego; los nombres de subdivisiones van en idioma local)
   region: {
     challengeOfDay: string;
@@ -790,6 +850,70 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Pista (gratis)",
     practiceNextRound: "Otra ronda",
     practiceExit: "Salir de práctica",
+    duels: {
+      title: "Duelos",
+      cardSub: (n) => (n > 0 ? `${n} ${n === 1 ? "pendiente" : "pendientes"}` : "1 contra 1"),
+      intro: "Reta a otro jugador al mismo reto. Gana quien use menos países; si empatan, el más rápido.",
+      tabPending: "Pendientes",
+      tabNew: "Retar",
+      tabHistory: "Historial",
+      noWallet: "Para jugar duelos necesitas tu cuenta: abre Frontle en MiniPay o entra con tu correo.",
+      identity: "No pudimos confirmar tu cuenta en este dispositivo.",
+      loadError: "No se pudo cargar. Revisa tu conexión.",
+      retry: "Reintentar",
+      emptyPending: "No tienes duelos pendientes. ¡Reta a alguien!",
+      emptyHistory: "Aún no has terminado ningún duelo.",
+      from: (name) => `${name} te retó`,
+      aPlayer: "Un jugador",
+      expiresIn: (t) => `Vence en ${t}`,
+      waitingFor: (name) => (name ? `Esperando a ${name}` : "Esperando rival"),
+      play: "Jugar",
+      resume: "Continuar",
+      haveCode: "¿Tienes un código?",
+      codePlaceholder: "Código de 6 letras",
+      join: "Entrar",
+      codeErrors: {
+        bad_code: "Ese código no existe.",
+        expired: "Ese duelo ya venció.",
+        taken: "Otro jugador ya aceptó ese duelo.",
+        own_duel: "Ese duelo es tuyo: compártelo con un amigo.",
+      },
+      pickRival: "Elige a tu rival",
+      searchPlaceholder: "Busca por alias",
+      recentPlayers: "Jugadores recientes",
+      noPlayers: "No encontramos a nadie con ese alias.",
+      anyone: "Cualquiera con el código",
+      anyoneSub: "Lo compartes por WhatsApp o donde quieras",
+      level: "Nivel",
+      start: "Empezar duelo",
+      hintPenalty: (s) => `Cada pista suma ${s} s a tu tiempo.`,
+      penalty: (n, s) => `${n} ${n === 1 ? "pista" : "pistas"}: +${n * s} s`,
+      mark: (n, t) => `${n} ${n === 1 ? "país" : "países"} · ${t}`,
+      target: (name, m) => `Marca de ${name}: ${m}`,
+      sentTitle: "¡Duelo enviado!",
+      sentTo: (name) => `${name} lo verá en sus Duelos. Tiene 24 h.`,
+      sentOpen: "Compártelo para que alguien lo acepte. Vence en 24 h.",
+      codeLabel: "Código del duelo",
+      share: "Compartir duelo",
+      copy: "Copiar",
+      copied: "Copiado",
+      shareFailed: "No se pudo compartir. Copia el código o el link.",
+      shareText: (m, code) => `⚔️ Te reto en Frontle: lo resolví en ${m}. ¿Me ganas? Entra a Duelos con el código ${code}`,
+      win: "¡Ganaste el duelo!",
+      lose: "Esta vez ganó tu rival",
+      tie: "¡Empate!",
+      expired: "Venció",
+      you: "Tú",
+      rival: "Rival",
+      rematch: "Revancha",
+      back: "Volver a Duelos",
+      record: (w, l, name) => `Tú ${w} – ${l} ${name}`,
+      askName: "Pon tu nombre para que tus rivales sepan quién les ganó.",
+      setName: "Poner nombre",
+      practiceCta: "Reta a un amigo",
+      genericError: "Algo falló. Intenta de nuevo.",
+      tooMany: "Ya creaste muchos duelos hoy. Vuelve mañana.",
+    },
     region: {
       challengeOfDay: "Reto del día",
       timerStarts: "El cronómetro arranca al pulsar Jugar",
@@ -1218,6 +1342,70 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Hint (free)",
     practiceNextRound: "Another round",
     practiceExit: "Exit practice",
+    duels: {
+      title: "Duels",
+      cardSub: (n) => (n > 0 ? `${n} pending` : "1 vs 1"),
+      intro: "Challenge another player to the same puzzle. Fewest countries wins; on a tie, the fastest.",
+      tabPending: "Pending",
+      tabNew: "Challenge",
+      tabHistory: "History",
+      noWallet: "You need your account to play duels: open Frontle in MiniPay or sign in with your email.",
+      identity: "We couldn't confirm your account on this device.",
+      loadError: "Couldn't load. Check your connection.",
+      retry: "Retry",
+      emptyPending: "No pending duels. Challenge someone!",
+      emptyHistory: "You haven't finished any duels yet.",
+      from: (name) => `${name} challenged you`,
+      aPlayer: "A player",
+      expiresIn: (t) => `Ends in ${t}`,
+      waitingFor: (name) => (name ? `Waiting for ${name}` : "Waiting for a rival"),
+      play: "Play",
+      resume: "Continue",
+      haveCode: "Got a code?",
+      codePlaceholder: "6-letter code",
+      join: "Join",
+      codeErrors: {
+        bad_code: "That code doesn't exist.",
+        expired: "That duel has ended.",
+        taken: "Another player already accepted that duel.",
+        own_duel: "That's your own duel: share it with a friend.",
+      },
+      pickRival: "Pick your rival",
+      searchPlaceholder: "Search by alias",
+      recentPlayers: "Recent players",
+      noPlayers: "Nobody found with that alias.",
+      anyone: "Anyone with the code",
+      anyoneSub: "Share it on WhatsApp or anywhere",
+      level: "Level",
+      start: "Start duel",
+      hintPenalty: (s) => `Each hint adds ${s} s to your time.`,
+      penalty: (n, s) => `${n} ${n === 1 ? "hint" : "hints"}: +${n * s} s`,
+      mark: (n, t) => `${n} ${n === 1 ? "country" : "countries"} · ${t}`,
+      target: (name, m) => `${name}'s score: ${m}`,
+      sentTitle: "Duel sent!",
+      sentTo: (name) => `${name} will see it in their Duels. They have 24 h.`,
+      sentOpen: "Share it so someone accepts it. It ends in 24 h.",
+      codeLabel: "Duel code",
+      share: "Share duel",
+      copy: "Copy",
+      copied: "Copied",
+      shareFailed: "Couldn't share. Copy the code or the link.",
+      shareText: (m, code) => `⚔️ I challenge you on Frontle: I solved it in ${m}. Can you beat me? Open Duels with the code ${code}`,
+      win: "You won the duel!",
+      lose: "Your rival won this time",
+      tie: "It's a tie!",
+      expired: "Ended",
+      you: "You",
+      rival: "Rival",
+      rematch: "Rematch",
+      back: "Back to Duels",
+      record: (w, l, name) => `You ${w} – ${l} ${name}`,
+      askName: "Add your name so your rivals know who beat them.",
+      setName: "Add name",
+      practiceCta: "Challenge a friend",
+      genericError: "Something went wrong. Try again.",
+      tooMany: "You've created many duels today. Come back tomorrow.",
+    },
     region: {
       challengeOfDay: "Daily challenge",
       timerStarts: "The timer starts when you tap Play",
@@ -1648,6 +1836,70 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Dica (grátis)",
     practiceNextRound: "Outra rodada",
     practiceExit: "Sair da prática",
+    duels: {
+      title: "Duelos",
+      cardSub: (n) => (n > 0 ? `${n} ${n === 1 ? "pendente" : "pendentes"}` : "1 contra 1"),
+      intro: "Desafie outro jogador no mesmo desafio. Vence quem usar menos países; se empatar, o mais rápido.",
+      tabPending: "Pendentes",
+      tabNew: "Desafiar",
+      tabHistory: "Histórico",
+      noWallet: "Para jogar duelos você precisa da sua conta: abra o Frontle no MiniPay ou entre com seu e-mail.",
+      identity: "Não conseguimos confirmar sua conta neste dispositivo.",
+      loadError: "Não foi possível carregar. Verifique sua conexão.",
+      retry: "Tentar de novo",
+      emptyPending: "Você não tem duelos pendentes. Desafie alguém!",
+      emptyHistory: "Você ainda não terminou nenhum duelo.",
+      from: (name) => `${name} desafiou você`,
+      aPlayer: "Um jogador",
+      expiresIn: (t) => `Vence em ${t}`,
+      waitingFor: (name) => (name ? `Esperando ${name}` : "Esperando rival"),
+      play: "Jogar",
+      resume: "Continuar",
+      haveCode: "Tem um código?",
+      codePlaceholder: "Código de 6 letras",
+      join: "Entrar",
+      codeErrors: {
+        bad_code: "Esse código não existe.",
+        expired: "Esse duelo já venceu.",
+        taken: "Outro jogador já aceitou esse duelo.",
+        own_duel: "Esse duelo é seu: compartilhe com um amigo.",
+      },
+      pickRival: "Escolha seu rival",
+      searchPlaceholder: "Busque pelo apelido",
+      recentPlayers: "Jogadores recentes",
+      noPlayers: "Ninguém encontrado com esse apelido.",
+      anyone: "Qualquer pessoa com o código",
+      anyoneSub: "Compartilhe no WhatsApp ou onde quiser",
+      level: "Nível",
+      start: "Começar duelo",
+      hintPenalty: (s) => `Cada dica soma ${s} s ao seu tempo.`,
+      penalty: (n, s) => `${n} ${n === 1 ? "dica" : "dicas"}: +${n * s} s`,
+      mark: (n, t) => `${n} ${n === 1 ? "país" : "países"} · ${t}`,
+      target: (name, m) => `Marca de ${name}: ${m}`,
+      sentTitle: "Duelo enviado!",
+      sentTo: (name) => `${name} vai ver nos Duelos. Tem 24 h.`,
+      sentOpen: "Compartilhe para alguém aceitar. Vence em 24 h.",
+      codeLabel: "Código do duelo",
+      share: "Compartilhar duelo",
+      copy: "Copiar",
+      copied: "Copiado",
+      shareFailed: "Não foi possível compartilhar. Copie o código ou o link.",
+      shareText: (m, code) => `⚔️ Te desafio no Frontle: resolvi em ${m}. Consegue me vencer? Entre em Duelos com o código ${code}`,
+      win: "Você venceu o duelo!",
+      lose: "Desta vez seu rival venceu",
+      tie: "Empate!",
+      expired: "Venceu",
+      you: "Você",
+      rival: "Rival",
+      rematch: "Revanche",
+      back: "Voltar aos Duelos",
+      record: (w, l, name) => `Você ${w} – ${l} ${name}`,
+      askName: "Coloque seu nome para seus rivais saberem quem os venceu.",
+      setName: "Colocar nome",
+      practiceCta: "Desafie um amigo",
+      genericError: "Algo deu errado. Tente de novo.",
+      tooMany: "Você já criou muitos duelos hoje. Volte amanhã.",
+    },
     region: {
       challengeOfDay: "Desafio do dia",
       timerStarts: "O cronômetro começa ao tocar em Jogar",
@@ -2076,6 +2328,70 @@ const STRINGS: Record<Locale, Dict> = {
     practiceHint: "Indice (gratuit)",
     practiceNextRound: "Autre manche",
     practiceExit: "Quitter l'entraînement",
+    duels: {
+      title: "Duels",
+      cardSub: (n) => (n > 0 ? `${n} en attente` : "1 contre 1"),
+      intro: "Défiez un autre joueur sur le même défi. Le moins de pays gagne ; en cas d'égalité, le plus rapide.",
+      tabPending: "En attente",
+      tabNew: "Défier",
+      tabHistory: "Historique",
+      noWallet: "Il vous faut votre compte pour jouer en duel : ouvrez Frontle dans MiniPay ou connectez-vous avec votre e-mail.",
+      identity: "Impossible de confirmer votre compte sur cet appareil.",
+      loadError: "Chargement impossible. Vérifiez votre connexion.",
+      retry: "Réessayer",
+      emptyPending: "Aucun duel en attente. Défiez quelqu'un !",
+      emptyHistory: "Vous n'avez encore terminé aucun duel.",
+      from: (name) => `${name} vous a défié`,
+      aPlayer: "Un joueur",
+      expiresIn: (t) => `Expire dans ${t}`,
+      waitingFor: (name) => (name ? `En attente de ${name}` : "En attente d'un rival"),
+      play: "Jouer",
+      resume: "Continuer",
+      haveCode: "Vous avez un code ?",
+      codePlaceholder: "Code de 6 lettres",
+      join: "Entrer",
+      codeErrors: {
+        bad_code: "Ce code n'existe pas.",
+        expired: "Ce duel a expiré.",
+        taken: "Un autre joueur a déjà accepté ce duel.",
+        own_duel: "C'est votre duel : partagez-le avec un ami.",
+      },
+      pickRival: "Choisissez votre rival",
+      searchPlaceholder: "Chercher par pseudo",
+      recentPlayers: "Joueurs récents",
+      noPlayers: "Personne avec ce pseudo.",
+      anyone: "N'importe qui avec le code",
+      anyoneSub: "Partagez-le sur WhatsApp ou ailleurs",
+      level: "Niveau",
+      start: "Lancer le duel",
+      hintPenalty: (s) => `Chaque indice ajoute ${s} s à votre temps.`,
+      penalty: (n, s) => `${n} ${n === 1 ? "indice" : "indices"} : +${n * s} s`,
+      mark: (n, t) => `${n} pays · ${t}`,
+      target: (name, m) => `Score de ${name} : ${m}`,
+      sentTitle: "Duel envoyé !",
+      sentTo: (name) => `${name} le verra dans ses Duels. Il reste 24 h.`,
+      sentOpen: "Partagez-le pour que quelqu'un l'accepte. Il expire dans 24 h.",
+      codeLabel: "Code du duel",
+      share: "Partager le duel",
+      copy: "Copier",
+      copied: "Copié",
+      shareFailed: "Partage impossible. Copiez le code ou le lien.",
+      shareText: (m, code) => `⚔️ Je te défie sur Frontle : je l'ai résolu en ${m}. Tu peux me battre ? Entre dans Duels avec le code ${code}`,
+      win: "Vous avez gagné le duel !",
+      lose: "Votre rival a gagné cette fois",
+      tie: "Égalité !",
+      expired: "Expiré",
+      you: "Vous",
+      rival: "Rival",
+      rematch: "Revanche",
+      back: "Retour aux Duels",
+      record: (w, l, name) => `Vous ${w} – ${l} ${name}`,
+      askName: "Ajoutez votre nom pour que vos rivaux sachent qui les a battus.",
+      setName: "Ajouter un nom",
+      practiceCta: "Défier un ami",
+      genericError: "Une erreur est survenue. Réessayez.",
+      tooMany: "Vous avez créé beaucoup de duels aujourd'hui. Revenez demain.",
+    },
     region: {
       challengeOfDay: "Défi du jour",
       timerStarts: "Le chrono démarre en appuyant sur Jouer",
