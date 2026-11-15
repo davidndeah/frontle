@@ -717,7 +717,7 @@ export default function Frontle() {
     let alive = true;
     bindXpIdentity(myId); // este efecto corre antes que el que liga la identidad
     listDuels().then((r) => {
-      if (alive && r.ok) setDuelsPending(r.data.filter((d) => d.role === "rival" && (d.status === "open" || d.status === "started")).length);
+      if (alive && r.ok) setDuelsPending(r.data.duels.filter((d) => d.role === "rival" && (d.status === "open" || d.status === "started")).length);
     });
     return () => { alive = false; };
   }, [myId, duelOn]);

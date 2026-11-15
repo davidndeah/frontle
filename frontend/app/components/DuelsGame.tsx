@@ -23,6 +23,8 @@ import {
   createDuel,
   duelLink,
   DUEL_HINT_SECONDS,
+  DUEL_XP,
+  DUELS_PER_DAY,
   findPlayers,
   finishDuel,
   listDuels,
@@ -116,6 +118,7 @@ export default function DuelsGame({
   const [screen, setScreen] = useState<Screen>({ kind: "home" });
   const [tab, setTab] = useState<Tab>("pending");
   const [duels, setDuels] = useState<Duel[] | null>(null);
+  const [left, setLeft] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -128,7 +131,7 @@ export default function DuelsGame({
   const refresh = useCallback(async () => {
     const r = await listDuels();
     setLoadError(r.ok ? null : r.error);
-    if (r.ok) setDuels(r.data);
+    if (r.ok) { setDuels(r.data.duels); setLeft(r.data.left); }
   }, []);
 
   // La identidad se liga aquí y no solo en page.tsx: los efectos del hijo
@@ -314,7 +317,7 @@ export default function DuelsGame({
         </>
       )}
 
-      {tab === "new" && <NewDuel tr={tr} busy={busy} onStart={(level, rival) => void play(() => createDuel(level, rival))} />}
+      {tab === "new" && <NewDuel tr={tr} busy={busy} left={left} onStart={(level, rival) => void play(() => createDuel(level, rival))} />}
 
       {tab === "history" && (
         <>
@@ -331,7 +334,7 @@ export default function DuelsGame({
           {done.map((d) => (
             <DuelRow key={d.id}
               title={`${d.status === "expired" ? "⌛" : d.result === "win" ? "🏆" : d.result === "tie" ? "🤝" : "💪"} ${d.opponentName ?? tr.duels.aPlayer}`}
-              sub={d.status === "expired" ? tr.duels.expired : `${tr.duels.you}: ${markText(tr, d.mine)} · ${tr.duels.rival}: ${markText(tr, d.theirs)}`}
+              sub={d.status === "expired" ? tr.duels.expired : `${tr.duels.you}: ${markText(tr, d.mine)} · ${tr.duels.rival}: ${markText(tr, d.theirs)}${d.xp > 0 ? ` · ${tr.duels.xpGained(d.xp)}` : ""}`}
               action={d.opponentId ? tr.duels.rematch : ""}
               onAction={d.opponentId ? () => void play(() => createDuel(d.level, d.opponentId)) : undefined} />
           ))}
@@ -387,7 +390,9 @@ function CodeEntry({ tr, busy, onJoin }: { tr: Tr; busy: boolean; onJoin: (code:
 
 // Retar: elegir rival (búsqueda por alias o jugadores recientes, o
 // "cualquiera con el código") y nivel.
-function NewDuel({ tr, busy, onStart }: { tr: Tr; busy: boolean; onStart: (level: Difficulty, rival: string | null) => void }) {
+function NewDuel({ tr, busy, left, onStart }: {
+  tr: Tr; busy: boolean; left: number | null; onStart: (level: Difficulty, rival: string | null) => void;
+}) {
   const [q, setQ] = useState("");
   const [players, setPlayers] = useState<DuelPlayer[] | null>(null);
   const [rival, setRival] = useState<DuelPlayer | null>(null);
@@ -445,13 +450,19 @@ function NewDuel({ tr, busy, onStart }: { tr: Tr; busy: boolean; onStart: (level
       <section className="panel p-3 flex flex-col items-center gap-3">
         <LevelSelect tr={tr} level={level} onChange={setLevel} />
         <p className="text-[11px] text-neutral-400">{tr.duels.hintPenalty(DUEL_HINT_SECONDS)}</p>
+        <p className="text-[11px] text-emerald-300 text-center">{tr.duels.xpRule(DUEL_XP.win, DUEL_XP.lose, DUEL_XP.tie)}</p>
         <button
-          disabled={!chosen || busy}
+          disabled={!chosen || busy || left === 0}
           onClick={() => onStart(level, rival?.id ?? null)}
           className="btn-3d font-display font-bold text-lg px-10 py-3 disabled:opacity-50"
         >
           ⚔️ {tr.duels.start}
         </button>
+        {left !== null && (
+          <p className={`text-xs ${left === 0 ? "text-rose-300" : "text-neutral-300"}`}>
+            {left === 0 ? tr.duels.noneLeft : tr.duels.leftToday(left, DUELS_PER_DAY)}
+          </p>
+        )}
       </section>
     </div>
   );
@@ -516,6 +527,11 @@ function ResultView({ tr, duel, busy, onRematch, onAskName }: {
         </div>
       </div>
       {duel.optimal != null && <p className="text-xs text-neutral-300">{tr.optimal(duel.optimal)}</p>}
+      {duel.status === "finished" && (duel.xp > 0 ? (
+        <p className="rounded-full bg-emerald-400/15 border border-emerald-300/40 px-4 py-1 text-sm font-black text-emerald-300">{tr.duels.xpGained(duel.xp)}</p>
+      ) : (
+        <p className="text-[11px] text-neutral-400">{tr.duels.noXp}</p>
+      ))}
       {onRematch && (
         <button disabled={busy} onClick={onRematch} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface w-full disabled:opacity-60">
           🔄 {tr.duels.rematch}
@@ -531,7 +547,7 @@ function ResultView({ tr, duel, busy, onRematch, onAskName }: {
   );
 }
 
-// Tablero del duelo: mismo juego que el diario, sin XP ni cobros. El reloj
+// Tablero del duelo: mismo juego que el diario, sin cobros (el XP lo da el servidor al cerrar). El reloj
 // visible = lo que ya contó el servidor + pistas × DUEL_HINT_SECONDS.
 function DuelBoard({ tr, locale, play, reactBordy, onSolved }: {
   tr: Tr; locale: Locale; play: DuelPlay; reactBordy?: (m: BordyMood) => void;

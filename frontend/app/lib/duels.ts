@@ -44,6 +44,8 @@ export interface Duel {
   mine: DuelMark | null;
   theirs: DuelMark | null;
   result: "win" | "lose" | "tie" | null;
+  /** XP que me dejó el duelo (lo otorga el servidor al cerrarlo). */
+  xp: number;
   optimal: number | null;
   createdAt: string;
   expiresAt: string | null;
@@ -91,9 +93,13 @@ function toPlay(d: { duel: Duel; challenge: DuelPlay["challenge"]; startedAt: st
   return { duel: d.duel, challenge: d.challenge, elapsedMs };
 }
 
-export async function listDuels(): Promise<DuelResult<Duel[]>> {
-  const r = await call<{ duels: Duel[] }>("duel_list");
-  return r.ok ? { ok: true, data: r.data.duels } : r;
+export const DUELS_PER_DAY = 3; // lo mismo que en el servidor
+export const DUEL_XP = { win: 5, lose: 2, tie: 3 } as const;
+
+/** Mis duelos y cuántos puedo crear todavía hoy (día UTC). */
+export async function listDuels(): Promise<DuelResult<{ duels: Duel[]; left: number }>> {
+  const r = await call<{ duels: Duel[]; left?: number }>("duel_list");
+  return r.ok ? { ok: true, data: { duels: r.data.duels, left: r.data.left ?? DUELS_PER_DAY } } : r;
 }
 
 export async function findPlayers(q: string): Promise<DuelResult<DuelPlayer[]>> {

@@ -406,6 +406,11 @@ type Dict = {
     practiceCta: string;
     genericError: string;
     tooMany: string;
+    leftToday: (left: number, max: number) => string;
+    noneLeft: string;
+    xpRule: (win: number, lose: number, tie: number) => string;
+    xpGained: (xp: number) => string;
+    noXp: string;
   };
   // Modo Regiones (marco del juego; los nombres de subdivisiones van en idioma local)
   region: {
@@ -912,7 +917,12 @@ const STRINGS: Record<Locale, Dict> = {
       setName: "Poner nombre",
       practiceCta: "Reta a un amigo",
       genericError: "Algo falló. Intenta de nuevo.",
-      tooMany: "Ya creaste muchos duelos hoy. Vuelve mañana.",
+      tooMany: "Ya hiciste tus 3 duelos de hoy. Vuelve mañana.",
+      leftToday: (left, max) => `Te quedan ${left} de ${max} duelos hoy`,
+      noneLeft: "Ya hiciste tus duelos de hoy. Mañana tienes más.",
+      xpRule: (w, l, t) => `Ganar: +${w} XP · Perder: +${l} XP · Empate: +${t} XP (hasta 3 duelos con XP al día)`,
+      xpGained: (xp) => `+${xp} XP`,
+      noXp: "Este duelo no sumó XP: ya tenías el tope del día o ya habías sumado contra este rival hoy.",
     },
     region: {
       challengeOfDay: "Reto del día",
@@ -1404,7 +1414,12 @@ const STRINGS: Record<Locale, Dict> = {
       setName: "Add name",
       practiceCta: "Challenge a friend",
       genericError: "Something went wrong. Try again.",
-      tooMany: "You've created many duels today. Come back tomorrow.",
+      tooMany: "You've played your 3 duels today. Come back tomorrow.",
+      leftToday: (left, max) => `${left} of ${max} duels left today`,
+      noneLeft: "You've played your duels for today. More tomorrow.",
+      xpRule: (w, l, t) => `Win: +${w} XP · Lose: +${l} XP · Tie: +${t} XP (up to 3 duels with XP a day)`,
+      xpGained: (xp) => `+${xp} XP`,
+      noXp: "This duel gave no XP: you'd hit today's cap or already earned XP against this rival today.",
     },
     region: {
       challengeOfDay: "Daily challenge",
@@ -1898,7 +1913,12 @@ const STRINGS: Record<Locale, Dict> = {
       setName: "Colocar nome",
       practiceCta: "Desafie um amigo",
       genericError: "Algo deu errado. Tente de novo.",
-      tooMany: "Você já criou muitos duelos hoje. Volte amanhã.",
+      tooMany: "Você já fez seus 3 duelos de hoje. Volte amanhã.",
+      leftToday: (left, max) => `Restam ${left} de ${max} duelos hoje`,
+      noneLeft: "Você já fez seus duelos de hoje. Amanhã tem mais.",
+      xpRule: (w, l, t) => `Vencer: +${w} XP · Perder: +${l} XP · Empate: +${t} XP (até 3 duelos com XP por dia)`,
+      xpGained: (xp) => `+${xp} XP`,
+      noXp: "Este duelo não deu XP: você já tinha o limite do dia ou já tinha ganhado XP contra este rival hoje.",
     },
     region: {
       challengeOfDay: "Desafio do dia",
@@ -2390,7 +2410,12 @@ const STRINGS: Record<Locale, Dict> = {
       setName: "Ajouter un nom",
       practiceCta: "Défier un ami",
       genericError: "Une erreur est survenue. Réessayez.",
-      tooMany: "Vous avez créé beaucoup de duels aujourd'hui. Revenez demain.",
+      tooMany: "Vous avez fait vos 3 duels du jour. Revenez demain.",
+      leftToday: (left, max) => `Il vous reste ${left} duel${left > 1 ? "s" : ""} sur ${max} aujourd'hui`,
+      noneLeft: "Vous avez fait vos duels du jour. D'autres demain.",
+      xpRule: (w, l, t) => `Victoire : +${w} XP · Défaite : +${l} XP · Égalité : +${t} XP (jusqu'à 3 duels avec XP par jour)`,
+      xpGained: (xp) => `+${xp} XP`,
+      noXp: "Ce duel n'a pas rapporté d'XP : vous aviez atteint la limite du jour ou déjà gagné de l'XP contre ce rival aujourd'hui.",
     },
     region: {
       challengeOfDay: "Défi du jour",
