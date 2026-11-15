@@ -35,6 +35,9 @@
 //       abrir y cerrar. Práctica manda {start, end, chain} y se revalida.
 //       Ver la migración 0025.
 //
+//   · {action:"duel_*", player, secret, …}
+//       Duelos 1 contra 1 (migración 0033). Ver duels.ts.
+//
 //  El reto sale de crypto.getRandomValues: ya no hay semilla pública con la
 //  que conocerlo de antemano. Ver _shared/engine.ts y la migración 0023.
 // ============================================================
@@ -44,6 +47,7 @@ import { createPublicClient, http, parseAbiItem, decodeEventLog } from "https://
 import { celo } from "https://esm.sh/viem@2.21.0/chains";
 import data from "../_shared/engine-data.json" with { type: "json" };
 import { makeEngine, LEVELS, type Level, type EngineData } from "../_shared/engine.ts";
+import { makeDuels } from "./duels.ts";
 
 const E = makeEngine(data as EngineData);
 
@@ -151,6 +155,8 @@ async function grantXp(player: string, day: number, events: { source: string; le
   if (error) throw error;
   return (data ?? []).reduce((s, r) => s + Number(r.xp), 0);
 }
+
+const handleDuel = makeDuels(supabase, E, rand);
 
 function isoDay(day: number): string {
   const s = String(day);
@@ -396,6 +402,9 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true, xp: 0, remaining: 0 });
     }
+
+    const duel = await handleDuel(action, body);
+    if (duel) return json(duel.body, duel.status);
 
     return json({ ok: false, error: "bad_action" }, 400);
   } catch (err) {

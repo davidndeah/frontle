@@ -25,6 +25,12 @@ export function isMiniPay(): boolean {
 // Lista canónica: https://docs.minipay.xyz/technical-references/deeplinks.html
 export const ADD_CASH_URL = "https://link.minipay.xyz/add_cash?tokens=USDT";
 
+// Deeplink que abre Frontle dentro de MiniPay (ficha de Discover). No lleva
+// parámetros: lo que haya que pasarle a la app (p. ej. un duelo) viaja aparte,
+// como el código del duelo.
+export const MINIPAY_APP_ID = "52af151a-8efe-4349-b31b-501ac2977efb";
+export const MINIPAY_APP_URL = `https://link.minipay.xyz/miniapp?id=${MINIPAY_APP_ID}`;
+
 // Abre la pantalla de recarga de MiniPay. Fuera de MiniPay el enlace no
 // resuelve a nada útil, así que el llamador debe comprobar `isMiniPay()`.
 export function openAddCash(): void {
