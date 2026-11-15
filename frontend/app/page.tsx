@@ -33,6 +33,7 @@ import {
 } from "./lib/i18n";
 import { hasMiniPayPhone } from "./lib/phone";
 import { isServerDay, getPreview, startServerGame, finishServerGame, type LevelPreview, type Pause } from "./lib/serverGame";
+import { listDuels, takeDuelCodeFromUrl } from "./lib/duels";
 import { getDailyBoard, EMPTY_BOARD, getMyLevelsOn, getNameStatus, type NameStatus, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
@@ -113,6 +114,7 @@ const WorldMap = dynamic(() => import("./components/WorldMap"), { ssr: false });
 const RegionGame = dynamic(() => import("./components/RegionGame"), { ssr: false });
 const CountryQuizGame = dynamic(() => import("./components/CountryQuizGame"), { ssr: false });
 const PracticeGame = dynamic(() => import("./components/PracticeGame"), { ssr: false });
+const DuelsGame = dynamic(() => import("./components/DuelsGame"), { ssr: false });
 const RegionMapPreview = dynamic(() => import("./components/RegionMapPreview"), { ssr: false });
 const Achievements = dynamic(() => import("./components/Achievements"), { ssr: false });
 const StreakCard = dynamic(() => import("./components/StreakCard"), { ssr: false });
@@ -320,6 +322,14 @@ export default function Frontle() {
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
+  // Modo Duelos activo (en Jugar). `duelCode`: código que llegó por link
+  // (?duelo=), aún sin reclamar. `duelArrival`: se entró por un duelo, así
+  // que el nombre y el teléfono se piden después y no tapan el reto.
+  const [duelOn, setDuelOn] = useState(false);
+  const [duelCode, setDuelCode] = useState<string | null>(null);
+  const [duelArrival, setDuelArrival] = useState(false);
+  const duelArrivalRef = useRef(false);
+  const [duelsPending, setDuelsPending] = useState(0);
   // Señal para pedirle a un modo que reproduzca su recorrido (coachmarks).
   // Es un nonce: al incrementarlo, el componente del modo activo lo detecta y
   // muestra su tutorial. Lo dispara el menú de Bordy según el modo en curso.
@@ -379,7 +389,9 @@ export default function Frontle() {
     hasMiniPayPhone(myId).then((ok) => {
       if (!alive) return;
       setPhoneOk(ok);
-      if (ok === false) setPhoneModal(true);
+      // Por un duelo no se pide el teléfono al cargar: se pide al entrar al
+      // reto diario (phoneBlocked sigue bloqueándolo), que es donde importa.
+      if (ok === false && !duelArrivalRef.current) setPhoneModal(true);
     });
     return () => { alive = false; };
   }, [myId, inMiniPay]);
@@ -397,11 +409,12 @@ export default function Frontle() {
   useEffect(() => {
     let asked = "1";
     try { asked = localStorage.getItem("frontle-name-asked") ?? "0"; } catch {}
-    if (myId && !getAlias() && asked !== "1") {
+    // Quien llega por un duelo juega primero: el nombre se le pide al terminar.
+    if (myId && !getAlias() && asked !== "1" && !duelArrival) {
       setNameDraft("");
       setNameModal(true);
     }
-  }, [myId]);
+  }, [myId, duelArrival]);
   // Segunda mitad del tutorial: los coachmarks sobre el juego real. El juego
   // se muestra en "modo previo" (países ocultos, cronómetro congelado)
   // mientras Bordy explica; el reloj arranca SOLO al terminar → nadie gana
@@ -685,6 +698,29 @@ export default function Frontle() {
       );
     } catch {}
   }
+
+  // Duelo por link (?duelo=CÓDIGO): abre Duelos con ese duelo. El código se
+  // lee una vez y se borra solo ese parámetro de la URL (lib/duels.ts).
+  useEffect(() => {
+    const code = takeDuelCodeFromUrl();
+    if (!code) return;
+    duelArrivalRef.current = true;
+    setDuelArrival(true);
+    setDuelCode(code);
+    setTab("jugar");
+    setDuelOn(true);
+  }, []);
+
+  // Duelos pendientes, para el aviso en la ficha del modo.
+  useEffect(() => {
+    if (!myId || duelOn) return;
+    let alive = true;
+    bindXpIdentity(myId); // este efecto corre antes que el que liga la identidad
+    listDuels().then((r) => {
+      if (alive && r.ok) setDuelsPending(r.data.filter((d) => d.role === "rival" && (d.status === "open" || d.status === "started")).length);
+    });
+    return () => { alive = false; };
+  }, [myId, duelOn]);
 
   // Reset de desarrollo: /?reset=1 limpia la partida del día y el tutorial
   useEffect(() => {
@@ -1554,16 +1590,29 @@ export default function Frontle() {
           (los hijos ya se desmontan por el render condicional por tab). */}
       <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
-        {tab === "jugar" && regionMode && (
+        {/* Modo Duelos activo: pantalla autocontenida (gratis, sin pot) */}
+        {tab === "jugar" && duelOn && (
+          <DuelsGame
+            locale={locale}
+            playerId={myId}
+            onExit={() => { setDuelOn(false); setDuelCode(null); }}
+            reactBordy={reactBordy}
+            initialCode={duelCode}
+            onCodeConsumed={() => setDuelCode(null)}
+            onAskName={() => { setNameDraft(""); setNameModal(true); }}
+          />
+        )}
+
+        {tab === "jugar" && !duelOn && regionMode && (
           <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
         )}
 
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
-        {tab === "jugar" && !regionMode && quizMode && (
+        {tab === "jugar" && !duelOn && !regionMode && quizMode && (
           <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
         )}
 
-        {tab === "jugar" && !regionMode && !quizMode && (
+        {tab === "jugar" && !duelOn && !regionMode && !quizMode && (
           <>
         {/* Bordy anfitrión (REDISEÑO-HOME): presenta el reto con la racha en
             su propia frase, arriba del todo — reemplaza el viejo strip
@@ -1737,6 +1786,26 @@ export default function Frontle() {
                 debería ser un card cuadrado pequeño"); su desplegable de
                 país + mapa se abre DEBAJO de la rejilla, a ancho completo,
                 que es donde sí cabe. */}
+            {/* Duelos (1 contra 1): ficha ancha arriba de la rejilla, con el
+                número de retos que te esperan. */}
+            <button
+              onClick={() => setDuelOn(true)}
+              className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex items-stretch text-left relative"
+            >
+              <span className="w-[84px] shrink-0 flex items-center justify-center text-4xl" style={{ background: "linear-gradient(160deg, #3b1d5e, #1e0f33)" }} aria-hidden>
+                ⚔️
+              </span>
+              <span className="flex-1 flex flex-col justify-center gap-0.5 px-3 py-2.5">
+                <span className="font-display font-bold text-white text-base leading-tight">{tr.duels.title}</span>
+                <span className="text-[11px] text-neutral-300">{tr.duels.cardSub(duelsPending)}</span>
+              </span>
+              {duelsPending > 0 ? (
+                <span className="absolute top-2 right-2 min-w-[22px] h-[22px] rounded-full bg-gold px-1.5 text-xs font-black text-surface flex items-center justify-center">{duelsPending}</span>
+              ) : (
+                <span className="absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
+              )}
+            </button>
+
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
@@ -2300,7 +2369,14 @@ export default function Frontle() {
 
         {/* ---------- TAB APRENDER ---------- */}
         {tab === "aprender" && practiceOn && (
-          <PracticeGame locale={locale} onExit={() => setPracticeOn(false)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
+          <PracticeGame
+            locale={locale}
+            onExit={() => setPracticeOn(false)}
+            reactBordy={reactBordy}
+            coachSignal={coachSignal}
+            dailyStreak={streak}
+            onDuel={() => { setPracticeOn(false); setTab("jugar"); setDuelOn(true); }}
+          />
         )}
 
         {tab === "aprender" && !practiceOn && (
@@ -2362,7 +2438,7 @@ export default function Frontle() {
           brazos miden ~7 px y los ojos ~3 px, así que la expresión del rig era
           literalmente invisible justo en el momento que importa. `transition-all`
           hace que el cambio se lea como que se acerca a opinar. */}
-      {!overlay && !(tab === "jugar" && !regionMode && !quizMode && !started) && (
+      {!overlay && !(tab === "jugar" && !duelOn && !regionMode && !quizMode && !started) && (
         <button
           onClick={() => setBordyMenu(true)}
           aria-label={tr.bordyMenu.open}
@@ -2529,7 +2605,7 @@ export default function Frontle() {
             : quizMode === "flag" ? "flag"
             : quizMode === "outline" ? "outline"
             : tab === "aprender" && practiceOn ? "practice"
-            : tab === "jugar" && started && !regionMode && !quizMode ? "daily"
+            : tab === "jugar" && started && !duelOn && !regionMode && !quizMode ? "daily"
             : null
           }
           // Reproducir el tutorial del modo activo. El diario tiene su propio
