@@ -1674,10 +1674,11 @@ export default function Frontle() {
                   recién llegado aún no sabía qué estaba mirando — el motivo
                   del feedback de MiniPay. Ver docs/design/home-v5.html. */}
 
-              {/* Premio del nivel elegido, en grande: es el gancho */}
-              <div className="mt-3 rounded-xl bg-black/25 px-3 py-3 text-center">
-                <span className="block text-[10px] uppercase tracking-wider text-white/70">{tr.dailyHero.potLabel}</span>
-                <span className="block font-display text-4xl font-black leading-none text-gold tabular-nums mt-1">{levelPot !== null ? fmt(levelPot) : "···"}</span>
+              {/* Premio TOTAL del día, protagonista: es el gancho. Lo que le toca
+                  a cada nivel va abajo, en su propio botón. */}
+              <div className="mt-3 rounded-xl bg-black/25 px-3 py-4 text-center">
+                <span className="block text-[11px] font-bold uppercase tracking-wider text-white/75">{tr.dailyHero.potLabel}</span>
+                <span className="block font-display text-5xl font-black leading-none text-gold tabular-nums mt-1.5">{pot !== null ? fmt(pot) : "···"}</span>
               </div>
 
               {/* Dificultad: cada botón con su propio pot — elegir nivel es elegir premio */}
@@ -1698,7 +1699,7 @@ export default function Frontle() {
                       style={{ borderColor: on ? "var(--deep)" : "rgba(13,4,32,0.5)" }}
                     >
                       <span className="block text-[13px] font-semibold leading-tight">{META[lv].icon} {tr.levels[lv]}</span>
-                      <span className="block font-mono text-[10px] tabular-nums opacity-90">{lvPot !== null ? fmt(lvPot) : "···"}</span>
+                      <span className="block font-mono text-xs font-bold tabular-nums">{lvPot !== null ? fmt(lvPot) : "···"}</span>
                     </button>
                   );
                 })}
