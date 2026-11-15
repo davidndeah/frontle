@@ -259,7 +259,7 @@ export default function StatsView() {
 
       {activity && (
         <section>
-          <SectionHead title={tr.onchain} aside={tr.allContracts} />
+          <SectionHead title={tr.onchain} aside={tr.contractsAndTreasury} />
           <div className="grid grid-cols-3 gap-2">
             <Stat label={tr.txTotal} value={num(activity.txTotal)} done={done} />
             <Stat label={tr.onchainUsers} value={num(activity.uniqueUsers)} done={done} />

@@ -1501,7 +1501,15 @@ export default function Frontle() {
 
       {/* Header fijo: logo + racha + monedas + ajustes + wallet */}
       <header className="app-header fixed top-0 inset-x-0 z-30 flex items-center gap-1 px-2.5 bg-base/85 backdrop-blur-md border-b border-lavender/15">
-        <span className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</span>
+        {/* En navegador el logo vuelve a la landing. Va a `/inicio` y no a `/`:
+            tras pulsar Jugar queda la cookie `frontle-jugar` y el proxy ya no
+            reescribe `/`, así que `/` devolvería al juego. En MiniPay no hay
+            landing (regla del listing): ahí el logo sigue siendo texto. */}
+        {mpChecked && !inMiniPay ? (
+          <a href="/inicio" className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</a>
+        ) : (
+          <span className="font-display text-lg font-bold tracking-tight prism-text shrink-0">FRONTLE</span>
+        )}
         <div className="flex-1" />
         {/* El premio del día ya NO va en la barra: vive en el tab Ranking. */}
         {/* Racha: solo si la tiene (≥1). Indicador, no botón. */}

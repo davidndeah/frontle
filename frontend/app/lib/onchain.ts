@@ -124,13 +124,33 @@ function labelFor(method: string | null): string {
 
 const isUserMethod = (method: string | null): boolean => !!method && method in USER_METHODS;
 
-async function fetchTxs(address: string): Promise<{ txs: BsTx[]; truncated: boolean }> {
+// GET a Blockscout con dos reintentos (la API pública devuelve 429 si se le
+// piden muchas páginas seguidas). null si sigue fallando.
+async function getJson(url: string): Promise<{ items?: unknown; next_page_params?: unknown } | null> {
+  for (let intento = 0; intento < 3; intento++) {
+    try {
+      // no-store: en el servidor, Next guardaría cada página por separado y una
+      // paginación podría mezclar páginas viejas con nuevas. La caché va
+      // FUERA, sobre el resultado entero (ver inicio/LiveFacts.tsx).
+      const r = await fetch(url, { cache: "no-store" });
+      if (r.ok) return await r.json();
+    } catch {}
+    await new Promise((res) => setTimeout(res, 600 * (intento + 1)));
+  }
+  return null;
+}
+
+// `failed`: una página no llegó ni reintentando, así que la lista está
+// incompleta. /stats lo tolera (enseña lo que haya); el total de la landing no.
+async function fetchTxs(
+  address: string,
+  maxPages = MAX_PAGES,
+): Promise<{ txs: BsTx[]; truncated: boolean; failed?: boolean }> {
   const txs: BsTx[] = [];
   let params = "";
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const r = await fetch(`${BLOCKSCOUT}/addresses/${address}/transactions?filter=to${params}`);
-    if (!r.ok) break;
-    const j = await r.json();
+  for (let page = 0; page < maxPages; page++) {
+    const j = await getJson(`${BLOCKSCOUT}/addresses/${address}/transactions?filter=to${params}`);
+    if (!j) return { txs, truncated: true, failed: true };
     const items: BsTx[] = Array.isArray(j?.items) ? j.items : [];
     txs.push(...items);
     const next = j?.next_page_params;
@@ -142,13 +162,16 @@ async function fetchTxs(address: string): Promise<{ txs: BsTx[]; truncated: bool
 
 // Transferencias del stablecoin que tocan una dirección. `filter` = "to"
 // para solo las que entran (la tesorería); sin él, entran y salen.
-async function fetchTransfers(address: string, filter?: "to"): Promise<{ items: BsTransfer[]; truncated: boolean }> {
+async function fetchTransfers(
+  address: string,
+  filter?: "to",
+  maxPages = MAX_PAGES,
+): Promise<{ items: BsTransfer[]; truncated: boolean; failed?: boolean }> {
   const out: BsTransfer[] = [];
   let params = filter ? `&filter=${filter}` : "";
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const r = await fetch(`${BLOCKSCOUT}/addresses/${address}/token-transfers?type=ERC-20${params}`);
-    if (!r.ok) break;
-    const j = await r.json();
+  for (let page = 0; page < maxPages; page++) {
+    const j = await getJson(`${BLOCKSCOUT}/addresses/${address}/token-transfers?type=ERC-20${params}`);
+    if (!j) return { items: out, truncated: true, failed: true };
     const items: BsTransfer[] = Array.isArray(j?.items) ? j.items : [];
     out.push(...items);
     const next = j?.next_page_params;
@@ -156,6 +179,52 @@ async function fetchTransfers(address: string, filter?: "to"): Promise<{ items: 
     params = `${filter ? `&filter=${filter}` : ""}&${new URLSearchParams(next as Record<string, string>).toString()}`;
   }
   return { items: out, truncated: true };
+}
+
+// ¿Es un pago de JUGADOR a la tesorería? USDT que entra desde una dirección
+// que no es nuestra (`propias`: contratos + tesorería), por `transfer` llano,
+// desde que existen los pagos directos y por un importe que un jugador puede
+// pagar. Ver DIRECT_LABEL.
+function isDirectPayment(tr: BsTransfer, propias: Set<string>): boolean {
+  if (tr.token?.symbol !== VOLUME_TOKEN || propias.has(tr.from?.hash?.toLowerCase() ?? "")) return false;
+  if (!TRANSFER_METHODS.has(tr.method ?? "")) return false;
+  const t = tr.timestamp ? Date.parse(tr.timestamp) : NaN;
+  if (!(t >= DIRECT_SINCE)) return false;
+  const monto = Number(tr.total?.value ?? 0) / 10 ** Number(tr.total?.decimals ?? 6);
+  return monto > 0 && monto <= DIRECT_MAX_USDT;
+}
+
+// Total de transacciones del juego para la landing: las que entran a los
+// contratos + los pagos directos de jugadores a la tesorería. Es la misma
+// definición que `txTotal` de getChainActivity, pero sin el tope de 6 páginas
+// (que deja el total por debajo en cuanto un contrato pasa de 300 tx) y sin
+// pedir lo que aquí no hace falta (transferencias de los contratos, precio).
+// El tope de 60 páginas (3.000 tx por dirección) solo existe para no colgar
+// la página si Blockscout pagina sin fin; si se alcanza, `truncated` lo dice.
+const TOTAL_MAX_PAGES = 60;
+
+export async function getTxTotal(
+  addresses: string[],
+  treasury?: string,
+): Promise<{ total: number; truncated: boolean } | null> {
+  try {
+    const [pages, inflows] = await Promise.all([
+      Promise.all(addresses.map((a) => fetchTxs(a, TOTAL_MAX_PAGES))),
+      treasury
+        ? fetchTransfers(treasury, "to", TOTAL_MAX_PAGES)
+        : Promise.resolve({ items: [] as BsTransfer[], truncated: false, failed: false }),
+    ]);
+    // Una página perdida daría un total por debajo que, encima, se quedaría
+    // en caché una hora: mejor no dar cifra.
+    if (pages.some((p) => p.failed) || inflows.failed) return null;
+    const propias = new Set([...addresses, ...(treasury ? [treasury] : [])].map((a) => a.toLowerCase()));
+    const directos = inflows.items.filter((tr) => isDirectPayment(tr, propias)).length;
+    const total = pages.reduce((n, p) => n + p.txs.length, 0) + directos;
+    if (total === 0) return null;
+    return { total, truncated: pages.some((p) => p.truncated) || inflows.truncated };
+  } catch {
+    return null;
+  }
 }
 
 // Precio del token nativo en USD. null si la fuente falla: sin él no se
@@ -175,9 +244,9 @@ async function fetchNativePrice(): Promise<number | null> {
 export async function getChainActivity(addresses: string[], treasury?: string): Promise<ChainActivity | null> {
   try {
     const [pages, transferLists, inflows, nativePrice] = await Promise.all([
-      Promise.all(addresses.map(fetchTxs)),
+      Promise.all(addresses.map((a) => fetchTxs(a))),
       Promise.all(addresses.map((a) => fetchTransfers(a))),
-      treasury ? fetchTransfers(treasury, "to") : Promise.resolve({ items: [] as BsTransfer[], truncated: false }),
+      treasury ? fetchTransfers(treasury, "to") : Promise.resolve({ items: [] as BsTransfer[], truncated: false, failed: false }),
       fetchNativePrice(),
     ]);
     const txs = pages.flatMap((p) => p.txs);
@@ -186,14 +255,7 @@ export async function getChainActivity(addresses: string[], treasury?: string): 
     // Pagos de JUGADORES a la tesorería: USDT que entra desde una dirección
     // que no es nuestra (ni la tesorería ni un contrato, p. ej. un premio
     // reclamado y reenviado).
-    const directos = inflows.items.filter((tr) => {
-      if (tr.token?.symbol !== VOLUME_TOKEN || propias.has(tr.from?.hash?.toLowerCase() ?? "")) return false;
-      if (!TRANSFER_METHODS.has(tr.method ?? "")) return false;
-      const t = tr.timestamp ? Date.parse(tr.timestamp) : NaN;
-      if (!(t >= DIRECT_SINCE)) return false;
-      const monto = Number(tr.total?.value ?? 0) / 10 ** Number(tr.total?.decimals ?? 6);
-      return monto > 0 && monto <= DIRECT_MAX_USDT;
-    });
+    const directos = inflows.items.filter((tr) => isDirectPayment(tr, propias));
     if (txs.length === 0 && directos.length === 0) return null;
 
     const senders = new Set<string>();

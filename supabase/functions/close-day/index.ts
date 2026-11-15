@@ -162,7 +162,9 @@ Deno.serve(async (req) => {
     //    difícil a fácil, así el tope cae en el premio más pequeño;
     //  - marcas por debajo de MIN_TIME_MS no cuentan (la base ya las rechaza
     //    desde 0020; esto cubre las históricas);
-    //  - las cuentas en revisión (account_reviews.block_prizes) no ganan;
+    //  - las cuentas en revisión (account_reviews.block_prizes) no ganan,
+    //    mientras la sanción siga vigente (`until`) y alcance al diario
+    //    (`scope = 'all'`; las de 'weekly' solo pierden la liga, 0030);
     //  - sin teléfono verificado en MiniPay no se gana (pasa al siguiente),
     //    salvo las wallets de correo (Privy), que por ahora compiten igual.
     const winners: Record<Level, { address: `0x${string}`; countries: number; time_ms: number } | null> = {
@@ -173,7 +175,9 @@ Deno.serve(async (req) => {
     const { data: reviewed, error: revErr } = await supabase
       .from("account_reviews")
       .select("player_id")
-      .eq("block_prizes", true);
+      .eq("block_prizes", true)
+      .eq("scope", "all")
+      .or(`until.is.null,until.gt.${new Date().toISOString()}`);
     if (revErr) throw revErr;
     const blocked = new Set((reviewed ?? []).map((r) => String(r.player_id).toLowerCase()));
     const levelsWon = new Map<string, number>();
