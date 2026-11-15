@@ -62,6 +62,7 @@ Game modes beyond the daily challenge (all free, no pot — the daily challenge 
 - **Regions** — `lib/regions/` + `lib/regionGame.ts` + `components/RegionGame.tsx`: subdivisions of one country instead of countries. **Live in the mode picker** (`docs/HANDOFF-REGIONS.md` is historical).
 - **Quizzes** — `lib/quiz.ts` + `components/CountryQuizGame.tsx`: guess-the-flag and guess-the-outline. Their pool adds the island nations from `lib/islands.ts` that the border graph excludes.
 - **Practice** — `components/PracticeGame.tsx`: infinite random challenges, lives in the Aprender tab.
+- **Duels (1v1)** — `lib/duels.ts` + `components/DuelsGame.tsx` + `supabase/functions/game/duels.ts` (migration 0033): a player challenges another (picked from recent players / alias search, or anyone with the 6-char code) to the same server-generated challenge. Server clock and server-validated chain, like the daily; each hint adds 15 s. 24 h to answer, then history. No XP, no pot. Links: `?duelo=CODE` on the web; inside MiniPay the share carries `MINIPAY_APP_URL` (`lib/minipay.ts`, the Discover deeplink, which takes no params) plus the code.
 
 Gamification/progress layer:
 
