@@ -54,14 +54,14 @@ App Router under `frontend/app/`. Game logic is pure and lives in `app/lib/`:
 - **`lib/privy.ts` + `components/PrivyGate.tsx`** — email login for players with no wallet. See the bundle note below.
 - **`lib/onchain.ts`** — tx counts / unique wallets / failure rate, read from the public Blockscout API.
 - **`app/components/WorldMap.tsx`** — map rendering with `d3-geo` + `topojson-client`.
-- **`app/page.tsx`** — the game UI and nearly all React state. Four tabs (Jugar · Ranking · Perfil · Aprender) and the mode picker inside Jugar.
+- **`app/page.tsx`** — the game UI and nearly all React state. Four tabs (Inicio · Modos · Ranking · Perfil; ids `jugar`/`modos`/`ranking`/`perfil`): Inicio is only the daily challenge plus the daily/weekly ranking closings; every free mode and the how-to-play section live in Modos.
 - **`app/stats/`** — the public stats page. Required for the MiniPay listing.
 
 Game modes beyond the daily challenge (all free, no pot — the daily challenge is the only paid/prized mode):
 
 - **Regions** — `lib/regions/` + `lib/regionGame.ts` + `components/RegionGame.tsx`: subdivisions of one country instead of countries. **Live in the mode picker** (`docs/HANDOFF-REGIONS.md` is historical).
 - **Quizzes** — `lib/quiz.ts` + `components/CountryQuizGame.tsx`: guess-the-flag and guess-the-outline. Their pool adds the island nations from `lib/islands.ts` that the border graph excludes.
-- **Practice** — `components/PracticeGame.tsx`: infinite random challenges, lives in the Aprender tab.
+- **Practice** — `components/PracticeGame.tsx`: infinite random challenges, lives in the Modos tab.
 
 Gamification/progress layer:
 

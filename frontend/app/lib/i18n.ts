@@ -322,7 +322,9 @@ type Dict = {
     capOk: string;
   };
   chooseLevel: string;
-  tabs: { jugar: string; ranking: string; perfil: string; aprender: string };
+  tabs: { jugar: string; modos: string; ranking: string; perfil: string };
+  // Inicio y pestaña Modos: cierres de ranking, puerta a los modos y Aprender.
+  hub: { closings: string; dailyRanking: string; weeklyLeague: string; modesTitle: string; modesSub: string; learnTitle: string };
   profileGuest: string;
   profileConnected: string;
   profileConnectHint: string;
@@ -761,7 +763,8 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Entendido",
     },
     chooseLevel: "Elige nivel",
-    tabs: { jugar: "Jugar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
+    tabs: { jugar: "Inicio", modos: "Modos", ranking: "Ranking", perfil: "Perfil" },
+    hub: { closings: "Cierre de rankings", dailyRanking: "Ranking diario", weeklyLeague: "Liga semanal", modesTitle: "Modos de juego", modesSub: "Regiones, banderas, contornos y práctica", learnTitle: "Aprende a jugar" },
     profileGuest: "Invitado",
     profileConnected: "Conectado",
     profileConnectHint: "Conéctate para el ranking",
@@ -1189,7 +1192,8 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Got it",
     },
     chooseLevel: "Choose level",
-    tabs: { jugar: "Play", ranking: "Ranking", perfil: "Profile", aprender: "Learn" },
+    tabs: { jugar: "Home", modos: "Modes", ranking: "Ranking", perfil: "Profile" },
+    hub: { closings: "Rankings close", dailyRanking: "Daily ranking", weeklyLeague: "Weekly league", modesTitle: "Game modes", modesSub: "Regions, flags, outlines and practice", learnTitle: "Learn to play" },
     profileGuest: "Guest",
     profileConnected: "Connected",
     profileConnectHint: "Connect to join the ranking",
@@ -1619,7 +1623,8 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Entendi",
     },
     chooseLevel: "Escolha o nível",
-    tabs: { jugar: "Jogar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
+    tabs: { jugar: "Início", modos: "Modos", ranking: "Ranking", perfil: "Perfil" },
+    hub: { closings: "Fechamento dos rankings", dailyRanking: "Ranking diário", weeklyLeague: "Liga semanal", modesTitle: "Modos de jogo", modesSub: "Regiões, bandeiras, contornos e prática", learnTitle: "Aprenda a jogar" },
     profileGuest: "Convidado",
     profileConnected: "Conectado",
     profileConnectHint: "Conecte-se para o ranking",
@@ -2047,7 +2052,8 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Compris",
     },
     chooseLevel: "Choisir le niveau",
-    tabs: { jugar: "Jouer", ranking: "Classement", perfil: "Profil", aprender: "Apprendre" },
+    tabs: { jugar: "Accueil", modos: "Modes", ranking: "Classement", perfil: "Profil" },
+    hub: { closings: "Clôture des classements", dailyRanking: "Classement du jour", weeklyLeague: "Ligue hebdo", modesTitle: "Modes de jeu", modesSub: "Régions, drapeaux, contours et entraînement", learnTitle: "Apprends à jouer" },
     profileGuest: "Invité",
     profileConnected: "Connecté",
     profileConnectHint: "Connectez-vous pour le classement",
