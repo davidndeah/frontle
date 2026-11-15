@@ -19,7 +19,13 @@
 //                                   del rival (cierra el duelo con ganador)
 //   · duel_claim {code, name?}   → el rival entra con el código del duelo
 //   · duel_shared {id}           → el retador compartió el link (embudo)
-//   · duel_list                  → mis duelos de los últimos 30 días
+//   · duel_list                  → mis duelos de los últimos 30 días y
+//                                   cuántos puedo crear hoy
+//
+//  XP (suma a la liga semanal, que paga USDT, así que va con frenos): al
+//  cerrar el duelo, ganar 5 · perder 2 · empate 3. Como mucho 3 duelos con
+//  XP por jugador y día UTC, contra el mismo rival una vez al día y nada
+//  para sancionados. Lo otorga el servidor; el cliente solo lo muestra.
 // ============================================================
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -34,7 +40,9 @@ const DUEL_TTL_MS = 24 * 3600 * 1000; // plazo del rival desde que se envía
 const DUEL_PLAY_MS = 3600 * 1000; // quien empezó antes del vencimiento tiene 1 h para terminar
 const DUEL_HINT_MS = 15_000; // cada pista suma 15 s a la marca
 const DUEL_MAX_HINTS = 10;
-const DUELS_PER_DAY = 20; // duelos creados por jugador en 24 h
+const DUELS_PER_DAY = 3; // duelos creados por jugador y día UTC
+const DUEL_XP = { win: 5, lose: 2, tie: 3 } as const;
+const DUEL_XP_PER_DAY = 3; // = seq máximo de la fuente 'duel' en xp_shape (0033)
 const MIN_TIME_MS = 2000;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin 0/O/1/I
 const WALLET = /^0x[0-9a-f]{40}$/;
@@ -63,6 +71,8 @@ type Row = Record<string, unknown> & {
   rival_hints: number;
   finished_at: string | null;
   winner: "challenger" | "rival" | "tie" | null;
+  challenger_xp: number;
+  rival_xp: number;
   created_at: string;
 };
 
@@ -70,6 +80,14 @@ export type DuelStatus = "playing" | "open" | "started" | "finished" | "expired"
 
 function cleanName(v: unknown): string | null {
   return typeof v === "string" && v.trim() ? v.trim().slice(0, 16) : null;
+}
+
+// Día UTC como YYYYMMDD (el formato de xp_events.day) y su inicio en ISO.
+function utcDay(d = new Date()): number {
+  return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
+function utcDayStart(d = new Date()): string {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toISOString();
 }
 
 function newCode(): string {
@@ -126,6 +144,7 @@ function view(d: Row, me: string) {
     mine: role === "challenger" ? challenger : rival,
     theirs: role === "challenger" ? rival : challenger,
     result: !w ? null : w === "tie" ? "tie" : w === role ? "win" : "lose",
+    xp: role === "challenger" ? d.challenger_xp : d.rival_xp,
     optimal: status === "finished" || status === "expired" ? d.optimal : null,
     createdAt: d.created_at,
     expiresAt: d.expires_at,
@@ -171,6 +190,70 @@ export function makeDuels(supabase: SupabaseClient, E: Engine, rand: () => numbe
       .eq("block_prizes", true);
     const now = Date.now();
     return new Set((data ?? []).filter((a) => !a.until || new Date(a.until).getTime() > now).map((a) => a.player_id as string));
+  }
+
+  async function createdToday(player: string): Promise<number> {
+    const { count, error } = await supabase
+      .from("duels")
+      .select("id", { count: "exact", head: true })
+      .eq("challenger_id", player)
+      .gte("created_at", utcDayStart());
+    if (error) throw error;
+    return count ?? 0;
+  }
+
+  // XP de un duelo recién cerrado para `player` (contra `opponent`). Devuelve
+  // lo realmente otorgado: 0 si ya sumó contra ese rival hoy o si llegó al
+  // tope. El tope lo garantiza la PK (seq 1..3), no solo este conteo.
+  async function grantDuelXp(player: string, opponent: string, xp: number, duelId: string): Promise<number> {
+    const { data: prev, error: prevErr } = await supabase
+      .from("duels")
+      .select("challenger_id, challenger_xp, rival_xp")
+      .gte("finished_at", utcDayStart())
+      .neq("id", duelId)
+      .or(`and(challenger_id.eq.${player},rival_id.eq.${opponent}),and(challenger_id.eq.${opponent},rival_id.eq.${player})`);
+    if (prevErr) throw prevErr;
+    if ((prev ?? []).some((d) => (d.challenger_id === player ? d.challenger_xp : d.rival_xp) > 0)) return 0;
+
+    const day = utcDay();
+    const { count } = await supabase
+      .from("xp_events")
+      .select("seq", { count: "exact", head: true })
+      .eq("player_id", player)
+      .eq("day", day)
+      .eq("source", "duel");
+    for (let seq = (count ?? 0) + 1; seq <= DUEL_XP_PER_DAY; seq++) {
+      const { data, error } = await supabase
+        .from("xp_events")
+        .upsert({ player_id: player, day, source: "duel", level: "-", seq, xp },
+          { onConflict: "player_id,day,source,level,seq", ignoreDuplicates: true })
+        .select("xp");
+      if (error) throw error;
+      if (data && data.length > 0) return xp;
+      // seq ocupado por otra petición simultánea: probar el siguiente
+    }
+    return 0;
+  }
+
+  // Reparte el XP al cerrar el duelo y lo deja anotado en la fila.
+  async function settleXp(d: Row): Promise<Row> {
+    if (!d.winner || !d.rival_id) return d;
+    const blocked = await sanctioned([d.challenger_id, d.rival_id]);
+    const amount = (side: "challenger" | "rival") =>
+      d.winner === "tie" ? DUEL_XP.tie : d.winner === side ? DUEL_XP.win : DUEL_XP.lose;
+    const [cXp, rXp] = await Promise.all([
+      blocked.has(d.challenger_id) ? 0 : grantDuelXp(d.challenger_id, d.rival_id, amount("challenger"), d.id),
+      blocked.has(d.rival_id) ? 0 : grantDuelXp(d.rival_id, d.challenger_id, amount("rival"), d.id),
+    ]);
+    if (cXp === 0 && rXp === 0) return d;
+    const { data, error } = await supabase
+      .from("duels")
+      .update({ challenger_xp: cXp, rival_xp: rXp })
+      .eq("id", d.id)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as Row;
   }
 
   const reveal = (d: Row, me: string, startedAt: string) => ({
@@ -233,13 +316,7 @@ export function makeDuels(supabase: SupabaseClient, E: Engine, rand: () => numbe
         const { data: known } = await supabase.from("player_secrets").select("player_id").eq("player_id", rivalIn).maybeSingle();
         if (!known) return fail("bad_rival");
       }
-      const since = new Date(Date.now() - 86_400_000).toISOString();
-      const { count } = await supabase
-        .from("duels")
-        .select("id", { count: "exact", head: true })
-        .eq("challenger_id", me)
-        .gte("created_at", since);
-      if ((count ?? 0) >= DUELS_PER_DAY) return fail("too_many_duels", 429);
+      if ((await createdToday(me)) >= DUELS_PER_DAY) return fail("too_many_duels", 429);
 
       const name = cleanName(body.name);
       await rememberName(me, name);
@@ -360,7 +437,9 @@ export function makeDuels(supabase: SupabaseClient, E: Engine, rand: () => numbe
         .is(isChallenger ? "sent_at" : "finished_at", null)
         .select("*");
       if (error) throw error;
-      const row = (up && up[0] ? up[0] : await load(d.id)) as Row;
+      // Solo quien de verdad cerró el duelo reparte el XP (un reenvío no).
+      let row = (up && up[0] ? up[0] : await load(d.id)) as Row;
+      if (!isChallenger && up && up.length > 0) row = await settleXp(row);
       return ok({ duel: view(row, me) });
     }
 
@@ -374,11 +453,12 @@ export function makeDuels(supabase: SupabaseClient, E: Engine, rand: () => numbe
 
     if (action === "duel_list") {
       const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
-      const [mine, theirs] = await Promise.all([
+      const [mine, theirs, created] = await Promise.all([
         supabase.from("duels").select("*").eq("challenger_id", me).gte("created_at", since)
           .order("created_at", { ascending: false }).limit(50),
         supabase.from("duels").select("*").eq("rival_id", me).not("sent_at", "is", null).gte("created_at", since)
           .order("created_at", { ascending: false }).limit(50),
+        createdToday(me),
       ]);
       if (mine.error) throw mine.error;
       if (theirs.error) throw theirs.error;
@@ -389,7 +469,7 @@ export function makeDuels(supabase: SupabaseClient, E: Engine, rand: () => numbe
         .filter((d) => d.sent_at || now - new Date(d.challenger_started_at).getTime() < DUEL_PLAY_MS)
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .map((d) => view(d, me));
-      return ok({ duels });
+      return ok({ duels, left: Math.max(0, DUELS_PER_DAY - created) });
     }
 
     return fail("bad_action");

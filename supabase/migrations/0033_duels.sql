@@ -18,6 +18,12 @@
 --    terminado → el rival lo resolvió (finished_at + winner)
 --  Si vence sin que el rival termine, queda en el historial como vencido.
 --
+--  XP (suma a la liga semanal, que paga USDT; por eso va con frenos):
+--    ganar 5 · perder habiendo terminado 2 · empate 3 cada uno.
+--    Solo cuando los DOS terminaron; como mucho 3 duelos con XP por jugador
+--    y día UTC (creados o recibidos); contra el mismo rival, una vez al día;
+--    nada para cuentas sancionadas. Crear: 3 duelos por jugador y día UTC.
+--
 --  `code`: 6 caracteres sin ambiguos (sin 0/O/1/I) para compartir a mano.
 --  El deeplink de MiniPay no lleva parámetros, así que el código es lo que
 --  lleva el duelo de un teléfono a otro.
@@ -50,6 +56,10 @@ create table if not exists public.duels (
   rival_hints            int not null default 0 check (rival_hints between 0 and 10),
   finished_at            timestamptz,
   winner                 text check (winner is null or winner in ('challenger', 'rival', 'tie')),
+  -- XP que dejó el duelo a cada uno (0 si ya tenía el tope del día, si ya
+  -- había sumado contra ese rival hoy o si está sancionado). Ver xp_shape.
+  challenger_xp          int not null default 0 check (challenger_xp in (0, 2, 3, 5)),
+  rival_xp               int not null default 0 check (rival_xp in (0, 2, 3, 5)),
 
   created_at             timestamptz not null default now(),
   check (rival_id is null or rival_id <> challenger_id),
@@ -89,3 +99,22 @@ from public.duels
 group by 1;
 
 grant select on public.duel_funnel to anon, authenticated;
+
+-- ------------------------------------------------------------
+--  XP de duelos: fuente 'duel', seq 1..3 (el tope diario lo pone la PK) y
+--  solo 5/3/2. Se rehace xp_shape completo (último cambio: 0028).
+-- ------------------------------------------------------------
+alter table public.xp_events drop constraint if exists xp_shape;
+alter table public.xp_events add constraint xp_shape check (
+  (source = 'daily' and level in ('easy', 'medium', 'hard') and seq = 1
+    and xp = case level when 'easy' then 10 when 'medium' then 20 else 30 end)
+  or (source = 'stars' and level in ('easy', 'medium', 'hard') and seq = 1 and xp in (5, 10))
+  or (source = 'nohints' and level in ('easy', 'medium', 'hard') and seq = 1 and xp = 5)
+  or (source = 'streak_day' and level = '-' and seq = 1 and xp = 5)
+  or (source = 'streak_milestone' and level in ('7', '30', '100') and seq = 1 and xp = 20)
+  or (source = 'region' and level = '-' and seq between 1 and 4 and xp = 10)
+  or (source = 'quiz_flag' and level = '-' and seq between 1 and 8 and xp = 2)
+  or (source = 'quiz_outline' and level = '-' and seq between 1 and 8 and xp = 2)
+  or (source = 'practice' and level = '-' and seq between 1 and 6 and xp = 5)
+  or (source = 'duel' and level = '-' and seq between 1 and 3 and xp in (2, 3, 5))
+);
