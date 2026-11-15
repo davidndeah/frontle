@@ -68,6 +68,12 @@ notion-*.pdf
 # navegador. Van ANCLADAS con "/" (solo la raíz) a propósito: sin la barra,
 # el patrón también taparía imágenes legítimas en frontend/public o docs/.
 /descarga*.png
+/image*.png
+/minipay-logo.png
+
+# Estado local de la CLI de Supabase (proyecto enlazado, versión): es por máquina.
+supabase/.temp/
+frontend/supabase/.temp/
 
 # --- Agent skills (vendored por máquina, regenerables) ---
 .agents/
