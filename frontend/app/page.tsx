@@ -32,7 +32,7 @@ import {
   type Locale,
 } from "./lib/i18n";
 import { hasMiniPayPhone } from "./lib/phone";
-import { isServerDay, getPreview, startServerGame, finishServerGame, type LevelPreview, type Pause } from "./lib/serverGame";
+import { isServerDay, startServerGame, finishServerGame, type Pause } from "./lib/serverGame";
 import { getDailyBoard, EMPTY_BOARD, getMyLevelsOn, getNameStatus, type NameStatus, submitScore, getIpCountry, shortId, formatTime, getMyWinDays, getMyScore, getAlias, setAlias, getNamesFor, getMyDailyStanding, type ScoreEntry, type DailyStanding, type DailyBoard } from "./lib/ranking";
 import { isMiniPay, ADD_CASH_URL } from "./lib/minipay";
 import { SUPPORT_MAILTO, SUPPORT_TELEGRAM_URL, SUPPORT_X_URL } from "./lib/support";
@@ -51,7 +51,6 @@ import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
 import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
-import { continentOf } from "./lib/continents";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
 import { startMusic, stopMusic, isMusicMuted, toggleMusic } from "./lib/music";
 // viem (~248 KB) fuera del bundle inicial. Nada del camino de pagos hace falta
@@ -120,9 +119,10 @@ const WeeklyLeague = dynamic(() => import("./components/WeeklyLeague"), { ssr: f
 const ScoreCard = dynamic(() => import("./components/ScoreCard"), { ssr: false });
 const Coachmarks = dynamic(() => import("./components/Coachmarks"), { ssr: false });
 // BordyTutorial arrastra `lib/tutorialMap` (~72 KB de trazados) y solo se ve en
-// la primera partida; QuickStart sale del mismo módulo.
+// la primera partida.
 const BordyTutorial = dynamic(() => import("./components/BordyTutorial"), { ssr: false });
-const QuickStart = dynamic(() => import("./components/BordyTutorial").then((m) => m.QuickStart), { ssr: false });
+// Entrada al reto (globo + banderas): solo se descarga al empezar una partida.
+const ChallengeIntro = dynamic(() => import("./components/ChallengeIntro"), { ssr: false });
 const CoinShop = dynamic(() => import("./components/CoinShop"), { ssr: false });
 const CoinShopCard = dynamic(() => import("./components/CoinShop").then((m) => m.CoinShopCard), { ssr: false });
 
@@ -180,7 +180,9 @@ export default function Frontle() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showNextSil, setShowNextSil] = useState(false);
   const [showAllSil, setShowAllSil] = useState(false);
-  const [showInitial, setShowInitial] = useState(false);
+  // Pista de letra: cuántas letras lleva destapadas y de qué país. Va por
+  // país para que solo se conserve mientras el siguiente país sea el mismo.
+  const [letterHint, setLetterHint] = useState<{ country: string; n: number } | null>(null);
   // Placeholder del MISMO ancho que "07:08:43", no cadena vacía. Este span es
   // el elemento LCP de la home (PageSpeed lo señala por su clase). Arrancando
   // en "" el HTML prerenderizado pinta solo "🕒 Cierra en " y el texto no
@@ -417,6 +419,8 @@ export default function Frontle() {
   function coachSeen(): boolean {
     try {
       if (localStorage.getItem(TUTORIAL_KEY) === "1") return true;
+      // "No volver a mostrar" vale para TODO el recorrido, coachmarks incluidos.
+      if (localStorage.getItem("frontle-tutorial-hide") === "1") return true;
       // Migración: a quien ya vio el tutorial viejo COMPLETO (modal marcado
       // como "no mostrar" + coachmarks) no se le vuelve a mostrar nada.
       return localStorage.getItem("frontle-coach-hints") === "1";
@@ -435,8 +439,12 @@ export default function Frontle() {
     if (coachSeen()) startGame();
     else setCoaching(true);
   }
-  // Overlay pre-juego: tutorial completo (1ª vez) o cuenta regresiva rápida
-  const [overlay, setOverlay] = useState<null | "full" | "quick">(null);
+  // Overlay pre-juego: el tutorial completo. Quien marcó "no volver a
+  // mostrar" no lo ve: entra directo al reto.
+  const [overlay, setOverlay] = useState<null | "full">(null);
+  // Entrada al reto (globo + banderas). Solo en partida recién abierta, nunca
+  // al retomar una empezada.
+  const [intro, setIntro] = useState(false);
   // ---- Un nivel gratis al día; los demás se pagan; máximo 2 ganados ----
   // El primer nivel que el jugador empieza cada día es gratis (el que elija).
   // Cualquier otro nivel cuesta PRICES.extraLevel antes de empezar. Y como
@@ -458,7 +466,8 @@ export default function Frontle() {
   function showPregame() {
     let hide = false;
     try { hide = localStorage.getItem("frontle-tutorial-hide") === "1"; } catch {}
-    setOverlay(hide ? "quick" : "full");
+    if (hide) void enterGame();
+    else setOverlay("full");
   }
   async function openPregame() {
     // Reto de hoy ya resuelto (volvió del Home tras ganar): directo a la
@@ -642,41 +651,16 @@ export default function Frontle() {
   const bordyQuipPool = [tr.dailyHero.bordyNoStreak, ...tr.dailyHero.bordyQuips];
   const bordyQuip = bordyQuipPool[(day + DIFFICULTIES.indexOf(level)) % bordyQuipPool.length];
 
-  // Continente de origen/destino del reto DEL NIVEL ACTIVO (no el país en
-  // sí, que sigue sellado): David pidió reemplazar el "?" de las cartas
-  // por el contorno del continente — es una pista más sin revelar el
-  // reto. `?? "EU"` es puro blindaje de tipos: las ~90 entidades del
-  // grafo (COUNTRIES) están las 197 en continents.ts, así que en la
-  // práctica esto nunca cae al fallback.
-  // Las cartas ya no se pintan aquí: estos dos valores viajan como props a
-  // QuickStart, la pantalla del 3·2·1 (ver docs/design/home-v5.html).
-  const heroChallenge = challengesByLevel[level];
-  const legacyOrigin = continentOf(getCountry(heroChallenge.start)!.code) ?? "EU";
-  const legacyDest = continentOf(getCountry(heroChallenge.end)!.code) ?? "EU";
-
   // ---- Reto diario en el servidor (lib/serverGame.ts, migración 0023) ----
-  // Desde SERVER_GAME_FROM el reto es secreto: el inicio solo conoce el
-  // continente y la longitud (preview); origen y destino llegan al abrir la
-  // partida, y la marca la escribe el servidor con su reloj.
+  // Desde SERVER_GAME_FROM el reto es secreto: origen y destino llegan al
+  // abrir la partida, y la marca la escribe el servidor con su reloj.
   const serverDay = isServerDay(day);
-  const [preview, setPreview] = useState<Record<Difficulty, LevelPreview> | null>(null);
   const sessionRef = useRef<string | null>(null);
   const challengeRef = useRef<{ start: string; end: string; optimal: number } | null>(null);
   const pausesRef = useRef<Pause[]>([]);
   const solvedChainRef = useRef<string[] | null>(null);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  useEffect(() => {
-    if (!serverDay) return;
-    let alive = true;
-    getPreview().then((p) => alive && p && setPreview(p));
-    return () => { alive = false; };
-  }, [serverDay, day]);
-  const heroPreview = serverDay ? preview?.[level] ?? null : null;
-  const heroOriginContinent = (heroPreview ? heroPreview.startContinent : legacyOrigin) as typeof legacyOrigin;
-  const heroDestContinent = (heroPreview ? heroPreview.endContinent : legacyDest) as typeof legacyDest;
-  const heroOptimal = serverDay ? heroPreview?.optimal ?? 0 : challengesByLevel[level].optimal;
-
   // Persiste la partida del día para que al refrescar NO se pueda volver a
   // jugar gratis (el estado se restaura: en curso o resuelta).
   function saveGame(g: { started: boolean; solved: boolean; chain: PlayState["chain"]; finalMs?: number }) {
@@ -852,7 +836,7 @@ export default function Frontle() {
     setPayError(null);
     setShowNextSil(false);
     setShowAllSil(false);
-    setShowInitial(false);
+    setLetterHint(null);
     // mejor marca del nivel
     let b: number | null = null;
     try {
@@ -1169,7 +1153,9 @@ export default function Frontle() {
       setElapsedMs(g.elapsedMs);
       setStarted(true);
       saveGame({ started: true, solved: false, chain: [] });
-      setTimeout(() => inputRef.current?.focus(), 50);
+      // Sin foco en el campo: el teclado no salta al entrar y se ve el reto
+      // entero. La entrada animada solo en partida nueva, no al retomarla.
+      if (g.elapsedMs < 1500) setIntro(true);
       return;
     }
     startRef.current = Date.now();
@@ -1177,7 +1163,7 @@ export default function Frontle() {
     setElapsedMs(0);
     setStarted(true);
     saveGame({ started: true, solved: false, chain: state.chain });
-    setTimeout(() => inputRef.current?.focus(), 50);
+    setIntro(true);
   }
 
   function submitCountry(value: string) {
@@ -1217,7 +1203,6 @@ export default function Frontle() {
       const solved = result.solved;
       setState((prev) => ({ ...prev, chain: newChain, solved }));
       setShowNextSil(false);
-      setShowInitial(false);
       const finalMs = solved ? Math.max(0, Date.now() - startRef.current - pausedMsRef.current) : undefined;
       if (solved) solvedChainRef.current = newChain.map((c) => c.country);
       saveGame({ started: true, solved, chain: newChain, finalMs });
@@ -1233,7 +1218,7 @@ export default function Frontle() {
         }
         // Liga v2: XP por nivel + estrellas + sin pistas + racha del día; lo
         // otorga el servidor al cerrar la partida, idempotente por (día, nivel).
-        void closeDaily(score, finalMs!, showInitial || showNextSil || showAllSil);
+        void closeDaily(score, finalMs!, letterHint !== null || showNextSil || showAllSil);
       }
     }
     setInput("");
@@ -1438,7 +1423,7 @@ export default function Frontle() {
     setSuggestions([]);
     setShowNextSil(false);
     setShowAllSil(false);
-    setShowInitial(false);
+    setLetterHint(null);
     setStarted(false); // vuelve a la pantalla de Play (cronómetro se reinicia al jugar)
     setElapsedMs(0);
     pausedMsRef.current = 0;
@@ -1482,7 +1467,11 @@ export default function Frontle() {
     }
     setMessage(null);
     void loadPayments().then((m) => m.getDailyPot()).then((p) => p !== null && setPot(p)).catch(() => {}); // el pago subió el pot
-    if (kind === "initial") setShowInitial(true);
+    // Cada compra destapa una letra más del MISMO país; si el siguiente país
+    // cambió, la cuenta empieza de nuevo.
+    if (kind === "initial" && nextHint) {
+      setLetterHint((prev) => (prev && prev.country === nextHint ? { country: nextHint, n: prev.n + 1 } : { country: nextHint, n: 1 }));
+    }
     if (kind === "next") setShowNextSil(true);
     if (kind === "all") setShowAllSil(true);
     sfxHint();
@@ -1496,10 +1485,16 @@ export default function Frontle() {
   const endC = getCountry(challenge.end)!;
   const guessCount = state.chain.length;
   const silhouettes = showNextSil && nextHint ? [nextHint] : [];
+  // Pista de letra (ahorcado): las letras del siguiente país, destapadas de
+  // izquierda a derecha. Espacios y signos se ven siempre; no cuentan.
+  const hintChars = nextHint ? Array.from(cn(nextHint).toLocaleUpperCase(locale)) : [];
+  const isLetter = (ch: string) => ch.toLocaleLowerCase(locale) !== ch.toLocaleUpperCase(locale);
+  const hintLetters = hintChars.filter(isLetter).length;
+  const lettersShown = letterHint && letterHint.country === nextHint ? Math.min(letterHint.n, hintLetters) : 0;
   const panel = "panel";
 
   return (
-    <main className="relative min-h-dvh bg-grid text-white flex flex-col items-center overflow-hidden">
+    <main className="relative min-h-dvh bg-ambient text-white flex flex-col items-center overflow-hidden">
       {/* Privy: provider + puente de la wallet embebida + oyente del login.
           Sin UI, cargado aparte, y nunca dentro de MiniPay. */}
       {privyActive && (
@@ -1667,12 +1662,8 @@ export default function Frontle() {
                 </span>
               </div>
 
-              {/* Las cartas selladas del reto (contornos de continente +
-                  arco + conteo) YA NO viven aquí: se mudaron a la pantalla
-                  del 3·2·1 (QuickStart, en BordyTutorial.tsx). En el Home
-                  competían con la explicación del juego justo cuando el
-                  recién llegado aún no sabía qué estaba mirando — el motivo
-                  del feedback de MiniPay. Ver docs/design/home-v5.html. */}
+              {/* El reto sigue sellado aquí: los dos países se descubren al
+                  entrar, con el globo de ChallengeIntro. */}
 
               {/* Premio TOTAL del día, protagonista: es el gancho. Lo que le toca
                   a cada nivel va abajo, en su propio botón. */}
@@ -1746,7 +1737,6 @@ export default function Frontle() {
                 {tr.hub.closings}
               </h3>
               {(["daily", "weekly"] as const).map((rt) => {
-                const amount = rt === "daily" ? pot : weeklyPot;
                 // El reloj semanal sale de Date.now(): hasta que el efecto del
                 // countdown corre no se pinta, para no romper la hidratación.
                 const clock = rt === "daily" ? countdown : countdown === "--:--:--" ? "···" : fmtWeekClose(msToWeekClose());
@@ -1769,14 +1759,16 @@ export default function Frontle() {
                       </span>
                       <span className="block font-mono text-[11px] text-neutral-300 tabular-nums">🕒 {tr.dailyHero.closesIn(clock)}</span>
                     </span>
-                    <span className="flex-none text-right">
-                      <span className="block text-[9px] uppercase tracking-wider text-neutral-400">
-                        {rt === "daily" ? tr.rankTabs.dailyPrize : tr.rankTabs.weeklyPrize}
+                    {/* El premio del día ya es el número grande del reto, justo
+                        arriba: aquí solo se enseña el de la semana. */}
+                    {rt === "weekly" && (
+                      <span className="flex-none text-right">
+                        <span className="block text-[9px] uppercase tracking-wider text-neutral-400">{tr.rankTabs.weeklyPrize}</span>
+                        <span className="block font-display text-base font-black leading-tight text-gold tabular-nums">
+                          {weeklyPot !== null ? fmt(weeklyPot) : "···"}
+                        </span>
                       </span>
-                      <span className="block font-display text-base font-black leading-tight text-gold tabular-nums">
-                        {amount !== null ? fmt(amount) : "···"}
-                      </span>
-                    </span>
+                    )}
                     <span aria-hidden className="flex-none text-lg text-lavender">›</span>
                   </button>
                 );
@@ -1802,14 +1794,7 @@ export default function Frontle() {
         {/* Recordatorio del reto MIENTRAS se juega (ya no está sellado: el
             hero pre-juego, que sí lo sella, desaparece al iniciar). */}
         {started && (
-        <section className={`${panel} p-4`}>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-300 text-center mb-1">{tr.daily}</p>
-          {/* Monto que se lleva el ganador de este nivel (sin % dentro del reto) */}
-          {levelPot !== null && (
-            <p className="text-[11px] text-amber-300/70 text-center mb-3">
-              {tr.levelPrize(fmt(levelPot))}
-            </p>
-          )}
+        <section className={`${panel} p-3`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 flex flex-col items-center text-center">
               <Flag code={startC.code} size={46} />
@@ -1821,7 +1806,10 @@ export default function Frontle() {
               <div className="text-sm font-semibold mt-1 text-fuchsia-300">{cn(challenge.end)}</div>
             </div>
           </div>
-          <p className="text-center text-xs text-neutral-300 mt-3">{tr.optimal(challenge.optimal)}</p>
+          <p className="text-center text-xs text-neutral-300 mt-2">
+            {tr.optimal(challenge.optimal)}
+            {levelPot !== null && <span className="text-amber-300/80"> · {tr.levelPrize(fmt(levelPot))}</span>}
+          </p>
         </section>
         )}
 
@@ -1832,6 +1820,32 @@ export default function Frontle() {
               🕒 {formatTime(coaching ? 0 : elapsedMs)}
             </span>
           </p>
+        )}
+
+        {/* Pista de letra comprada: arriba, antes del mapa, para que se vea sin
+            buscarla. Tipo ahorcado: cada compra destapa una letra más. */}
+        {started && !state.solved && lettersShown > 0 && (
+          <div className="brutal-sm rounded-2xl bg-surface px-3 py-2.5 text-center" role="status" aria-label={`${tr.challenge.letterTitle}: ${hintChars.map((ch, k) => (!isLetter(ch) || hintChars.slice(0, k + 1).filter(isLetter).length <= lettersShown ? ch : "_")).join(" ")}`}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gold">🔤 {tr.challenge.letterTitle}</p>
+            <div className="mt-1.5 flex flex-wrap items-end justify-center gap-1" aria-hidden>
+              {hintChars.map((ch, k) => {
+                if (ch === " ") return <span key={k} className="w-2.5" />;
+                if (!isLetter(ch)) return <span key={k} className="pb-1 font-display text-lg font-black text-white">{ch}</span>;
+                const order = hintChars.slice(0, k + 1).filter(isLetter).length;
+                const open = order <= lettersShown;
+                return (
+                  <span
+                    key={`${k}-${open}`}
+                    className={`flex h-9 w-7 items-center justify-center rounded-md border-2 font-display text-lg font-black ${
+                      open ? "letter-flip border-deep bg-gold text-deep" : "border-lavender/35 bg-black/25 text-transparent"
+                    }`}
+                  >
+                    {open ? ch : "·"}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* Pago en curso. Antes solo cubría las PISTAS (`started && !solved`),
@@ -1967,14 +1981,14 @@ export default function Frontle() {
 
                 <div id="hints-panel" className={`${panel} p-3`}>
                   <p className="text-[10px] uppercase tracking-widest text-neutral-300 mb-2 text-center">{tr.hintsTitle}</p>
-                  <div className="flex flex-wrap justify-center gap-2">
-                    <HintButton active={showInitial} busy={paying === "initial"} locked={paying !== null && paying !== "initial"} onClick={() => buyHint("initial")} label={tr.hintInitial} price={PRICES.hintInitial} fmt={fmt} />
-                    <HintButton active={showNextSil} busy={paying === "next"} locked={paying !== null && paying !== "next"} onClick={() => buyHint("next")} label={tr.hintSilhouetteNext} price={PRICES.hintNext} fmt={fmt} />
-                    <HintButton active={showAllSil} busy={paying === "all"} locked={paying !== null && paying !== "all"} onClick={() => buyHint("all")} label={tr.hintSilhouetteAll} price={PRICES.hintAll} fmt={fmt} />
+                  {/* Tres fichas iguales: icono, nombre corto y precio. La de
+                      letra se puede comprar varias veces (una letra cada vez)
+                      hasta destapar el nombre entero. */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <HintButton icon="🔤" active={hintLetters > 0 && lettersShown >= hintLetters} busy={paying === "initial"} locked={paying !== null && paying !== "initial"} onClick={() => buyHint("initial")} label={lettersShown > 0 ? tr.challenge.hintLetterMore : tr.challenge.hintLetter} title={tr.hintInitial} price={PRICES.hintInitial} fmt={fmt} />
+                    <HintButton icon="🗺️" active={showNextSil} busy={paying === "next"} locked={paying !== null && paying !== "next"} onClick={() => buyHint("next")} label={tr.challenge.hintNext} title={tr.hintSilhouetteNext} price={PRICES.hintNext} fmt={fmt} />
+                    <HintButton icon="🌍" active={showAllSil} busy={paying === "all"} locked={paying !== null && paying !== "all"} onClick={() => buyHint("all")} label={tr.challenge.hintAll} title={tr.hintSilhouetteAll} price={PRICES.hintAll} fmt={fmt} />
                   </div>
-                  {showInitial && nextHint && (
-                    <p className="text-center text-sm text-amber-300 mt-2">{tr.hintNextInitial(cn(nextHint).charAt(0).toUpperCase())}</p>
-                  )}
                   {!hasWallet && (
                     <p className="text-center text-xs text-amber-300/90 mt-2">{tr.noWallet}</p>
                   )}
@@ -2488,17 +2502,24 @@ export default function Frontle() {
           }}
         />
       )}
-      {overlay === "quick" && (
-        <QuickStart
-          tr={tr}
-          originContinent={heroOriginContinent}
-          destContinent={heroDestContinent}
-          optimal={heroOptimal}
-          onDone={() => {
-            setOverlay(null);
-            if (!started) enterGame();
-          }}
-          onFull={() => setOverlay("full")}
+      {/* Entrada al reto: el globo ubica los dos países. El reloj ya corre
+          (el servidor acaba de abrir la partida), por eso es corta y un toque
+          la salta. */}
+      {intro && started && !state.solved && tab === "jugar" && (
+        <ChallengeIntro
+          start={challenge.start}
+          end={challenge.end}
+          startCode={startC.code}
+          endCode={endC.code}
+          startLabel={cn(challenge.start)}
+          endLabel={cn(challenge.end)}
+          roleStart={tr.legend.origin}
+          roleEnd={tr.legend.destination}
+          title={tr.daily}
+          sub={tr.optimal(challenge.optimal)}
+          go={tr.go}
+          skip={tr.challenge.skipIntro}
+          onDone={() => setIntro(false)}
         />
       )}
 
@@ -3227,20 +3248,21 @@ function Legend({ color, label }: { color: string; label: string }) {
   );
 }
 
-function HintButton({ active, busy, locked, onClick, label, price, fmt }: { active: boolean; busy: boolean; locked: boolean; onClick: () => void; label: string; price: number; fmt: (usdt: number) => string }) {
+// Ficha de pista: icono grande, nombre corto y precio. `title` es el nombre
+// largo, para lectores de pantalla.
+function HintButton({ icon, active, busy, locked, onClick, label, title, price, fmt }: { icon: string; active: boolean; busy: boolean; locked: boolean; onClick: () => void; label: string; title: string; price: number; fmt: (usdt: number) => string }) {
   return (
     <button
       onClick={onClick}
       disabled={active || busy || locked}
-      className={`brutal-sm brutal-press rounded-lg px-3 py-1.5 text-xs font-semibold ${
-        active
-          ? "bg-amber-300 text-surface"
-          : busy
-            ? "bg-surface text-white animate-pulse"
-            : `bg-surface text-white hover:bg-surface ${locked ? "opacity-50" : ""}`
+      aria-label={`${title} · ${fmt(price)}`}
+      className={`brutal-sm brutal-press flex min-w-0 flex-col items-center gap-1 rounded-xl px-1.5 py-2.5 text-center ${
+        active ? "bg-amber-300 text-surface" : busy ? "bg-surface text-white animate-pulse" : `bg-surface text-white ${locked ? "opacity-50" : ""}`
       }`}
     >
-      {label} {active ? "✓" : busy ? "⏳" : <span className="opacity-70">· {fmt(price)}</span>}
+      <span className="text-2xl leading-none" aria-hidden>{active ? "✅" : busy ? "⏳" : icon}</span>
+      <span className="font-display text-[11px] font-bold leading-tight">{label}</span>
+      {!active && <span className="font-mono text-[11px] font-bold tabular-nums text-gold">{fmt(price)}</span>}
     </button>
   );
 }
