@@ -445,6 +445,9 @@ export default function Frontle() {
   // Entrada al reto (globo + banderas). Solo en partida recién abierta, nunca
   // al retomar una empezada.
   const [intro, setIntro] = useState(false);
+  // Momento (epoch ms) en que arranca el reloj y debe cerrarse la entrada;
+  // null = entrada libre, que se puede saltar.
+  const [introEndAt, setIntroEndAt] = useState<number | null>(null);
   // ---- Un nivel gratis al día; los demás se pagan; máximo 2 ganados ----
   // El primer nivel que el jugador empieza cada día es gratis (el que elija).
   // Cualquier otro nivel cuesta PRICES.extraLevel antes de empezar. Y como
@@ -1147,15 +1150,26 @@ export default function Frontle() {
         chain: [],
         solved: false,
       });
-      // Retomar: el reloj sigue desde lo que el servidor ya contó.
-      startRef.current = Date.now() - g.elapsedMs;
+      // Retomar: el reloj sigue desde lo que el servidor ya contó. En partida
+      // nueva arranca al acabar la entrada animada (el servidor no la cuenta):
+      // hasta entonces `startRef` queda en el futuro y el reloj marca 0.
+      startRef.current = Date.now() - g.elapsedMs + g.introLeftMs;
       pausedMsRef.current = 0;
       setElapsedMs(g.elapsedMs);
       setStarted(true);
       saveGame({ started: true, solved: false, chain: [] });
       // Sin foco en el campo: el teclado no salta al entrar y se ve el reto
       // entero. La entrada animada solo en partida nueva, no al retomarla.
-      if (g.elapsedMs < 1500) setIntro(true);
+      if (g.introLeftMs >= 1500) {
+        // Termina justo cuando arranca el reloj, y no se puede saltar: así
+        // nadie gana tiempo por tocar antes.
+        setIntroEndAt(startRef.current);
+        setIntro(true);
+      } else if (g.introLeftMs === 0 && g.elapsedMs < 1500) {
+        // Servidor que aún cuenta desde que abre la partida: entrada saltable.
+        setIntroEndAt(null);
+        setIntro(true);
+      }
       return;
     }
     startRef.current = Date.now();
@@ -1163,6 +1177,7 @@ export default function Frontle() {
     setElapsedMs(0);
     setStarted(true);
     saveGame({ started: true, solved: false, chain: state.chain });
+    setIntroEndAt(null);
     setIntro(true);
   }
 
@@ -2502,9 +2517,8 @@ export default function Frontle() {
           }}
         />
       )}
-      {/* Entrada al reto: el globo ubica los dos países. El reloj ya corre
-          (el servidor acaba de abrir la partida), por eso es corta y un toque
-          la salta. */}
+      {/* Entrada al reto: el globo ubica los dos países. El reloj arranca
+          cuando termina (`introEndAt`); el servidor descuenta ese tramo. */}
       {intro && started && !state.solved && tab === "jugar" && (
         <ChallengeIntro
           start={challenge.start}
@@ -2519,6 +2533,7 @@ export default function Frontle() {
           sub={tr.optimal(challenge.optimal)}
           go={tr.go}
           skip={tr.challenge.skipIntro}
+          endAt={introEndAt}
           onDone={() => setIntro(false)}
         />
       )}

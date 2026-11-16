@@ -55,7 +55,7 @@ App Router under `frontend/app/`. Game logic is pure and lives in `app/lib/`:
 - **`lib/onchain.ts`** — tx counts / unique wallets / failure rate, read from the public Blockscout API.
 - **`app/components/WorldMap.tsx`** — map rendering with `d3-geo` + `topojson-client`.
 - **`app/page.tsx`** — the game UI and nearly all React state. Four tabs (Inicio · Modos · Ranking · Perfil; ids `jugar`/`modos`/`ranking`/`perfil`): Inicio is only the daily challenge plus the daily/weekly ranking closings; every free mode and the how-to-play section live in Modos.
-- **`app/components/ChallengeIntro.tsx`** — the globe animation that opens a daily game (same look as the landing globe in `app/inicio/Globe.tsx`). It plays *after* the server reveals the challenge, so the clock is already running: keep it short and skippable.
+- **`app/components/ChallengeIntro.tsx`** — the globe animation that opens a daily game (same look as the landing globe in `app/inicio/Globe.tsx`). It plays *after* the server reveals the challenge, and the clock starts when it ends: the `game` function subtracts a fixed `INTRO_MS` from every time (from day `INTRO_FROM` on) and the client fits the scene into that window, unskippable. If you change the animation length, change `INTRO_MS` on the server too.
 - **`app/stats/`** — the public stats page. Required for the MiniPay listing.
 
 Game modes beyond the daily challenge (all free, no pot — the daily challenge is the only paid/prized mode):

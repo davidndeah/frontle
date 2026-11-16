@@ -34,13 +34,13 @@ const C = {
 };
 
 // Tiempos de la escena, en ms desde que arranca.
-const TRAVEL = 1300; // el globo llega y hace zoom
-const PIN_A = 850; // cae el pin de salida
-const PIN_B = 1150; // cae el de llegada
-const ARC = 1350; // empieza el arco entre los dos
-const ARC_MS = 500;
-const GO = 1900; // «¡YA!»
-const END = 2700; // se cierra sola
+const TRAVEL = 1900; // el globo llega y hace zoom
+const PIN_A = 1250; // cae el pin de salida
+const PIN_B = 1750; // cae el de llegada
+const ARC = 2050; // empieza el arco entre los dos
+const ARC_MS = 750;
+const GO = 3100; // «¡YA!»
+const END = 4000; // se cierra sola
 const ATLAS_WAIT = 700; // si el atlas tarda más, la escena arranca sin él
 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -85,11 +85,18 @@ interface Props {
   sub: string;
   go: string;
   skip: string;
+  /**
+   * Momento (epoch ms) en que arranca el reloj del reto. Si viene, la escena
+   * se ajusta para terminar justo ahí y no se puede saltar: el servidor no
+   * cuenta ese tramo, y saltarlo sería ganar tiempo. Sin él dura END y un
+   * toque la cierra.
+   */
+  endAt?: number | null;
   onDone: () => void;
 }
 
 export default function ChallengeIntro({
-  start, end, startCode, endCode, startLabel, endLabel, roleStart, roleEnd, title, sub, go, skip, onDone,
+  start, end, startCode, endCode, startLabel, endLabel, roleStart, roleEnd, title, sub, go, skip, endAt, onDone,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -281,6 +288,7 @@ export default function ChallengeIntro({
     // --- línea de tiempo ---
     let raf = 0;
     let t0 = 0;
+    let speed = 1;
     let started = false;
     let alive = true;
     let firedA = false;
@@ -289,8 +297,10 @@ export default function ChallengeIntro({
 
     function frame(now: number) {
       if (!alive) return;
-      const t = started ? now - t0 : 0;
+      const t = started ? (now - t0) * speed : 0;
       draw(t, now);
+      // Con hora de cierre manda el reloj, aunque el atlas no haya llegado.
+      if (endAt && Date.now() >= endAt) return finish();
       if (started) {
         if (!firedA && t >= PIN_A) { firedA = true; sfxHint(); }
         if (!firedB && t >= PIN_B) { firedB = true; sfxHint(); }
@@ -304,6 +314,9 @@ export default function ChallengeIntro({
       if (started || !alive) return;
       started = true;
       t0 = performance.now();
+      // Encaja la escena entera en lo que queda hasta que arranque el reloj
+      // (lo que tardó la red o el atlas se recupera acelerando un poco).
+      if (endAt) speed = END / Math.max(1500, endAt - Date.now());
     }
 
     const ro = new ResizeObserver(resize);
@@ -349,8 +362,8 @@ export default function ChallengeIntro({
     <div
       role="dialog"
       aria-label={`${title}: ${startLabel} → ${endLabel}`}
-      onClick={finish}
-      className="fixed inset-0 z-[60] flex cursor-pointer flex-col items-center justify-center gap-4 px-6"
+      onClick={endAt ? undefined : finish}
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 px-6"
       style={{ background: "var(--body-grad)" }}
     >
       <p className="intro-fade font-display text-xs font-bold uppercase tracking-[0.22em] text-lavender">{title}</p>
@@ -409,7 +422,9 @@ export default function ChallengeIntro({
       <p className="intro-fade rounded-full border-2 border-deep bg-gold px-3 py-1 font-display text-xs font-bold text-deep" style={{ animationDelay: `${ARC + 150}ms` }}>
         {sub}
       </p>
-      <p className="intro-fade text-[11px] text-neutral-400" style={{ animationDelay: "600ms" }}>{skip}</p>
+      {!endAt && (
+        <p className="intro-fade text-[11px] text-neutral-400" style={{ animationDelay: "600ms" }}>{skip}</p>
+      )}
     </div>
   );
 }
