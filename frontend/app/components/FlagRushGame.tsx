@@ -25,6 +25,7 @@ import {
 } from "../lib/flagRush";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
+import FlagRushIntro from "./FlagRushIntro";
 
 // Lo que dura el veredicto en pantalla antes de pasar a la siguiente bandera.
 // El servidor arranca el reloj de la siguiente al terminar esta pausa
@@ -56,6 +57,9 @@ export default function FlagRushGame({
   const [client] = useState<RushClient>(() => clientProp ?? rushClient());
   const [phase, setPhase] = useState<Phase>({ k: "loading" });
   const [busy, setBusy] = useState(false);
+  // Escena de entrada (FlagRushIntro). Corre ANTES de pedir la partida al
+  // servidor, así no le resta tiempo a la primera bandera.
+  const [introOn, setIntroOn] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const answering = useRef(false);
   const name = useCallback((code: string) => countryName(rushCanonical(code), locale), [locale]);
@@ -240,7 +244,12 @@ export default function FlagRushGame({
               <PracticeButton tr={tr} onClick={practice} />
             </>
           ) : st ? (
-            <button onClick={() => void begin()} disabled={busy} className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1 disabled:opacity-60">
+            <button
+              // Partida nueva: primero la escena. Retomar va directo.
+              onClick={() => (st.state === "open" ? void begin() : setIntroOn(true))}
+              disabled={busy || introOn}
+              className="btn-3d font-display font-bold text-xl px-12 py-3 mt-1 disabled:opacity-60"
+            >
               {st.state === "open" ? tr.rush.resume : tr.rush.play}
             </button>
           ) : (
@@ -254,6 +263,14 @@ export default function FlagRushGame({
             </div>
           )}
         </section>
+        {introOn && (
+          <FlagRushIntro
+            title={tr.rush.title}
+            go={tr.go}
+            skip={tr.challenge.skipIntro}
+            onDone={() => { setIntroOn(false); void begin(); }}
+          />
+        )}
       </div>
     );
   }
