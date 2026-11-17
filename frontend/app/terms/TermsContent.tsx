@@ -136,7 +136,7 @@ export default function TermsContent() {
   const d = L[locale];
 
   return (
-    <main className="relative min-h-dvh bg-grid text-white px-5 py-8">
+    <main className="relative min-h-dvh bg-ambient text-white px-5 py-8">
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-5">
         <header>
           <Link href="/" className="text-sm text-[#c4b5fd] underline">{d.back}</Link>

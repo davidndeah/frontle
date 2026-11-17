@@ -31,6 +31,12 @@ export interface StartedGame {
   challenge: ServerChallenge;
   /** ms de juego ya transcurridos según el servidor (al retomar > 0). */
   elapsedMs: number;
+  /**
+   * ms que faltan para que el reloj arranque: el servidor no cuenta la entrada
+   * animada (el globo). 0 al retomar una partida ya en juego, o si el servidor
+   * todavía cuenta desde que abre la partida.
+   */
+  introLeftMs: number;
 }
 export type StartError =
   | "payment_required"
@@ -69,15 +75,26 @@ export async function startServerGame(
   level: Difficulty,
   paymentTx?: string | null
 ): Promise<{ ok: true; game: StartedGame } | { ok: false; error: StartError }> {
-  const r = await call<{ sessionId: string; challenge: ServerChallenge; startedAt: string; serverNow: string }>({
+  const r = await call<{ sessionId: string; challenge: ServerChallenge; startedAt: string; serverNow: string; introMs?: number }>({
     action: "start",
     player,
     level,
     ...(paymentTx ? { paymentTx } : {}),
   });
   if (!r.ok) return r;
-  const elapsedMs = Math.max(0, new Date(r.data.serverNow).getTime() - new Date(r.data.startedAt).getTime());
-  return { ok: true, game: { sessionId: r.data.sessionId, challenge: r.data.challenge, elapsedMs } };
+  // Tiempo de juego = desde que abrió la partida, menos la entrada animada
+  // que el servidor descuenta. Negativo = la entrada aún no ha terminado.
+  const played =
+    new Date(r.data.serverNow).getTime() - new Date(r.data.startedAt).getTime() - (Number(r.data.introMs) || 0);
+  return {
+    ok: true,
+    game: {
+      sessionId: r.data.sessionId,
+      challenge: r.data.challenge,
+      elapsedMs: Math.max(0, played),
+      introLeftMs: Math.max(0, -played),
+    },
+  };
 }
 
 export interface Pause {

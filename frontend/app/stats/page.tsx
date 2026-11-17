@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Estadísticas — Frontle" };
 // navegador y los números se leen en vivo del contrato y de Supabase.
 export default function Stats() {
   return (
-    <main className="relative min-h-dvh bg-grid text-white px-5 py-8">
+    <main className="relative min-h-dvh bg-ambient text-white px-5 py-8">
       <StatsView />
     </main>
   );

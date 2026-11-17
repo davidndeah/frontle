@@ -18,7 +18,8 @@
 //
 //   · {action:"finish", sessionId, chain, pauses?, countryCode?, name?}
 //       Revalida la cadena contra el grafo (misma regla que el cliente),
-//       calcula el tiempo con su reloj (fin − inicio − pausas) y escribe la
+//       calcula el tiempo con su reloj (fin − inicio − pausas − entrada
+//       animada, ver INTRO_MS) y escribe la
 //       marca en `scores`. Rechaza < 2 s (igual que el check scores_min_time).
 //       `pauses` = [{tx, ms}]: el reloj se para mientras se confirma el pago
 //       de una pista; solo se descuenta si `tx` es un pago real de esa wallet
@@ -61,6 +62,14 @@ const MIN_TIME_MS = 2000;
 const MAX_SESSIONS_PER_DAY = 40;
 const HINT_MIN_PRICE = 50_000n; // 0.05 USDT: la pista más barata
 const PAUSE_MAX_MS = 90_000;
+// Entrada animada del reto (el globo): desde INTRO_FROM el reloj arranca
+// INTRO_MS después de abrir la partida, que es lo que dura la animación más
+// el viaje de la respuesta. Es fijo e igual para todos —no lo declara el
+// cliente—, así que no se puede inflar. Empieza en un día entero para que
+// todas las marcas de un mismo día se midan igual.
+const INTRO_FROM = 20261117;
+const INTRO_MS = 4500;
+const introMs = (day: number) => (day >= INTRO_FROM ? INTRO_MS : 0);
 // XP del reto diario (mismos valores que el check xp_shape de 0008).
 const XP_DAILY: Record<Level, number> = { easy: 10, medium: 20, hard: 30 };
 const STREAK_MILESTONES = [7, 30, 100];
@@ -217,7 +226,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const challenge = await getChallenge(day, level);
       const reveal = (id: string, startedAt: string) =>
-        json({ ok: true, sessionId: id, day, level, challenge, startedAt, serverNow: new Date().toISOString() });
+        json({ ok: true, sessionId: id, day, level, challenge, startedAt, serverNow: new Date().toISOString(), introMs: introMs(day) });
 
       const open = (sessions ?? []).find((s) => s.level === level && !s.finished_at);
       if (open) return reveal(open.id, open.started_at);
@@ -276,7 +285,7 @@ Deno.serve(async (req) => {
         seenTx.add(tx);
         if (!(await verifyPayment(tx, s.player_id, HINT_MIN_PRICE, startedMs / 1000 - 5))) pausedMs += ms;
       }
-      const timeMs = Date.now() - startedMs - pausedMs;
+      const timeMs = Date.now() - startedMs - pausedMs - introMs(s.day);
       if (timeMs < MIN_TIME_MS) return json({ ok: false, error: "too_fast" }, 422);
 
       // Cerrar primero (si dos cierres llegan a la vez, solo uno escribe).
