@@ -47,6 +47,30 @@ const OJO_I = { cx: 416, cy: 536, r: 44 };
 const OJO_D = { cx: 723, cy: 534, r: 44 };
 const BOCA = { cx: 582, cy: 764 };
 const TINTA = "#0b0a14";
+// Ciclo del arte de las fichas de Modos (.art-cycle en globals.css). El
+// carrete de banderas del visor usa el mismo para ir en fase con ellas.
+const CICLO_ARTE_S = 12;
+// En .art-cycle cada capa termina de aparecer al 6% de su ciclo.
+const ENTRADA_ARTE_MS = 0.06 * CICLO_ARTE_S * 1000;
+// Lo que tarda la tira en correrse un puesto. Es el mismo tramo en que
+// .art-cycle funde una capa con la siguiente (del 2.5% al 6%).
+const PASO_VISOR_MS = 420;
+// --ease-in-out de globals.css: algo que se desplaza en pantalla.
+const EASE_IN_OUT = "cubic-bezier(0.77, 0, 0.175, 1)";
+
+// Orden de los puestos de la tira. Las capas de .art-cycle aparecen en el
+// orden 0, n-1, n-2, …, 1 (por sus delays negativos), y el carrete tiene que
+// seguir ese mismo orden. Delante va la última, que asoma por la izquierda
+// al arrancar; detrás se repiten las dos primeras para cerrar el bucle.
+function puestosDelCarrete(banderas: readonly string[]): string[] {
+  const n = banderas.length;
+  const orden = banderas.map((_, k) => banderas[(n - k) % n]);
+  return [orden[n - 1], ...orden, orden[0], orden[1 % n]];
+}
+
+// Traslado (en % del ancho de la tira) que deja centrado el puesto del paso
+// k. La tira nace en el centro del visor; el puesto del paso k es el k+1.
+const tiraX = (k: number, total: number) => -((k + 1.5) / total) * 100;
 // Vive en globals.css (--bordy-purple) para que el tema Premium lo retinte
 // a champagne sin tocar este archivo — igual que brazos/orejas (CSS puro).
 const MORADO = "var(--bordy-purple)";
@@ -282,6 +306,8 @@ export default function Bordy({
   float = true,
   talking = false,
   graduado = false,
+  banderas,
+  banderasConOjos = false,
   alt = "Bordy",
 }: {
   mood?: BordyMood;
@@ -295,6 +321,15 @@ export default function Bordy({
   talking?: boolean;
   /** Birrete de graduado (ficha de práctica del Home). */
   graduado?: boolean;
+  /**
+   * El visor se vuelve una pantalla por la que pasan estas banderas
+   * (entrada de Flag Rush). Códigos ISO alpha-2; la imagen sale de flagcdn,
+   * como el resto de banderas del juego. Sin esta opción Bordy es el de
+   * siempre. Ver `.br-visor` en globals.css.
+   */
+  banderas?: readonly string[];
+  /** Deja los ojos encima de las banderas (por defecto se quitan). */
+  banderasConOjos?: boolean;
   alt?: string;
 }) {
   // `key` re-monta la capa del one-shot para que la animación vuelva a correr
@@ -325,6 +360,47 @@ export default function Bordy({
   // Animaciones por pieza del estado actual (vacío = pieza en reposo).
   const rig = RIG[mood] ?? {};
 
+  // --- Carrete de banderas del visor ---
+  const clave = banderas?.join(",") ?? "";
+  const visor = clave !== "";
+  const puestos = visor ? puestosDelCarrete(banderas!) : [];
+  const tira = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = tira.current;
+    if (!el || !clave) return;
+    // Quien pidió menos movimiento se queda con la primera bandera fija.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const n = clave.split(",").length;
+    const total = n + 3;
+    const paso = PASO_VISOR_MS / (CICLO_ARTE_S * 1000);
+    // Cada bandera tiene una ventana de 1/n del ciclo: quieta casi toda, y
+    // en el último tramo la tira se corre un puesto. Al llegar a 1 queda
+    // centrada la copia de la primera, idéntica al inicio: el bucle no salta.
+    const frames: Keyframe[] = [];
+    for (let k = 0; k < n; k++) {
+      const x = `translateX(${tiraX(k, total)}%)`;
+      frames.push({ offset: k / n, transform: x });
+      frames.push({ offset: (k + 1) / n - paso, transform: x, easing: EASE_IN_OUT });
+    }
+    frames.push({ offset: 1, transform: `translateX(${tiraX(n, total)}%)` });
+
+    const anim = el.animate(frames, {
+      duration: CICLO_ARTE_S * 1000,
+      iterations: Infinity,
+      // La primera bandera llega al centro a los 0.72s, justo cuando la
+      // primera capa de .art-cycle termina de aparecer (su 6%).
+      delay: ENTRADA_ARTE_MS - CICLO_ARTE_S * 1000,
+    });
+    // Mismo reloj que las otras fichas aunque Bordy se monte más tarde que
+    // ellas: se copia el arranque de una capa de .art-cycle si hay alguna.
+    const ref = document.getAnimations().find((a) => (a as CSSAnimation).animationName === "home-art-cycle");
+    if (ref && ref.startTime !== null) anim.startTime = ref.startTime;
+
+    return () => anim.cancel();
+  }, [clave]);
+
   const ledPulse =
     mood === "racha" ? "bordy-led-fast"
     : mood === "pensando" ? "bordy-led-slow"
@@ -353,6 +429,19 @@ export default function Bordy({
                   />
                 </div>
                 <img className="br-base" src="/bordy/base.webp" alt="" />
+                {/* Justo encima del cuerpo y debajo de boca y ojos: es la
+                    superficie del visor, no algo puesto sobre la cara. */}
+                {visor && (
+                  <div className="br-visor" aria-hidden="true">
+                    <div ref={tira} className="br-visor-tira" style={{ transform: `translateX(${tiraX(0, puestos.length)}%)` }}>
+                      {puestos.map((code, i) => (
+                        <span key={i}>
+                          <img src={`https://flagcdn.com/w160/${code.toLowerCase()}.png`} alt="" />
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <img className={`br-brazoI ${rig.brazoI ?? ""}`} src="/bordy/brazo-izq.webp" alt="" />
                 <img className={`br-brazoD ${rig.brazoD ?? ""}`} src="/bordy/brazo-der.webp" alt="" />
                 {(rig.boca ?? "real") === "real" && (
@@ -363,7 +452,9 @@ export default function Bordy({
                     degradado debajo, así que ahora son vectoriales y pueden
                     cambiar de forma. Coordenadas del arte fuente. */}
                 <svg className={`br-cara ${rig.ojos ?? ""}`} viewBox="0 0 1280 1520" aria-hidden="true">
-                  <Ojos forma={rig.cara ?? "normal"} />
+                  {/* Con el visor hecho pantalla los ojos se quitan: taparían
+                      justo la bandera del centro. */}
+                  {(!visor || banderasConOjos) && <Ojos forma={rig.cara ?? "normal"} />}
                   <Boca forma={rig.boca ?? "real"} />
                 </svg>
                 {/* Al final del rig a propósito: `.br-base` es el cuerpo a
