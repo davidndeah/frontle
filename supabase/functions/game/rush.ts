@@ -37,6 +37,7 @@ import {
   dailyXp,
   type Flag,
   GRACE_MS,
+  VERDICT_MS,
   pickQuestions,
   publicQuestion,
   type Question,
@@ -219,7 +220,10 @@ export function makeRush({ store, flags, rand, image, now = () => new Date() }: 
       // no queda registrada y el cliente puede reintentar.
       const nextImg = r.done ? null : await image(row.questions[row.idx + 1].a);
       if (!r.done && !nextImg) return fail("image_unavailable", 503);
-      if (!(await store.saveAnswer(id, row.idx, r.answers, now().toISOString()))) return fail("stale", 409);
+      // La siguiente bandera se da por entregada cuando termina el veredicto
+      // en pantalla, no ahora: así la pausa no le resta tiempo al jugador.
+      const nextServedAt = new Date(now().getTime() + (r.done ? 0 : VERDICT_MS)).toISOString();
+      if (!(await store.saveAnswer(id, row.idx, r.answers, nextServedAt))) return fail("stale", 409);
 
       const verdict = { correct: r.ok, answer: r.answer };
       if (r.done) {
@@ -229,7 +233,8 @@ export function makeRush({ store, flags, rand, image, now = () => new Date() }: 
       return ok({
         ...verdict,
         done: false,
-        question: { ...publicQuestion(row.questions, row.idx + 1), image: nextImg, answerMs: ANSWER_MS, leftMs: ANSWER_MS },
+        // leftMs se cuenta desde ahora e incluye la pausa del veredicto.
+        question: { ...publicQuestion(row.questions, row.idx + 1), image: nextImg, answerMs: ANSWER_MS, leftMs: ANSWER_MS + VERDICT_MS },
       });
     }
 

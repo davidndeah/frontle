@@ -41,6 +41,10 @@ export const MIX: readonly (readonly [Tier, number])[] = [["easy", 3], ["medium"
 export const SLOT_HOURS = 8;
 export const ANSWER_MS = 10_000; // tiempo por bandera
 export const GRACE_MS = 2_000; // margen de red antes de dar la respuesta por tardía
+// Lo que la pantalla muestra el veredicto (verde/rojo) antes de la siguiente
+// bandera. El reloj de la siguiente arranca DESPUÉS: si no, esa pausa saldría
+// de los 10 s del jugador.
+export const VERDICT_MS = 600;
 export const XP_UNIT = 2;
 export const XP_UNITS_PER_DAY = 6; // 12 XP: el seq máximo de 'flag_rush' en xp_shape
 export const COUNTED_ATTEMPTS = 2;

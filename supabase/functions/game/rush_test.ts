@@ -2,7 +2,7 @@
 // Uso (desde supabase/functions/game/):  deno test rush_test.ts
 
 import data from "../_shared/flags-data.json" with { type: "json" };
-import { type Answer, ANSWER_MS, type Flag, type Question } from "./rush-core.ts";
+import { type Answer, ANSWER_MS, type Flag, type Question, VERDICT_MS } from "./rush-core.ts";
 import { makeRush, type RushRow, type RushStore } from "./rush.ts";
 
 const FLAGS = (data as { flags: Flag[] }).flags;
@@ -129,7 +129,8 @@ Deno.test("intento perfecto: 10 de 10, 6 XP y la ventana queda usada", async () 
   const w = world();
   const r = await w.play(ANA, SECRET, 10);
   const res = r.body.result as Record<string, unknown>;
-  eq([r.body.done, res.correct, res.total, res.timeMs, res.xp, res.gained, res.xpToday, res.maxXpToday], [true, 10, 10, 15000, 6, 6, 6, 12], "resultado");
+  // La 1a bandera cuenta 1500 ms; las demás 1500 menos los 600 del veredicto.
+  eq([r.body.done, res.correct, res.total, res.timeMs, res.xp, res.gained, res.xpToday, res.maxXpToday], [true, 10, 10, 1500 + 9 * (1500 - VERDICT_MS), 6, 6, 6, 12], "resultado");
   const again = await w.call("rush_start", { player: ANA, secret: SECRET });
   eq([again.status, again.body.error, again.body.nextSlotAt], [409, "played", "2026-11-16T16:00:00.000Z"], "segundo intento en la misma ventana");
   const extra = await w.call("rush_answer", { sessionId: w.rows[0].id, choice: "CO" });
@@ -202,7 +203,7 @@ Deno.test("un intento abandonado se cierra solo en la ventana siguiente", async 
   for (let i = 0; i < 6; i++) { w.advance(1500); await w.call("rush_answer", { sessionId: row.id, choice: row.questions[i].a }); }
   w.at("2026-11-16T09:00:00Z");
   const st = await w.call("rush_status", { player: ANA });
-  eq([st.body.state, st.body.attempts, st.body.xpToday], ["none", [{ slot: 0, correct: 6, timeMs: 9000, xp: 2 }], 2], "cerrado con lo que llevaba");
+  eq([st.body.state, st.body.attempts, st.body.xpToday], ["none", [{ slot: 0, correct: 6, timeMs: 1500 + 5 * (1500 - VERDICT_MS), xp: 2 }], 2], "cerrado con lo que llevaba");
 });
 
 Deno.test("una cuenta sancionada juega pero no suma XP", async () => {
@@ -232,4 +233,18 @@ Deno.test("dos jugadores reciben sets distintos", async () => {
   await w.call("rush_start", { player: ANA, secret: SECRET });
   await w.call("rush_start", { player: BETO, secret: "secreto-de-beto-0987654321" });
   assert(w.rows[0].questions.map((q) => q.a).join() !== w.rows[1].questions.map((q) => q.a).join(), "mismo set");
+});
+
+Deno.test("el veredicto en pantalla no le resta tiempo al jugador", async () => {
+  const w = world();
+  await w.call("rush_start", { player: ANA, secret: SECRET });
+  const row = w.rows[0];
+  w.advance(1000);
+  const a = await w.call("rush_answer", { sessionId: row.id, choice: row.questions[0].a });
+  const q = a.body.question as { leftMs: number };
+  eq(q.leftMs, ANSWER_MS + VERDICT_MS, "la siguiente trae sus 10 s más la pausa");
+  // La ve al terminar el veredicto y contesta a los 10 s exactos: vale.
+  w.advance(VERDICT_MS + ANSWER_MS);
+  const b = await w.call("rush_answer", { sessionId: row.id, choice: row.questions[1].a });
+  eq([b.body.correct, w.rows[0].answers[1].ms], [true, ANSWER_MS], "a tiempo, contado desde que la vio");
 });
