@@ -480,6 +480,38 @@ type Dict = {
     /** Aviso al cambiar de nivel a mitad de ronda: no se rerollea el reto. */
     levelNextRound: string;
   };
+  // Flag Rush: 10 banderas por ventana de 8 h (supabase/functions/game/rush.ts)
+  rush: {
+    title: string; sub: string;
+    rules: string;
+    windows: string;
+    windowState: Record<"jugada" | "abierta" | "pendiente" | "pasada", string>;
+    xpToday: (x: number, max: number) => string;
+    play: string; resume: string;
+    playedTitle: string;
+    nextIn: (wait: string) => string;
+    lessThanMinute: string;
+    progress: (n: number, total: number) => string;
+    secondsLeft: (s: number) => string;
+    timeUp: string;
+    right: string;
+    wasIt: (name: string) => string;
+    score: (c: number, total: number) => string;
+    gained: (x: number) => string;
+    noXp: string;
+    capped: string;
+    sanctioned: string;
+    practice: string; practiceTag: string; practiceAgain: string;
+    practiceNote: string;
+    back: string;
+    loading: string;
+    errNoPlayer: string;
+    errIdentity: string;
+    errImage: string;
+    errNetwork: string;
+    retry: string;
+    mockBadge: string;
+  };
   // Sustantivo localizado por tipo de subdivisión (singular/plural). `gender`
   // ("m"/"f") es el mismo en es/pt/fr para un nounKey dado (cognados
   // románicos: provincia/província/province y región/região/région son
@@ -850,6 +882,37 @@ const STRINGS: Record<Locale, Dict> = {
       wrong: "No es ese, ¡sigue intentando!",
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
       levelNextRound: "Se aplica en la próxima ronda",
+    },
+    rush: {
+      title: "Flag Rush", sub: "10 banderas · una partida cada 8 horas",
+      rules: "10 banderas, 10 segundos cada una. Juegas una vez por ventana y cuentan tus 2 mejores partidas del día.",
+      windows: "Ventanas de hoy",
+      windowState: { jugada: "jugada", abierta: "abierta", pendiente: "más tarde", pasada: "se pasó" },
+      xpToday: (x, max) => `XP de hoy: ${x} de ${max}`,
+      play: "Jugar", resume: "Continuar partida",
+      playedTitle: "Ya jugaste esta ventana",
+      nextIn: (w) => `Próxima ventana en ${w}`,
+      lessThanMinute: "menos de 1 min",
+      progress: (n, total) => `Bandera ${n} de ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "¡Se acabó el tiempo!",
+      right: "¡Bien!",
+      wasIt: (n) => `Era ${n}`,
+      score: (c, total) => `${c} de ${total}`,
+      gained: (x) => `+${x} XP para la liga`,
+      noXp: "Con 5 aciertos ya sumas XP.",
+      capped: "Ya tienes el máximo de XP de hoy en Flag Rush.",
+      sanctioned: "Esta cuenta está en revisión: la partida cuenta, pero no suma XP.",
+      practice: "Practicar sin XP", practiceTag: "Práctica · sin XP", practiceAgain: "Otra práctica",
+      practiceNote: "Las prácticas no suman XP ni cuentan para la ventana.",
+      back: "Volver a los modos",
+      loading: "Preparando las banderas…",
+      errNoPlayer: "Conecta tu billetera para jugar Flag Rush y sumar XP. Mientras tanto puedes practicar.",
+      errIdentity: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
+      errImage: "No cargó la bandera.",
+      errNetwork: "No hay conexión con el servidor.",
+      retry: "Reintentar",
+      mockBadge: "Simulador",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
@@ -1280,6 +1343,37 @@ const STRINGS: Record<Locale, Dict> = {
       wrong: "Not that one, keep trying!",
       correct: (n) => `Correct! It was ${n} 🎉`,
       levelNextRound: "Applies to the next round",
+    },
+    rush: {
+      title: "Flag Rush", sub: "10 flags · one game every 8 hours",
+      rules: "10 flags, 10 seconds each. You play once per window and your 2 best games of the day count.",
+      windows: "Today's windows",
+      windowState: { jugada: "played", abierta: "open", pendiente: "later", pasada: "missed" },
+      xpToday: (x, max) => `Today's XP: ${x} of ${max}`,
+      play: "Play", resume: "Resume game",
+      playedTitle: "You already played this window",
+      nextIn: (w) => `Next window in ${w}`,
+      lessThanMinute: "less than 1 min",
+      progress: (n, total) => `Flag ${n} of ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "Time's up!",
+      right: "Nice!",
+      wasIt: (n) => `It was ${n}`,
+      score: (c, total) => `${c} of ${total}`,
+      gained: (x) => `+${x} XP for the league`,
+      noXp: "Get 5 right to start earning XP.",
+      capped: "You already have today's maximum XP in Flag Rush.",
+      sanctioned: "This account is under review: the game counts, but it earns no XP.",
+      practice: "Practice without XP", practiceTag: "Practice · no XP", practiceAgain: "Practice again",
+      practiceNote: "Practice games earn no XP and don't use your window.",
+      back: "Back to modes",
+      loading: "Getting the flags ready…",
+      errNoPlayer: "Connect your wallet to play Flag Rush and earn XP. You can practice meanwhile.",
+      errIdentity: "Your account is in use on another device. Buy coins here to activate it.",
+      errImage: "The flag didn't load.",
+      errNetwork: "Can't reach the server.",
+      retry: "Try again",
+      mockBadge: "Simulator",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
@@ -1713,6 +1807,37 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correto! Era ${n} 🎉`,
       levelNextRound: "Vale para a próxima rodada",
     },
+    rush: {
+      title: "Flag Rush", sub: "10 bandeiras · uma partida a cada 8 horas",
+      rules: "10 bandeiras, 10 segundos cada. Você joga uma vez por janela e contam suas 2 melhores partidas do dia.",
+      windows: "Janelas de hoje",
+      windowState: { jugada: "jogada", abierta: "aberta", pendiente: "mais tarde", pasada: "passou" },
+      xpToday: (x, max) => `XP de hoje: ${x} de ${max}`,
+      play: "Jogar", resume: "Continuar partida",
+      playedTitle: "Você já jogou esta janela",
+      nextIn: (w) => `Próxima janela em ${w}`,
+      lessThanMinute: "menos de 1 min",
+      progress: (n, total) => `Bandeira ${n} de ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "Acabou o tempo!",
+      right: "Boa!",
+      wasIt: (n) => `Era ${n}`,
+      score: (c, total) => `${c} de ${total}`,
+      gained: (x) => `+${x} XP para a liga`,
+      noXp: "Com 5 acertos você já ganha XP.",
+      capped: "Você já tem o máximo de XP de hoje no Flag Rush.",
+      sanctioned: "Esta conta está em revisão: a partida conta, mas não soma XP.",
+      practice: "Praticar sem XP", practiceTag: "Prática · sem XP", practiceAgain: "Outra prática",
+      practiceNote: "As práticas não somam XP nem usam a janela.",
+      back: "Voltar aos modos",
+      loading: "Preparando as bandeiras…",
+      errNoPlayer: "Conecte sua carteira para jogar Flag Rush e ganhar XP. Enquanto isso, você pode praticar.",
+      errIdentity: "Sua conta está em uso em outro dispositivo. Compre moedas aqui para ativá-lo.",
+      errImage: "A bandeira não carregou.",
+      errNetwork: "Sem conexão com o servidor.",
+      retry: "Tentar de novo",
+      mockBadge: "Simulador",
+    },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
     homeIntro: {
@@ -2142,6 +2267,37 @@ const STRINGS: Record<Locale, Dict> = {
       wrong: "Ce n'est pas ça, continue !",
       correct: (n) => `Correct ! C'était ${n} 🎉`,
       levelNextRound: "S'applique au tour suivant",
+    },
+    rush: {
+      title: "Flag Rush", sub: "10 drapeaux · une partie toutes les 8 heures",
+      rules: "10 drapeaux, 10 secondes chacun. Vous jouez une fois par créneau et vos 2 meilleures parties du jour comptent.",
+      windows: "Créneaux du jour",
+      windowState: { jugada: "jouée", abierta: "ouverte", pendiente: "plus tard", pasada: "passé" },
+      xpToday: (x, max) => `XP du jour : ${x} sur ${max}`,
+      play: "Jouer", resume: "Reprendre la partie",
+      playedTitle: "Vous avez déjà joué ce créneau",
+      nextIn: (w) => `Prochain créneau dans ${w}`,
+      lessThanMinute: "moins d'1 min",
+      progress: (n, total) => `Drapeau ${n} sur ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "Temps écoulé !",
+      right: "Bien joué !",
+      wasIt: (n) => `C'était ${n}`,
+      score: (c, total) => `${c} sur ${total}`,
+      gained: (x) => `+${x} XP pour la ligue`,
+      noXp: "Avec 5 bonnes réponses, vous gagnez déjà de l'XP.",
+      capped: "Vous avez déjà le maximum d'XP du jour dans Flag Rush.",
+      sanctioned: "Ce compte est en cours de vérification : la partie compte, mais ne rapporte pas d'XP.",
+      practice: "S'entraîner sans XP", practiceTag: "Entraînement · sans XP", practiceAgain: "Encore un entraînement",
+      practiceNote: "Les entraînements ne rapportent pas d'XP et n'utilisent pas votre créneau.",
+      back: "Retour aux modes",
+      loading: "Préparation des drapeaux…",
+      errNoPlayer: "Connectez votre portefeuille pour jouer à Flag Rush et gagner de l'XP. En attendant, vous pouvez vous entraîner.",
+      errIdentity: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
+      errImage: "Le drapeau n'a pas chargé.",
+      errNetwork: "Impossible de joindre le serveur.",
+      retry: "Réessayer",
+      mockBadge: "Simulateur",
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
