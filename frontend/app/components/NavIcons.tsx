@@ -19,7 +19,7 @@ const SVG_PROPS = {
   "aria-hidden": true,
 };
 
-// 🌍 Jugar — globo con ecuador y meridiano (el grafo de fronteras es el juego)
+// 🌍 Inicio — globo con ecuador y meridiano (el grafo de fronteras es el juego)
 function GlobeIcon() {
   return (
     <svg {...SVG_PROPS}>
@@ -55,24 +55,25 @@ function UserIcon() {
   );
 }
 
-// ❓ Aprender — birrete de graduación
-function LearnIcon() {
+// 🎮 Modos — rejilla de cuatro fichas (los modos son una rejilla de fichas)
+function ModesIcon() {
   return (
     <svg {...SVG_PROPS}>
-      <path d="M12 4 2 9l10 5 10-5-10-5z" />
-      <path d="M6.5 11.3V16c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-4.7" />
-      <path d="M22 9v5" />
+      <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+      <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+      <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+      <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
     </svg>
   );
 }
 
-export type NavIconName = "jugar" | "ranking" | "perfil" | "aprender";
+export type NavIconName = "jugar" | "modos" | "ranking" | "perfil";
 
 const ICONS: Record<NavIconName, () => React.JSX.Element> = {
   jugar: GlobeIcon,
   ranking: TrophyIcon,
   perfil: UserIcon,
-  aprender: LearnIcon,
+  modos: ModesIcon,
 };
 
 export default function NavIcon({ name }: { name: NavIconName }) {

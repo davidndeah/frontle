@@ -23,7 +23,9 @@
   --body-grad: radial-gradient(120% 90% at 50% 0%, #2a1257 0%, #1c0b3e 50%, #130729 100%);
   --panel-grad: linear-gradient(160deg, rgba(138, 92, 245, 0.26), rgba(76, 29, 149, 0.30));
   --panel-brd: rgba(183, 156, 237, 0.28);
-  --grid-line: rgba(183, 156, 237, 0.10);
+  /* Halos de ambiente del fondo (.bg-ambient): violeta arriba, magenta tenue al lado */
+  --glow-a: rgba(168, 85, 247, 0.24);
+  --glow-b: rgba(232, 121, 249, 0.10);
   --prism-grad: linear-gradient(100deg, #c084fc 0%, #a855f7 28%, #ffffff 52%, #fcff52 100%);
   /* Morado de Bordy (brazos/orejas/boca — ver Bordy.tsx). Vive aquí, no
      hardcodeado, para que el tema Premium pueda retintarlo sin tocar el JS. */
@@ -45,7 +47,8 @@
   --body-grad: radial-gradient(120% 90% at 50% 0%, #241c48 0%, #140f2e 50%, #0a0716 100%);
   --panel-grad: linear-gradient(160deg, rgba(60, 48, 110, 0.34), rgba(30, 24, 60, 0.44));
   --panel-brd: rgba(255, 255, 255, 0.10);
-  --grid-line: rgba(143, 130, 196, 0.09);
+  --glow-a: rgba(143, 130, 196, 0.18);
+  --glow-b: rgba(217, 180, 90, 0.06);
   --prism-grad: linear-gradient(100deg, #b7a3e0 0%, #8f82c4 30%, #ffffff 55%, #d9b45a 100%);
   /* Champagne en vez de morado: mismo criterio que --gold. */
   --bordy-purple: #d9b45a;
@@ -439,6 +442,46 @@
 .pop-in { animation: pop-in 0.25s ease-out both; }
 
 /* Halo pulsante detrás del hero */
+/* Entrada al reto (ChallengeIntro): el globo crece, las fichas entran por los
+   lados y el «¡YA!» revienta encima. `both` deja cada pieza oculta hasta su
+   retraso, que es lo que las encadena. */
+@keyframes intro-globe {
+  from { opacity: 0; transform: scale(0.55) rotate(-14deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+.intro-globe { animation: intro-globe 0.7s cubic-bezier(0.2, 1.2, 0.3, 1) both; }
+@keyframes intro-from-left {
+  from { opacity: 0; transform: translateX(-46px) rotate(-7deg) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes intro-from-right {
+  from { opacity: 0; transform: translateX(46px) rotate(7deg) scale(0.85); }
+  to { opacity: 1; transform: none; }
+}
+.intro-from-left { animation: intro-from-left 0.45s cubic-bezier(0.2, 1.4, 0.3, 1) both; }
+.intro-from-right { animation: intro-from-right 0.45s cubic-bezier(0.2, 1.4, 0.3, 1) both; }
+@keyframes intro-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.intro-fade { animation: intro-fade 0.35s ease-out both; }
+@keyframes intro-go {
+  0% { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+  45% { opacity: 1; transform: scale(1.25) rotate(4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+.intro-go { animation: intro-go 0.45s cubic-bezier(0.2, 1.3, 0.3, 1) both; }
+/* Letra recién destapada de la pista (ahorcado). */
+@keyframes letter-flip {
+  0% { transform: rotateX(90deg) scale(0.8); }
+  60% { transform: rotateX(-12deg) scale(1.12); }
+  100% { transform: none; }
+}
+.letter-flip { animation: letter-flip 0.4s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-globe, .intro-from-left, .intro-from-right, .intro-fade, .intro-go, .letter-flip { animation: none; }
+}
+
 @keyframes halo-pulse {
   0%, 100% { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
   50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.06); }
@@ -541,12 +584,14 @@ body {
   bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
 
-/* Grilla lavanda sutil sobre el violeta */
-.bg-grid {
+/* Fondo de ambiente: dos halos suaves sobre el degradado del body. Reemplaza
+   la cuadrícula lavanda, que competía con el contenido. Tamaños en px y sin
+   repetir: el halo se queda arriba aunque la página sea larga. */
+.bg-ambient {
   background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: 46px 46px;
+    radial-gradient(560px 420px at 8% -80px, var(--glow-a), transparent 70%),
+    radial-gradient(460px 460px at 108% 340px, var(--glow-b), transparent 70%);
+  background-repeat: no-repeat;
 }
 
 /* Card de vidrio violeta (reemplaza el panel negro). Se usa vía la clase .panel */
