@@ -73,3 +73,8 @@ export function sfxWin() {
 export function sfxHint() {
   play([{ f: 784 }, { f: 1046 }], 0.07);
 }
+// Toque corto y agudo: una bandera que se clava en el globo (entrada de
+// Flag Rush). Más suave que sfxHint porque suenan diez seguidos.
+export function sfxTick() {
+  play([{ f: 1318, d: 0.06, g: 0.03 }]);
+}
