@@ -311,7 +311,9 @@ export default function FlagRushGame({
   const image = isPractice ? flagUrl(phase.qs[phase.i].a) : phase.q.image;
   // Lo que quedaba cuando la bandera apareció (la barra arranca desde ahí).
   const startLeft = isPractice ? RUSH_ANSWER_MS : Math.min(RUSH_ANSWER_MS, phase.deadline - phase.shownAt);
-  const left = Math.max(0, phase.deadline - now);
+  // Tope en 10 s: `now` se actualiza cada 200 ms y, recién llegada la
+  // bandera, puede ir atrasado (se veía "11 s" un instante).
+  const left = Math.min(RUSH_ANSWER_MS, Math.max(0, phase.deadline - now));
   const pick = phase.pick;
   const roundKey = `${isPractice ? "p" : phase.sessionId}-${index}`;
   const onPick = (code: string) => (isPractice ? practiceAnswer(code) : void answer(code));
