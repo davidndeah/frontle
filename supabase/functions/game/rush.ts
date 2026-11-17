@@ -13,7 +13,8 @@
 //       solo devuelve conteos.
 //   · rush_start {player, secret}
 //       Abre el intento de la ventana (o lo retoma si quedó a medias) y
-//       entrega la bandera en curso. Exige el secret de gasto
+//       entrega la bandera en curso, más `results` (acierto o fallo de las
+//       ya contestadas, para pintar el progreso al retomar). Exige el secret de gasto
 //       (lib/secret.ts): nadie le gasta la ventana a otra wallet.
 //   · rush_answer {sessionId, choice}
 //       Califica la bandera en curso con el reloj del servidor y entrega la
@@ -178,7 +179,7 @@ export function makeRush({ store, flags, rand, image, now = () => new Date() }: 
         if (!row) return fail("try_again", 409);
         if (row.finished_at) return fail("played", 409, { nextSlotAt });
         if (row.idx === 0 && row.questions[0].a === questions[0].a) {
-          return ok({ sessionId: row.id, question: { ...publicQuestion(row.questions, 0), image: img, answerMs: ANSWER_MS, leftMs: ANSWER_MS }, nextSlotAt });
+          return ok({ sessionId: row.id, question: { ...publicQuestion(row.questions, 0), image: img, answerMs: ANSWER_MS, leftMs: ANSWER_MS }, results: [], nextSlotAt });
         }
       }
 
@@ -198,6 +199,9 @@ export function makeRush({ store, flags, rand, image, now = () => new Date() }: 
       return ok({
         sessionId: row.id,
         question: { ...publicQuestion(row.questions, row.idx), image: img, answerMs: ANSWER_MS, leftMs: Math.max(0, ANSWER_MS - elapsed) },
+        // Al retomar, cómo le fue en las banderas ya contestadas (solo
+        // acierto o fallo: el jugador ya vio esos veredictos).
+        results: row.answers.map((a) => a.ok),
         nextSlotAt,
       });
     }

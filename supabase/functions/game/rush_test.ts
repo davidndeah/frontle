@@ -116,7 +116,8 @@ Deno.test("la respuesta nunca viaja antes de contestar", async () => {
   const s = await w.call("rush_start", { player: ANA, secret: SECRET });
   const q = s.body.question as Record<string, unknown>;
   eq(Object.keys(q).sort(), ["answerMs", "image", "index", "leftMs", "options", "total"], "campos de la pregunta");
-  eq(Object.keys(s.body).sort(), ["nextSlotAt", "ok", "question", "sessionId"], "campos de la respuesta");
+  eq(Object.keys(s.body).sort(), ["nextSlotAt", "ok", "question", "results", "sessionId"], "campos de la respuesta");
+  eq(s.body.results, [], "intento nuevo: nada contestado");
   eq(q.image, "IMG", "la imagen va como dato, no como dirección con el código");
   const row = w.rows[0];
   const a = await w.call("rush_answer", { sessionId: row.id, choice: row.questions[0].a });
@@ -185,10 +186,12 @@ Deno.test("retomar no congela el reloj", async () => {
   const back = await w.call("rush_start", { player: ANA, secret: SECRET });
   const q = back.body.question as { index: number; leftMs: number };
   eq([back.body.sessionId, q.index, q.leftMs], [first.body.sessionId, 0, 6000], "misma bandera, con menos tiempo");
+  eq(back.body.results, [], "todavía nada contestado");
   w.advance(20_000);
   const late = await w.call("rush_start", { player: ANA, secret: SECRET });
   const q2 = late.body.question as { index: number; leftMs: number };
   eq([q2.index, q2.leftMs, w.rows[0].answers[0]], [1, ANSWER_MS, { c: null, ok: false, ms: ANSWER_MS }], "la que venció quedó como fallo");
+  eq(late.body.results, [false], "el progreso al retomar incluye la vencida");
 });
 
 Deno.test("un intento abandonado se cierra solo en la ventana siguiente", async () => {
