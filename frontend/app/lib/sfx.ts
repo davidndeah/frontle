@@ -78,3 +78,8 @@ export function sfxHint() {
 export function sfxTick() {
   play([{ f: 1318, d: 0.06, g: 0.03 }]);
 }
+// "Pop" suave: una bandera que brota del globo (entrada de Flag Rush).
+// Distinto del tic de la ruleta para que se oigan como dos cosas.
+export function sfxPop() {
+  play([{ f: 880, d: 0.07, g: 0.035 }, { f: 1175, d: 0.06, g: 0.025 }], 0.03);
+}

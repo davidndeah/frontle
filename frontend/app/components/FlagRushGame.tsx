@@ -25,7 +25,17 @@ import {
 } from "../lib/flagRush";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
 import type { BordyMood } from "./Bordy";
-import FlagRushIntro from "./FlagRushIntro";
+import dynamic from "next/dynamic";
+
+// La escena de entrada trae three.js (120 KB comprimido): va en su propio
+// trozo y se pide al abrir Flag Rush (ver el efecto de precarga), no al
+// cargar la app.
+const loadIntro = () => import("./FlagRushIntro");
+const FlagRushIntro = dynamic(loadIntro, {
+  ssr: false,
+  // Mientras llega, el mismo fondo de la escena: sin parpadeo de la pantalla de inicio.
+  loading: () => <div className="fixed inset-0 z-[60]" style={{ background: "var(--body-grad)" }} />,
+});
 
 // Lo que dura el veredicto en pantalla antes de pasar a la siguiente bandera.
 // El servidor arranca el reloj de la siguiente al terminar esta pausa
@@ -60,6 +70,8 @@ export default function FlagRushGame({
   // Escena de entrada (FlagRushIntro). Corre ANTES de pedir la partida al
   // servidor, así no le resta tiempo a la primera bandera.
   const [introOn, setIntroOn] = useState(false);
+  // Precarga de la escena: cuando se toque Jugar ya estará descargada.
+  useEffect(() => { void loadIntro(); }, []);
   // Salió con una bandera a la vista y contó como fallo: se explica con un
   // aviso sobre el tablero hasta que conteste la siguiente.
   const [leftNote, setLeftNote] = useState(false);
