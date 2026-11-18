@@ -56,6 +56,9 @@ export default function FlagRushGame({
   const [client] = useState<RushClient>(() => clientProp ?? rushClient());
   const [phase, setPhase] = useState<Phase>({ k: "loading" });
   const [busy, setBusy] = useState(false);
+  // Salió con una bandera a la vista y contó como fallo: se explica con un
+  // aviso sobre el tablero hasta que conteste la siguiente.
+  const [leftNote, setLeftNote] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const answering = useRef(false);
   const name = useCallback((code: string) => countryName(rushCanonical(code), locale), [locale]);
@@ -94,6 +97,7 @@ export default function FlagRushGame({
       return;
     }
     const d = r.data;
+    if (d.left) setLeftNote(true);
     if (d.done) return void finish(d.result, d.nextSlotAt);
     setPhase({
       k: "playing", sessionId: d.sessionId, q: d.question,
@@ -109,9 +113,10 @@ export default function FlagRushGame({
     reactBordy?.(result.correct >= 9 ? "racha" : result.correct >= 5 ? "acierto" : "fallo");
   }
 
-  async function answer(choice: string | null) {
+  async function answer(choice: string | null, opts: { left?: boolean } = {}) {
     if (phase.k !== "playing" || phase.pick || answering.current) return;
     answering.current = true;
+    if (!opts.left) setLeftNote(false);
     const { sessionId, q, dots } = phase;
     setPhase({ ...phase, pick: { choice }, error: undefined });
     const r = await client.answer(sessionId, choice);
@@ -136,6 +141,25 @@ export default function FlagRushGame({
       setPhase({ k: "playing", sessionId, q: v.question, deadline: receivedAt + v.question.leftMs, shownAt: Date.now(), dots: nextDots });
     }, VERDICT_MS);
   }
+
+  // Salir con una bandera a la vista (bloquear el celular, cambiar de app,
+  // minimizar MiniPay) la cuenta como fallo en ese momento: se manda la
+  // respuesta vacía. El servidor hace lo mismo si se sale y se vuelve a
+  // entrar (rush_start con `left`), así que no depende solo de esto.
+  const waitingAnswer = phase.k === "playing" && !phase.pick;
+  useEffect(() => {
+    if (!waitingAnswer) return;
+    const onHide = () => {
+      if (document.visibilityState !== "hidden") return;
+      setLeftNote(true);
+      void answer(null, { left: true });
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+    // Se vuelve a enganchar con cada bandera (roundId); `answer` cambia en
+    // cada render y no debe reengancharlo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingAnswer, phase.k === "playing" ? phase.q.index : -1]);
 
   // ---- Práctica (navegador, sin XP) ----------------------------------------
   function practice() {
@@ -225,6 +249,9 @@ export default function FlagRushGame({
             <p className="text-xs text-neutral-300 mt-0.5">{tr.rush.sub}</p>
           </div>
           <p className="text-sm text-neutral-200 max-w-[34ch]">{tr.rush.rules}</p>
+          <p className="max-w-[34ch] rounded-xl border-2 border-gold/50 bg-gold/10 px-3 py-2 text-xs font-semibold text-gold">
+            ⚠️ {tr.rush.leaveWarning}
+          </p>
 
           {st && <Windows status={st} tr={tr} locale={locale} now={now} />}
           {st && <XpBar xp={st.xpToday} max={st.maxXpToday} label={tr.rush.xpToday(st.xpToday, st.maxXpToday)} />}
@@ -333,6 +360,12 @@ export default function FlagRushGame({
       </div>
 
       <Dots dots={phase.dots} current={index} />
+
+      {leftNote && !isPractice && (
+        <p role="status" className="rounded-xl border-2 border-gold/50 bg-gold/10 px-3 py-2 text-center text-sm font-semibold text-gold">
+          ⚠️ {tr.rush.leftFail}
+        </p>
+      )}
 
       <div className="relative w-full rounded-2xl overflow-hidden bg-panel border border-lavender/20 flex flex-col items-center justify-center pt-6 pb-5">
         {/* key por bandera: cada una entra con su propio movimiento. */}
