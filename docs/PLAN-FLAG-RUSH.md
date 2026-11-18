@@ -1,13 +1,16 @@
 # PLAN — Flag Rush (seguridad primero)
 
-> **Qué es:** un desafío diario de 10 banderas seguidas, con ranking y XP. Ataca dos frentes:
-> darle a todos algo más que hacer gratis cada día, y llevar al reto diario al 25 % que entra
-> por Bandera y nunca lo juega (vuelve al día siguiente apenas el 5,3 %).
+> **Qué es:** un modo rotativo de 10 banderas con 4 opciones y 10 s cada una, una partida por
+> ventana de 8 horas (00, 08 y 16 UTC). Reemplaza a "Adivina la bandera". XP con tope (los 2
+> mejores intentos del día, hasta 12 XP), sin ranking ni premio propio.
 >
-> **Orden:** primero se cierran las vulnerabilidades que Flag Rush heredaría del modo Bandera y
-> de la función `game`, después se construye el modo encima. Todo en `dev`; nada a producción.
+> **Orden:** primero se cerraron las vulnerabilidades que Flag Rush heredaría del modo Bandera y
+> de la función `game`, después se construyó el modo encima. Todo en `dev`; nada a producción.
 >
-> **Estado:** plan para revisión (2026-11-11). Auditoría hecha contra `origin/main` (5d95bde).
+> **Estado (2026-11-18):** construido en tres PRs hacia `dev`, en verde y sin mergear:
+> #86 (servidor), #87 (pantalla y ficha en Modos) y #88 (escena de entrada en 3D). Falta
+> revisar, mergear y desplegar: ver la sección 6. El plan original es del 2026-11-11; lo que
+> cambió desde entonces está marcado como **(actualizado)**.
 
 ---
 
@@ -38,6 +41,11 @@ Lo que ya está bien y se reutiliza:
 
 No dependen de ninguna decisión de producto.
 
+**(actualizado)** S1, S2 y S3 se resolvieron dentro de Flag Rush mismo (no en el modo Bandera
+viejo, que deja de tener ficha): el servidor elige las banderas, la imagen viaja como dato sin
+el código y `rush_start` exige el `secret`. **S4 sigue pendiente:** el teléfono se comprueba al
+pagar en los cierres, no al jugar.
+
 | Tarea | Cierra | Qué cambia | Esfuerzo |
 |---|---|---|---|
 | **S1. El servidor elige y valida la bandera** | V1, V2 | `xp_start` (fuentes `quiz_flag`) elige el país y lo guarda en la ronda. `xp_finish` exige la respuesta y la compara. El cliente nunca conoce la respuesta antes de contestar | 1 día |
@@ -51,7 +59,13 @@ Contorno (`quiz_outline`) tiene el mismo problema (la silueta se busca por nombr
 
 ## 3. Fase 1 — Flag Rush, servidor primero
 
-Acciones nuevas en la función `game`, sobre las piezas de la Fase 0:
+**(actualizado)** Lo construido (PR #86) difiere del borrador de abajo en cuatro puntos,
+decididos por David el 16 y 17-nov: ventanas de 8 h en vez de una partida diaria; opción
+múltiple de 4 en vez de escribir el país; sin ranking (solo XP con tope); y salir con una
+bandera en pantalla la cuenta como fallo (`RESUME_GRACE_MS` de 1,5 s solo para reintentos de
+red). La pausa del veredicto (0,6 s) no le resta tiempo al jugador. 26 pruebas.
+
+Borrador original (2026-11-11):
 
 - `rush_start {player, secret}`: verifica teléfono (S4), sanciones y que no haya jugado hoy. Crea la partida con 10 países elegidos en el servidor y devuelve la primera bandera (S2).
 - `rush_answer {sessionId, secret, answer}`: compara con el país de esa posición, guarda la hora del servidor, revela el país correcto y devuelve la siguiente bandera. No se puede saltar ni repetir.
@@ -64,11 +78,16 @@ Defensas propias del modo:
 - **Copias:** según D1 (abajo), o se evita el problema con sets distintos, o se reutiliza la lógica de `detect_answer_copying`.
 - **Sin premio en USDT al inicio:** solo XP. Un premio en plata atrae justo a las granjas y cae en la pregunta de cumplimiento pendiente con MiniPay.
 
-Migraciones: `main` ya usa 0030 y 0031, y el PR #83 se renumera a 0032. **Flag Rush usa 0033 en adelante.**
+Migraciones: **(actualizado)** Flag Rush usa **0034** (la 0033 es de Duelos, PR #85).
 
 ## 4. Fase 2 — Interfaz
 
-Reutiliza `CountryQuizGame` para el input y el autocompletado. Pantalla final con el puntaje y una invitación al reto diario (el puente para quien solo juega Bandera). Score card para compartir.
+**(actualizado)** Construida en los PR #87 y #88: intro con las 3 ventanas del día y el XP,
+partida con reloj, resultado y práctica sin XP, en es, en, pt y fr. Ocupa la ficha de
+"Adivina la bandera" en Modos. La entrada es una escena 3D con Bordy (el modelo original de
+`public/bordy-hero.html`) y el globo: three.js va en su propio trozo, fuera de la carga
+inicial. Se prueba con un simulador (`/?rushmock=1` o `/lab/flag-rush`) porque solo existe el
+proyecto de producción.
 
 ---
 
@@ -76,7 +95,32 @@ Reutiliza `CountryQuizGame` para el input y el autocompletado. Pantalla final co
 
 | # | Decisión | Opciones | Recomendación |
 |---|---|---|---|
-| D1 | ¿Mismas 10 banderas para todos? | A) Mismas para todos: comparable y compartible, pero copiable (V7). B) Set distinto por jugador, con la misma mezcla de dificultad (3 fáciles, 4 medias, 3 difíciles): no se puede copiar, pero "mi Flag Rush de hoy" ya no es el mismo que el tuyo | **B**, por lo ya visto con las 3 wallets. Si el valor social pesa más, A con detección de copias |
+| D1 | ¿Mismas 10 banderas para todos? **Decidido: B** (set distinto por jugador) | A) Mismas para todos: comparable y compartible, pero copiable (V7). B) Set distinto por jugador, con la misma mezcla de dificultad (3 fáciles, 4 medias, 3 difíciles): no se puede copiar, pero "mi Flag Rush de hoy" ya no es el mismo que el tuyo | **B**, por lo ya visto con las 3 wallets. Si el valor social pesa más, A con detección de copias |
 | D2 | ¿Las wallets de correo compiten por premios? | A) Igual que hoy. B) Solo con teléfono. C) Con correo, pero sin podio de la liga hasta tener cierta antigüedad | Decidir con lo que diga MiniPay sobre identidad (V5) |
-| D3 | ¿Premio en USDT? | No al inicio / sí | **No al inicio:** solo XP |
-| D4 | Sincronizar `dev` con `main` | `dev` va 3 commits atrás (antitrampa) | **Sí, antes de tocar la función `game`**, para no programar sobre la versión vieja |
+| D3 | ¿Premio en USDT? **Decidido: no** | No al inicio / sí | **No al inicio:** solo XP |
+| D4 | Sincronizar `dev` con `main` **Hecho** (Santiago, 17-nov) | `dev` iba atrás de `main` | **Sí, antes de tocar la función `game`**, para no programar sobre la versión vieja |
+
+---
+
+## 6. Despliegue (actualizado 2026-11-18)
+
+Solo existe el proyecto de producción de Supabase. Las acciones `rush_*` no las usa nadie hasta
+que salga la interfaz, así que el servidor puede ir primero sin riesgo para los jugadores.
+
+| Paso | Qué | Cómo se comprueba |
+|---|---|---|
+| 1 | Revisar y mergear **#86** (servidor) hacia `dev` | `cd supabase/functions/game && deno test rush-core_test.ts rush_test.ts`: 26 pasan |
+| 2 | Aplicar la migración **0034** en producción | Existen `rush_sessions` y la vista `rush_funnel`; `xp_shape` incluye `flag_rush` |
+| 3 | Desplegar la función: `supabase functions deploy game` | Lleva `rush.ts`, `rush-core.ts` y `_shared/flags-data.json` |
+| 4 | Probar el servidor sin interfaz | `rush_status` con una wallet de prueba responde `ok` y `state: "none"` |
+| 5 | Revisar y mergear **#87** y **#88** hacia `dev` | `npm run build` pasa. En `dev` local, sin `?rushmock=1`, jugar una partida real con una wallet de prueba |
+| 6 | Pasar `dev` a `main` (sale en Vercel) | La ficha de Modos muestra los 3 puntos de las ventanas; la escena corre al tocar Jugar |
+
+Cuidados:
+- **Orden de migraciones con Duelos.** 0033 (Duelos) y 0034 rehacen `xp_shape` completo. 0034
+  ya incluye la línea de `duel`. Si 0033 se aplica **después** de 0034, borra la línea de
+  `flag_rush`: hay que volver a correr el bloque de `xp_shape` de 0034.
+- **El quiz de bandera viejo** sigue en el código sin ficha, y su XP `quiz_flag` sigue
+  habilitado en el servidor. Quitarlo cuando Flag Rush esté estable.
+- **Después del lanzamiento:** mirar `rush_funnel` (empezados contra terminados por ventana) y
+  las partidas con `suspect = true` (8+ aciertos con mediana bajo 0,6 s).
