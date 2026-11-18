@@ -45,6 +45,11 @@ export const GRACE_MS = 2_000; // margen de red antes de dar la respuesta por ta
 // bandera. El reloj de la siguiente arranca DESPUÉS: si no, esa pausa saldría
 // de los 10 s del jugador.
 export const VERDICT_MS = 600;
+// Salir con una bandera en pantalla la cuenta como fallo (decisión de David,
+// 17-nov: si no, se puede mirar la bandera, salir a buscarla y volver dentro
+// de los 10 s). Este margen es solo para un reintento de red justo después
+// de recibirla, no para salir y volver.
+export const RESUME_GRACE_MS = 1_500;
 export const XP_UNIT = 2;
 export const XP_UNITS_PER_DAY = 6; // 12 XP: el seq máximo de 'flag_rush' en xp_shape
 export const COUNTED_ATTEMPTS = 2;
