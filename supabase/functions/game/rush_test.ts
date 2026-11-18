@@ -180,19 +180,29 @@ Deno.test("una respuesta tardía cuenta como fallo aunque sea la correcta", asyn
   eq([a.body.correct, a.body.answer], [false, row.questions[0].a], "tarde");
 });
 
-Deno.test("retomar no congela el reloj", async () => {
+Deno.test("salir con una bandera en pantalla la cuenta como fallo", async () => {
   const w = world();
   const first = await w.call("rush_start", { player: ANA, secret: SECRET });
+  // Mira la bandera 4 s, sale a buscarla y vuelve con tiempo de sobra.
   w.advance(4000);
   const back = await w.call("rush_start", { player: ANA, secret: SECRET });
   const q = back.body.question as { index: number; leftMs: number };
-  eq([back.body.sessionId, q.index, q.leftMs], [first.body.sessionId, 0, 6000], "misma bandera, con menos tiempo");
-  eq(back.body.results, [], "todavía nada contestado");
+  eq([back.body.sessionId, back.body.left, q.index, q.leftMs], [first.body.sessionId, true, 1, ANSWER_MS], "pasa a la siguiente");
+  eq([back.body.results, w.rows[0].answers[0]], [[false], { c: null, ok: false, ms: 4000 }], "la que vio quedó como fallo");
+  // Igual si tarda más que el plazo.
   w.advance(20_000);
   const late = await w.call("rush_start", { player: ANA, secret: SECRET });
-  const q2 = late.body.question as { index: number; leftMs: number };
-  eq([q2.index, q2.leftMs, w.rows[0].answers[0]], [1, ANSWER_MS, { c: null, ok: false, ms: ANSWER_MS }], "la que venció quedó como fallo");
-  eq(late.body.results, [false], "el progreso al retomar incluye la vencida");
+  const q2 = late.body.question as { index: number };
+  eq([late.body.left, q2.index, late.body.results], [true, 2, [false, false]], "otra salida, otro fallo");
+});
+
+Deno.test("un reintento de red inmediato no cuenta como salida", async () => {
+  const w = world();
+  const first = await w.call("rush_start", { player: ANA, secret: SECRET });
+  w.advance(1000); // la respuesta se perdió y la pantalla vuelve a pedir
+  const again = await w.call("rush_start", { player: ANA, secret: SECRET });
+  const q = again.body.question as { index: number; leftMs: number };
+  eq([again.body.sessionId, again.body.left, q.index, q.leftMs, again.body.results], [first.body.sessionId, false, 0, 9000, []], "misma bandera, con su tiempo");
 });
 
 Deno.test("un intento abandonado se cierra solo en la ventana siguiente", async () => {

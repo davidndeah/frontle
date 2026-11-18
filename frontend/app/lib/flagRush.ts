@@ -93,8 +93,10 @@ export interface RushStatus extends RushDay {
 export type RushStart =
   | { sessionId: string; question: RushQuestion; nextSlotAt: string; done?: false;
       /** Acierto o fallo de las banderas ya contestadas (al retomar). */
-      results?: boolean[] }
-  | { sessionId: string; done: true; result: RushResult; nextSlotAt: string };
+      results?: boolean[];
+      /** Salió con una bandera en pantalla y esa bandera contó como fallo. */
+      left?: boolean }
+  | { sessionId: string; done: true; result: RushResult; nextSlotAt: string; left?: boolean };
 export type RushAnswer =
   | { correct: boolean; answer: string; done: false; question: RushQuestion }
   | { correct: boolean; answer: string; done: true; result: RushResult; nextSlotAt: string };
@@ -120,6 +122,9 @@ async function call<T>(body: Record<string, unknown>): Promise<R<T>> {
       method: "POST",
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      // Que llegue aunque la página se esté yendo a segundo plano (la
+      // respuesta vacía que se manda al salir con una bandera a la vista).
+      keepalive: true,
     });
     const j = await r.json().catch(() => null);
     if (j?.ok) return { ok: true, data: j as T };
@@ -305,20 +310,21 @@ export const mockRush: RushClient = {
       mockSave(s);
       return { ok: true, data: { sessionId: x.id, question: mockQuestion(x, RUSH_ANSWER_MS), results: [], nextSlotAt: nextSlotIso(now) } };
     }
-    // Retomar: la bandera que venció mientras no estaba cuenta como fallo.
+    // Retomar: salir con una bandera en pantalla la cuenta como fallo
+    // (RESUME_GRACE_MS del servidor: 1,5 s para un reintento de red).
     const elapsed = now.getTime() - x.servedAt;
-    if (elapsed > RUSH_ANSWER_MS + 2000) {
+    if (elapsed > 1500) {
       x.answers.push({ c: null, ok: false, ms: RUSH_ANSWER_MS });
       x.servedAt = now.getTime();
       if (x.answers.length >= x.q.length) {
         const result = mockFinish(s, x);
         mockSave(s);
-        return { ok: true, data: { sessionId: x.id, done: true, result, nextSlotAt: nextSlotIso(now) } };
+        return { ok: true, data: { sessionId: x.id, done: true, left: true, result, nextSlotAt: nextSlotIso(now) } };
       }
       mockSave(s);
-      return { ok: true, data: { sessionId: x.id, question: mockQuestion(x, RUSH_ANSWER_MS), results: x.answers.map((a) => a.ok), nextSlotAt: nextSlotIso(now) } };
+      return { ok: true, data: { sessionId: x.id, question: mockQuestion(x, RUSH_ANSWER_MS), results: x.answers.map((a) => a.ok), left: true, nextSlotAt: nextSlotIso(now) } };
     }
-    return { ok: true, data: { sessionId: x.id, question: mockQuestion(x, Math.max(0, RUSH_ANSWER_MS - elapsed)), results: x.answers.map((a) => a.ok), nextSlotAt: nextSlotIso(now) } };
+    return { ok: true, data: { sessionId: x.id, question: mockQuestion(x, Math.max(0, RUSH_ANSWER_MS - elapsed)), results: x.answers.map((a) => a.ok), left: false, nextSlotAt: nextSlotIso(now) } };
   },
   async answer(sessionId, choice) {
     await wait(180);

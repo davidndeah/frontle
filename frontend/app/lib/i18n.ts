@@ -511,6 +511,10 @@ type Dict = {
     errNetwork: string;
     retry: string;
     mockBadge: string;
+    /** Aviso antes de jugar: salir con una bandera a la vista es fallo. */
+    leaveWarning: string;
+    /** Lo que se explica al volver tras salir con una bandera a la vista. */
+    leftFail: string;
   };
   // Sustantivo localizado por tipo de subdivisión (singular/plural). `gender`
   // ("m"/"f") es el mismo en es/pt/fr para un nounKey dado (cognados
@@ -913,6 +917,8 @@ const STRINGS: Record<Locale, Dict> = {
       errNetwork: "No hay conexión con el servidor.",
       retry: "Reintentar",
       mockBadge: "Simulador",
+      leaveWarning: "Si sales de la pantalla o bloqueas el celular con una bandera a la vista, esa bandera cuenta como fallo.",
+      leftFail: "Saliste con una bandera en pantalla: cuenta como fallo.",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
@@ -1374,6 +1380,8 @@ const STRINGS: Record<Locale, Dict> = {
       errNetwork: "Can't reach the server.",
       retry: "Try again",
       mockBadge: "Simulator",
+      leaveWarning: "If you leave the screen or lock your phone while a flag is showing, that flag counts as a miss.",
+      leftFail: "You left while a flag was showing: it counts as a miss.",
     },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
@@ -1837,6 +1845,8 @@ const STRINGS: Record<Locale, Dict> = {
       errNetwork: "Sem conexão com o servidor.",
       retry: "Tentar de novo",
       mockBadge: "Simulador",
+      leaveWarning: "Se você sair da tela ou bloquear o celular com uma bandeira à vista, essa bandeira conta como erro.",
+      leftFail: "Você saiu com uma bandeira na tela: conta como erro.",
     },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
@@ -2298,6 +2308,8 @@ const STRINGS: Record<Locale, Dict> = {
       errNetwork: "Impossible de joindre le serveur.",
       retry: "Réessayer",
       mockBadge: "Simulateur",
+      leaveWarning: "Si vous quittez l'écran ou verrouillez votre téléphone pendant qu'un drapeau est affiché, ce drapeau compte comme une erreur.",
+      leftFail: "Vous êtes parti pendant qu'un drapeau était affiché : il compte comme une erreur.",
     },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },

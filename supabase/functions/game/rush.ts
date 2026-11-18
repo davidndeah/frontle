@@ -37,6 +37,7 @@ import {
   dailyXp,
   type Flag,
   GRACE_MS,
+  RESUME_GRACE_MS,
   VERDICT_MS,
   pickQuestions,
   publicQuestion,
@@ -184,15 +185,19 @@ export function makeRush({ store, flags, rand, image, now = () => new Date() }: 
         }
       }
 
-      // Retoma. Si la bandera en curso ya venció mientras no estaba, cuenta
-      // como fallo y sigue con la siguiente: salir no congela el reloj.
+      // Retoma. Salir con una bandera en pantalla la cuenta como fallo y se
+      // sigue con la siguiente (`left` avisa a la pantalla para explicarlo).
+      // Solo se perdona un reintento casi inmediato (RESUME_GRACE_MS), que es
+      // un problema de red y no una salida.
       let elapsed = now().getTime() - new Date(row.served_at).getTime();
-      if (elapsed > ANSWER_MS + GRACE_MS) {
+      let left = false;
+      if (elapsed > RESUME_GRACE_MS) {
+        left = true;
         const r = applyAnswer(row.questions, row.answers, null, elapsed);
         const servedAt = now().toISOString();
         if (!(await store.saveAnswer(row.id, row.idx, r.answers, servedAt))) return fail("try_again", 409);
         row = { ...row, answers: r.answers, idx: row.idx + 1, served_at: servedAt };
-        if (r.done) return ok({ sessionId: row.id, done: true, result: { ...(await finalize(row, r.answers)), ...(await dayState(player, day)) }, nextSlotAt });
+        if (r.done) return ok({ sessionId: row.id, done: true, left, result: { ...(await finalize(row, r.answers)), ...(await dayState(player, day)) }, nextSlotAt });
         elapsed = 0;
       }
       const img = await image(row.questions[row.idx].a);
@@ -203,6 +208,7 @@ export function makeRush({ store, flags, rand, image, now = () => new Date() }: 
         // Al retomar, cómo le fue en las banderas ya contestadas (solo
         // acierto o fallo: el jugador ya vio esos veredictos).
         results: row.answers.map((a) => a.ok),
+        left,
         nextSlotAt,
       });
     }
