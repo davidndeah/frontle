@@ -30,11 +30,6 @@
   /* Morado de Bordy (brazos/orejas/boca — ver Bordy.tsx). Vive aquí, no
      hardcodeado, para que el tema Premium pueda retintarlo sin tocar el JS. */
   --bordy-purple: #a855f7;
-  /* Curvas de movimiento. Las de CSS por defecto (ease-out, ease-in-out) se
-     quedan cortas: arrancan y frenan tan suave que el gesto se lee blando.
-     Estas son las de animations.dev (Emil Kowalski). Úsalas en lo nuevo. */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);        /* algo que entra o sale */
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);    /* algo que se desplaza en pantalla */
 }
 
 /* Violeta Premium: mismos roles, tonos apagados + champagne en vez de oro.
@@ -265,74 +260,6 @@
   transform-box: view-box;
   transform-origin: 1065px 232px;
   animation: br-borla 3.6s ease-in-out infinite;
-}
-
-/* --- Visor con banderas (ficha de Flag Rush) ---
-   El visor de Bordy se vuelve una pantalla por la que pasan banderas. Va
-   DENTRO del rig y en sus mismas medidas, como el birrete, así que hereda
-   escala, flote y pose.
-
-   GEOMETRÍA — medida sobre base.webp (384x456), no a ojo: la cara clara del
-   visor va de x=68 a x=292.5 y de y=122 a y=203, con esquinas de ~12px. En %
-   del rig: 17.71 / 26.75 / 58.46 x 17.76, radio 5.4% / 14.8%.
-
-   Por qué un carrete y no una bandera llenando el visor: el visor mide
-   2.77:1 y una bandera 3:2. Rellenarlo recorta casi la mitad del alto, y a
-   Colombia se le pierde el rojo: quedaría amarilla y azul, que es otra
-   bandera. En un juego de geografía eso es un error, no un detalle. Así que
-   cada bandera va ENTERA a todo el alto, y a los lados asoman la anterior y
-   la siguiente. */
-.br-visor {
-  position: absolute;
-  left: 17.71%; top: 26.75%; width: 58.46%; height: 17.76%;
-  border-radius: 5.4% / 14.8%;
-  overflow: hidden;
-  background: #0b0a14;
-  /* Sin esto, WebKit deja de recortar las esquinas mientras un hijo se
-     traslada (el redondeo "parpadea" en cada paso del carrete). */
-  isolation: isolate;
-}
-/* Las banderas van en UNA tira que se corre un puesto por paso. La tira es un
-   solo elemento, así que no puede descuadrarse: con capas sueltas (como
-   .art-cycle) dos banderas se montaban en cada paso en cuanto el número de
-   regiones dejaba de ser 6, y ya son 7.
-
-   Cada puesto mide 1.62 de ancho por 1 de alto: la bandera 3:2 y un respiro
-   a los lados. La tira empieza en el centro del visor (left: 50%) y Bordy.tsx
-   la traslada en % de su propio ancho; el movimiento lo pone él con la Web
-   Animations API, porque los pasos dependen de cuántas banderas haya y eso
-   no se puede escribir en unos @keyframes fijos. Aquí solo va la forma. */
-.br-visor-tira {
-  position: absolute;
-  top: 0; left: 50%;
-  height: 100%;
-  display: flex;
-}
-.br-visor-tira > span {
-  flex: none;
-  height: 100%; aspect-ratio: 162 / 100;
-  display: flex;
-  justify-content: center;
-}
-.br-visor-tira img {
-  height: 100%; aspect-ratio: 3 / 2;
-  object-fit: cover;
-}
-/* El cristal: brillo arriba y sombra abajo como en el render, un destello en
-   la esquina (el mismo que trae el arte) y los lados oscurecidos para que la
-   bandera del centro sea la protagonista y las vecinas solo se insinúen.
-   Todo en % para que escale con Bordy. */
-.br-visor::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at 89% 15%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 4.5%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 20%, rgba(0, 0, 0, 0) 74%, rgba(0, 0, 0, 0.3) 100%),
-    linear-gradient(90deg, rgba(11, 10, 20, 0.72) 0%, rgba(11, 10, 20, 0) 25%, rgba(11, 10, 20, 0) 75%, rgba(11, 10, 20, 0.72) 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 
 /* Tema Premium (EXP-Premium): brazos y orejas son renders morados
@@ -980,11 +907,6 @@ body {
   /* Borla del birrete: queda quieta y ligeramente caída, que es como cuelga
      en reposo. El birrete se sigue viendo igual de puesto. */
   .br-borla { animation: none; transform: rotate(-9deg); }
-
-  /* Visor con banderas: no hay nada que apagar aquí. Bordy.tsx no arranca el
-     carrete si el jugador pidió menos movimiento, y la tira queda quieta con
-     la primera bandera en el centro. La ficha sigue diciendo "esto va de
-     banderas"; lo único que se pierde es el desfile. */
 
   .br-brazoI-arriba { animation: none; transform: rotate(-108deg); }
   .br-brazoD-arriba { animation: none; transform: rotate(108deg); }
