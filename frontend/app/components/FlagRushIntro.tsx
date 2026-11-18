@@ -225,11 +225,14 @@ export default function FlagRushIntro({
     // grande, con brillo que crece hacia el borde del globo y se apaga hacia
     // afuera. Un color plano se veía como un aro.
     const halo = new THREE.Mesh(
-      new THREE.SphereGeometry(R * 1.14, 48, 32),
+      new THREE.SphereGeometry(R * 1.06, 48, 32),
       new THREE.ShaderMaterial({
         uniforms: { color: { value: new THREE.Color(C.halo) } },
         vertexShader: "varying vec3 vN; void main(){ vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-        fragmentShader: "uniform vec3 color; varying vec3 vN; void main(){ float k = pow(max(0.0, 0.62 - dot(vN, vec3(0.0, 0.0, 1.0))), 3.2); gl_FragColor = vec4(color * k * 0.55, 1.0); }",
+        // La franja visible va de dot = -0,33 (pegado al globo) a 0 (borde de la
+        // capa): brillo máximo junto al globo y cero en el borde. Delgada a
+        // propósito: con una capa más ancha el globo se veía chico.
+        fragmentShader: "uniform vec3 color; varying vec3 vN; void main(){ float k = pow(clamp(-dot(vN, vec3(0.0, 0.0, 1.0)) / 0.33, 0.0, 1.0), 1.5); gl_FragColor = vec4(color * k * 0.7, 1.0); }",
         side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false,
       }),
     );
@@ -329,7 +332,10 @@ export default function FlagRushIntro({
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       const tanV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-      baseDist = Math.max(3.05 / tanV, 2.0 / (tanV * camera.aspect)) * 1.04;
+      // A lo ancho manda el globo: en un celular ocupa el 83 % del ancho
+      // (antes, 75 %: se veía chico). Más ancho tapaba el título y cortaba
+      // las banderas de los bordes.
+      baseDist = Math.max(3.05 / tanV, (R * 1.2) / (tanV * camera.aspect));
       camera.updateProjectionMatrix();
     }
 
@@ -356,7 +362,7 @@ export default function FlagRushIntro({
 
     function render(t: number) {
       // Cámara: se acerca al empezar y da un pequeño paso al «¡YA!».
-      const dolly = 1 + 0.1 * (1 - easeOut(t / 1600)) - 0.03 * easeOut((t - GO) / 400);
+      const dolly = 1 + 0.05 * (1 - easeOut(t / 1600)) - 0.03 * easeOut((t - GO) / 400);
       camera.position.set(0, lookY, baseDist * dolly);
       camera.lookAt(0, lookY, 0);
       camera.getWorldDirection(camDir);
