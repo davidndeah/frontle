@@ -49,6 +49,7 @@ import { POINTS_PER_SOLVE } from "./lib/progress";
 import type { Square } from "./lib/scoreCard";
 import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
+import { RUSH_XP_PER_GAME } from "./lib/flagRush";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
 import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
@@ -111,6 +112,8 @@ const PrivyGate = dynamic(() => import("./components/PrivyGate"), { ssr: false }
 const WorldMap = dynamic(() => import("./components/WorldMap"), { ssr: false });
 const RegionGame = dynamic(() => import("./components/RegionGame"), { ssr: false });
 const CountryQuizGame = dynamic(() => import("./components/CountryQuizGame"), { ssr: false });
+const FlagRushGame = dynamic(() => import("./components/FlagRushGame"), { ssr: false });
+const FlagRushPips = dynamic(() => import("./components/FlagRushPips"), { ssr: false });
 const PracticeGame = dynamic(() => import("./components/PracticeGame"), { ssr: false });
 const RegionMapPreview = dynamic(() => import("./components/RegionMapPreview"), { ssr: false });
 const Achievements = dynamic(() => import("./components/Achievements"), { ssr: false });
@@ -321,6 +324,9 @@ export default function Frontle() {
   const [modeOpen, setModeOpen] = useState<"daily" | "regions" | null>(null);
   // Modos quiz: adivina la bandera / el contorno (null = ninguno activo).
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
+  // Flag Rush (reemplaza a "Adivina la bandera" en Modos). El quiz de bandera
+  // sigue en el código pero ya no tiene ficha; ver FlagRushGame.
+  const [rushOn, setRushOn] = useState(false);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
   // Señal para pedirle a un modo que reproduzca su recorrido (coachmarks).
@@ -1580,6 +1586,11 @@ export default function Frontle() {
           <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
         )}
 
+        {/* Flag Rush: pantalla autocontenida, como el quiz */}
+        {tab === "modos" && !regionMode && !quizMode && rushOn && (
+          <FlagRushGame locale={locale} onExit={() => setRushOn(false)} reactBordy={reactBordy} />
+        )}
+
         {tab === "jugar" && (
           <>
         {/* Bordy anfitrión (REDISEÑO-HOME): presenta el reto con la racha en
@@ -2208,7 +2219,7 @@ export default function Frontle() {
         )}
 
         {/* ---------- TAB APRENDER ---------- */}
-        {tab === "modos" && !regionMode && !quizMode && practiceOn && (
+        {tab === "modos" && !regionMode && !quizMode && !rushOn && practiceOn && (
           <PracticeGame
             locale={locale}
             onExit={() => setPracticeOn(false)}
@@ -2218,7 +2229,7 @@ export default function Frontle() {
           />
         )}
 
-        {tab === "modos" && !regionMode && !quizMode && !practiceOn && (
+        {tab === "modos" && !regionMode && !quizMode && !rushOn && !practiceOn && (
           <div className="flex flex-col gap-3 pt-2">
             <h2 className="font-display text-2xl font-black leading-tight text-white">{tr.hub.modesTitle}</h2>
             {/* Modos gratis: título arriba de TODO lo gratis, incluida
@@ -2275,9 +2286,12 @@ export default function Frontle() {
                   <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.region)}</span>
                 </span>
               </button>
+              {/* Flag Rush ocupa la ficha de "Adivina la bandera": mismo arte (las
+                  banderas en ciclo y en fase con Regiones), nombre nuevo y los 3
+                  puntos de las ventanas del día arriba a la derecha. */}
               <button
-                onClick={() => setQuizMode("flag")}
-                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+                onClick={() => setRushOn(true)}
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
                 {/* `relative`: las capas del ciclo son absolutas y se apilan
                     contra esta caja. `overflow-hidden`: el fotograma de salida
@@ -2295,9 +2309,10 @@ export default function Frontle() {
                   ))}
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
-                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.flagTitle}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
+                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.rush.title}</span>
+                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(RUSH_XP_PER_GAME)}</span>
                 </span>
+                <FlagRushPips />
               </button>
               <button
                 onClick={() => setQuizMode("outline")}
@@ -2619,6 +2634,7 @@ export default function Frontle() {
           currentMode={
             tab === "modos"
               ? regionMode ? "region"
+                : rushOn ? null
                 : quizMode === "flag" ? "flag"
                 : quizMode === "outline" ? "outline"
                 : practiceOn ? "practice"
@@ -2644,8 +2660,9 @@ export default function Frontle() {
             // Todos los modos viven en la pestaña Modos; se apaga cualquier
             // otro que estuviera abierto para que se monte el elegido.
             setTab("modos");
-            setRegionMode(null); setQuizMode(null); setPracticeOn(false);
-            if (m === "flag") setQuizMode("flag");
+            setRegionMode(null); setQuizMode(null); setPracticeOn(false); setRushOn(false);
+            // "Bandera" ahora abre Flag Rush (su ficha reemplazó al quiz).
+            if (m === "flag") setRushOn(true);
             else if (m === "outline") setQuizMode("outline");
             else if (m === "practice") setPracticeOn(true);
             // Región necesita un país además del modo: sin esto, `onLearn`

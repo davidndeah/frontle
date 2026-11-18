@@ -36,6 +36,9 @@
 //       abrir y cerrar. Práctica manda {start, end, chain} y se revalida.
 //       Ver la migración 0025.
 //
+//   · {action:"rush_status" | "rush_start" | "rush_answer", …}
+//       Flag Rush: 10 banderas por ventana de 8 h (migración 0034). Ver rush.ts.
+//
 //  El reto sale de crypto.getRandomValues: ya no hay semilla pública con la
 //  que conocerlo de antemano. Ver _shared/engine.ts y la migración 0023.
 // ============================================================
@@ -45,6 +48,9 @@ import { createPublicClient, http, parseAbiItem, decodeEventLog } from "https://
 import { celo } from "https://esm.sh/viem@2.21.0/chains";
 import data from "../_shared/engine-data.json" with { type: "json" };
 import { makeEngine, LEVELS, type Level, type EngineData } from "../_shared/engine.ts";
+import flagsData from "../_shared/flags-data.json" with { type: "json" };
+import type { Flag } from "./rush-core.ts";
+import { flagcdnImages, makeRush, supabaseStore } from "./rush.ts";
 
 const E = makeEngine(data as EngineData);
 
@@ -180,6 +186,13 @@ async function grantDailyXp(player: string, day: number, level: Level, countries
   if (STREAK_MILESTONES.includes(Number(run))) ev.push({ source: "streak_milestone", level: String(run), xp: 20 });
   return grantXp(player, day, ev);
 }
+
+const handleRush = makeRush({
+  store: supabaseStore(supabase),
+  flags: (flagsData as { flags: Flag[] }).flags,
+  rand,
+  image: flagcdnImages(),
+});
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -405,6 +418,9 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true, xp: 0, remaining: 0 });
     }
+
+    const rush = await handleRush(action, body);
+    if (rush) return json(rush.body, rush.status);
 
     return json({ ok: false, error: "bad_action" }, 400);
   } catch (err) {
