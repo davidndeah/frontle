@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import FlagRushGame from "../../components/FlagRushGame";
-import FlagRushIntro from "../../components/FlagRushIntro";
+import FlagRushIntro, { FLAG_RUSH_INTRO_MS } from "../../components/FlagRushIntro";
 import { mockReset, mockRush, mockShiftSlot } from "../../lib/flagRush";
 import { LOCALES, t, type Locale } from "../../lib/i18n";
 
@@ -17,7 +17,7 @@ const LAB = {
   tag: "LAB", locale: "Idioma", next: "Siguiente ventana ⏭", reset: "Reiniciar",
   scene: "Escena ▶", frames: "Cuadro a cuadro", close: "Cerrar", time: "Instante de la escena",
 };
-const SCENE_MS = 3750;
+const SCENE_MS = FLAG_RUSH_INTRO_MS;
 
 export default function LabFlagRushGame() {
   const [locale, setLocale] = useState<Locale>("es");
