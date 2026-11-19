@@ -15,6 +15,7 @@
 // ============================================================
 
 import { useEffect, useRef, useState } from "react";
+import { useEstetica } from "../lib/estetica";
 
 /** Estado emocional de Bordy. `idle` es el reposo de siempre. */
 export type BordyMood = "idle" | "acierto" | "desvio" | "fallo" | "racha" | "pensando";
@@ -282,7 +283,7 @@ export default function Bordy({
   float = true,
   talking = false,
   graduado = false,
-  v2 = false,
+  v2: v2Prop,
   alt = "Bordy",
 }: {
   mood?: BordyMood;
@@ -296,7 +297,8 @@ export default function Bordy({
   talking?: boolean;
   /** Birrete de graduado (ficha de práctica del Home). */
   graduado?: boolean;
-  /** Rig v2: cabeza suelta y reacciones por capas (en prueba en /lab/bordy). */
+  /** Rig v2: cabeza suelta y reacciones por capas. Sin decirlo, lo pone la
+   *  estética nueva (lib/estetica.tsx). */
   v2?: boolean;
   alt?: string;
 }) {
@@ -305,6 +307,8 @@ export default function Bordy({
   // veces; sin esto, CSS ve la misma clase y no reinicia).
   const [tick, setTick] = useState(0);
   const previo = useRef<BordyMood>(mood);
+  const { nueva } = useEstetica();
+  const v2 = v2Prop ?? nueva;
 
   useEffect(() => {
     if (previo.current !== mood) {

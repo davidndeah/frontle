@@ -1279,3 +1279,127 @@ body {
   .bv2-acierto .bv2-armI { transform: rotate(135deg); }
   .bv2-acierto .bv2-armD { transform: rotate(-135deg); }
 }
+
+/* ===== Estética nueva (prueba local, lib/estetica.tsx) =====
+   Todo cuelga de <html data-estetica="nueva"> o data-fuente="landing", así
+   la versión de hoy no cambia ni un píxel. Lenguaje del landing (/inicio):
+   borde casi negro de 2,5 px, sombra dura de 5 px sin desenfoque, piezas que
+   se hunden en su sombra, auroras de fondo e iconos 3D con borde. */
+
+/* Icono 3D (components/icons/Icon3D.tsx): la caja mide el icono; el WebP
+   sobresale para que contorno y sombra queden por fuera. */
+.ico3d { position: relative; display: inline-block; flex: none; vertical-align: -0.22em; }
+.ico3d > img { position: absolute; max-width: none; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+
+/* --- Tipografía del landing: Archivo para todo, JetBrains Mono para datos --- */
+:root[data-fuente="landing"] {
+  --font-display: var(--font-landing-display);
+  --font-geist-sans: var(--font-landing-display);
+  --font-geist-mono: var(--font-landing-mono);
+}
+:root[data-fuente="landing"] .font-display { font-variation-settings: "wdth" 110; letter-spacing: -0.01em; }
+/* El premio del día: Archivo es más ancho que Fredoka y "0.04 USDT" se partía
+   en dos líneas a 360 px. Una línea, ancho normal y un punto menos. */
+:root[data-fuente="landing"] .est-pot { white-space: nowrap; font-size: 2.6rem; font-variation-settings: "wdth" 100; letter-spacing: -0.03em; }
+:root[data-fuente="landing"] h1.font-display,
+:root[data-fuente="landing"] h2.font-display { text-transform: uppercase; font-variation-settings: "wdth" 112; letter-spacing: -0.02em; }
+
+/* --- Paleta y piezas --- */
+:root[data-estetica="nueva"] {
+  --bg: #1a0a3d;
+  --surface: #2a1462;
+  --body-grad: #1a0a3d;
+  --bw: 2.5px;
+  --sh: 5px;
+  --est-ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+:root[data-estetica="nueva"] .panel {
+  background: var(--surface);
+  border: var(--bw) solid var(--deep);
+  border-radius: 14px;
+  box-shadow: var(--sh) var(--sh) 0 var(--deep);
+  backdrop-filter: none;
+}
+:root[data-estetica="nueva"] .brutal { border-width: var(--bw); box-shadow: var(--sh) var(--sh) 0 var(--deep); }
+:root[data-estetica="nueva"] .brutal-sm { border-width: var(--bw); }
+:root[data-estetica="nueva"] .btn-3d { border-width: var(--bw); }
+/* Hundirse: suelta con la curva del landing; al apretar va casi instantáneo
+   (el dedo tiene que sentir que el botón cedió YA). */
+:root[data-estetica="nueva"] :is(.brutal, .brutal-sm, .brutal-shadow, .btn-3d, .panel) {
+  transition: transform 180ms var(--est-ease), box-shadow 180ms var(--est-ease);
+}
+:root[data-estetica="nueva"] :is(.brutal-press, .btn-3d, button.panel):active {
+  transform: translate(4px, 4px);
+  box-shadow: 1px 1px 0 var(--deep);
+  transition-duration: 60ms;
+}
+
+/* Header y barra: sólidos, con el borde del landing en vez de vidrio. */
+:root[data-estetica="nueva"] .app-header { background: var(--bg); backdrop-filter: none; border-bottom: var(--bw) solid var(--deep); }
+:root[data-estetica="nueva"] .app-nav { background: #12062b; backdrop-filter: none; border-top: var(--bw) solid var(--deep); }
+:root[data-estetica="nueva"] .app-nav .tab-glow { display: none; }
+
+/* --- Auroras de fondo (las del landing) --- */
+.est-aurora { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.est-aurora span { position: absolute; border-radius: 50%; width: 120vw; height: 120vw; max-width: 900px; max-height: 900px; will-change: transform; }
+.est-aurora .a1 { top: -30%; left: -40%; background: radial-gradient(circle, rgba(124, 58, 237, .5), transparent 62%); animation: est-aurora-1 22s ease-in-out infinite alternate; }
+.est-aurora .a2 { top: 10%; right: -55%; background: radial-gradient(circle, rgba(232, 121, 249, .24), transparent 60%); animation: est-aurora-2 26s ease-in-out infinite alternate; }
+.est-aurora .a3 { top: 55%; left: -10%; background: radial-gradient(circle, rgba(34, 211, 238, .14), transparent 60%); animation: est-aurora-3 30s ease-in-out infinite alternate; }
+@keyframes est-aurora-1 { to { transform: translate(18vw, 12vw) scale(1.1); } }
+@keyframes est-aurora-2 { to { transform: translate(-16vw, 18vw) scale(.9); } }
+@keyframes est-aurora-3 { to { transform: translate(14vw, -10vw) scale(1.15); } }
+
+/* --- Entrada escalonada: los bloques de la pantalla suben uno tras otro --- */
+@keyframes est-rise { from { opacity: 0; transform: translateY(14px); } }
+:root[data-estetica="nueva"] .est-stagger > * { animation: est-rise 460ms var(--est-ease) both; }
+:root[data-estetica="nueva"] .est-stagger > :nth-child(2) { animation-delay: 50ms; }
+:root[data-estetica="nueva"] .est-stagger > :nth-child(3) { animation-delay: 100ms; }
+:root[data-estetica="nueva"] .est-stagger > :nth-child(4) { animation-delay: 150ms; }
+:root[data-estetica="nueva"] .est-stagger > :nth-child(5) { animation-delay: 200ms; }
+:root[data-estetica="nueva"] .est-stagger > :nth-child(n+6) { animation-delay: 250ms; }
+
+/* --- Iconos animados --- */
+/* Salto del icono de la pestaña al elegirla: carga, sube, cae y se asienta. */
+@keyframes ico-hop {
+  0%   { transform: translateY(0) scale(1, 1); animation-timing-function: cubic-bezier(.3, 0, .5, 1); }
+  18%  { transform: translateY(1px) scale(1.12, .86); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  50%  { transform: translateY(-7px) scale(.94, 1.08); animation-timing-function: cubic-bezier(.55, 0, .85, .4); }
+  78%  { transform: translateY(0) scale(1.08, .92); animation-timing-function: var(--est-ease); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+.ico-hop { animation: ico-hop 420ms both; transform-origin: 50% 100%; }
+/* La llama de la racha se aviva sola, despacio. */
+@keyframes ico-flicker {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); }
+  30% { transform: scale(1.04, .97) rotate(-3deg); }
+  60% { transform: scale(.97, 1.05) rotate(2deg); }
+}
+.ico-flicker { animation: ico-flicker 1.8s ease-in-out infinite; transform-origin: 50% 90%; }
+/* Moneda que gira al ganarla (scaleX, que imita el canto sin 3D real). */
+@keyframes ico-spin { 0%, 100% { transform: scaleX(1); } 25% { transform: scaleX(.12); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(.12); } }
+.ico-spin { animation: ico-spin 700ms var(--est-ease) both; }
+/* Icono grande que flota (fichas y héroe). */
+@keyframes ico-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+.ico-float { animation: ico-float 3.4s ease-in-out infinite; }
+
+/* Bordy flotante del juego: crece con transform y no con width/height (que
+   recalculaba el layout en cada cuadro). Pivote en su esquina. */
+.est-fab { transform-origin: 100% 100%; transition: transform 320ms var(--est-ease), opacity 200ms ease; }
+
+/* --- Pastilla de la prueba (solo con NEXT_PUBLIC_ESTETICA_LAB=1) --- */
+.est-pill {
+  position: fixed; left: 8px; bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px)); z-index: 60;
+  display: flex; gap: 4px; padding: 4px;
+  background: var(--deep); border: 2px solid #000; border-radius: 999px;
+  box-shadow: 3px 3px 0 #000;
+}
+.est-pill button {
+  font: 700 10px/1 ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--deep); background: var(--gold); border-radius: 999px; padding: 6px 9px;
+}
+.est-pill button[aria-pressed="false"] { background: #3b2a66; color: #f3edff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .est-aurora span, .ico-hop, .ico-flicker, .ico-spin, .ico-float { animation: none; }
+  :root[data-estetica="nueva"] .est-stagger > * { animation-name: rush-flag-fade; animation-duration: 200ms; }
+}

@@ -83,6 +83,8 @@ import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
 import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
+import Icon3D, { Ico } from "./components/icons/Icon3D";
+import { useEstetica, limpiarEmojis } from "./lib/estetica";
 import { STATUS_COLORS, savedTheme, applyTheme, type Theme } from "./lib/theme";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1, extraLevel: 0.1 };
@@ -634,7 +636,9 @@ export default function Frontle() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
-  const tr = t(locale);
+  // Estética nueva (prueba local): textos sin emojis; los iconos van en el JSX.
+  const { nueva } = useEstetica();
+  const tr = nueva ? limpiarEmojis(t(locale)) : t(locale);
   // Los montos se muestran siempre en USDT, el token real del juego.
   const fmt = (usdt: number) => `${usdt.toFixed(2)} USDT`;
   const cn = (canonical: string) => countryName(canonical, locale);
@@ -1538,7 +1542,7 @@ export default function Frontle() {
         {/* Racha: solo si la tiene (≥1). Indicador, no botón. */}
         {streak > 0 && (
           <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-white/5 border border-lavender/25 px-2 py-1 text-[11px] font-bold text-white whitespace-nowrap" aria-label={`${streak} ${tr.home.streak}`}>
-            🔥<span className="tabular-nums">{streak}</span>
+            <Ico name="streak" emoji="🔥" size={15} className="ico-flicker" /><span className="tabular-nums">{streak}</span>
           </span>
         )}
         {/* Monedas: tap → abre la tienda. Solo cuando hay identidad (saldo cargado). */}
@@ -1548,7 +1552,7 @@ export default function Frontle() {
             aria-label={tr.coins.shop}
             className="shrink-0 flex items-center gap-0.5 rounded-full bg-gold/12 border border-gold/35 px-2 py-1 text-[11px] font-bold text-gold whitespace-nowrap active:scale-95 transition"
           >
-            🪙<span className="tabular-nums">{coinBalance}</span>
+            <Ico name="coin" emoji="🪙" size={15} /><span className="tabular-nums">{coinBalance}</span>
           </button>
         )}
         {/* Un solo botón de ajustes agrupa idioma + audio (música y efectos):
@@ -1559,7 +1563,7 @@ export default function Frontle() {
           aria-label={tr.a11y.settings}
           className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-white/5 border border-lavender/25 text-base active:scale-90 transition"
         >
-          ⚙️
+          <Ico name="gear" emoji="⚙️" size={22} />
         </button>
         {/* A 360px (el mínimo de MiniPay) la cabecera va justa: el resto de piezas
             son shrink-0 y es este chip el que cede, truncando el alias. Sin esto
@@ -1605,7 +1609,7 @@ export default function Frontle() {
             perfil/soporte. Por eso varias de sus frases invitan a
             tocarlo. */}
         {!started && (
-          <div className="flex flex-col gap-2 pt-2">
+          <div className="est-stagger flex flex-col gap-2 pt-2">
             {/* Bordy y su burbuja son DOS botones hermanos, no uno anidado
                 dentro del otro (HTML inválido) — los dos abren el mismo menú,
                 así que para el jugador se comporta igual que antes. */}
@@ -1646,7 +1650,7 @@ export default function Frontle() {
                 aria-expanded={howToOpen}
                 className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left font-display text-[13px] font-semibold text-white"
               >
-                🧭 {tr.homeIntro.howTitle}
+                <Ico name="compass" emoji="🧭" size={18} /> {tr.homeIntro.howTitle}
                 <span aria-hidden className={`ml-auto text-xs text-lavender transition-transform ${howToOpen ? "rotate-90" : ""}`}>▸</span>
               </button>
               {howToOpen && (
@@ -1672,7 +1676,7 @@ export default function Frontle() {
             nivel, sin tocar esa lógica). El reto queda sellado (cartas "?")
             hasta pulsar Jugar. Mockup: docs/design/home-v4.html. */}
         {!started && (
-          <div className="flex flex-col gap-3">
+          <div className="est-stagger flex flex-col gap-3">
             {/* Héroe: violeta de marca sólido, neo-brutalista */}
             <div className="brutal rounded-2xl bg-[#6c2bd9] p-4 relative overflow-hidden">
               {/* Título + reloj: el reto del día es LA acción de esta pantalla,
@@ -1695,13 +1699,13 @@ export default function Frontle() {
                   a cada nivel va abajo, en su propio botón. */}
               <div className="mt-3 rounded-xl bg-black/25 px-3 py-4 text-center">
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-white/75">{tr.dailyHero.potLabel}</span>
-                <span className="block font-display text-5xl font-black leading-none text-gold tabular-nums mt-1.5">{pot !== null ? fmt(pot) : "···"}</span>
+                <span className="est-pot block font-display text-5xl font-black leading-none text-gold tabular-nums mt-1.5">{pot !== null ? fmt(pot) : "···"}</span>
               </div>
 
               {/* Dificultad: cada botón con su propio pot — elegir nivel es elegir premio */}
               <div className="mt-2.5 flex gap-1.5">
                 {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => {
-                  const META: Record<Difficulty, { icon: string }> = { easy: { icon: "🌱" }, medium: { icon: "⚡" }, hard: { icon: "💀" } };
+                  const META: Record<Difficulty, { icon: string; name: "sprout" | "bolt" | "skull" }> = { easy: { icon: "🌱", name: "sprout" }, medium: { icon: "⚡", name: "bolt" }, hard: { icon: "💀", name: "skull" } };
                   const on = level === lv;
                   const lvPot = pot !== null ? (pot * BASE_SHARE[lv]) / 100 : null;
                   return (
@@ -1715,7 +1719,7 @@ export default function Frontle() {
                       }`}
                       style={{ borderColor: on ? "var(--deep)" : "rgba(13,4,32,0.5)" }}
                     >
-                      <span className="block text-[13px] font-semibold leading-tight">{META[lv].icon} {tr.levels[lv]}</span>
+                      <span className="block text-[13px] font-semibold leading-tight"><Ico name={META[lv].name} emoji={META[lv].icon} size={15} /> {tr.levels[lv]}</span>
                       <span className="block font-mono text-xs font-bold tabular-nums">{lvPot !== null ? fmt(lvPot) : "···"}</span>
                     </button>
                   );
@@ -1727,7 +1731,7 @@ export default function Frontle() {
                 disabled={starting}
                 className={`brutal brutal-press mt-3 w-full rounded-xl bg-gold py-3.5 font-display text-lg font-black text-deep ${starting ? "animate-pulse" : ""}`}
               >
-                {starting ? "⏳" : tr.play}
+                {starting ? <Ico name="hourglass" emoji="⏳" size={24} className="ico-float" /> : tr.play}
               </button>
               {startError && <p className="mt-1.5 text-center text-[11px] text-rose-300">{startError}</p>}
               {/* Zero-click connect: dentro de MiniPay la wallet llega sola vía el
@@ -1774,7 +1778,7 @@ export default function Frontle() {
                     className={`flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-white/5 transition ${rt === "weekly" ? "border-t border-lavender/15" : ""}`}
                   >
                     <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/5 text-xl" aria-hidden>
-                      {rt === "daily" ? "📅" : "⚡"}
+                      {rt === "daily" ? <Ico name="calendar" emoji="📅" size={28} /> : <Ico name="trophy" emoji="⚡" size={28} />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5 font-display text-sm font-bold leading-tight text-white">
@@ -1783,7 +1787,7 @@ export default function Frontle() {
                           <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold tabular-nums">#{board.me.rank}</span>
                         )}
                       </span>
-                      <span className="block font-mono text-[11px] text-neutral-300 tabular-nums">🕒 {tr.dailyHero.closesIn(clock)}</span>
+                      <span className="block font-mono text-[11px] text-neutral-300 tabular-nums"><Ico name="clock" emoji="🕒" size={12} /> {tr.dailyHero.closesIn(clock)}</span>
                     </span>
                     {/* El premio del día ya es el número grande del reto, justo
                         arriba: aquí solo se enseña el de la semana. */}
@@ -1807,7 +1811,7 @@ export default function Frontle() {
               onClick={() => setTab("modos")}
               className="panel flex items-center gap-3 px-3.5 py-3 text-left active:scale-[0.98] transition"
             >
-              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/5 text-xl" aria-hidden>🎮</span>
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/5 text-xl" aria-hidden><Ico name="modes" emoji="🎮" size={28} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block font-display text-sm font-bold leading-tight text-white">{tr.hub.modesTitle}</span>
                 <span className="block truncate text-[11px] text-neutral-300">{tr.hub.modesSub}</span>
@@ -2439,7 +2443,7 @@ export default function Frontle() {
                 onClick={() => setOverlay("full")}
                 className="brutal-sm brutal-press w-full rounded-xl bg-gold px-6 py-2.5 font-display font-black text-surface"
               >
-                ✨ {tr.fullTutorial}
+                <Ico name="sparkles" emoji="✨" size={18} /> {tr.fullTutorial}
               </button>
             </section>
           </div>
@@ -2466,13 +2470,18 @@ export default function Frontle() {
         <button
           onClick={() => setBordyMenu(true)}
           aria-label={tr.bordyMenu.open}
-          className={`bordy-fab fixed right-2 z-30 active:scale-90 transition-all ${
+          className={nueva
+            // Estética nueva: siempre la caja grande y se escala con transform
+            // (ver .est-fab); width/height recalculaba el layout cada cuadro.
+            ? `bordy-fab est-fab fixed right-2 z-30 w-[96px] h-[114px] ${jugando && bordyMood === "idle" ? "opacity-65" : ""}`
+            : `bordy-fab fixed right-2 z-30 active:scale-90 transition-all ${
             bordyMood !== "idle"
               ? "w-[96px] h-[114px]" // reaccionando: crece para que la cara se lea
               : jugando
                 ? "w-[40px] h-[48px] opacity-65" // escribiendo: fuera del camino
                 : "w-[64px] h-[76px]"
           }`}
+          style={nueva ? { transform: `scale(${bordyMood !== "idle" ? 1 : jugando ? 40 / 96 : 64 / 96})` } : undefined}
         >
           <Bordy mood={bordyMood} className="w-full h-full" imgClassName="drop-shadow-xl" />
         </button>
@@ -2855,6 +2864,9 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
+// Estética nueva: el icono 3D de cada pestaña.
+const NAV_3D = { jugar: "globe", modos: "modes", ranking: "podium", perfil: "bordy" } as const;
+
 function TabBar({
   tr,
   tab,
@@ -2868,6 +2880,7 @@ function TabBar({
   playPending: boolean;
   streak: number;
 }) {
+  const { nueva } = useEstetica();
   // El pop solo se dispara al tocar un tab, no al cargar la página.
   const booted = useRef(false);
   useEffect(() => {
@@ -2898,7 +2911,15 @@ function TabBar({
                 on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60"
               }`}
             >
-              <NavIcon name={it.id} />
+              {nueva ? (
+                <Icon3D
+                  name={NAV_3D[it.id]}
+                  size={26}
+                  className={on && booted.current ? "ico-hop" : ""}
+                />
+              ) : (
+                <NavIcon name={it.id} />
+              )}
             </span>
             {it.label}
             {it.id === "jugar" && playPending && (
@@ -2909,7 +2930,7 @@ function TabBar({
             )}
             {it.id === "perfil" && streak >= 2 && (
               <span className="tab-streak" aria-label={`${streak} ${tr.home.streak}`}>
-                🔥{streak}
+                <Ico name="streak" emoji="🔥" size={11} />{streak}
               </span>
             )}
           </button>
