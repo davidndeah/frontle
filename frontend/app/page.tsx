@@ -1158,8 +1158,8 @@ export default function Frontle() {
       setElapsedMs(g.elapsedMs);
       setStarted(true);
       saveGame({ started: true, solved: false, chain: [] });
-      // Sin foco en el campo: el teclado no salta al entrar y se ve el reto
-      // entero. La entrada animada solo en partida nueva, no al retomarla.
+      // El foco (y el teclado) llega al acabar la entrada animada, no antes:
+      // así el globo se ve entero. Sin entrada (partida retomada), al momento.
       if (g.introLeftMs >= 1500) {
         // Termina justo cuando arranca el reloj, y no se puede saltar: así
         // nadie gana tiempo por tocar antes.
@@ -1169,6 +1169,8 @@ export default function Frontle() {
         // Servidor que aún cuenta desde que abre la partida: entrada saltable.
         setIntroEndAt(null);
         setIntro(true);
+      } else {
+        focusInput();
       }
       return;
     }
@@ -1179,6 +1181,13 @@ export default function Frontle() {
     saveGame({ started: true, solved: false, chain: state.chain });
     setIntroEndAt(null);
     setIntro(true);
+  }
+
+  // Abre el teclado en el campo del reto. Con retardo: el <input> se monta en
+  // el mismo render que activa la partida. En Android (MiniPay) el foco por
+  // código sí abre el teclado porque el jugador ya tocó "Jugar".
+  function focusInput() {
+    setTimeout(() => inputRef.current?.focus(), 50);
   }
 
   function submitCountry(value: string) {
@@ -2534,7 +2543,12 @@ export default function Frontle() {
           go={tr.go}
           skip={tr.challenge.skipIntro}
           endAt={introEndAt}
-          onDone={() => setIntro(false)}
+          onDone={() => {
+            setIntro(false);
+            // El reloj ya corre: sin esto había que tocar el campo para
+            // escribir (reportado por soporte el 20-nov).
+            focusInput();
+          }}
         />
       )}
 
