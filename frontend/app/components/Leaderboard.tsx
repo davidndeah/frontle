@@ -76,7 +76,9 @@ const PODIUM_COLS = ["", "grid-cols-1", "grid-cols-2", "grid-cols-3"];
 
 // --- Podio ------------------------------------------------------------------
 
-export function Podium({ items }: { items: LeaderEntry[] }) {
+// `prizeLabel`: etiqueta bajo el #1 para tablas donde SOLO él cobra (ranking
+// diario). La liga semanal no la pasa: allí cobran los tres.
+export function Podium({ items, prizeLabel }: { items: LeaderEntry[]; prizeLabel?: string }) {
   if (items.length === 0) return null;
   const full = items.length === 3;
   return (
@@ -119,6 +121,11 @@ export function Podium({ items }: { items: LeaderEntry[] }) {
             </span>
             <span className="font-mono text-[11px] tabular-nums text-neutral-300">{e.stat}</span>
             {e.sub && <span className="font-mono text-[10px] tabular-nums text-neutral-400">{e.sub}</span>}
+            {first && prizeLabel && (
+              <span className="mt-1 rounded-full border border-gold/50 bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold">
+                {prizeLabel}
+              </span>
+            )}
           </li>
         );
       })}

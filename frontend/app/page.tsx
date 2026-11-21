@@ -3698,7 +3698,12 @@ function RankingCard({
               cards del 4.º en adelante. Lo que cambia es la métrica — aquí no
               hay un número de puntos sino DOS datos, países y tiempo, que es
               el desempate. Van como stat y sub. */}
-          <Podium items={podium} />
+          {/* Solo el #1 de cada nivel cobra el diario: el podio de 3 se leía
+              como "los tres ganan" (así es en la liga semanal). */}
+          <p className="mb-1 rounded-lg border border-gold/30 bg-gold/10 px-2 py-1 text-center text-[11px] font-semibold text-gold">
+            {tr.dailyPrizeRule}
+          </p>
+          <Podium items={podium} prizeLabel={tr.podiumPrize} />
           {restRows.length > 0 && (
             <div className="mt-2 flex flex-col gap-1.5">
               <div className={`${RANK_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
@@ -3858,10 +3863,19 @@ function WinCard({
                     </div>
                   )}
                   {winStats.daily && (
-                    <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       <dt className="text-xs text-neutral-300">📅 {tr.xpWin.dailyLabel}</dt>
                       <dd className="font-display text-base font-bold text-white">
                         {tr.xpWin.position(winStats.daily.rank, winStats.daily.players)}
+                      </dd>
+                      {/* El puesto es en vivo: recién terminado se puede ir 2.º
+                          de 8 y cerrar 41.º. Y solo el #1 cobra. */}
+                      <dd
+                        className={`mt-0.5 basis-full text-[11px] leading-snug ${
+                          winStats.daily.rank === 1 ? "text-gold" : "text-neutral-400"
+                        }`}
+                      >
+                        {winStats.daily.rank === 1 ? tr.xpWin.dailyLeading : tr.xpWin.dailyProvisional}
                       </dd>
                     </div>
                   )}
