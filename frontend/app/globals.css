@@ -1439,6 +1439,13 @@ body {
 }
 .est-pill button[aria-pressed="false"] { background: #3b2a66; color: #f3edff; }
 
+/* Zona destacada en carrusel: scroll nativo, sin barra; puntos que se
+   encienden (color + escala, sin animar el ancho). */
+.est-carousel { scrollbar-width: none; overscroll-behavior-x: contain; }
+.est-carousel::-webkit-scrollbar { display: none; }
+.est-dot { background: rgba(255,255,255,.45); transition: transform 200ms var(--est-ease, ease-out), background-color 200ms; }
+.est-dot[data-on="true"] { background: var(--gold); transform: scale(1.3); }
+
 @media (prefers-reduced-motion: reduce) {
   .est-aurora span, .ico-hop, .ico-flicker, .ico-spin, .ico-float, .ico-pop { animation: none; }
   :root[data-estetica="nueva"] .est-stagger > * { animation-name: rush-flag-fade; animation-duration: 200ms; }

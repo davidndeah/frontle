@@ -324,7 +324,7 @@ type Dict = {
   chooseLevel: string;
   tabs: { jugar: string; modos: string; ranking: string; perfil: string };
   // Inicio y pestaña Modos: cierres de ranking, puerta a los modos y Aprender.
-  hub: { closings: string; dailyRanking: string; weeklyLeague: string; modesTitle: string; modesSub: string; learnTitle: string };
+  hub: { featured: string; rushRules: string; rushNext: string; closings: string; dailyRanking: string; weeklyLeague: string; modesTitle: string; modesSub: string; learnTitle: string };
   // Pantalla del reto: entrada con el globo y panel de pistas.
   challenge: { skipIntro: string; hintLetter: string; hintLetterMore: string; hintNext: string; hintAll: string; letterTitle: string };
   profileGuest: string;
@@ -802,7 +802,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     chooseLevel: "Elige nivel",
     tabs: { jugar: "Inicio", modos: "Modos", ranking: "Ranking", perfil: "Perfil" },
-    hub: { closings: "Cierre de rankings", dailyRanking: "Ranking diario", weeklyLeague: "Liga semanal", modesTitle: "Modos de juego", modesSub: "Regiones, banderas, contornos y práctica", learnTitle: "Aprende a jugar" },
+    hub: { featured: "Destacados", rushRules: "10 banderas · 10 segundos cada una", rushNext: "Próxima ventana", closings: "Cierre de rankings", dailyRanking: "Ranking diario", weeklyLeague: "Liga semanal", modesTitle: "Modos de juego", modesSub: "Regiones, banderas, contornos y práctica", learnTitle: "Aprende a jugar" },
     challenge: { skipIntro: "Toca para empezar ya", hintLetter: "Una letra", hintLetterMore: "Otra letra", hintNext: "Silueta siguiente", hintAll: "Todas las siluetas", letterTitle: "Siguiente país" },
     profileGuest: "Invitado",
     profileConnected: "Conectado",
@@ -1265,7 +1265,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     chooseLevel: "Choose level",
     tabs: { jugar: "Home", modos: "Modes", ranking: "Ranking", perfil: "Profile" },
-    hub: { closings: "Rankings close", dailyRanking: "Daily ranking", weeklyLeague: "Weekly league", modesTitle: "Game modes", modesSub: "Regions, flags, outlines and practice", learnTitle: "Learn to play" },
+    hub: { featured: "Featured", rushRules: "10 flags · 10 seconds each", rushNext: "Next window", closings: "Rankings close", dailyRanking: "Daily ranking", weeklyLeague: "Weekly league", modesTitle: "Game modes", modesSub: "Regions, flags, outlines and practice", learnTitle: "Learn to play" },
     challenge: { skipIntro: "Tap to start now", hintLetter: "One letter", hintLetterMore: "Another letter", hintNext: "Next outline", hintAll: "All outlines", letterTitle: "Next country" },
     profileGuest: "Guest",
     profileConnected: "Connected",
@@ -1730,7 +1730,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     chooseLevel: "Escolha o nível",
     tabs: { jugar: "Início", modos: "Modos", ranking: "Ranking", perfil: "Perfil" },
-    hub: { closings: "Fechamento dos rankings", dailyRanking: "Ranking diário", weeklyLeague: "Liga semanal", modesTitle: "Modos de jogo", modesSub: "Regiões, bandeiras, contornos e prática", learnTitle: "Aprenda a jogar" },
+    hub: { featured: "Destaques", rushRules: "10 bandeiras · 10 segundos cada", rushNext: "Próxima janela", closings: "Fechamento dos rankings", dailyRanking: "Ranking diário", weeklyLeague: "Liga semanal", modesTitle: "Modos de jogo", modesSub: "Regiões, bandeiras, contornos e prática", learnTitle: "Aprenda a jogar" },
     challenge: { skipIntro: "Toque para começar já", hintLetter: "Uma letra", hintLetterMore: "Outra letra", hintNext: "Próxima silhueta", hintAll: "Todas as silhuetas", letterTitle: "Próximo país" },
     profileGuest: "Convidado",
     profileConnected: "Conectado",
@@ -2193,7 +2193,7 @@ const STRINGS: Record<Locale, Dict> = {
     },
     chooseLevel: "Choisir le niveau",
     tabs: { jugar: "Accueil", modos: "Modes", ranking: "Classement", perfil: "Profil" },
-    hub: { closings: "Clôture des classements", dailyRanking: "Classement du jour", weeklyLeague: "Ligue hebdo", modesTitle: "Modes de jeu", modesSub: "Régions, drapeaux, contours et entraînement", learnTitle: "Apprends à jouer" },
+    hub: { featured: "À la une", rushRules: "10 drapeaux · 10 secondes chacun", rushNext: "Prochaine fenêtre", closings: "Clôture des classements", dailyRanking: "Classement du jour", weeklyLeague: "Ligue hebdo", modesTitle: "Modes de jeu", modesSub: "Régions, drapeaux, contours et entraînement", learnTitle: "Apprends à jouer" },
     challenge: { skipIntro: "Touche pour commencer", hintLetter: "Une lettre", hintLetterMore: "Une autre lettre", hintNext: "Silhouette suivante", hintAll: "Toutes les silhouettes", letterTitle: "Pays suivant" },
     profileGuest: "Invité",
     profileConnected: "Connecté",

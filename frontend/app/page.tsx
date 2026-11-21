@@ -85,6 +85,8 @@ import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
 import Icon3D, { Ico } from "./components/icons/Icon3D";
 import { useEstetica, limpiarEmojis } from "./lib/estetica";
+import FeaturedZone from "./components/FeaturedZone";
+import FlagRushHero from "./components/FlagRushHero";
 import { STATUS_COLORS, savedTheme, applyTheme, type Theme } from "./lib/theme";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1, extraLevel: 0.1 };
@@ -637,7 +639,7 @@ export default function Frontle() {
   const inputRef = useRef<HTMLInputElement>(null);
   const challenge = state.challenge;
   // Estética nueva (prueba local): textos sin emojis; los iconos van en el JSX.
-  const { nueva } = useEstetica();
+  const { nueva, destacado } = useEstetica();
   const tr = nueva ? limpiarEmojis(t(locale)) : t(locale);
   // Los montos se muestran siempre en USDT, el token real del juego.
   const fmt = (usdt: number) => `${usdt.toFixed(2)} USDT`;
@@ -1677,8 +1679,11 @@ export default function Frontle() {
             hasta pulsar Jugar. Mockup: docs/design/home-v4.html. */}
         {!started && (
           <div className="est-stagger flex flex-col gap-3">
+            {/* Zona destacada: el reto del día y Flag Rush, los dos modos que
+                más se juegan. Apilados o en carrusel según la prueba. */}
+            <FeaturedZone label={tr.hub.featured} mode={destacado} slideLabels={[tr.daily, tr.rush.title]}>
             {/* Héroe: violeta de marca sólido, neo-brutalista */}
-            <div className="brutal rounded-2xl bg-[#6c2bd9] p-4 relative overflow-hidden">
+            <div className="brutal h-full rounded-2xl bg-[#6c2bd9] p-4 relative overflow-hidden">
               {/* Título + reloj: el reto del día es LA acción de esta pantalla,
                   así que el cierre va arriba, vivo, y no perdido en una fila. */}
               <div className="flex items-center justify-between gap-2">
@@ -1759,6 +1764,8 @@ export default function Frontle() {
                 </div>
               )}
             </div>
+            <FlagRushHero tr={tr} locale={locale} onPlay={() => { setTab("modos"); setRushOn(true); }} />
+            </FeaturedZone>
 
             {/* Cierre de los rankings: los dos relojes que mueven la competencia,
                 cada uno con su premio. Tocar una fila abre ese ranking. */}

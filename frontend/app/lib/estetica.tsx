@@ -22,13 +22,16 @@ export const ESTETICA_LAB = process.env.NEXT_PUBLIC_ESTETICA_LAB === "1";
 
 type Estetica = "nueva" | "hoy";
 type Fuente = "landing" | "juego";
+/** Zona destacada de Inicio: los dos héroes uno sobre otro, o en carrusel. */
+export type Destacado = "apilado" | "carrusel";
 const K_EST = "frontle-estetica";
 const K_FUENTE = "frontle-fuente";
+const K_DEST = "frontle-destacado";
 
 /** Va en el <head>: pone los atributos antes del primer pintado. */
-export const ESTETICA_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var e=localStorage.getItem("${K_EST}")||"nueva";var f=localStorage.getItem("${K_FUENTE}")||"landing";d.dataset.estetica=e;d.dataset.fuente=f;}catch(_){document.documentElement.dataset.estetica="nueva";document.documentElement.dataset.fuente="landing";}})();`;
+export const ESTETICA_INIT_SCRIPT = `(function(){try{var d=document.documentElement;var e=localStorage.getItem("${K_EST}")||"nueva";var f=localStorage.getItem("${K_FUENTE}")||"landing";d.dataset.estetica=e;d.dataset.fuente=f;d.dataset.destacado=localStorage.getItem("${K_DEST}")||"apilado";}catch(_){document.documentElement.dataset.estetica="nueva";document.documentElement.dataset.fuente="landing";}})();`;
 
-const Ctx = createContext<{ nueva: boolean; fuente: Fuente }>({ nueva: false, fuente: "juego" });
+const Ctx = createContext<{ nueva: boolean; fuente: Fuente; destacado: Destacado }>({ nueva: false, fuente: "juego", destacado: "apilado" });
 
 /** ¿Está activa la estética nueva? Siempre false fuera de la prueba. */
 export function useEstetica() {
@@ -42,7 +45,8 @@ const listeners = new Set<() => void>();
 const subscribe = (fn: () => void) => { listeners.add(fn); return () => { listeners.delete(fn); }; };
 const readEst = (): Estetica => (ESTETICA_LAB && document.documentElement.dataset.estetica !== "hoy" ? "nueva" : "hoy");
 const readFuente = (): Fuente => (ESTETICA_LAB && document.documentElement.dataset.fuente !== "juego" ? "landing" : "juego");
-function write(attr: "estetica" | "fuente", key: string, v: string) {
+const readDest = (): Destacado => (ESTETICA_LAB && document.documentElement.dataset.destacado === "carrusel" ? "carrusel" : "apilado");
+function write(attr: "estetica" | "fuente" | "destacado", key: string, v: string) {
   document.documentElement.dataset[attr] = v;
   try { localStorage.setItem(key, v); } catch { /* modo privado: solo dura la sesión */ }
   listeners.forEach((fn) => fn());
@@ -52,9 +56,11 @@ export function EsteticaRoot({ children }: { children: ReactNode }) {
   const est = useSyncExternalStore(subscribe, readEst, () => "hoy" as Estetica);
   const fuente = useSyncExternalStore(subscribe, readFuente, () => "juego" as Fuente);
   const toggleEst = () => write("estetica", K_EST, est === "nueva" ? "hoy" : "nueva");
+  const destacado = useSyncExternalStore(subscribe, readDest, () => "apilado" as Destacado);
   const toggleFuente = () => write("fuente", K_FUENTE, fuente === "landing" ? "juego" : "landing");
+  const toggleDest = () => write("destacado", K_DEST, destacado === "apilado" ? "carrusel" : "apilado");
 
-  const value = useMemo(() => ({ nueva: ESTETICA_LAB && est === "nueva", fuente }), [est, fuente]);
+  const value = useMemo(() => ({ nueva: ESTETICA_LAB && est === "nueva", fuente, destacado }), [est, fuente, destacado]);
 
   return (
     <Ctx.Provider value={value}>
@@ -68,6 +74,7 @@ export function EsteticaRoot({ children }: { children: ReactNode }) {
         <div className="est-pill" role="group" aria-label="Prueba de estética">
           <button type="button" onClick={toggleEst} aria-pressed={est === "nueva"}>{est === "nueva" ? "Nuevo" : "Hoy"}</button>
           <button type="button" onClick={toggleFuente} aria-pressed={fuente === "landing"}>{fuente === "landing" ? "Archivo" : "Fredoka"}</button>
+          <button type="button" onClick={toggleDest} aria-pressed={destacado === "carrusel"}>{destacado === "carrusel" ? "Carrusel" : "Apilado"}</button>
         </div>
       )}
     </Ctx.Provider>
