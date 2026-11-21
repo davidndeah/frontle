@@ -18,6 +18,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { countryName, t, type Locale } from "../lib/i18n";
+import { useTr } from "../lib/useTr";
+import Icon3D, { Ico } from "./icons/Icon3D";
+import { useEstetica } from "../lib/estetica";
 import {
   flagUrl, formatWait, practiceQuestions, rushCanonical, rushClient, slotOf, slotStarts,
   RUSH_ANSWER_MS, RUSH_VERDICT_MS,
@@ -63,7 +66,8 @@ export default function FlagRushGame({
   /** Para el laboratorio: forzar el simulador. Por defecto, rushClient(). */
   client?: RushClient;
 }) {
-  const tr = t(locale);
+  const tr = useTr(locale);
+  const { nueva } = useEstetica();
   const [client] = useState<RushClient>(() => clientProp ?? rushClient());
   const [phase, setPhase] = useState<Phase>({ k: "loading" });
   const [busy, setBusy] = useState(false);
@@ -232,8 +236,12 @@ export default function FlagRushGame({
   const header = (
     <div className="flex items-center justify-between">
       <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-        <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-        <span className="font-display font-semibold">🚩 {tr.rush.title}</span>
+        {nueva ? (
+          <Icon3D name="back" size={28} />
+        ) : (
+          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+        )}
+        <span className="font-display font-semibold"><Ico name="flag" emoji="🚩" size={18} /> {tr.rush.title}</span>
       </button>
       {client.mock && (
         <span className="rounded-full border border-gold/40 bg-black/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gold">
@@ -259,14 +267,14 @@ export default function FlagRushGame({
       <div className="flex flex-col gap-5">
         {header}
         <section className="panel p-5 flex flex-col items-center gap-4 text-center">
-          <span className="text-5xl" aria-hidden>🚩</span>
+          <span className="text-5xl" aria-hidden><Ico name="flag" emoji="🚩" size={64} className="ico-float" /></span>
           <div>
             <h2 className="font-display text-xl font-bold text-white">{tr.rush.title}</h2>
             <p className="text-xs text-neutral-300 mt-0.5">{tr.rush.sub}</p>
           </div>
           <p className="text-sm text-neutral-200 max-w-[34ch]">{tr.rush.rules}</p>
           <p className="max-w-[34ch] rounded-xl border-2 border-gold/50 bg-gold/10 px-3 py-2 text-xs font-semibold text-gold">
-            ⚠️ {tr.rush.leaveWarning}
+            <Ico name="warning" emoji="⚠️" size={16} /> {tr.rush.leaveWarning}
           </p>
 
           {st && <Windows status={st} tr={tr} locale={locale} now={now} />}
@@ -349,7 +357,7 @@ export default function FlagRushGame({
           <Dots dots={phase.dots} current={-1} />
           <p className="text-xs text-neutral-400">{tr.rush.practiceNote}</p>
           <div className="flex flex-col gap-2 w-full mt-1">
-            <button onClick={practice} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">🔄 {tr.rush.practiceAgain}</button>
+            <button onClick={practice} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface"><Ico name="retry" emoji="🔄" size={18} /> {tr.rush.practiceAgain}</button>
             <button onClick={() => { setPhase({ k: "loading" }); void loadStatus(); }} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               ← {tr.rush.title}
             </button>
@@ -392,7 +400,7 @@ export default function FlagRushGame({
 
       {leftNote && !isPractice && (
         <p role="status" className="rounded-xl border-2 border-gold/50 bg-gold/10 px-3 py-2 text-center text-sm font-semibold text-gold">
-          ⚠️ {tr.rush.leftFail}
+          <Ico name="warning" emoji="⚠️" size={16} /> {tr.rush.leftFail}
         </p>
       )}
 
@@ -515,7 +523,7 @@ function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; loca
   const fmt = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
   return (
     <div className="w-full">
-      <p className="text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400 mb-2">{tr.rush.windows}</p>
+      <p className="est-eyebrow text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400 mb-2">{tr.rush.windows}</p>
       <div className="grid grid-cols-3 gap-2">
         {starts.map((d, s) => {
           const st = played.has(s) || (s === current && status.state === "played") ? "jugada"
@@ -529,7 +537,7 @@ function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; loca
             >
               <div className="font-mono text-sm font-bold tabular-nums">{fmt.format(d)}</div>
               <div className={`text-[10px] font-semibold ${st === "abierta" ? "" : st === "jugada" ? "text-[#86efac]" : "text-neutral-400"}`}>
-                {st === "jugada" ? "✓ " : ""}{tr.rush.windowState[st]}
+                {st === "jugada" ? <><Ico name="check" emoji="✓" size={11} />{" "}</> : ""}{tr.rush.windowState[st]}
               </div>
             </div>
           );
@@ -542,7 +550,7 @@ function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; loca
 function PracticeButton({ tr, onClick }: { tr: Tr; onClick: () => void }) {
   return (
     <button onClick={onClick} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
-      🎯 {tr.rush.practice}
+      <Ico name="target" emoji="🎯" size={18} /> {tr.rush.practice}
     </button>
   );
 }

@@ -63,3 +63,32 @@ export function Ico({
   if (!nueva) return <>{emoji}</>;
   return <Icon3D name={name} size={size} className={className} title={title} />;
 }
+
+/** Flecha de volver de los encabezados de los juegos. */
+export function BackChip() {
+  const { nueva } = useEstetica();
+  if (nueva) return <Icon3D name="back" size={28} />;
+  return <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>;
+}
+
+/** Estrellas del resultado (de 3). En la estética nueva se clavan una tras
+ *  otra con rebote; las que faltan quedan apagadas. */
+export function Stars({ n, size = 34 }: { n: number; size?: number }) {
+  const { nueva } = useEstetica();
+  if (!nueva) {
+    return <>{"⭐".repeat(n)}<span className="opacity-25">{"⭐".repeat(3 - n)}</span></>;
+  }
+  return (
+    <span className="inline-flex items-end justify-center gap-1.5" role="img" aria-label={`${n}/3`}>
+      {[0, 1, 2].map((i) => (
+        <Icon3D
+          key={i}
+          name="star"
+          size={i === 1 ? size * 1.2 : size}
+          className={i < n ? "ico-pop" : "opacity-25"}
+          style={i < n ? { animationDelay: `${180 + i * 140}ms` } : undefined}
+        />
+      ))}
+    </span>
+  );
+}

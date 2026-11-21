@@ -263,8 +263,9 @@ const ICONS = {
     parts: [{ d: "M16 4a12 12 0 1 1 0 24a12 12 0 1 1 0-24z", fill: "cyan" }],
     details: [
       { d: "M16 7.4a8.6 8.6 0 1 1 0 17.2a8.6 8.6 0 1 1 0-17.2z", fill: "white", stroke: "deep", width: 1.4 },
-      { d: "M22 10 17.8 17.8 10 22 14.2 14.2z", fill: "red", stroke: "deep", width: 1.4 },
-      { d: "M17.8 17.8 10 22 14.2 14.2z", fill: "white", stroke: "deep", width: 1.4 },
+      // Aguja en dos mitades que no se pisan (antes la blanca tapaba la roja).
+      { d: "M22 10 17.8 17.8 14.2 14.2z", fill: "red", stroke: "deep", width: 1.4 },
+      { d: "M17.8 17.8 10 22 14.2 14.2z", fill: "violet", stroke: "deep", width: 1.4 },
       { d: "M16 14.8a1.2 1.2 0 1 1 0 2.4a1.2 1.2 0 1 1 0-2.4z", fill: "deep" },
     ],
   },
@@ -322,6 +323,30 @@ const ICONS = {
     parts: [
       { d: "M13 4c.9 5.4 3.2 7.8 8.6 8.6-5.4.9-7.7 3.3-8.6 8.6-.9-5.3-3.2-7.7-8.6-8.6C9.8 11.8 12.1 9.4 13 4z", fill: "gold" },
       { d: "M23.6 17.4c.5 3 1.8 4.4 4.8 4.8-3 .5-4.3 1.9-4.8 4.8-.5-2.9-1.8-4.3-4.8-4.8 3-.4 4.3-1.8 4.8-4.8z", fill: "pink" },
+    ],
+  },
+
+  // --- Tanda de Modos (estética nueva, 21-nov) ---
+  // Estrellas del resultado.
+  star: {
+    parts: [{ d: "M16.00 4.00 L19.29 12.27 L28.17 12.84 L21.33 18.53 L23.52 27.16 L16.00 22.40 L8.48 27.16 L10.67 18.53 L3.83 12.84 L12.71 12.27Z", fill: "gold" }],
+    details: [shine("M12.6 11.6l1.6-3.4")],
+  },
+  // Pista: la inicial del país (ficha con una A).
+  letters: {
+    parts: [{ d: "M9 4.5h14a4.5 4.5 0 0 1 4.5 4.5v14a4.5 4.5 0 0 1-4.5 4.5H9A4.5 4.5 0 0 1 4.5 23V9A4.5 4.5 0 0 1 9 4.5z", fill: "cyan" }],
+    details: [
+      { d: "M10.6 22.6 16 9.4l5.4 13.2M12.6 18h6.8", stroke: "deep", width: 2.6 },
+    ],
+  },
+  // Pista: la silueta del siguiente país.
+  silhouette: {
+    // Contorno anguloso de un país cualquiera (con una península abajo):
+    // la versión redondeada se leía como una nube.
+    parts: [{ d: "M6.5 9.5 11.5 6l4 2.2L21 5.4l2.6 4.2 4.2 1.2-1.4 5.2 2 3.8-4.2 2.6-.4 3.6-3.6-.4-1.6 4.2-2.4-3-1.4-4-4.4-1.2-3.2-3.2 1.6-3.4z", fill: "lav" }],
+    details: [
+      { d: "M12 12.4a2 2 0 1 1 0 4a2 2 0 1 1 0-4z", fill: "gold" },
+      shine("M9.6 9c1-1 2.2-1.6 3.6-1.8"),
     ],
   },
 } satisfies Record<string, Def>;

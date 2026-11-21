@@ -1351,12 +1351,45 @@ body {
 
 /* --- Entrada escalonada: los bloques de la pantalla suben uno tras otro --- */
 @keyframes est-rise { from { opacity: 0; transform: translateY(14px); } }
-:root[data-estetica="nueva"] .est-stagger > * { animation: est-rise 460ms var(--est-ease) both; }
+:root[data-estetica="nueva"] .est-stagger > * { animation: est-rise 460ms var(--est-ease) backwards; }
 :root[data-estetica="nueva"] .est-stagger > :nth-child(2) { animation-delay: 50ms; }
 :root[data-estetica="nueva"] .est-stagger > :nth-child(3) { animation-delay: 100ms; }
 :root[data-estetica="nueva"] .est-stagger > :nth-child(4) { animation-delay: 150ms; }
 :root[data-estetica="nueva"] .est-stagger > :nth-child(5) { animation-delay: 200ms; }
 :root[data-estetica="nueva"] .est-stagger > :nth-child(n+6) { animation-delay: 250ms; }
+
+/* --- Etiquetas, stickers y campos (pestaña Modos, 21-nov) --- */
+/* Título de sección como la etiqueta del landing: píldora lavanda, letra
+   mono, punto oscuro delante, borde y sombra dura. */
+:root[data-estetica="nueva"] .est-eyebrow {
+  display: inline-flex; align-items: center; gap: .45rem; width: fit-content;
+  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: .18em;
+  color: var(--deep); background: var(--lavender);
+  border: 2px solid var(--deep); border-radius: 999px; padding: .28rem .7rem;
+  box-shadow: 3px 3px 0 var(--deep);
+}
+:root[data-estetica="nueva"] .est-eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--deep); flex: none; }
+:root[data-estetica="nueva"] .est-eyebrow { align-self: flex-start; white-space: nowrap; }
+/* El subtítulo que acompaña algunos títulos no cabe en la píldora. */
+:root[data-estetica="nueva"] .est-eyebrow > span { display: none; }
+/* XP de las fichas: sticker dorado con el rayo 3D. */
+.est-xp {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 10px; font-weight: 800;
+  color: var(--deep); background: var(--gold);
+  border: 2px solid var(--deep); border-radius: 999px; padding: 1px 6px 1px 4px;
+  box-shadow: 2px 2px 0 var(--deep);
+}
+/* "Nuevo": sticker pegado un poco torcido. */
+:root[data-estetica="nueva"] .est-sticker {
+  color: var(--deep); background: #86efac; border: 2px solid var(--deep);
+  box-shadow: 2px 2px 0 var(--deep); transform: rotate(5deg);
+}
+/* Campos de texto y selector con el borde del landing. */
+:root[data-estetica="nueva"] .est-input { border: var(--bw) solid var(--deep); box-shadow: 3px 3px 0 var(--deep); background: var(--panel-solid); }
+:root[data-estetica="nueva"] .est-input:focus { border-color: var(--gold); }
+/* Números de los pasos con borde. */
+:root[data-estetica="nueva"] .est-num { border: 2px solid var(--deep); box-shadow: 2px 2px 0 var(--deep); }
 
 /* --- Iconos animados --- */
 /* Salto del icono de la pestaña al elegirla: carga, sube, cae y se asienta. */
@@ -1378,6 +1411,13 @@ body {
 /* Moneda que gira al ganarla (scaleX, que imita el canto sin 3D real). */
 @keyframes ico-spin { 0%, 100% { transform: scaleX(1); } 25% { transform: scaleX(.12); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(.12); } }
 .ico-spin { animation: ico-spin 700ms var(--est-ease) both; }
+/* Estrella del resultado que se clava: nace chica, se pasa y se asienta. */
+@keyframes ico-pop {
+  0%   { opacity: 0; transform: scale(.2) rotate(-30deg); }
+  60%  { opacity: 1; transform: scale(1.18) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.ico-pop { animation: ico-pop 460ms cubic-bezier(.34, 1.4, .64, 1) both; }
 /* Icono grande que flota (fichas y héroe). */
 @keyframes ico-float { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
 .ico-float { animation: ico-float 3.4s ease-in-out infinite; }
@@ -1400,6 +1440,6 @@ body {
 .est-pill button[aria-pressed="false"] { background: #3b2a66; color: #f3edff; }
 
 @media (prefers-reduced-motion: reduce) {
-  .est-aurora span, .ico-hop, .ico-flicker, .ico-spin, .ico-float { animation: none; }
+  .est-aurora span, .ico-hop, .ico-flicker, .ico-spin, .ico-float, .ico-pop { animation: none; }
   :root[data-estetica="nueva"] .est-stagger > * { animation-name: rush-flag-fade; animation-duration: 200ms; }
 }

@@ -69,18 +69,23 @@ function buildPuffy(name: IconName) {
     g.add(m);
   });
   const top = (def.parts.length - 1) * LAYER + DEPTH + 1.5 + 0.05;
-  (def.details ?? []).forEach((d) => {
-    if (d.stroke === "white") return; // los brillos los pone la luz de verdad
+  // Cada detalle un poco más alto que el anterior: si van a la misma altura
+  // se pisan (z-fighting) y el de abajo sale rayado, como la aguja de la brújula.
+  (def.details ?? []).forEach((d, di) => {
+    const lift = di * 0.12;
+    // Los brillos (trazo blanco fino, shine()) los pone la luz de verdad. Un
+    // trazo blanco grueso sí es dibujo (la flecha de "volver") y se queda.
+    if (d.stroke === "white" && (d.width ?? 2) < 2) return;
     if (d.fill) {
       const geo = new THREE.ExtrudeGeometry(pathShapes(d.d), { depth: 0.5, bevelEnabled: true, bevelThickness: 0.35, bevelSize: 0.3, bevelSegments: 3, curveSegments: 20 });
       const m = new THREE.Mesh(geo, plastic(d.fill));
-      m.position.z = top;
+      m.position.z = top + lift;
       g.add(m);
     }
     if (d.stroke) {
       for (const sg of strokeGeometry(d.d, d.width ?? 2)) {
         const m = new THREE.Mesh(sg, plastic(d.stroke));
-        m.position.z = top + (d.fill ? 1.25 : 0.02);
+        m.position.z = top + lift + (d.fill ? 1.25 : 0.02);
         g.add(m);
       }
     }

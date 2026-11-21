@@ -1657,7 +1657,7 @@ export default function Frontle() {
                 <ol className="flex flex-col gap-2 px-3.5 pb-3">
                   {tr.homeIntro.steps.map((paso, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-xs leading-snug text-neutral-300">
-                      <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
+                      <span className="est-num flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
                       <span>{paso}</span>
                     </li>
                   ))}
@@ -2240,7 +2240,7 @@ export default function Frontle() {
                 Regiones (David: "el botón de regiones no quedó bajo el
                 título de gana experiencia" — corregido, antes quedaba
                 arriba del título por error). */}
-            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+            <h3 className="est-eyebrow -mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
               {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
             </h3>
 
@@ -2250,7 +2250,7 @@ export default function Frontle() {
                 debería ser un card cuadrado pequeño"); su desplegable de
                 país + mapa se abre DEBAJO de la rejilla, a ancho completo,
                 que es donde sí cabe. */}
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="est-stagger grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
                 aria-expanded={modeOpen === "regions"}
@@ -2284,10 +2284,10 @@ export default function Frontle() {
                     </svg>
                   ))}
                 </span>
-                <span className="absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
+                <span className="est-sticker absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.modes.regionsTitle}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.region)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(XP.region)} />
                 </span>
               </button>
               {/* Flag Rush ocupa la ficha de "Adivina la bandera": mismo arte (las
@@ -2314,13 +2314,13 @@ export default function Frontle() {
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.rush.title}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(RUSH_XP_PER_GAME)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(RUSH_XP_PER_GAME)} />
                 </span>
                 <FlagRushPips />
               </button>
               <button
                 onClick={() => setQuizMode("outline")}
-                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
                 {/* Siluetas del mundo, en fase con las otras dos fichas. Sin
                     fronteras internas y rellenas: en este modo lo único que
@@ -2348,13 +2348,13 @@ export default function Frontle() {
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.outlineTitle}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(XP.quiz)} />
                 </span>
               </button>
               {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
               <button
                 onClick={() => setPracticeOn(true)}
-                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
                 {/* Práctica es el modo de aprender, así que aquí el arte no es
                     un mapa: es el propio Bordy graduado, flotando. No entra en
@@ -2377,7 +2377,7 @@ export default function Frontle() {
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.practiceMode}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.practice)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(XP.practice)} />
                 </span>
               </button>
             </div>
@@ -2400,7 +2400,7 @@ export default function Frontle() {
                     value={regionPick}
                     onChange={(e) => setRegionPick(e.target.value)}
                     aria-label={tr.a11y.country}
-                    className="w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
+                    className="est-input w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
                   >
                     {REGION_IDS.map((rid) => (
                       <option key={rid} value={rid} style={{ background: "var(--surface)", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
@@ -2414,7 +2414,7 @@ export default function Frontle() {
                   onClick={() => setRegionMode(regionPick)}
                   className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-gold text-surface font-display font-black py-2.5"
                 >
-                  ▶ {tr.modes.play(REGIONS[regionPick].title)}
+                  {nueva ? null : "▶ "}{tr.modes.play(REGIONS[regionPick].title)}
                 </button>
                 <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </div>
@@ -2422,19 +2422,23 @@ export default function Frontle() {
 
             {/* Aprender: el resumen de tres pasos y el tutorial completo. Antes
                 era una pestaña propia; ahora cierra la de Modos. */}
-            <h3 className="-mb-1.5 mt-2 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+            <h3 className="est-eyebrow -mb-1.5 mt-2 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
               {tr.hub.learnTitle}
             </h3>
             <section className="panel p-4 flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/bordy-m2.webp" alt="" className="h-16 w-14 flex-none object-contain bordy-float-sm drop-shadow-xl" />
+                {nueva ? (
+                  <Bordy mood="idle" float className="h-16 w-14 flex-none" imgClassName="drop-shadow-xl" alt="" />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src="/bordy-m2.webp" alt="" className="h-16 w-14 flex-none object-contain bordy-float-sm drop-shadow-xl" />
+                )}
                 <p className="font-display text-base font-bold leading-tight text-white">{tr.homeIntro.howTitle}</p>
               </div>
               <ol className="flex flex-col gap-2">
                 {tr.homeIntro.steps.map((paso, i) => (
                   <li key={i} className="flex items-start gap-2.5 text-xs leading-snug text-neutral-300">
-                    <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
+                    <span className="est-num flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
                     <span>{paso}</span>
                   </li>
                 ))}
@@ -2864,6 +2868,21 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
+// Insignia de XP de las fichas de Modos. En la estética nueva es un sticker
+// con el rayo 3D, como las etiquetas del landing.
+function XpTag({ text }: { text: string }) {
+  const { nueva } = useEstetica();
+  if (!nueva) return <span className="shrink-0 text-[10px] font-bold text-gold">{text}</span>;
+  return (
+    // Pegado en la esquina del arte: al lado del nombre lo cortaba
+    // ("Adivina…", "Modo pr…").
+    <span className="est-xp absolute left-1.5 top-1.5 z-10">
+      <Icon3D name="xp" size={12} />
+      {text}
+    </span>
+  );
+}
+
 // Estética nueva: el icono 3D de cada pestaña.
 const NAV_3D = { jugar: "globe", modos: "modes", ranking: "podium", perfil: "bordy" } as const;
 
