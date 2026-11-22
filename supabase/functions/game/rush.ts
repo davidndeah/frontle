@@ -334,22 +334,47 @@ export function supabaseStore(supabase: SupabaseClient): RushStore {
 
 // Bandera como data URL. Se baja de flagcdn en el servidor y se guarda en
 // memoria: así el cliente nunca ve una dirección con el código del país.
+//
+// Cada entrega lleva además un trozo RIFF con bytes al azar (`NOIS`), que los
+// navegadores ignoran: la bandera se ve igual pero el archivo nunca es el
+// mismo, así que no basta con comparar bytes contra las de flagcdn para
+// saber el país. Es un freno, no un muro: quien quite ese trozo o compare
+// píxeles lo salta. El tope de XP (12 al día) y `suspect` hacen el resto.
 export function flagcdnImages(fetchImpl: typeof fetch = fetch): (code: string) => Promise<string | null> {
-  const cache = new Map<string, string>();
+  const cache = new Map<string, Uint8Array>();
   return async (code) => {
-    const hit = cache.get(code);
-    if (hit) return hit;
-    try {
-      const r = await fetchImpl(`https://flagcdn.com/w320/${code.toLowerCase()}.webp`);
-      if (!r.ok) return null;
-      const bytes = new Uint8Array(await r.arrayBuffer());
-      let bin = "";
-      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      const url = `data:image/webp;base64,${btoa(bin)}`;
-      cache.set(code, url);
-      return url;
-    } catch {
-      return null;
+    let bytes = cache.get(code);
+    if (!bytes) {
+      try {
+        const r = await fetchImpl(`https://flagcdn.com/w320/${code.toLowerCase()}.webp`);
+        if (!r.ok) return null;
+        bytes = new Uint8Array(await r.arrayBuffer());
+        cache.set(code, bytes);
+      } catch {
+        return null;
+      }
     }
+    const out = withNoise(bytes);
+    let bin = "";
+    for (let i = 0; i < out.length; i += 0x8000) bin += String.fromCharCode(...out.subarray(i, i + 0x8000));
+    return `data:image/webp;base64,${btoa(bin)}`;
   };
+}
+
+// Añade al final del RIFF un trozo desconocido de 8 a 32 bytes al azar y
+// corrige el tamaño del RIFF. Si no parece un WebP, lo devuelve tal cual.
+export function withNoise(src: Uint8Array): Uint8Array {
+  const tag = (o: number) => String.fromCharCode(...src.subarray(o, o + 4));
+  if (src.length < 12 || tag(0) !== "RIFF" || tag(8) !== "WEBP") return src;
+  const len = new Uint8Array(1);
+  crypto.getRandomValues(len);
+  const pad = 8 + (len[0] % 13) * 2; // par: los trozos RIFF van alineados a 2
+  const out = new Uint8Array(src.length + 8 + pad);
+  out.set(src);
+  out.set([0x4e, 0x4f, 0x49, 0x53], src.length); // "NOIS"
+  const view = new DataView(out.buffer);
+  view.setUint32(src.length + 4, pad, true);
+  crypto.getRandomValues(out.subarray(src.length + 8));
+  view.setUint32(4, out.length - 8, true);
+  return out;
 }
