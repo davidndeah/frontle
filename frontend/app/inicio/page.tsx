@@ -412,7 +412,7 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
             </Reveal>
 
             <p className="after-ledger">
-              <Link className="btn btn-ghost btn-sm" href="/stats">
+              <Link prefetch={false} className="btn btn-ghost btn-sm" href="/stats">
                 {c.transparency.cta}
               </Link>
             </p>
@@ -430,7 +430,7 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
                 <a className="btn btn-dark btn-lg" href={JUGAR_HREF} data-play>
                   {c.close.ctaPlay} <span aria-hidden="true">→</span>
                 </a>
-                <Link className="btn btn-outline-dark btn-lg" href="/stats">
+                <Link prefetch={false} className="btn btn-outline-dark btn-lg" href="/stats">
                   {c.close.ctaStats}
                 </Link>
               </div>
@@ -440,9 +440,9 @@ export default async function Inicio({ searchParams }: { searchParams: Search })
 
         <footer>
           <div className="wrap">
-            <Link href="/privacy">{c.footer.privacy}</Link>
-            <Link href="/terms">{c.footer.terms}</Link>
-            <Link href="/stats">{c.footer.stats}</Link>
+            <Link prefetch={false} href="/privacy">{c.footer.privacy}</Link>
+            <Link prefetch={false} href="/terms">{c.footer.terms}</Link>
+            <Link prefetch={false} href="/stats">{c.footer.stats}</Link>
             <span className="sep">{c.footer.sep}</span>
           </div>
         </footer>
