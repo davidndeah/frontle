@@ -1124,6 +1124,58 @@ export async function purchaseCoinPack(
   }
 }
 
+// --- Prueba de identidad (recuperar la wallet en este dispositivo) --------
+// MiniPay no deja firmar mensajes, así que la prueba de que la wallet es tuya
+// es una tx: un transfer de 0 USDT a la tesorería con IDENTITY_TAG y el
+// sha256 del secret al final del calldata. Solo cuesta la comisión de red.
+// `recover_secret` (supabase/functions/game/identity.ts) la verifica.
+// Debe coincidir con IDENTITY_TAG de identity.ts.
+const IDENTITY_TAG = "4652544c05";
+
+export type IdentityProofResult = "success" | "cancelled" | "wrong_wallet" | "no_funds" | "no_gas" | "error";
+
+export async function sendIdentityProof(
+  player: string,
+  secretHashHex: string,
+): Promise<{ res: IdentityProofResult; txHash?: string }> {
+  const active = getProvider();
+  if (!active || !/^[0-9a-f]{64}$/.test(secretHashHex)) return { res: "error" };
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const transport = custom(active.provider as any);
+    const walletClient = createWalletClient({ chain: ACTIVE_CHAIN, transport }).extend(attribution());
+    const publicClient = createPublicClient({ chain: ACTIVE_CHAIN, transport: http(), pollingInterval: 1000 });
+    let [account] = await walletClient.getAddresses();
+    if (!account) [account] = await walletClient.requestAddresses();
+    if (!account) return { res: "error" };
+    // La prueba tiene que salir de la wallet que se quiere recuperar.
+    if (account.toLowerCase() !== player.toLowerCase()) return { res: "wrong_wallet" };
+    if (active.embedded) {
+      const gasBal = await publicClient.getBalance({ address: account });
+      if (gasBal < parseEther("0.02")) return { res: "no_gas" };
+    }
+    const hash = await walletClient.writeContract({
+      account,
+      chain: ACTIVE_CHAIN,
+      address: TOKEN_ADDRESS,
+      abi: erc20Abi,
+      functionName: "transfer",
+      args: [COIN_TREASURY, BigInt(0)],
+      dataSuffix: `0x${IDENTITY_TAG}${secretHashHex}`,
+      ...feeOptsFor(active.embedded),
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: RECEIPT_TIMEOUT });
+    return receipt.status === "success" ? { res: "success", txHash: hash } : { res: "error", txHash: hash };
+  } catch (err) {
+    console.error("[identidad] prueba falló o cancelada:", err);
+    if (isUserRejection(err)) return { res: "cancelled" };
+    if (/insufficient funds|exceeds the balance/i.test(String((err as Error)?.message ?? ""))) {
+      return { res: active.embedded ? "no_gas" : "no_funds" };
+    }
+    return { res: "error" };
+  }
+}
+
 // Reparto del pot semanal entre el podio, igual que `_computeShares` del
 // contrato: 50% al 1º, 30% al 2º, 10% al 3º (el 10% restante es recaudo).
 // Un puesto vacante NO se redistribuye: rueda al pot de la semana siguiente,
