@@ -3,7 +3,7 @@
 
 import data from "../_shared/flags-data.json" with { type: "json" };
 import { type Answer, ANSWER_MS, type Flag, type Question, VERDICT_MS } from "./rush-core.ts";
-import { makeRush, type RushRow, type RushStore } from "./rush.ts";
+import { flagcdnImages, makeRush, type RushRow, type RushStore } from "./rush.ts";
 
 const FLAGS = (data as { flags: Flag[] }).flags;
 const ANA = "0x" + "a".repeat(40);
@@ -257,4 +257,19 @@ Deno.test("el veredicto en pantalla no le resta tiempo al jugador", async () => 
   w.advance(VERDICT_MS + ANSWER_MS);
   const b = await w.call("rush_answer", { sessionId: row.id, choice: row.questions[1].a });
   eq([b.body.correct, w.rows[0].answers[1].ms], [true, ANSWER_MS], "a tiempo, contado desde que la vio");
+});
+
+Deno.test("la misma bandera nunca llega con los mismos bytes", async () => {
+  const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 6, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, 1, 2]);
+  const fakeFetch = (() => Promise.resolve(new Response(webp))) as unknown as typeof fetch;
+  const img = flagcdnImages(fakeFetch);
+  const a = await img("co");
+  const b = await img("co");
+  if (!a || !b) throw new Error("sin imagen");
+  if (a === b) throw new Error("misma imagen dos veces");
+  const bytes = Uint8Array.from(atob(a.split(",")[1]), (c) => c.charCodeAt(0));
+  const riff = new DataView(bytes.buffer).getUint32(4, true);
+  if (riff !== bytes.length - 8) throw new Error("tamaño RIFF mal corregido");
+  // Lo original sigue intacto al principio (salvo el tamaño del RIFF).
+  if (bytes.subarray(8, 14).join() !== webp.subarray(8).join()) throw new Error("contenido alterado");
 });
