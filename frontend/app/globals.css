@@ -583,6 +583,18 @@ body {
 .bordy-fab {
   bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
+/* Con Bordy flotante en pantalla, el final de la página baja lo que mide
+   Bordy (76 px) más aire: así el último botón no queda debajo de él. */
+.app-content.con-fab {
+  padding-bottom: calc(5rem + 92px + env(safe-area-inset-bottom, 0px));
+}
+/* Zona táctil de 44 px sin agrandar el dibujo: un pseudo-elemento invisible
+   alrededor recibe el toque. */
+.hit-44 { position: relative; }
+.hit-44::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
 
 /* Fondo de ambiente: dos halos suaves sobre el degradado del body. Reemplaza
    la cuadrícula lavanda, que competía con el contenido. Tamaños en px y sin
@@ -1363,7 +1375,7 @@ body {
    mono, punto oscuro delante, borde y sombra dura. */
 :root[data-estetica="nueva"] .est-eyebrow {
   display: inline-flex; align-items: center; gap: .45rem; width: fit-content;
-  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: .18em;
+  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 11px; font-weight: 700; letter-spacing: .16em;
   color: var(--deep); background: var(--lavender);
   border: 2px solid var(--deep); border-radius: 999px; padding: .28rem .7rem;
   box-shadow: 3px 3px 0 var(--deep);
@@ -1372,10 +1384,17 @@ body {
 :root[data-estetica="nueva"] .est-eyebrow { align-self: flex-start; white-space: nowrap; }
 /* El subtítulo que acompaña algunos títulos no cabe en la píldora. */
 :root[data-estetica="nueva"] .est-eyebrow > span { display: none; }
+/* Regla de títulos: la píldora (.est-eyebrow) marca solo las secciones
+   grandes de una pantalla. Un título DENTRO de una tarjeta es un título
+   normal, en la letra de la interfaz y sin mayúsculas forzadas. */
+:root[data-estetica="nueva"] .est-cardtitle {
+  font-size: 14px; font-weight: 700; letter-spacing: normal; text-transform: none;
+  color: #fff;
+}
 /* XP de las fichas: sticker dorado con el rayo 3D. */
 .est-xp {
   display: inline-flex; align-items: center; gap: 3px;
-  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 10px; font-weight: 800;
+  font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 11px; font-weight: 800;
   color: var(--deep); background: var(--gold);
   border: 2px solid var(--deep); border-radius: 999px; padding: 1px 6px 1px 4px;
   box-shadow: 2px 2px 0 var(--deep);
@@ -1450,3 +1469,8 @@ body {
   .est-aurora span, .ico-hop, .ico-flicker, .ico-spin, .ico-float, .ico-pop { animation: none; }
   :root[data-estetica="nueva"] .est-stagger > * { animation-name: rush-flag-fade; animation-duration: 200ms; }
 }
+/* Después de la primera entrada, las tarjetas aparecen sin escalonar (ver
+   EsteticaRoot). Va después del bloque de reducir movimiento y con un
+   atributo más para ganarle también a ese. */
+:root[data-entrada="hecha"][data-estetica] .est-stagger > * { animation: none; }
+

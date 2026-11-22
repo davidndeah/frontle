@@ -16,7 +16,7 @@
 //  tenga que volver a pintar cada pieza.
 // ============================================================
 
-import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 export const ESTETICA_LAB = process.env.NEXT_PUBLIC_ESTETICA_LAB === "1";
 
@@ -61,6 +61,14 @@ export function EsteticaRoot({ children }: { children: ReactNode }) {
   const toggleDest = () => write("destacado", K_DEST, destacado === "apilado" ? "carrusel" : "apilado");
 
   const value = useMemo(() => ({ nueva: ESTETICA_LAB && est === "nueva", fuente, destacado }), [est, fuente, destacado]);
+
+  // La entrada escalonada de las tarjetas (.est-stagger) se ve solo al abrir
+  // la app. Cambiar de pestaña pasa decenas de veces al día: repetirla ahí
+  // hace sentir lenta la navegación. Al terminar la primera, se apaga.
+  useEffect(() => {
+    const id = setTimeout(() => { document.documentElement.dataset.entrada = "hecha"; }, 1200);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
     <Ctx.Provider value={value}>

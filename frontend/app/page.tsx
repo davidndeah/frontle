@@ -1552,7 +1552,7 @@ export default function Frontle() {
           <button
             onClick={() => setShopOpen(true)}
             aria-label={tr.coins.shop}
-            className="shrink-0 flex items-center gap-0.5 rounded-full bg-gold/12 border border-gold/35 px-2 py-1 text-[11px] font-bold text-gold whitespace-nowrap active:scale-95 transition"
+            className="hit-44 shrink-0 flex items-center gap-0.5 rounded-full bg-gold/12 border border-gold/35 px-2 py-1 text-[11px] font-bold text-gold whitespace-nowrap active:scale-95 transition"
           >
             <Ico name="coin" emoji="🪙" size={15} /><span className="tabular-nums">{coinBalance}</span>
           </button>
@@ -1581,7 +1581,7 @@ export default function Frontle() {
       {/* Contenido del tab activo. El key={tab} remonta el contenedor al
           cambiar de tab para que el contenido entre con fade + slide corto
           (los hijos ya se desmontan por el render condicional por tab). */}
-      <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
+      <div key={tab} className={`app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4 ${!overlay && !(tab === "jugar" && !started) ? "con-fab" : ""}`}>
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "modos" && regionMode && (
           <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
@@ -1650,7 +1650,7 @@ export default function Frontle() {
                 type="button"
                 onClick={toggleHowTo}
                 aria-expanded={howToOpen}
-                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left font-display text-[13px] font-semibold text-white"
+                className="flex min-h-11 w-full items-center gap-2 px-3.5 py-2.5 text-left font-display text-[13px] font-semibold text-white"
               >
                 <Ico name="compass" emoji="🧭" size={18} /> {tr.homeIntro.howTitle}
                 <span aria-hidden className={`ml-auto text-xs text-lavender transition-transform ${howToOpen ? "rotate-90" : ""}`}>▸</span>
@@ -1770,7 +1770,7 @@ export default function Frontle() {
             {/* Cierre de los rankings: los dos relojes que mueven la competencia,
                 cada uno con su premio. Tocar una fila abre ese ranking. */}
             <section className="panel overflow-hidden">
-              <h3 className="px-3.5 pt-3 pb-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+              <h3 className="est-cardtitle px-3.5 pt-3 pb-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
                 {tr.hub.closings}
               </h3>
               {(["daily", "weekly"] as const).map((rt) => {
@@ -1791,7 +1791,7 @@ export default function Frontle() {
                       <span className="flex items-center gap-1.5 font-display text-sm font-bold leading-tight text-white">
                         {rt === "daily" ? tr.hub.dailyRanking : tr.hub.weeklyLeague}
                         {rt === "daily" && board.me && (
-                          <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold tabular-nums">#{board.me.rank}</span>
+                          <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[11px] font-bold text-gold tabular-nums">#{board.me.rank}</span>
                         )}
                       </span>
                       <span className="block font-mono text-[11px] text-neutral-300 tabular-nums"><Ico name="clock" emoji="🕒" size={12} /> {tr.dailyHero.closesIn(clock)}</span>
@@ -1800,7 +1800,7 @@ export default function Frontle() {
                         arriba: aquí solo se enseña el de la semana. */}
                     {rt === "weekly" && (
                       <span className="flex-none text-right">
-                        <span className="block text-[9px] uppercase tracking-wider text-neutral-400">{tr.rankTabs.weeklyPrize}</span>
+                        <span className="block text-[11px] uppercase tracking-wider text-neutral-400">{tr.rankTabs.weeklyPrize}</span>
                         <span className="block font-display text-base font-black leading-tight text-gold tabular-nums">
                           {weeklyPot !== null ? fmt(weeklyPot) : "···"}
                         </span>
@@ -2291,7 +2291,7 @@ export default function Frontle() {
                     </svg>
                   ))}
                 </span>
-                <span className="est-sticker absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
+                <span className="est-sticker absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[#86efac]">{tr.modes.new}</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.modes.regionsTitle}</span>
                   <XpTag text={tr.dailyHero.xpBadge(XP.region)} />
@@ -2423,7 +2423,7 @@ export default function Frontle() {
                 >
                   {nueva ? null : "▶ "}{tr.modes.play(REGIONS[regionPick].title)}
                 </button>
-                <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
+                <p className="text-[11px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </div>
             )}
 
@@ -2435,7 +2435,7 @@ export default function Frontle() {
             <section className="panel p-4 flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 {nueva ? (
-                  <Bordy mood="idle" float className="h-16 w-14 flex-none" imgClassName="drop-shadow-xl" alt="" />
+                  <Bordy mood="idle" className="h-16 w-14 flex-none" imgClassName="drop-shadow-xl" alt="" />
                 ) : (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img src="/bordy-m2.webp" alt="" className="h-16 w-14 flex-none object-contain bordy-float-sm drop-shadow-xl" />
@@ -2879,7 +2879,7 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 // con el rayo 3D, como las etiquetas del landing.
 function XpTag({ text }: { text: string }) {
   const { nueva } = useEstetica();
-  if (!nueva) return <span className="shrink-0 text-[10px] font-bold text-gold">{text}</span>;
+  if (!nueva) return <span className="shrink-0 text-[11px] font-bold text-gold">{text}</span>;
   return (
     // Pegado en la esquina del arte: al lado del nombre lo cortaba
     // ("Adivina…", "Modo pr…").
@@ -2927,7 +2927,7 @@ function TabBar({
             key={it.id}
             onClick={() => onTab(it.id)}
             aria-current={on ? "page" : undefined}
-            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] transition active:scale-95 ${
               on ? "text-white" : "text-neutral-400"
             }`}
           >

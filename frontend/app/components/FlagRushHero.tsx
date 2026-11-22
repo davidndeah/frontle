@@ -19,7 +19,7 @@
 // ============================================================
 
 import { useEffect, useState } from "react";
-import { RUSH_XP_PER_GAME, rushClient, slotOf, slotStarts, type RushStatus } from "../lib/flagRush";
+import { RUSH_SLOT_HOURS, RUSH_XP_PER_GAME, rushClient, slotOf, slotStarts, type RushStatus } from "../lib/flagRush";
 import type { Locale, t } from "../lib/i18n";
 import Icon3D, { Ico } from "./icons/Icon3D";
 import { useEstetica } from "../lib/estetica";
@@ -60,10 +60,14 @@ export default function FlagRushHero({ tr, locale, onPlay }: { tr: Tr; locale: L
   const left = nextAt !== null && now !== null ? clock(nextAt - now) : "--:--:--";
 
   return (
-    <div className="brutal relative flex h-full flex-col overflow-hidden rounded-2xl bg-[#0e3b52] p-4">
+    // Tres bloques (título, ventanas + XP, botón) con justify-between: en el
+    // carrusel la ficha se estira a la altura del reto y el espacio sobrante
+    // se reparte entre ellos en vez de quedar como un hueco sobre el botón.
+    <div className="brutal relative flex h-full flex-col justify-between gap-3 overflow-hidden rounded-2xl bg-[#0e3b52] p-4">
+      <div>
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex min-w-0 items-center gap-2 font-display text-xl font-black leading-tight text-white">
-          <Ico name="flag" emoji="🚩" size={26} className="ico-float" />
+          <Ico name="flag" emoji="🚩" size={26} />
           <span className="truncate">{tr.rush.title}</span>
         </h2>
         <span
@@ -75,9 +79,10 @@ export default function FlagRushHero({ tr, locale, onPlay }: { tr: Tr; locale: L
         </span>
       </div>
       <p className="mt-1 text-xs text-white/75">{tr.hub.rushRules}</p>
+      </div>
 
       {status && now !== null && (
-        <>
+        <div>
           <Windows status={status} tr={tr} locale={locale} now={now} />
           <div className="mt-2.5 rounded-xl bg-black/25 px-3 py-2.5">
             <div className="flex items-center justify-between gap-2">
@@ -94,12 +99,9 @@ export default function FlagRushHero({ tr, locale, onPlay }: { tr: Tr; locale: L
               />
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* Separador elástico: en el carrusel las dos fichas miden lo mismo y
-          el botón queda abajo, a la altura del Jugar del reto. */}
-      <div className="min-h-3 flex-1" />
       <button
         type="button"
         onClick={onPlay}
@@ -111,14 +113,15 @@ export default function FlagRushHero({ tr, locale, onPlay }: { tr: Tr; locale: L
   );
 }
 
-/** Las 3 ventanas en fichas pequeñas: hora local de inicio y estado. */
+/** Las 3 ventanas en fichas pequeñas: rango en hora local y estado. El rango
+ *  evita que la primera ("19:00", que empezó anoche) parezca de esta noche. */
 function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; locale: Locale; now: number }) {
   const starts = slotStarts(new Date(now));
   const current = slotOf(new Date(now));
   const done = new Set(status.attempts.map((a) => a.slot));
   const fmt = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
   return (
-    <div className="mt-3 grid grid-cols-3 gap-1.5" aria-label={tr.rush.windows}>
+    <div className="grid grid-cols-3 gap-1.5" aria-label={tr.rush.windows}>
       {starts.map((d, s) => {
         const st = done.has(s) || (s === current && status.state === "played") ? "jugada"
           : s === current ? "abierta"
@@ -130,8 +133,8 @@ function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; loca
             className={`rounded-xl border-2 px-2 py-1.5 text-center ${st === "abierta" ? "bg-gold text-deep" : "bg-black/25 text-white"} ${st === "pasada" ? "opacity-50" : ""}`}
             style={{ borderColor: st === "abierta" ? "var(--deep)" : "rgba(13,4,32,0.5)" }}
           >
-            <div className="font-mono text-xs font-bold tabular-nums">{fmt.format(d)}</div>
-            <div className={`text-[10px] font-semibold leading-tight ${st === "jugada" ? "text-[#86efac]" : st === "abierta" ? "" : "text-white/60"}`}>
+            <div className="font-mono text-xs font-bold tabular-nums">{fmt.format(d)}–{fmt.format(new Date(d.getTime() + RUSH_SLOT_HOURS * 3_600_000))}</div>
+            <div className={`text-[11px] font-semibold leading-tight ${st === "jugada" ? "text-[#86efac]" : st === "abierta" ? "" : "text-white/60"}`}>
               {st === "jugada" ? <><Ico name="check" emoji="✓" size={10} />{" "}</> : ""}{tr.rush.windowState[st]}
             </div>
           </div>

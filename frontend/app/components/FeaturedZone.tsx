@@ -17,6 +17,8 @@ import { Children, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Destacado } from "../lib/estetica";
 
 const AUTO_MS = 6000;
+/** Lo que tarda la entrada escalonada de Inicio (460 ms + retrasos). */
+const ENTRADA_MS = 800;
 // Margen para que el borde y la sombra dura de cada ficha no se recorten
 // contra el borde del carrusel (sombra de 5 px + borde).
 const GUTTER = 8;
@@ -47,6 +49,8 @@ function Carousel({ slides, labels }: { slides: ReactNode[]; labels: string[] })
   const held = useRef(false);
   // Cada cambio de `index` (automático, punto o dedo) reinicia la cuenta.
   const [restart, setRestart] = useState(0);
+  // La primera cuenta espera además a que terminen de entrar las tarjetas.
+  const first = useRef(true);
 
   const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -74,7 +78,8 @@ function Carousel({ slides, labels }: { slides: ReactNode[]; labels: string[] })
     const id = setTimeout(() => {
       if (held.current || document.hidden) { setRestart((n) => n + 1); return; }
       go((index + 1) % slides.length);
-    }, AUTO_MS);
+    }, AUTO_MS + (first.current ? ENTRADA_MS : 0));
+    first.current = false;
     return () => clearTimeout(id);
     // `go` solo lee el DOM; la cuenta depende del índice y de los reinicios.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,7 +112,8 @@ function Carousel({ slides, labels }: { slides: ReactNode[]; labels: string[] })
           </div>
         ))}
       </div>
-      <div className="flex justify-center gap-1.5">
+      {/* Cada punto es un botón de 44 px (zona táctil); el dibujo sigue chico. */}
+      <div className="-my-2 flex justify-center">
         {slides.map((_, i) => (
           <button
             key={i}
@@ -115,9 +121,10 @@ function Carousel({ slides, labels }: { slides: ReactNode[]; labels: string[] })
             onClick={() => go(i)}
             aria-label={labels[i]}
             aria-current={i === index}
-            className="est-dot h-2.5 w-2.5 rounded-full border-2 border-deep"
-            data-on={i === index}
-          />
+            className="flex h-11 w-11 items-center justify-center"
+          >
+            <span className="est-dot h-2.5 w-2.5 rounded-full border-2 border-deep" data-on={i === index} />
+          </button>
         ))}
       </div>
     </div>

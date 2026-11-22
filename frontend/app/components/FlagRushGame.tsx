@@ -23,7 +23,7 @@ import Icon3D, { Ico } from "./icons/Icon3D";
 import { useEstetica } from "../lib/estetica";
 import {
   flagUrl, formatWait, practiceQuestions, rushCanonical, rushClient, slotOf, slotStarts,
-  RUSH_ANSWER_MS, RUSH_VERDICT_MS,
+  RUSH_ANSWER_MS, RUSH_SLOT_HOURS, RUSH_VERDICT_MS,
   type LocalQuestion, type RushClient, type RushError, type RushQuestion, type RushResult, type RushStatus,
 } from "../lib/flagRush";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
@@ -270,7 +270,6 @@ export default function FlagRushGame({
           <span className="text-5xl" aria-hidden><Ico name="flag" emoji="🚩" size={64} className="ico-float" /></span>
           <div>
             <h2 className="font-display text-xl font-bold text-white">{tr.rush.title}</h2>
-            <p className="text-xs text-neutral-300 mt-0.5">{tr.rush.sub}</p>
           </div>
           <p className="text-sm text-neutral-200 max-w-[34ch]">{tr.rush.rules}</p>
           <p className="max-w-[34ch] rounded-xl border-2 border-gold/50 bg-gold/10 px-3 py-2 text-xs font-semibold text-gold">
@@ -523,7 +522,7 @@ function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; loca
   const fmt = new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" });
   return (
     <div className="w-full">
-      <p className="est-eyebrow text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400 mb-2">{tr.rush.windows}</p>
+      <p className="est-cardtitle text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400 mb-2">{tr.rush.windows}</p>
       <div className="grid grid-cols-3 gap-2">
         {starts.map((d, s) => {
           const st = played.has(s) || (s === current && status.state === "played") ? "jugada"
@@ -535,8 +534,8 @@ function Windows({ status, tr, locale, now }: { status: RushStatus; tr: Tr; loca
               key={s}
               className={`rounded-xl border-2 border-deep px-2 py-2 ${st === "abierta" ? "bg-gold text-surface" : "bg-surface text-white"} ${st === "pasada" ? "opacity-50" : ""}`}
             >
-              <div className="font-mono text-sm font-bold tabular-nums">{fmt.format(d)}</div>
-              <div className={`text-[10px] font-semibold ${st === "abierta" ? "" : st === "jugada" ? "text-[#86efac]" : "text-neutral-400"}`}>
+              <div className="font-mono text-sm font-bold tabular-nums">{fmt.format(d)}–{fmt.format(new Date(d.getTime() + RUSH_SLOT_HOURS * 3_600_000))}</div>
+              <div className={`text-[11px] font-semibold ${st === "abierta" ? "" : st === "jugada" ? "text-[#86efac]" : "text-neutral-400"}`}>
                 {st === "jugada" ? <><Ico name="check" emoji="✓" size={11} />{" "}</> : ""}{tr.rush.windowState[st]}
               </div>
             </div>
