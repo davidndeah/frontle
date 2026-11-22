@@ -24,6 +24,9 @@ import CoinShop from "./CoinShop";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
 import { t, type Locale } from "../lib/i18n";
+import type { ReactNode } from "react";
+import { useTr } from "../lib/useTr";
+import { Ico, BackChip } from "./icons/Icon3D";
 import RegionMap from "./RegionMap";
 import ScoreCard from "./ScoreCard";
 import type { Square } from "../lib/scoreCard";
@@ -87,7 +90,7 @@ export default function RegionGame({
   dailyStreak?: number;
 }) {
   const def = REGIONS[regionId];
-  const tr = t(locale);
+  const tr = useTr(locale);
   // Sustantivo localizado de las subdivisiones (departamento/state/província…)
   const nounForms = t(locale).subdivisionNoun[def.nounKey];
   const noun = nounForms.many;
@@ -311,7 +314,7 @@ export default function RegionGame({
       <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
+          <BackChip />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`/flags/national/${regionId}.webp`} alt="" className="w-5 h-3.5 object-cover rounded-sm border border-white/20" />
           <span className="font-display font-semibold">{def.title}</span>
@@ -355,7 +358,7 @@ export default function RegionGame({
         <>
           <p className="text-center -my-1">
             <span className="inline-block text-lg font-mono font-bold bg-surface/60 border border-lavender/20 rounded-full px-4 py-1 tabular-nums">
-              🕒 {formatTime(elapsedMs)}
+              <Ico name="clock" emoji="🕒" size={16} /> {formatTime(elapsedMs)}
             </span>
           </p>
 
@@ -374,7 +377,7 @@ export default function RegionGame({
             />
             {coach && (
               <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
-                <span className="text-6xl opacity-30" aria-hidden>🗺️</span>
+                <span className="text-6xl opacity-30" aria-hidden><Ico name="map" emoji="🗺️" size={72} /></span>
               </div>
             )}
           </div>
@@ -399,7 +402,7 @@ export default function RegionGame({
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={tr.region.placeholder(nounForms.one, nounForms.gender)}
                   autoComplete="off"
-                  className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
+                  className="est-input flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                 />
                 <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
               </form>
@@ -422,14 +425,14 @@ export default function RegionGame({
               )}
 
               {showInitial && hintEntity && (
-                <p className="text-center text-sm text-gold">💡 {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one, nounForms.gender)}</p>
+                <p className="text-center text-sm text-gold"><Ico name="hint" emoji="💡" size={16} /> {tr.region.hintNextInitial(hintEntity.charAt(0), nounForms.one, nounForms.gender)}</p>
               )}
               {/* Pistas de la liga: se pagan con monedas (v2 §5.2). El precio
                   lo valida el servidor; sin saldo, se abre la tienda. */}
               <div id="region-hints" className="flex flex-wrap items-center justify-center gap-2">
-                <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.region.hintInitial(nounForms.one, nounForms.gender)} · ${tr.coins.cost(3)}`} />
-                <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.region.hintSilNext(nounForms.one, nounForms.gender)} · ${tr.coins.cost(3)}`} />
-                <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} label={`🗺️ ${tr.region.hintSilAll(nounForms.many, nounForms.gender)} · ${tr.coins.cost(5)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint", showInitial, () => setShowInitial(true))} active={showInitial} icon={<Ico name="letters" emoji="🔤" size={16} />} label={`${tr.region.hintInitial(nounForms.one, nounForms.gender)} · ${tr.coins.cost(3)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint", showNextSil, () => setShowNextSil(true))} active={showNextSil} icon={<Ico name="silhouette" emoji="👤" size={16} />} label={`${tr.region.hintSilNext(nounForms.one, nounForms.gender)} · ${tr.coins.cost(3)}`} />
+                <HintBtn onClick={() => void paidHint("spend_hint_strong", showAllSil, () => setShowAllSil(true))} active={showAllSil} icon={<Ico name="map" emoji="🗺️" size={16} />} label={`${tr.region.hintSilAll(nounForms.many, nounForms.gender)} · ${tr.coins.cost(5)}`} />
               </div>
               <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.region.used(guessCount)}</p>
             </section>
@@ -501,7 +504,7 @@ function RegionWin({
         />
       </div>
       <button onClick={onPlayAgain} className="brutal-sm brutal-press mt-3 w-full rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-        🔄 {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP.region) : tr.replay.paid(COIN_COSTS.spend_attempt)}
+        <Ico name="retry" emoji="🔄" size={18} /> {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP.region) : tr.replay.paid(COIN_COSTS.spend_attempt)}
       </button>
       <p className="mt-1.5 text-[11px] text-neutral-400">
         {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
@@ -515,14 +518,14 @@ function RegionWin({
 }
 
 // Botón de pista (gratis) — mismo trío que el reto diario.
-function HintBtn({ onClick, active, label }: { onClick: () => void; active: boolean; label: string }) {
+function HintBtn({ onClick, active, label, icon }: { onClick: () => void; active: boolean; label: string; icon: ReactNode }) {
   return (
     <button
       onClick={onClick}
       disabled={active}
       className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-1.5 text-xs text-white disabled:opacity-50"
     >
-      {label} {active ? "✓" : ""}
+      {icon} {label} {active ? <Ico name="check" emoji="✓" size={13} /> : ""}
     </button>
   );
 }

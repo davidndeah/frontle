@@ -15,6 +15,7 @@
 // ============================================================
 
 import { useEffect, useRef, useState } from "react";
+import { useEstetica } from "../lib/estetica";
 
 /** Estado emocional de Bordy. `idle` es el reposo de siempre. */
 export type BordyMood = "idle" | "acierto" | "desvio" | "fallo" | "racha" | "pensando";
@@ -282,6 +283,7 @@ export default function Bordy({
   float = true,
   talking = false,
   graduado = false,
+  v2: v2Prop,
   alt = "Bordy",
 }: {
   mood?: BordyMood;
@@ -295,6 +297,9 @@ export default function Bordy({
   talking?: boolean;
   /** Birrete de graduado (ficha de práctica del Home). */
   graduado?: boolean;
+  /** Rig v2: cabeza suelta y reacciones por capas. Sin decirlo, lo pone la
+   *  estética nueva (lib/estetica.tsx). */
+  v2?: boolean;
   alt?: string;
 }) {
   // `key` re-monta la capa del one-shot para que la animación vuelva a correr
@@ -302,6 +307,8 @@ export default function Bordy({
   // veces; sin esto, CSS ve la misma clase y no reinicia).
   const [tick, setTick] = useState(0);
   const previo = useRef<BordyMood>(mood);
+  const { nueva } = useEstetica();
+  const v2 = v2Prop ?? nueva;
 
   useEffect(() => {
     if (previo.current !== mood) {
@@ -330,6 +337,66 @@ export default function Bordy({
     : mood === "pensando" ? "bordy-led-slow"
     : mood === "idle" ? "bordy-led-blink"
     : "";
+
+  if (v2) {
+    // Rig v2: la cabeza es una pieza aparte (cabeza.webp sobre cuerpo.webp,
+    // scripts/despiece-cabeza.py) y cada reacción va por capas desfasadas:
+    // cuerpo (salto y aplaste) > vuelta > cabeza (con orejas, antena, cara y
+    // birrete, que se mueven CON ella) y los brazos con su propio retraso.
+    // Aquí no se usan las clases de cuerpo entero (shot, pose) ni las de
+    // brazos y antena de RIG: todo eso lo hace `.bv2-<estado>` en globals.css.
+    // De RIG solo quedan la forma de ojos y boca y el parpadeo.
+    return (
+      <div className={`relative ${className}`}>
+        <div className={talking ? "bordy-talk" : float ? "bordy-float-sm" : ""}>
+          <div key={tick} className={`bv2 bv2-${mood}`}>
+            <span className="bv2-shadow" aria-hidden="true" />
+            {/* Chispas DETRÁS del rig: nacen escondidas tras el cuerpo y
+                aparecen al salir de su silueta, como un estallido. */}
+            {mood === "racha" &&
+              [0, 60, 120, 180, 240, 300].map((a) => (
+                <span key={a} className="bv2-spark" style={{ ["--a" as string]: `${a}deg` }} />
+              ))}
+            <div className={`bordy-rig ${imgClassName}`} role="img" aria-label={alt}>
+              <div className="bv2-body">
+                <div className="bv2-spin">
+                  {/* eslint-disable @next/next/no-img-element */}
+                  <img className="br-base" src="/bordy/cuerpo.webp" alt="" />
+                  <div className="bv2-head">
+                    <img className="br-orejaI" src="/bordy/oreja-izq.webp" alt="" />
+                    <img className="br-orejaD" src="/bordy/oreja-der.webp" alt="" />
+                    <div className="br-antena bv2-ant">
+                      <img src="/bordy/antena.webp" alt="" />
+                      <span className={`br-led ${ledPulse}`} style={{ ["--led" as string]: LED[mood] }} />
+                    </div>
+                    <img className="br-base" src="/bordy/cabeza.webp" alt="" />
+                    {(rig.boca ?? "real") === "real" && (
+                      <img className="br-boca" src="/bordy/boca.webp" alt="" />
+                    )}
+                    <svg className={`br-cara bv2-face ${rig.ojos ?? ""}`} viewBox="0 0 1280 1520" aria-hidden="true">
+                      <Ojos forma={rig.cara ?? "normal"} />
+                      <Boca forma={rig.boca ?? "real"} />
+                    </svg>
+                    {graduado && <Birrete />}
+                  </div>
+                  <img className="br-brazoI bv2-armI" src="/bordy/brazo-izq.webp" alt="" />
+                  <img className="br-brazoD bv2-armD" src="/bordy/brazo-der.webp" alt="" />
+                  {/* eslint-enable @next/next/no-img-element */}
+                </div>
+              </div>
+            </div>
+            {mood === "pensando" && (
+              <>
+                <span className="bordy-think-dot" style={{ width: 8, height: 8, right: "17%", top: "16%" }} />
+                <span className="bordy-think-dot" style={{ width: 11, height: 11, right: "11%", top: "10%", animationDelay: "0.3s" }} />
+                <span className="bordy-think-dot" style={{ width: 14, height: 14, right: "4%", top: "3%", animationDelay: "0.6s" }} />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative ${className}`}>

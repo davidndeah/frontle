@@ -49,6 +49,7 @@ import { POINTS_PER_SOLVE } from "./lib/progress";
 import type { Square } from "./lib/scoreCard";
 import type { QuizMode } from "./lib/quiz";
 import { REGIONS, REGION_IDS } from "./lib/regions";
+import { RUSH_XP_PER_GAME } from "./lib/flagRush";
 import { REGION_OUTLINES, REGION_OUTLINE_BOX } from "./lib/regionOutlines";
 import { COUNTRY_OUTLINES } from "./lib/countryOutlines";
 import { sfxGood, sfxLateral, sfxFar, sfxInvalid, sfxWin, sfxHint, isSfxMuted, toggleSfx } from "./lib/sfx";
@@ -82,6 +83,10 @@ import { PRIVY_ENABLED, requestLogout } from "./lib/privy";
 import { EmailLoginButton } from "./components/PrivyLogin";
 import Sheet from "./components/Sheet";
 import Bordy, { useBordyMood } from "./components/Bordy";
+import Icon3D, { Ico } from "./components/icons/Icon3D";
+import { useEstetica, limpiarEmojis } from "./lib/estetica";
+import FeaturedZone from "./components/FeaturedZone";
+import FlagRushHero from "./components/FlagRushHero";
 import { STATUS_COLORS, savedTheme, applyTheme, type Theme } from "./lib/theme";
 
 const PRICES = { hintInitial: 0.05, hintNext: 0.05, hintAll: 0.1, retry: 0.1, extraLevel: 0.1 };
@@ -111,6 +116,8 @@ const PrivyGate = dynamic(() => import("./components/PrivyGate"), { ssr: false }
 const WorldMap = dynamic(() => import("./components/WorldMap"), { ssr: false });
 const RegionGame = dynamic(() => import("./components/RegionGame"), { ssr: false });
 const CountryQuizGame = dynamic(() => import("./components/CountryQuizGame"), { ssr: false });
+const FlagRushGame = dynamic(() => import("./components/FlagRushGame"), { ssr: false });
+const FlagRushPips = dynamic(() => import("./components/FlagRushPips"), { ssr: false });
 const PracticeGame = dynamic(() => import("./components/PracticeGame"), { ssr: false });
 const RegionMapPreview = dynamic(() => import("./components/RegionMapPreview"), { ssr: false });
 const Achievements = dynamic(() => import("./components/Achievements"), { ssr: false });
@@ -321,6 +328,9 @@ export default function Frontle() {
   const [modeOpen, setModeOpen] = useState<"daily" | "regions" | null>(null);
   // Modos quiz: adivina la bandera / el contorno (null = ninguno activo).
   const [quizMode, setQuizMode] = useState<QuizMode | null>(null);
+  // Flag Rush (reemplaza a "Adivina la bandera" en Modos). El quiz de bandera
+  // sigue en el código pero ya no tiene ficha; ver FlagRushGame.
+  const [rushOn, setRushOn] = useState(false);
   // Modo práctica activo (dentro de la pestaña Aprender).
   const [practiceOn, setPracticeOn] = useState(false);
   // Señal para pedirle a un modo que reproduzca su recorrido (coachmarks).
@@ -627,8 +637,59 @@ export default function Frontle() {
   const jugando = tab === "jugar" && started && !state.solved;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  // ---- Modo escribir (celular) ----
+  // Con el teclado abierto, el menú de abajo y Bordy subían pegados al
+  // teclado, las sugerencias se abrían hacia abajo (debajo del teclado) y el
+  // campo, que vive bajo el mapa, arrastraba el mapa fuera de la pantalla.
+  // Mientras el campo tiene el foco en una pantalla táctil: se esconden menú
+  // y Bordy, el campo queda fijo justo encima del teclado, las sugerencias se
+  // abren hacia arriba y la página sube para dejar el reloj y el mapa a la
+  // vista. `kbInset` es lo que tapa el teclado (visualViewport): en Android
+  // con resizes-content vale 0 porque la página ya se encoge; en iPhone, que
+  // no se encoge, es la altura del teclado.
+  const [typing, setTyping] = useState(false);
+  const [kbInset, setKbInset] = useState(0);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onInputFocus = () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    setTyping(true);
+    // Espera a que el teclado termine de subir antes de acomodar la página.
+    setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById("game-timer")?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    }, 280);
+  };
+  // El blur llega antes que el foco siguiente: una pausa corta evita que todo
+  // salte si el foco vuelve enseguida (p. ej. al elegir una sugerencia).
+  const onInputBlur = () => {
+    blurTimer.current = setTimeout(() => setTyping(false), 120);
+  };
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!typing) return;
+    root.dataset.escribiendo = "1";
+    const vv = window.visualViewport;
+    const update = () => {
+      if (vv) setKbInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    };
+    const raf = requestAnimationFrame(update);
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      delete root.dataset.escribiendo;
+    };
+  }, [typing]);
+  // Tocar una sugerencia o el OK no debe quitarle el foco al campo: si el
+  // teclado se cierra en mitad del toque, la barra se mueve y el toque se pierde.
+  const keepFocus = (e: { preventDefault: () => void }) => { if (typing) e.preventDefault(); };
   const challenge = state.challenge;
-  const tr = t(locale);
+  // Estética nueva (prueba local): textos sin emojis; los iconos van en el JSX.
+  const { nueva, destacado } = useEstetica();
+  const tr = nueva ? limpiarEmojis(t(locale)) : t(locale);
   // Los montos se muestran siempre en USDT, el token real del juego.
   const fmt = (usdt: number) => `${usdt.toFixed(2)} USDT`;
   const cn = (canonical: string) => countryName(canonical, locale);
@@ -1532,7 +1593,7 @@ export default function Frontle() {
         {/* Racha: solo si la tiene (≥1). Indicador, no botón. */}
         {streak > 0 && (
           <span className="shrink-0 flex items-center gap-0.5 rounded-full bg-white/5 border border-lavender/25 px-2 py-1 text-[11px] font-bold text-white whitespace-nowrap" aria-label={`${streak} ${tr.home.streak}`}>
-            🔥<span className="tabular-nums">{streak}</span>
+            <Ico name="streak" emoji="🔥" size={15} className="ico-flicker" /><span className="tabular-nums">{streak}</span>
           </span>
         )}
         {/* Monedas: tap → abre la tienda. Solo cuando hay identidad (saldo cargado). */}
@@ -1540,9 +1601,9 @@ export default function Frontle() {
           <button
             onClick={() => setShopOpen(true)}
             aria-label={tr.coins.shop}
-            className="shrink-0 flex items-center gap-0.5 rounded-full bg-gold/12 border border-gold/35 px-2 py-1 text-[11px] font-bold text-gold whitespace-nowrap active:scale-95 transition"
+            className="hit-44 shrink-0 flex items-center gap-0.5 rounded-full bg-gold/12 border border-gold/35 px-2 py-1 text-[11px] font-bold text-gold whitespace-nowrap active:scale-95 transition"
           >
-            🪙<span className="tabular-nums">{coinBalance}</span>
+            <Ico name="coin" emoji="🪙" size={15} /><span className="tabular-nums">{coinBalance}</span>
           </button>
         )}
         {/* Un solo botón de ajustes agrupa idioma + audio (música y efectos):
@@ -1553,7 +1614,7 @@ export default function Frontle() {
           aria-label={tr.a11y.settings}
           className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-white/5 border border-lavender/25 text-base active:scale-90 transition"
         >
-          ⚙️
+          <Ico name="gear" emoji="⚙️" size={22} />
         </button>
         {/* A 360px (el mínimo de MiniPay) la cabecera va justa: el resto de piezas
             son shrink-0 y es este chip el que cede, truncando el alias. Sin esto
@@ -1569,7 +1630,7 @@ export default function Frontle() {
       {/* Contenido del tab activo. El key={tab} remonta el contenedor al
           cambiar de tab para que el contenido entre con fade + slide corto
           (los hijos ya se desmontan por el render condicional por tab). */}
-      <div key={tab} className="app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4">
+      <div key={tab} className={`app-content tab-fade relative z-10 w-full max-w-md flex flex-col gap-4 px-4 ${!overlay && !(tab === "jugar" && !started) ? "con-fab" : ""}`}>
         {/* Modo Regiones activo: pantalla autocontenida (gratis, sin pot) */}
         {tab === "modos" && regionMode && (
           <RegionGame regionId={regionMode} locale={locale} onExit={() => setRegionMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
@@ -1578,6 +1639,11 @@ export default function Frontle() {
         {/* Modo quiz activo (bandera/contorno): pantalla autocontenida */}
         {tab === "modos" && !regionMode && quizMode && (
           <CountryQuizGame mode={quizMode} locale={locale} onExit={() => setQuizMode(null)} reactBordy={reactBordy} coachSignal={coachSignal} dailyStreak={streak} />
+        )}
+
+        {/* Flag Rush: pantalla autocontenida, como el quiz */}
+        {tab === "modos" && !regionMode && !quizMode && rushOn && (
+          <FlagRushGame locale={locale} onExit={() => setRushOn(false)} reactBordy={reactBordy} />
         )}
 
         {tab === "jugar" && (
@@ -1594,7 +1660,7 @@ export default function Frontle() {
             perfil/soporte. Por eso varias de sus frases invitan a
             tocarlo. */}
         {!started && (
-          <div className="flex flex-col gap-2 pt-2">
+          <div className="est-stagger flex flex-col gap-2 pt-2">
             {/* Bordy y su burbuja son DOS botones hermanos, no uno anidado
                 dentro del otro (HTML inválido) — los dos abren el mismo menú,
                 así que para el jugador se comporta igual que antes. */}
@@ -1633,16 +1699,16 @@ export default function Frontle() {
                 type="button"
                 onClick={toggleHowTo}
                 aria-expanded={howToOpen}
-                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left font-display text-[13px] font-semibold text-white"
+                className="flex min-h-11 w-full items-center gap-2 px-3.5 py-2.5 text-left font-display text-[13px] font-semibold text-white"
               >
-                🧭 {tr.homeIntro.howTitle}
+                <Ico name="compass" emoji="🧭" size={18} /> {tr.homeIntro.howTitle}
                 <span aria-hidden className={`ml-auto text-xs text-lavender transition-transform ${howToOpen ? "rotate-90" : ""}`}>▸</span>
               </button>
               {howToOpen && (
                 <ol className="flex flex-col gap-2 px-3.5 pb-3">
                   {tr.homeIntro.steps.map((paso, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-xs leading-snug text-neutral-300">
-                      <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
+                      <span className="est-num flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
                       <span>{paso}</span>
                     </li>
                   ))}
@@ -1661,9 +1727,12 @@ export default function Frontle() {
             nivel, sin tocar esa lógica). El reto queda sellado (cartas "?")
             hasta pulsar Jugar. Mockup: docs/design/home-v4.html. */}
         {!started && (
-          <div className="flex flex-col gap-3">
+          <div className="est-stagger flex flex-col gap-3">
+            {/* Zona destacada: el reto del día y Flag Rush, los dos modos que
+                más se juegan. Apilados o en carrusel según la prueba. */}
+            <FeaturedZone label={tr.hub.featured} mode={destacado} slideLabels={[tr.daily, tr.rush.title]}>
             {/* Héroe: violeta de marca sólido, neo-brutalista */}
-            <div className="brutal rounded-2xl bg-[#6c2bd9] p-4 relative overflow-hidden">
+            <div className="brutal h-full rounded-2xl bg-[#6c2bd9] p-4 relative overflow-hidden">
               {/* Título + reloj: el reto del día es LA acción de esta pantalla,
                   así que el cierre va arriba, vivo, y no perdido en una fila. */}
               <div className="flex items-center justify-between gap-2">
@@ -1684,13 +1753,13 @@ export default function Frontle() {
                   a cada nivel va abajo, en su propio botón. */}
               <div className="mt-3 rounded-xl bg-black/25 px-3 py-4 text-center">
                 <span className="block text-[11px] font-bold uppercase tracking-wider text-white/75">{tr.dailyHero.potLabel}</span>
-                <span className="block font-display text-5xl font-black leading-none text-gold tabular-nums mt-1.5">{pot !== null ? fmt(pot) : "···"}</span>
+                <span className="est-pot block font-display text-5xl font-black leading-none text-gold tabular-nums mt-1.5">{pot !== null ? fmt(pot) : "···"}</span>
               </div>
 
               {/* Dificultad: cada botón con su propio pot — elegir nivel es elegir premio */}
               <div className="mt-2.5 flex gap-1.5">
                 {(["easy", "medium", "hard"] as Difficulty[]).map((lv) => {
-                  const META: Record<Difficulty, { icon: string }> = { easy: { icon: "🌱" }, medium: { icon: "⚡" }, hard: { icon: "💀" } };
+                  const META: Record<Difficulty, { icon: string; name: "sprout" | "bolt" | "skull" }> = { easy: { icon: "🌱", name: "sprout" }, medium: { icon: "⚡", name: "bolt" }, hard: { icon: "💀", name: "skull" } };
                   const on = level === lv;
                   const lvPot = pot !== null ? (pot * BASE_SHARE[lv]) / 100 : null;
                   return (
@@ -1704,7 +1773,7 @@ export default function Frontle() {
                       }`}
                       style={{ borderColor: on ? "var(--deep)" : "rgba(13,4,32,0.5)" }}
                     >
-                      <span className="block text-[13px] font-semibold leading-tight">{META[lv].icon} {tr.levels[lv]}</span>
+                      <span className="block text-[13px] font-semibold leading-tight"><Ico name={META[lv].name} emoji={META[lv].icon} size={15} /> {tr.levels[lv]}</span>
                       <span className="block font-mono text-xs font-bold tabular-nums">{lvPot !== null ? fmt(lvPot) : "···"}</span>
                     </button>
                   );
@@ -1716,7 +1785,7 @@ export default function Frontle() {
                 disabled={starting}
                 className={`brutal brutal-press mt-3 w-full rounded-xl bg-gold py-3.5 font-display text-lg font-black text-deep ${starting ? "animate-pulse" : ""}`}
               >
-                {starting ? "⏳" : tr.play}
+                {starting ? <Ico name="hourglass" emoji="⏳" size={24} className="ico-float" /> : tr.play}
               </button>
               {startError && <p className="mt-1.5 text-center text-[11px] text-rose-300">{startError}</p>}
               {/* Zero-click connect: dentro de MiniPay la wallet llega sola vía el
@@ -1744,11 +1813,13 @@ export default function Frontle() {
                 </div>
               )}
             </div>
+            <FlagRushHero tr={tr} locale={locale} onPlay={() => { setTab("modos"); setRushOn(true); }} />
+            </FeaturedZone>
 
             {/* Cierre de los rankings: los dos relojes que mueven la competencia,
                 cada uno con su premio. Tocar una fila abre ese ranking. */}
             <section className="panel overflow-hidden">
-              <h3 className="px-3.5 pt-3 pb-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+              <h3 className="est-cardtitle px-3.5 pt-3 pb-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
                 {tr.hub.closings}
               </h3>
               {(["daily", "weekly"] as const).map((rt) => {
@@ -1763,22 +1834,22 @@ export default function Frontle() {
                     className={`flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-white/5 transition ${rt === "weekly" ? "border-t border-lavender/15" : ""}`}
                   >
                     <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/5 text-xl" aria-hidden>
-                      {rt === "daily" ? "📅" : "⚡"}
+                      {rt === "daily" ? <Ico name="calendar" emoji="📅" size={28} /> : <Ico name="trophy" emoji="⚡" size={28} />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5 font-display text-sm font-bold leading-tight text-white">
                         {rt === "daily" ? tr.hub.dailyRanking : tr.hub.weeklyLeague}
                         {rt === "daily" && board.me && (
-                          <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-bold text-gold tabular-nums">#{board.me.rank}</span>
+                          <span className="rounded-full bg-gold/15 px-1.5 py-0.5 text-[11px] font-bold text-gold tabular-nums">#{board.me.rank}</span>
                         )}
                       </span>
-                      <span className="block font-mono text-[11px] text-neutral-300 tabular-nums">🕒 {tr.dailyHero.closesIn(clock)}</span>
+                      <span className="block font-mono text-[11px] text-neutral-300 tabular-nums"><Ico name="clock" emoji="🕒" size={12} /> {tr.dailyHero.closesIn(clock)}</span>
                     </span>
                     {/* El premio del día ya es el número grande del reto, justo
                         arriba: aquí solo se enseña el de la semana. */}
                     {rt === "weekly" && (
                       <span className="flex-none text-right">
-                        <span className="block text-[9px] uppercase tracking-wider text-neutral-400">{tr.rankTabs.weeklyPrize}</span>
+                        <span className="block text-[11px] uppercase tracking-wider text-neutral-400">{tr.rankTabs.weeklyPrize}</span>
                         <span className="block font-display text-base font-black leading-tight text-gold tabular-nums">
                           {weeklyPot !== null ? fmt(weeklyPot) : "···"}
                         </span>
@@ -1796,7 +1867,7 @@ export default function Frontle() {
               onClick={() => setTab("modos")}
               className="panel flex items-center gap-3 px-3.5 py-3 text-left active:scale-[0.98] transition"
             >
-              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/5 text-xl" aria-hidden>🎮</span>
+              <span className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-white/5 text-xl" aria-hidden><Ico name="modes" emoji="🎮" size={28} /></span>
               <span className="min-w-0 flex-1">
                 <span className="block font-display text-sm font-bold leading-tight text-white">{tr.hub.modesTitle}</span>
                 <span className="block truncate text-[11px] text-neutral-300">{tr.hub.modesSub}</span>
@@ -1945,27 +2016,44 @@ export default function Frontle() {
               />
             ) : (
               <section className="relative flex flex-col gap-3">
+                {/* Hueco que deja la barra al volverse fija, más aire para que la
+                    página pueda subir hasta dejar el reloj y el mapa arriba. */}
+                {typing && <div aria-hidden style={{ height: "62vh" }} />}
+                <div
+                  className={typing ? "fixed inset-x-0 z-40 border-t-2 border-deep bg-base/95 px-4 pb-2 pt-2 backdrop-blur-md" : "relative"}
+                  style={typing ? { bottom: kbInset } : undefined}
+                >
+                <div className={typing ? "relative mx-auto flex max-w-md flex-col gap-2" : "contents"}>
+                {typing && message && (
+                  <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`} role="status">{message.text}</p>
+                )}
                 <form id="game-input" onSubmit={handleSubmit} className="flex gap-2">
                   <input
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onFocus={onInputFocus}
+                    onBlur={onInputBlur}
                     placeholder={tr.placeholder}
                     autoComplete="off"
                     autoCapitalize="off"
+                    enterKeyHint="send"
                     className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                   />
-                  <button type="submit" disabled={!armed} className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface disabled:opacity-40 transition-opacity">OK</button>
+                  <button type="submit" disabled={!armed} onPointerDown={keepFocus} onMouseDown={keepFocus} className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface disabled:opacity-40 transition-opacity">OK</button>
                 </form>
 
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
-                    {suggestions.map((s) => (
+                  <ul className={`absolute z-20 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl ${typing ? "bottom-full mb-2" : "top-14"}`}>
+                    {/* Con el teclado abierto, 3 como máximo: más taparía el mapa. */}
+                    {(typing ? suggestions.slice(0, 3) : suggestions).map((s) => (
                       <li key={s}>
                         {/* Antes de los 2 s la sugerencia solo rellena el campo (se puede ir
                             armando la respuesta); después la envía como siempre. */}
                         <button
                           type="button"
+                          onPointerDown={keepFocus}
+                          onMouseDown={keepFocus}
                           onClick={() => {
                             if (armed) return submitCountry(s);
                             setInput(cn(s));
@@ -1981,8 +2069,10 @@ export default function Frontle() {
                     ))}
                   </ul>
                 )}
+                </div>
+                </div>
 
-                {message && (
+                {!typing && message && (
                   <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
                 )}
 
@@ -2208,7 +2298,7 @@ export default function Frontle() {
         )}
 
         {/* ---------- TAB APRENDER ---------- */}
-        {tab === "modos" && !regionMode && !quizMode && practiceOn && (
+        {tab === "modos" && !regionMode && !quizMode && !rushOn && practiceOn && (
           <PracticeGame
             locale={locale}
             onExit={() => setPracticeOn(false)}
@@ -2218,14 +2308,14 @@ export default function Frontle() {
           />
         )}
 
-        {tab === "modos" && !regionMode && !quizMode && !practiceOn && (
+        {tab === "modos" && !regionMode && !quizMode && !rushOn && !practiceOn && (
           <div className="flex flex-col gap-3 pt-2">
             <h2 className="font-display text-2xl font-black leading-tight text-white">{tr.hub.modesTitle}</h2>
             {/* Modos gratis: título arriba de TODO lo gratis, incluida
                 Regiones (David: "el botón de regiones no quedó bajo el
                 título de gana experiencia" — corregido, antes quedaba
                 arriba del título por error). */}
-            <h3 className="-mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+            <h3 className="est-eyebrow -mb-1.5 mt-1 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
               {tr.dailyHero.freeTitle} <span className="text-lavender/80 font-normal">· {tr.dailyHero.freeSub}</span>
             </h3>
 
@@ -2235,7 +2325,7 @@ export default function Frontle() {
                 debería ser un card cuadrado pequeño"); su desplegable de
                 país + mapa se abre DEBAJO de la rejilla, a ancho completo,
                 que es donde sí cabe. */}
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="est-stagger grid grid-cols-2 gap-2.5">
               <button
                 onClick={() => setModeOpen(modeOpen === "regions" ? null : "regions")}
                 aria-expanded={modeOpen === "regions"}
@@ -2269,15 +2359,18 @@ export default function Frontle() {
                     </svg>
                   ))}
                 </span>
-                <span className="absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-[#86efac]">{tr.modes.new}</span>
+                <span className="est-sticker absolute top-1.5 right-1.5 rounded-full border border-[#22c55e]/50 bg-black/55 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-[#86efac]">{tr.modes.new}</span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.modes.regionsTitle}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.region)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(XP.region)} />
                 </span>
               </button>
+              {/* Flag Rush ocupa la ficha de "Adivina la bandera": mismo arte (las
+                  banderas en ciclo y en fase con Regiones), nombre nuevo y los 3
+                  puntos de las ventanas del día arriba a la derecha. */}
               <button
-                onClick={() => setQuizMode("flag")}
-                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+                onClick={() => setRushOn(true)}
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
                 {/* `relative`: las capas del ciclo son absolutas y se apilan
                     contra esta caja. `overflow-hidden`: el fotograma de salida
@@ -2295,13 +2388,14 @@ export default function Frontle() {
                   ))}
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
-                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.flagTitle}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
+                  <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.rush.title}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(RUSH_XP_PER_GAME)} />
                 </span>
+                <FlagRushPips />
               </button>
               <button
                 onClick={() => setQuizMode("outline")}
-                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
                 {/* Siluetas del mundo, en fase con las otras dos fichas. Sin
                     fronteras internas y rellenas: en este modo lo único que
@@ -2329,13 +2423,13 @@ export default function Frontle() {
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.quiz.outlineTitle}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.quiz)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(XP.quiz)} />
                 </span>
               </button>
               {/* Modo práctica también accesible desde Jugar (vive en Aprender) */}
               <button
                 onClick={() => setPracticeOn(true)}
-                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left"
+                className="brutal brutal-press rounded-2xl bg-surface overflow-hidden flex flex-col text-left relative"
               >
                 {/* Práctica es el modo de aprender, así que aquí el arte no es
                     un mapa: es el propio Bordy graduado, flotando. No entra en
@@ -2358,7 +2452,7 @@ export default function Frontle() {
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-2 bg-surface">
                   <span className="flex-1 font-display font-bold text-white text-sm leading-tight truncate">{tr.practiceMode}</span>
-                  <span className="shrink-0 text-[10px] font-bold text-gold">{tr.dailyHero.xpBadge(XP.practice)}</span>
+                  <XpTag text={tr.dailyHero.xpBadge(XP.practice)} />
                 </span>
               </button>
             </div>
@@ -2381,7 +2475,7 @@ export default function Frontle() {
                     value={regionPick}
                     onChange={(e) => setRegionPick(e.target.value)}
                     aria-label={tr.a11y.country}
-                    className="w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
+                    className="est-input w-full appearance-none rounded-xl border border-lavender/25 bg-base/70 pl-11 pr-8 py-2.5 text-sm font-display font-semibold text-white outline-none focus:border-gold/50"
                   >
                     {REGION_IDS.map((rid) => (
                       <option key={rid} value={rid} style={{ background: "var(--surface)", color: "#fff" }}>{REGIONS[rid].flag} {REGIONS[rid].title}</option>
@@ -2395,27 +2489,31 @@ export default function Frontle() {
                   onClick={() => setRegionMode(regionPick)}
                   className="brutal-sm brutal-press flex items-center justify-center gap-2 rounded-xl bg-gold text-surface font-display font-black py-2.5"
                 >
-                  ▶ {tr.modes.play(REGIONS[regionPick].title)}
+                  {nueva ? null : "▶ "}{tr.modes.play(REGIONS[regionPick].title)}
                 </button>
-                <p className="text-[10px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
+                <p className="text-[11px] text-neutral-400 text-center">{tr.modes.moreCountries}</p>
               </div>
             )}
 
             {/* Aprender: el resumen de tres pasos y el tutorial completo. Antes
                 era una pestaña propia; ahora cierra la de Modos. */}
-            <h3 className="-mb-1.5 mt-2 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
+            <h3 className="est-eyebrow -mb-1.5 mt-2 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-neutral-400">
               {tr.hub.learnTitle}
             </h3>
             <section className="panel p-4 flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/bordy-m2.webp" alt="" className="h-16 w-14 flex-none object-contain bordy-float-sm drop-shadow-xl" />
+                {nueva ? (
+                  <Bordy mood="idle" className="h-16 w-14 flex-none" imgClassName="drop-shadow-xl" alt="" />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src="/bordy-m2.webp" alt="" className="h-16 w-14 flex-none object-contain bordy-float-sm drop-shadow-xl" />
+                )}
                 <p className="font-display text-base font-bold leading-tight text-white">{tr.homeIntro.howTitle}</p>
               </div>
               <ol className="flex flex-col gap-2">
                 {tr.homeIntro.steps.map((paso, i) => (
                   <li key={i} className="flex items-start gap-2.5 text-xs leading-snug text-neutral-300">
-                    <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
+                    <span className="est-num flex h-5 w-5 flex-none items-center justify-center rounded-md bg-gold font-display text-[11px] font-bold text-deep">{i + 1}</span>
                     <span>{paso}</span>
                   </li>
                 ))}
@@ -2424,7 +2522,7 @@ export default function Frontle() {
                 onClick={() => setOverlay("full")}
                 className="brutal-sm brutal-press w-full rounded-xl bg-gold px-6 py-2.5 font-display font-black text-surface"
               >
-                ✨ {tr.fullTutorial}
+                <Ico name="sparkles" emoji="✨" size={18} /> {tr.fullTutorial}
               </button>
             </section>
           </div>
@@ -2447,17 +2545,27 @@ export default function Frontle() {
           brazos miden ~7 px y los ojos ~3 px, así que la expresión del rig era
           literalmente invisible justo en el momento que importa. `transition-all`
           hace que el cambio se lea como que se acerca a opinar. */}
-      {!overlay && !(tab === "jugar" && !started) && (
+      {!overlay && !(tab === "jugar" && !started) && (!typing || bordyMood !== "idle") && (
         <button
           onClick={() => setBordyMenu(true)}
           aria-label={tr.bordyMenu.open}
-          className={`bordy-fab fixed right-2 z-30 active:scale-90 transition-all ${
+          className={nueva
+            // Estética nueva: siempre la caja grande y se escala con transform
+            // (ver .est-fab); width/height recalculaba el layout cada cuadro.
+            ? `bordy-fab est-fab fixed right-2 z-30 w-[96px] h-[114px] ${jugando && bordyMood === "idle" ? "opacity-65" : ""}`
+            : `bordy-fab fixed right-2 z-30 active:scale-90 transition-all ${
             bordyMood !== "idle"
               ? "w-[96px] h-[114px]" // reaccionando: crece para que la cara se lea
               : jugando
                 ? "w-[40px] h-[48px] opacity-65" // escribiendo: fuera del camino
                 : "w-[64px] h-[76px]"
           }`}
+          // Escribiendo, Bordy solo aparece para reaccionar y se apoya sobre la
+          // barra del campo (el menú está escondido).
+          style={{
+            ...(nueva ? { transform: `scale(${bordyMood !== "idle" ? 1 : jugando ? 40 / 96 : 64 / 96})` } : {}),
+            ...(typing ? { bottom: kbInset + 76 } : {}),
+          }}
         >
           <Bordy mood={bordyMood} className="w-full h-full" imgClassName="drop-shadow-xl" />
         </button>
@@ -2497,7 +2605,7 @@ export default function Frontle() {
           </p>
         </div>
       )}
-      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={streak} />
+      {!typing && <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={streak} />}
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
@@ -2619,6 +2727,7 @@ export default function Frontle() {
           currentMode={
             tab === "modos"
               ? regionMode ? "region"
+                : rushOn ? null
                 : quizMode === "flag" ? "flag"
                 : quizMode === "outline" ? "outline"
                 : practiceOn ? "practice"
@@ -2644,8 +2753,9 @@ export default function Frontle() {
             // Todos los modos viven en la pestaña Modos; se apaga cualquier
             // otro que estuviera abierto para que se monte el elegido.
             setTab("modos");
-            setRegionMode(null); setQuizMode(null); setPracticeOn(false);
-            if (m === "flag") setQuizMode("flag");
+            setRegionMode(null); setQuizMode(null); setPracticeOn(false); setRushOn(false);
+            // "Bandera" ahora abre Flag Rush (su ficha reemplazó al quiz).
+            if (m === "flag") setRushOn(true);
             else if (m === "outline") setQuizMode("outline");
             else if (m === "practice") setPracticeOn(true);
             // Región necesita un país además del modo: sin esto, `onLearn`
@@ -2838,6 +2948,24 @@ function StatCard({ v, k, color }: { v: number | string; k: string; color: strin
 }
 
 // Bottom-nav de 4 tabs
+// Insignia de XP de las fichas de Modos. En la estética nueva es un sticker
+// con el rayo 3D, como las etiquetas del landing.
+function XpTag({ text }: { text: string }) {
+  const { nueva } = useEstetica();
+  if (!nueva) return <span className="shrink-0 text-[11px] font-bold text-gold">{text}</span>;
+  return (
+    // Pegado en la esquina del arte: al lado del nombre lo cortaba
+    // ("Adivina…", "Modo pr…").
+    <span className="est-xp absolute left-1.5 top-1.5 z-10">
+      <Icon3D name="xp" size={12} />
+      {text}
+    </span>
+  );
+}
+
+// Estética nueva: el icono 3D de cada pestaña.
+const NAV_3D = { jugar: "globe", modos: "modes", ranking: "podium", perfil: "bordy" } as const;
+
 function TabBar({
   tr,
   tab,
@@ -2851,6 +2979,7 @@ function TabBar({
   playPending: boolean;
   streak: number;
 }) {
+  const { nueva } = useEstetica();
   // El pop solo se dispara al tocar un tab, no al cargar la página.
   const booted = useRef(false);
   useEffect(() => {
@@ -2871,7 +3000,7 @@ function TabBar({
             key={it.id}
             onClick={() => onTab(it.id)}
             aria-current={on ? "page" : undefined}
-            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[10px] transition active:scale-95 ${
+            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 text-[11px] transition active:scale-95 ${
               on ? "text-white" : "text-neutral-400"
             }`}
           >
@@ -2881,7 +3010,15 @@ function TabBar({
                 on ? `tab-icon-on${booted.current ? " tab-pop" : ""}` : "opacity-60"
               }`}
             >
-              <NavIcon name={it.id} />
+              {nueva ? (
+                <Icon3D
+                  name={NAV_3D[it.id]}
+                  size={26}
+                  className={on && booted.current ? "ico-hop" : ""}
+                />
+              ) : (
+                <NavIcon name={it.id} />
+              )}
             </span>
             {it.label}
             {it.id === "jugar" && playPending && (
@@ -2892,7 +3029,7 @@ function TabBar({
             )}
             {it.id === "perfil" && streak >= 2 && (
               <span className="tab-streak" aria-label={`${streak} ${tr.home.streak}`}>
-                🔥{streak}
+                <Ico name="streak" emoji="🔥" size={11} />{streak}
               </span>
             )}
           </button>

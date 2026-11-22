@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Fredoka } from "next/font/google";
+import { Geist, Geist_Mono, Fredoka, Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "./lib/theme";
+import { ESTETICA_INIT_SCRIPT, EsteticaRoot } from "./lib/estetica";
 import { SITE_URL } from "./lib/site";
 
 const geistSans = Geist({
@@ -19,6 +20,23 @@ const fredoka = Fredoka({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+});
+
+// Tipografía del landing, para la prueba de estética (lib/estetica.tsx). Sin
+// precarga: el navegador solo baja los archivos si data-fuente="landing" las
+// usa, así que fuera de la prueba no cuestan nada.
+const landingDisplay = Archivo({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-landing-display",
+  display: "swap",
+  preload: false,
+});
+const landingMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-landing-mono",
+  display: "swap",
+  preload: false,
 });
 
 // Embed de Mini App para fc:miniapp/fc:frame — spec pide un único meta tag
@@ -99,18 +117,24 @@ export default function RootLayout({
       // Default global (inglés); page.tsx ajusta document.documentElement.lang
       // al idioma real detectado/elegido, sin romper la hidratación del SSR.
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} h-full antialiased`}
+      // Los scripts del <head> marcan <html> (data-theme, data-estetica)
+      // antes de hidratar: esos atributos no vienen del servidor a propósito.
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} ${landingDisplay.variable} ${landingMono.variable} h-full antialiased`}
     >
       <head>
         {/* Fija el tema (data-theme) ANTES de pintar, para que no haya destello
             del tema equivocado en la primera carga. Lee localStorage directo. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {process.env.NEXT_PUBLIC_ESTETICA_LAB === "1" && (
+          <script dangerouslySetInnerHTML={{ __html: ESTETICA_INIT_SCRIPT }} />
+        )}
       </head>
       {/* Sin Providers: el PrivyProvider ya no envuelve la app. Vive dentro de
           PrivyGate, que page.tsx carga aparte y solo fuera de MiniPay. Antes,
           envolverlo aquí metía el SDK de Privy en TODAS las rutas — /terms
           llegaba a pedir 2.98 MB de JS para mostrar texto. */}
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col"><EsteticaRoot>{children}</EsteticaRoot></body>
     </html>
   );
 }
