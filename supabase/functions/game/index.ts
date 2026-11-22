@@ -36,6 +36,9 @@
 //       abrir y cerrar. Práctica manda {start, end, chain} y se revalida.
 //       Ver la migración 0025.
 //
+//   · {action:"claim_secret" | "recover_secret", …}
+//       Identidad del dispositivo (el secret de gasto). Ver identity.ts.
+//
 //   · {action:"rush_status" | "rush_start" | "rush_answer", …}
 //       Flag Rush: 10 banderas por ventana de 8 h (migración 0034). Ver rush.ts.
 //
@@ -51,6 +54,7 @@ import { makeEngine, LEVELS, type Level, type EngineData } from "../_shared/engi
 import flagsData from "../_shared/flags-data.json" with { type: "json" };
 import type { Flag } from "./rush-core.ts";
 import { flagcdnImages, makeRush, supabaseStore } from "./rush.ts";
+import { makeIdentity, sha256Hex, type ProofTx } from "./identity.ts";
 
 const E = makeEngine(data as EngineData);
 
@@ -193,6 +197,65 @@ const handleRush = makeRush({
   rand,
   image: flagcdnImages(),
 });
+
+const handleIdentity = makeIdentity({
+  usdt: USDT,
+  treasury: TREASURY,
+  store: {
+    async secretHash(player) {
+      const { data, error } = await supabase.from("player_secrets").select("secret_hash").eq("player_id", player).maybeSingle();
+      if (error) throw error;
+      return (data?.secret_hash as string | undefined) ?? null;
+    },
+    async insertSecret(player, hash) {
+      const { error } = await supabase
+        .from("player_secrets")
+        .upsert({ player_id: player, secret_hash: hash }, { onConflict: "player_id", ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    async setSecret(player, hash) {
+      const { error } = await supabase
+        .from("player_secrets")
+        .upsert({ player_id: player, secret_hash: hash, updated_at: new Date().toISOString() }, { onConflict: "player_id" });
+      if (error) throw error;
+    },
+    async claimsFromIp(ipHash, sinceIso) {
+      const { count, error } = await supabase
+        .from("secret_claims")
+        .select("*", { count: "exact", head: true })
+        .eq("ip_hash", ipHash)
+        .gte("created_at", sinceIso);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    async logClaim(ipHash, player) {
+      const { error } = await supabase.from("secret_claims").insert({ ip_hash: ipHash, player_id: player });
+      if (error) throw error;
+    },
+    async useProof(tx, player) {
+      const { error } = await supabase.from("secret_proofs").insert({ tx, player_id: player });
+      if (!error) return true;
+      if (String(error.code) === "23505") return false;
+      throw error;
+    },
+  },
+  async readTx(hash): Promise<ProofTx | null> {
+    try {
+      const h = hash as `0x${string}`;
+      const [tx, receipt] = await Promise.all([chain.getTransaction({ hash: h }), chain.getTransactionReceipt({ hash: h })]);
+      const block = await chain.getBlock({ blockNumber: receipt.blockNumber });
+      return { from: tx.from, to: tx.to ?? null, input: tx.input, success: receipt.status === "success", timestampS: Number(block.timestamp) };
+    } catch {
+      return null;
+    }
+  },
+});
+
+// IP del cliente, resumida: solo sirve para el tope de registros de secret.
+async function ipHashOf(req: Request): Promise<string> {
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+  return (await sha256Hex(`frontle-ip:${ip}`)).slice(0, 32);
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -418,6 +481,9 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true, xp: 0, remaining: 0 });
     }
+
+    const identity = await handleIdentity(action, body, await ipHashOf(req));
+    if (identity) return json(identity.body, identity.status);
 
     const rush = await handleRush(action, body);
     if (rush) return json(rush.body, rush.status);

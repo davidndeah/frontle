@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { t } from "../lib/i18n";
+import RecoverIdentity from "./RecoverIdentity";
 import {
   FREEZE_COST,
   MAX_FREEZES,
@@ -27,6 +28,7 @@ export default function StreakCard({ tr, onStreak }: { tr: ReturnType<typeof t>;
   const [quote, setQuote] = useState<RepairQuote | null>(null);
   const [busy, setBusy] = useState<null | "freeze" | "repair">(null);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [needsRecover, setNeedsRecover] = useState(false);
 
   const refresh = useCallback(async () => {
     const s = await syncStreak();
@@ -44,7 +46,10 @@ export default function StreakCard({ tr, onStreak }: { tr: ReturnType<typeof t>;
     if (res === "ok") return setMsg({ text: okText, ok: true });
     if (res === "insufficient") return setMsg({ text: tr.streakCard.needCoins, ok: false });
     if (res === "max") return setMsg({ text: tr.streakCard.freezeMax, ok: false });
-    if (res === "identity") return setMsg({ text: tr.streakCard.otherDevice, ok: false });
+    if (res === "identity") {
+      setNeedsRecover(true);
+      return setMsg({ text: tr.streakCard.otherDevice, ok: false });
+    }
     if (res === "unavailable") return setMsg({ text: tr.streakCard.notRepairable, ok: false });
     return setMsg({ text: tr.coins.failed, ok: false });
   }
@@ -111,6 +116,15 @@ export default function StreakCard({ tr, onStreak }: { tr: ReturnType<typeof t>;
       </div>
 
       {msg && <p className={`text-xs ${msg.ok ? "text-emerald-400" : "text-rose-400"}`}>{msg.text}</p>}
+      {needsRecover && (
+        <RecoverIdentity
+          tr={tr}
+          onDone={() => {
+            setMsg(null);
+            setTimeout(() => setNeedsRecover(false), 2500);
+          }}
+        />
+      )}
     </section>
   );
 }

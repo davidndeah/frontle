@@ -72,6 +72,7 @@ const loadCoins = () => import("./lib/coins");
 // (que hablan con Supabase y con la cadena) van diferidos.
 // (el import va arriba, con el resto)
 // Liga v2 (Fase 1): XP por resolver + identidad de la liga (wallet o anónimo).
+import { ensureSecret } from "./lib/secret";
 import { bindXpIdentity, getWeeklyStanding, fmtWeekClose, msToWeekClose, XP, type WeeklyStanding } from "./lib/xp";
 // Racha real (v2 Fase 3): la deriva el servidor; el cliente no puede inflarla.
 import { syncStreak } from "./lib/streak";
@@ -813,6 +814,11 @@ export default function Frontle() {
   useEffect(() => {
     if (myId) {
       bindXpIdentity(myId);
+      // Identidad del dispositivo (lib/secret.ts): se registra apenas se
+      // conoce la wallet, no recién al gastar, para que nadie la registre
+      // antes que su dueño. En segundo plano y sin aviso: si ya es de otro
+      // dispositivo, la recuperación se ofrece donde hace falta.
+      void ensureSecret();
       refreshCoins();
     } else {
       // Sin identidad no hay saldo que consultar, pero el contador SÍ debe
