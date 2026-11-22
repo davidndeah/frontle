@@ -667,7 +667,10 @@ body {
   0% { opacity: 0; transform: translateY(8px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.tab-fade { animation: tab-fade 0.2s ease-out both; }
+/* `backwards` y no `both`: con `both` el transform final se queda puesto y
+   convierte a .app-content en el marco de todo lo `position: fixed` de
+   adentro (la barra del modo escribir aparecía fuera de la pantalla). */
+.tab-fade { animation: tab-fade 0.2s ease-out backwards; }
 
 /* Hito de racha (GAM-2): el número del strip rebota al subir y la burbuja
    de Bordy entra desde abajo, apoyada sobre la nav. */
@@ -1474,3 +1477,9 @@ body {
    atributo más para ganarle también a ese. */
 :root[data-entrada="hecha"][data-estetica] .est-stagger > * { animation: none; }
 
+
+/* --- Modo escribir del reto (page.tsx, onInputFocus) --- */
+/* La página sube hasta el reloj: que quede bajo el encabezado fijo, no debajo. */
+#game-timer { scroll-margin-top: calc(78px + env(safe-area-inset-top, 0px)); }
+/* La pastilla de la prueba de estética no estorba mientras se escribe. */
+:root[data-escribiendo] .est-pill { display: none; }

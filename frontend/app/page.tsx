@@ -637,6 +637,55 @@ export default function Frontle() {
   const jugando = tab === "jugar" && started && !state.solved;
 
   const inputRef = useRef<HTMLInputElement>(null);
+  // ---- Modo escribir (celular) ----
+  // Con el teclado abierto, el menú de abajo y Bordy subían pegados al
+  // teclado, las sugerencias se abrían hacia abajo (debajo del teclado) y el
+  // campo, que vive bajo el mapa, arrastraba el mapa fuera de la pantalla.
+  // Mientras el campo tiene el foco en una pantalla táctil: se esconden menú
+  // y Bordy, el campo queda fijo justo encima del teclado, las sugerencias se
+  // abren hacia arriba y la página sube para dejar el reloj y el mapa a la
+  // vista. `kbInset` es lo que tapa el teclado (visualViewport): en Android
+  // con resizes-content vale 0 porque la página ya se encoge; en iPhone, que
+  // no se encoge, es la altura del teclado.
+  const [typing, setTyping] = useState(false);
+  const [kbInset, setKbInset] = useState(0);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onInputFocus = () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    setTyping(true);
+    // Espera a que el teclado termine de subir antes de acomodar la página.
+    setTimeout(() => {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById("game-timer")?.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    }, 280);
+  };
+  // El blur llega antes que el foco siguiente: una pausa corta evita que todo
+  // salte si el foco vuelve enseguida (p. ej. al elegir una sugerencia).
+  const onInputBlur = () => {
+    blurTimer.current = setTimeout(() => setTyping(false), 120);
+  };
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!typing) return;
+    root.dataset.escribiendo = "1";
+    const vv = window.visualViewport;
+    const update = () => {
+      if (vv) setKbInset(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)));
+    };
+    const raf = requestAnimationFrame(update);
+    vv?.addEventListener("resize", update);
+    vv?.addEventListener("scroll", update);
+    return () => {
+      cancelAnimationFrame(raf);
+      vv?.removeEventListener("resize", update);
+      vv?.removeEventListener("scroll", update);
+      delete root.dataset.escribiendo;
+    };
+  }, [typing]);
+  // Tocar una sugerencia o el OK no debe quitarle el foco al campo: si el
+  // teclado se cierra en mitad del toque, la barra se mueve y el toque se pierde.
+  const keepFocus = (e: { preventDefault: () => void }) => { if (typing) e.preventDefault(); };
   const challenge = state.challenge;
   // Estética nueva (prueba local): textos sin emojis; los iconos van en el JSX.
   const { nueva, destacado } = useEstetica();
@@ -1967,27 +2016,44 @@ export default function Frontle() {
               />
             ) : (
               <section className="relative flex flex-col gap-3">
+                {/* Hueco que deja la barra al volverse fija, más aire para que la
+                    página pueda subir hasta dejar el reloj y el mapa arriba. */}
+                {typing && <div aria-hidden style={{ height: "62vh" }} />}
+                <div
+                  className={typing ? "fixed inset-x-0 z-40 border-t-2 border-deep bg-base/95 px-4 pb-2 pt-2 backdrop-blur-md" : "relative"}
+                  style={typing ? { bottom: kbInset } : undefined}
+                >
+                <div className={typing ? "relative mx-auto flex max-w-md flex-col gap-2" : "contents"}>
+                {typing && message && (
+                  <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`} role="status">{message.text}</p>
+                )}
                 <form id="game-input" onSubmit={handleSubmit} className="flex gap-2">
                   <input
                     ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
+                    onFocus={onInputFocus}
+                    onBlur={onInputBlur}
                     placeholder={tr.placeholder}
                     autoComplete="off"
                     autoCapitalize="off"
+                    enterKeyHint="send"
                     className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
                   />
-                  <button type="submit" disabled={!armed} className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface disabled:opacity-40 transition-opacity">OK</button>
+                  <button type="submit" disabled={!armed} onPointerDown={keepFocus} onMouseDown={keepFocus} className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface disabled:opacity-40 transition-opacity">OK</button>
                 </form>
 
                 {suggestions.length > 0 && (
-                  <ul className="absolute z-20 top-14 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl">
-                    {suggestions.map((s) => (
+                  <ul className={`absolute z-20 w-full rounded-xl bg-surface border border-lavender/30 overflow-hidden shadow-2xl ${typing ? "bottom-full mb-2" : "top-14"}`}>
+                    {/* Con el teclado abierto, 3 como máximo: más taparía el mapa. */}
+                    {(typing ? suggestions.slice(0, 3) : suggestions).map((s) => (
                       <li key={s}>
                         {/* Antes de los 2 s la sugerencia solo rellena el campo (se puede ir
                             armando la respuesta); después la envía como siempre. */}
                         <button
                           type="button"
+                          onPointerDown={keepFocus}
+                          onMouseDown={keepFocus}
                           onClick={() => {
                             if (armed) return submitCountry(s);
                             setInput(cn(s));
@@ -2003,8 +2069,10 @@ export default function Frontle() {
                     ))}
                   </ul>
                 )}
+                </div>
+                </div>
 
-                {message && (
+                {!typing && message && (
                   <p className={`text-center text-sm ${message.ok ? "text-emerald-400" : "text-rose-400"}`}>{message.text}</p>
                 )}
 
@@ -2477,7 +2545,7 @@ export default function Frontle() {
           brazos miden ~7 px y los ojos ~3 px, así que la expresión del rig era
           literalmente invisible justo en el momento que importa. `transition-all`
           hace que el cambio se lea como que se acerca a opinar. */}
-      {!overlay && !(tab === "jugar" && !started) && (
+      {!overlay && !(tab === "jugar" && !started) && (!typing || bordyMood !== "idle") && (
         <button
           onClick={() => setBordyMenu(true)}
           aria-label={tr.bordyMenu.open}
@@ -2492,7 +2560,12 @@ export default function Frontle() {
                 ? "w-[40px] h-[48px] opacity-65" // escribiendo: fuera del camino
                 : "w-[64px] h-[76px]"
           }`}
-          style={nueva ? { transform: `scale(${bordyMood !== "idle" ? 1 : jugando ? 40 / 96 : 64 / 96})` } : undefined}
+          // Escribiendo, Bordy solo aparece para reaccionar y se apoya sobre la
+          // barra del campo (el menú está escondido).
+          style={{
+            ...(nueva ? { transform: `scale(${bordyMood !== "idle" ? 1 : jugando ? 40 / 96 : 64 / 96})` } : {}),
+            ...(typing ? { bottom: kbInset + 76 } : {}),
+          }}
         >
           <Bordy mood={bordyMood} className="w-full h-full" imgClassName="drop-shadow-xl" />
         </button>
@@ -2532,7 +2605,7 @@ export default function Frontle() {
           </p>
         </div>
       )}
-      <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={streak} />
+      {!typing && <TabBar tr={tr} tab={tab} onTab={setTab} playPending={!state.solved} streak={streak} />}
 
       {/* Overlays pre-juego */}
       {overlay === "full" && (
