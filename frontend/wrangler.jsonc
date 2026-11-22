@@ -1,0 +1,30 @@
+// Worker de Cloudflare que sirve Frontle (build de OpenNext).
+//
+// - `frontle`      → producción, se despliega desde `main`.
+// - `frontle-dev`  → beta, se despliega desde `dev` (`--env dev`).
+//
+// Los archivos estáticos (.open-next/assets: JS, CSS, Bordy, mapas…) los sirve
+// Cloudflare sin invocar el worker, así que no cuentan para el límite diario.
+// Las variables NEXT_PUBLIC_* se incrustan en el build: van en las variables
+// de BUILD de Workers Builds, no aquí.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "frontle",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Caché incremental (ver open-next.config.ts). Sin `id`: wrangler crea el
+  // namespace en el primer deploy y lo reutiliza después.
+  "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV" }],
+  "observability": { "enabled": true },
+  "env": {
+    "dev": {
+      "name": "frontle-dev",
+      "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV" }]
+    }
+  }
+}
