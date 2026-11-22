@@ -6,8 +6,8 @@
 //  Dos maneras, para comparar en la prueba (pastilla "Apilado/Carrusel"):
 //  · apilado: uno debajo del otro.
 //  · carrusel: uno a la vez, pasa solo cada 6 s y se desliza con el dedo.
-//    Se detiene mientras lo tocas, cuando la pestaña no se ve y con
-//    "reducir movimiento" (ahí solo se mueve si lo deslizas tú).
+//    Se detiene mientras lo tocas y cuando la pestaña no se ve. Con
+//    "reducir movimiento" sigue pasando, pero salta sin deslizarse.
 //
 //  El carrusel es scroll nativo con snap: el dedo, la inercia y el teclado
 //  funcionan solos, sin librería. El automático solo hace scrollTo.
@@ -67,8 +67,10 @@ function Carousel({ slides, labels }: { slides: ReactNode[]; labels: string[] })
     if (i !== index) { setIndex(i); setRestart((n) => n + 1); }
   };
 
+  // Pasa solo también con "reducir movimiento" (muchos Android lo activan con
+  // el ahorro de batería): ahí salta sin deslizarse, ver `go`.
   useEffect(() => {
-    if (reduced() || slides.length < 2) return;
+    if (slides.length < 2) return;
     const id = setTimeout(() => {
       if (held.current || document.hidden) { setRestart((n) => n + 1); return; }
       go((index + 1) % slides.length);
