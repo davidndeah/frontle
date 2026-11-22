@@ -17,14 +17,19 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
-  // Caché incremental (ver open-next.config.ts). Sin `id`: wrangler crea el
-  // namespace en el primer deploy y lo reutiliza después.
-  "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV" }],
+  // Caché incremental (ver open-next.config.ts). El `id` va fijo: OpenNext
+  // llena el KV ANTES de desplegar, así que el aprovisionamiento automático de
+  // wrangler llega tarde y el primer deploy falla sin él.
+  "kv_namespaces": [
+    { "binding": "NEXT_INC_CACHE_KV", "id": "c3a47dae77f946e397d793f0adff6a55" }
+  ],
   "observability": { "enabled": true },
   "env": {
     "dev": {
       "name": "frontle-dev",
-      "kv_namespaces": [{ "binding": "NEXT_INC_CACHE_KV" }]
+      "kv_namespaces": [
+        { "binding": "NEXT_INC_CACHE_KV", "id": "dfac32aabeec42cfa5d64a46f79cf6f0" }
+      ]
     }
   }
 }
