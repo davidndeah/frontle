@@ -19,6 +19,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { countryName, t, type Locale } from "../lib/i18n";
 import { useTr } from "../lib/useTr";
+import RecoverIdentity from "./RecoverIdentity";
 import Icon3D, { Ico } from "./icons/Icon3D";
 import { useEstetica } from "../lib/estetica";
 import {
@@ -560,5 +561,11 @@ function ErrorNote({ error, tr }: { error: RushError; tr: Tr }) {
     : error === "identity" ? tr.rush.errIdentity
     : error === "image_unavailable" ? tr.rush.errImage
     : tr.rush.errNetwork;
-  return <p className="text-sm text-rose-300 max-w-[34ch] text-center">{text}</p>;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-sm text-rose-300 max-w-[34ch] text-center">{text}</p>
+      {/* Tras activar, el jugador vuelve a tocar Jugar: rush_start ya le acepta el secret. */}
+      {error === "identity" && <RecoverIdentity tr={tr} />}
+    </div>
+  );
 }

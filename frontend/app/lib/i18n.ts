@@ -276,6 +276,17 @@ type Dict = {
     paidXp: (coins: number, xp: number) => string;
     paidXpLeft: (n: number) => string;
   };
+  // Recuperar la wallet en este dispositivo (lib/secret.ts → recoverIdentity).
+  identity: {
+    recover: string;
+    recovering: string;
+    done: string;
+    hint: string;
+    cancelled: string;
+    wrongWallet: string;
+    noFunds: string;
+    failed: string;
+  };
   // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
   streakCard: {
     days: string;
@@ -748,6 +759,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidXp: (coins, xp) => `Jugar otra vez · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "Te queda 1 ronda pagada con XP hoy" : `Te quedan ${n} rondas pagadas con XP hoy`),
     },
+    identity: {
+      recover: "Activar este dispositivo",
+      recovering: "Confirmando…",
+      done: "Listo: este dispositivo ya está activo.",
+      hint: "Es una confirmación de 0 USDT: solo pagas la comisión de red.",
+      cancelled: "Cancelado. Puedes intentarlo cuando quieras.",
+      wrongWallet: "Abre Frontle con la misma wallet de tu cuenta.",
+      noFunds: "Necesitas un poco de saldo para la comisión de red.",
+      failed: "No se pudo activar. Intenta de nuevo.",
+    },
     streakCard: {
       days: "días seguidos",
       freezeHint: "Un congelador cubre un día que no puedas jugar y mantiene viva tu racha. Puedes guardar hasta 2.",
@@ -758,7 +779,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "¡Racha recuperada!",
       notRepairable: "Esa racha ya no se puede recuperar.",
       needCoins: "No te alcanzan las monedas. Consigue más en la tienda.",
-      otherDevice: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
+      otherDevice: "Tu cuenta está activa en otro dispositivo. Actívala aquí con una confirmación.",
     },
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
     footerDisclaimer: "Frontle es operado de forma independiente y no está afiliado a Opera ni a MiniPay.",
@@ -912,7 +933,7 @@ const STRINGS: Record<Locale, Dict> = {
       back: "Volver a los modos",
       loading: "Preparando las banderas…",
       errNoPlayer: "Conecta tu billetera para jugar Flag Rush y sumar XP. Mientras tanto puedes practicar.",
-      errIdentity: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
+      errIdentity: "Tu cuenta está activa en otro dispositivo. Actívala aquí con una confirmación.",
       errImage: "No cargó la bandera.",
       errNetwork: "No hay conexión con el servidor.",
       retry: "Reintentar",
@@ -1211,6 +1232,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidXp: (coins, xp) => `Play again · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "1 paid round with XP left today" : `${n} paid rounds with XP left today`),
     },
+    identity: {
+      recover: "Activate this device",
+      recovering: "Confirming…",
+      done: "Done: this device is now active.",
+      hint: "It's a 0 USDT confirmation: you only pay the network fee.",
+      cancelled: "Cancelled. You can try again anytime.",
+      wrongWallet: "Open Frontle with the same wallet as your account.",
+      noFunds: "You need a small balance for the network fee.",
+      failed: "Couldn't activate. Try again.",
+    },
     streakCard: {
       days: "days in a row",
       freezeHint: "A freeze covers one day you can't play and keeps your streak alive. You can hold up to 2.",
@@ -1221,7 +1252,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "Streak restored!",
       notRepairable: "That streak can't be restored anymore.",
       needCoins: "Not enough coins. Get more in the shop.",
-      otherDevice: "Your account is in use on another device. Buy coins here to activate it.",
+      otherDevice: "Your account is active on another device. Activate it here with one confirmation.",
     },
     footer: "Frontle · Daily geography game · Made in Colombia",
     footerDisclaimer: "Frontle is operated independently and is not affiliated with Opera or MiniPay.",
@@ -1375,7 +1406,7 @@ const STRINGS: Record<Locale, Dict> = {
       back: "Back to modes",
       loading: "Getting the flags ready…",
       errNoPlayer: "Connect your wallet to play Flag Rush and earn XP. You can practice meanwhile.",
-      errIdentity: "Your account is in use on another device. Buy coins here to activate it.",
+      errIdentity: "Your account is active on another device. Activate it here with one confirmation.",
       errImage: "The flag didn't load.",
       errNetwork: "Can't reach the server.",
       retry: "Try again",
@@ -1676,6 +1707,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidXp: (coins, xp) => `Jogar de novo · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "Falta 1 rodada paga com XP hoje" : `Faltam ${n} rodadas pagas com XP hoje`),
     },
+    identity: {
+      recover: "Ativar este aparelho",
+      recovering: "Confirmando…",
+      done: "Pronto: este aparelho já está ativo.",
+      hint: "É uma confirmação de 0 USDT: você só paga a taxa de rede.",
+      cancelled: "Cancelado. Tente quando quiser.",
+      wrongWallet: "Abra o Frontle com a mesma carteira da sua conta.",
+      noFunds: "Você precisa de um pouco de saldo para a taxa de rede.",
+      failed: "Não foi possível ativar. Tente de novo.",
+    },
     streakCard: {
       days: "dias seguidos",
       freezeHint: "Um congelador cobre um dia que você não puder jogar e mantém sua sequência viva. Dá para guardar até 2.",
@@ -1686,7 +1727,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "Sequência recuperada!",
       notRepairable: "Essa sequência não pode mais ser recuperada.",
       needCoins: "Suas moedas não são suficientes. Consiga mais na loja.",
-      otherDevice: "Sua conta está em uso em outro aparelho. Compre moedas aqui para ativá-lo.",
+      otherDevice: "Sua conta está ativa em outro aparelho. Ative aqui com uma confirmação.",
     },
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     footerDisclaimer: "O Frontle é operado de forma independente e não é afiliado à Opera nem ao MiniPay.",
@@ -1840,7 +1881,7 @@ const STRINGS: Record<Locale, Dict> = {
       back: "Voltar aos modos",
       loading: "Preparando as bandeiras…",
       errNoPlayer: "Conecte sua carteira para jogar Flag Rush e ganhar XP. Enquanto isso, você pode praticar.",
-      errIdentity: "Sua conta está em uso em outro dispositivo. Compre moedas aqui para ativá-lo.",
+      errIdentity: "Sua conta está ativa em outro aparelho. Ative aqui com uma confirmação.",
       errImage: "A bandeira não carregou.",
       errNetwork: "Sem conexão com o servidor.",
       retry: "Tentar de novo",
@@ -2139,6 +2180,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidXp: (coins, xp) => `Rejouer · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "Il reste 1 partie payante avec XP aujourd'hui" : `Il reste ${n} parties payantes avec XP aujourd'hui`),
     },
+    identity: {
+      recover: "Activer cet appareil",
+      recovering: "Confirmation…",
+      done: "C'est fait : cet appareil est actif.",
+      hint: "C'est une confirmation de 0 USDT : vous ne payez que les frais de réseau.",
+      cancelled: "Annulé. Vous pouvez réessayer quand vous voulez.",
+      wrongWallet: "Ouvrez Frontle avec le même portefeuille que votre compte.",
+      noFunds: "Il vous faut un petit solde pour les frais de réseau.",
+      failed: "Impossible d'activer. Réessayez.",
+    },
     streakCard: {
       days: "jours d'affilée",
       freezeHint: "Un gel couvre un jour où vous ne pouvez pas jouer et garde votre série en vie. Vous pouvez en garder 2.",
@@ -2149,7 +2200,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "Série récupérée !",
       notRepairable: "Cette série ne peut plus être récupérée.",
       needCoins: "Vos pièces ne suffisent pas. Trouvez-en plus dans la boutique.",
-      otherDevice: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
+      otherDevice: "Votre compte est actif sur un autre appareil. Activez-le ici avec une confirmation.",
     },
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     footerDisclaimer: "Frontle est exploité de manière indépendante et n'est pas affilié à Opera ni à MiniPay.",
@@ -2303,7 +2354,7 @@ const STRINGS: Record<Locale, Dict> = {
       back: "Retour aux modes",
       loading: "Préparation des drapeaux…",
       errNoPlayer: "Connectez votre portefeuille pour jouer à Flag Rush et gagner de l'XP. En attendant, vous pouvez vous entraîner.",
-      errIdentity: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
+      errIdentity: "Votre compte est actif sur un autre appareil. Activez-le ici avec une confirmation.",
       errImage: "Le drapeau n'a pas chargé.",
       errNetwork: "Impossible de joindre le serveur.",
       retry: "Réessayer",
