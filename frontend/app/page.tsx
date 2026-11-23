@@ -1225,8 +1225,8 @@ export default function Frontle() {
       setElapsedMs(g.elapsedMs);
       setStarted(true);
       saveGame({ started: true, solved: false, chain: [] });
-      // Sin foco en el campo: el teclado no salta al entrar y se ve el reto
-      // entero. La entrada animada solo en partida nueva, no al retomarla.
+      // El foco (y el teclado) llega al acabar la entrada animada, no antes:
+      // así el globo se ve entero. Sin entrada (partida retomada), al momento.
       if (g.introLeftMs >= 1500) {
         // Termina justo cuando arranca el reloj, y no se puede saltar: así
         // nadie gana tiempo por tocar antes.
@@ -1236,6 +1236,8 @@ export default function Frontle() {
         // Servidor que aún cuenta desde que abre la partida: entrada saltable.
         setIntroEndAt(null);
         setIntro(true);
+      } else {
+        focusInput();
       }
       return;
     }
@@ -1246,6 +1248,13 @@ export default function Frontle() {
     saveGame({ started: true, solved: false, chain: state.chain });
     setIntroEndAt(null);
     setIntro(true);
+  }
+
+  // Abre el teclado en el campo del reto. Con retardo: el <input> se monta en
+  // el mismo render que activa la partida. En Android (MiniPay) el foco por
+  // código sí abre el teclado porque el jugador ya tocó "Jugar".
+  function focusInput() {
+    setTimeout(() => inputRef.current?.focus(), 50);
   }
 
   function submitCountry(value: string) {
@@ -2648,7 +2657,12 @@ export default function Frontle() {
           go={tr.go}
           skip={tr.challenge.skipIntro}
           endAt={introEndAt}
-          onDone={() => setIntro(false)}
+          onDone={() => {
+            setIntro(false);
+            // El reloj ya corre: sin esto había que tocar el campo para
+            // escribir (reportado por soporte el 20-nov).
+            focusInput();
+          }}
         />
       )}
 
@@ -3841,7 +3855,12 @@ function RankingCard({
               cards del 4.º en adelante. Lo que cambia es la métrica — aquí no
               hay un número de puntos sino DOS datos, países y tiempo, que es
               el desempate. Van como stat y sub. */}
-          <Podium items={podium} />
+          {/* Solo el #1 de cada nivel cobra el diario: el podio de 3 se leía
+              como "los tres ganan" (así es en la liga semanal). */}
+          <p className="mb-1 rounded-lg border border-gold/30 bg-gold/10 px-2 py-1 text-center text-[11px] font-semibold text-gold">
+            {tr.dailyPrizeRule}
+          </p>
+          <Podium items={podium} prizeLabel={tr.podiumPrize} />
           {restRows.length > 0 && (
             <div className="mt-2 flex flex-col gap-1.5">
               <div className={`${RANK_GRID} px-2 text-[10px] uppercase tracking-widest text-neutral-400`}>
@@ -4001,10 +4020,19 @@ function WinCard({
                     </div>
                   )}
                   {winStats.daily && (
-                    <div className="flex items-baseline justify-between gap-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       <dt className="text-xs text-neutral-300">📅 {tr.xpWin.dailyLabel}</dt>
                       <dd className="font-display text-base font-bold text-white">
                         {tr.xpWin.position(winStats.daily.rank, winStats.daily.players)}
+                      </dd>
+                      {/* El puesto es en vivo: recién terminado se puede ir 2.º
+                          de 8 y cerrar 41.º. Y solo el #1 cobra. */}
+                      <dd
+                        className={`mt-0.5 basis-full text-[11px] leading-snug ${
+                          winStats.daily.rank === 1 ? "text-gold" : "text-neutral-400"
+                        }`}
+                      >
+                        {winStats.daily.rank === 1 ? tr.xpWin.dailyLeading : tr.xpWin.dailyProvisional}
                       </dd>
                     </div>
                   )}

@@ -262,6 +262,10 @@ type Dict = {
     // la liga semanal y puesto en el ranking de hoy.
     weeklyLabel: string;
     dailyLabel: string;
+    // Bajo el puesto de hoy: es provisional hasta el cierre y solo el #1 de
+    // cada nivel cobra. Sin esto, un 2.º recién terminado cree que ganó.
+    dailyLeading: string;
+    dailyProvisional: string;
     // Formato corto "#3 de 120", compartido por los dos puestos.
     position: (pos: number, players: number) => string;
     alreadyEarned: string;
@@ -560,6 +564,11 @@ type Dict = {
   bestToday: (n: number) => string;
   noScoreYet: string;
   rankingNote: string;
+  // Ranking diario: aviso sobre el podio y etiqueta bajo el #1. El podio de
+  // 3 se lee como "los 3 cobran" (así es en la liga semanal), pero en el
+  // diario solo cobra el primero de cada nivel.
+  dailyPrizeRule: string;
+  podiumPrize: string;
   prizesTitle: string;
   prizeRow: (amount: string) => string;
   // Etiqueta de un premio de la liga semanal (en vez del nivel del diario).
@@ -749,6 +758,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Seguir",
       weeklyLabel: "Liga semanal",
       dailyLabel: "Ranking de hoy",
+      dailyLeading: "¡Vas primero! Si nadie te supera antes de las 00:00 UTC, el premio del día es tuyo.",
+      dailyProvisional: "Puesto provisional hasta las 00:00 UTC. Solo el #1 de cada nivel gana el premio del día.",
       position: (pos, players) => `#${pos} de ${players}`,
       alreadyEarned: "Ya sumaste el XP de este reto hoy.",
     },
@@ -1030,7 +1041,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Diario", weekly: "Semanal", dailyPrize: "Premio de hoy", weeklyPrize: "Premio de la semana", players: (n) => `${n} jugadores` },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
-    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (pago automático).",
+    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al cierre (00:00 UTC) el #1 de cada nivel gana el premio y lo reclama desde la app.",
+    dailyPrizeRule: "🥇 Solo el #1 de este nivel gana el premio del día. El ranking cierra a las 00:00 UTC.",
+    podiumPrize: "🏆 Premio",
     prizesTitle: "🏆 Tus premios",
     prizeRow: (amount) => `Ganaste ${amount}`,
     weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
@@ -1222,6 +1235,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Continue",
       weeklyLabel: "Weekly league",
       dailyLabel: "Today's ranking",
+      dailyLeading: "You're in 1st! If nobody beats you before 00:00 UTC, today's prize is yours.",
+      dailyProvisional: "Provisional until 00:00 UTC. Only #1 of each level wins today's prize.",
       position: (pos, players) => `#${pos} of ${players}`,
       alreadyEarned: "You've already earned this challenge's XP today.",
     },
@@ -1505,7 +1520,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Daily", weekly: "Weekly", dailyPrize: "Today's prize", weeklyPrize: "This week's prize", players: (n) => `${n} players` },
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
-    rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (paid out automatically).",
+    rankingNote: "On a tie in countries, the fastest time wins. At the close (00:00 UTC) #1 of each level wins the prize and claims it in the app.",
+    dailyPrizeRule: "🥇 Only #1 of this level wins today's prize. The ranking closes at 00:00 UTC.",
+    podiumPrize: "🏆 Prize",
     prizesTitle: "🏆 Your prizes",
     prizeRow: (amount) => `You won ${amount}`,
     weeklyPrizeTag: (place) => `Weekly league · #${place}`,
@@ -1697,6 +1714,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Continuar",
       weeklyLabel: "Liga semanal",
       dailyLabel: "Ranking de hoje",
+      dailyLeading: "Você está em 1º! Se ninguém te superar antes das 00:00 UTC, o prêmio do dia é seu.",
+      dailyProvisional: "Posição provisória até as 00:00 UTC. Só o #1 de cada nível ganha o prêmio do dia.",
       position: (pos, players) => `#${pos} de ${players}`,
       alreadyEarned: "Você já somou o XP deste desafio hoje.",
     },
@@ -1978,7 +1997,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Diário", weekly: "Semanal", dailyPrize: "Prêmio de hoje", weeklyPrize: "Prêmio da semana", players: (n) => `${n} jogadores` },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
-    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (pagamento automático).",
+    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fechamento (00:00 UTC) o #1 de cada nível ganha o prêmio e o resgata no app.",
+    dailyPrizeRule: "🥇 Só o #1 deste nível ganha o prêmio do dia. O ranking fecha às 00:00 UTC.",
+    podiumPrize: "🏆 Prêmio",
     prizesTitle: "🏆 Seus prêmios",
     prizeRow: (amount) => `Você ganhou ${amount}`,
     weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
@@ -2170,6 +2191,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Continuer",
       weeklyLabel: "Ligue hebdo",
       dailyLabel: "Classement du jour",
+      dailyLeading: "Vous êtes 1er ! Si personne ne vous dépasse avant 00:00 UTC, le prix du jour est à vous.",
+      dailyProvisional: "Place provisoire jusqu'à 00:00 UTC. Seul le #1 de chaque niveau gagne le prix du jour.",
       position: (pos, players) => `#${pos} sur ${players}`,
       alreadyEarned: "Vous avez déjà gagné l'XP de ce défi aujourd'hui.",
     },
@@ -2451,7 +2474,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Quotidien", weekly: "Hebdo", dailyPrize: "Prix du jour", weeklyPrize: "Prix de la semaine", players: (n) => `${n} joueurs` },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
-    rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (paiement automatique).",
+    rankingNote: "À égalité de pays, le temps le plus court gagne. À la clôture (00:00 UTC) le #1 de chaque niveau gagne le prix et le réclame dans l'app.",
+    dailyPrizeRule: "🥇 Seul le #1 de ce niveau gagne le prix du jour. Le classement ferme à 00:00 UTC.",
+    podiumPrize: "🏆 Prix",
     prizesTitle: "🏆 Vos prix",
     prizeRow: (amount) => `Vous avez gagné ${amount}`,
     weeklyPrizeTag: (place) => `Ligue hebdo · ${place === 1 ? "1er" : `${place}e`}`,
