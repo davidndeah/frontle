@@ -7,10 +7,11 @@
 > **Orden:** primero se cerraron las vulnerabilidades que Flag Rush heredaría del modo Bandera y
 > de la función `game`, después se construyó el modo encima. Todo en `dev`; nada a producción.
 >
-> **Estado (2026-11-18):** construido en tres PRs hacia `dev`, en verde y sin mergear:
-> #86 (servidor), #87 (pantalla y ficha en Modos) y #88 (escena de entrada en 3D). Falta
-> revisar, mergear y desplegar: ver la sección 6. El plan original es del 2026-11-11; lo que
-> cambió desde entonces está marcado como **(actualizado)**.
+> **Estado (2026-11-22):** en `dev` y con el servidor en producción. #86, #87 y #88 entraron
+> con #93; los arreglos de la revisión, con #94 (imagen) y #95 (identidad). Migraciones 0034 y
+> 0035 aplicadas y función `game` desplegada desde `dev`. Falta: probar en MiniPay, pasar
+> `dev` a `main` y, después de eso, aplicar 0036 (ver la sección 7). El plan original es del
+> 2026-11-11; lo que cambió desde entonces está marcado como **(actualizado)**.
 
 ---
 
@@ -114,7 +115,7 @@ que salga la interfaz, así que el servidor puede ir primero sin riesgo para los
 | 3 | Desplegar la función: `supabase functions deploy game` | Lleva `rush.ts`, `rush-core.ts` y `_shared/flags-data.json` |
 | 4 | Probar el servidor sin interfaz | `rush_status` con una wallet de prueba responde `ok` y `state: "none"` |
 | 5 | Revisar y mergear **#87** y **#88** hacia `dev` | `npm run build` pasa. En `dev` local, sin `?rushmock=1`, jugar una partida real con una wallet de prueba |
-| 6 | Pasar `dev` a `main` (sale en Vercel) | La ficha de Modos muestra los 3 puntos de las ventanas; la escena corre al tocar Jugar |
+| 6 | Pasar `dev` a `main` (sale en Cloudflare, worker `frontle`) | La ficha de Modos muestra los 3 puntos de las ventanas; la escena corre al tocar Jugar |
 
 Cuidados:
 - **Orden de migraciones con Duelos.** 0033 (Duelos) y 0034 rehacen `xp_shape` completo. 0034
@@ -124,3 +125,18 @@ Cuidados:
   habilitado en el servidor. Quitarlo cuando Flag Rush esté estable.
 - **Después del lanzamiento:** mirar `rush_funnel` (empezados contra terminados por ventana) y
   las partidas con `suspect = true` (8+ aciertos con mediana bajo 0,6 s).
+
+---
+
+## 7. Revisión del 22-nov y lo que se hizo
+
+Revisión completa en el comentario del PR #84. Resumen:
+
+| Hallazgo | Arreglo | Estado |
+|---|---|---|
+| **V9 (nuevo).** `claim_player_secret` se podía llamar con la clave pública para cualquier wallet: primera escritura gana, sin prueba de dueño. 487 de 620 jugadores activos no tenían secret. MiniPay prohíbe `personal_sign`, así que no hay firma posible | #95: registro por `claim_secret` en `game` con tope de 20 wallets nuevas por IP y hora; la app lo registra al abrir, no al gastar; `recover_secret` recupera la wallet con un transfer de 0 USDT etiquetado (`FRTL`+`05`+sha256 del secret) y el botón «Activar este dispositivo» | Desplegado. **0036** (quita `claim_player_secret` a la clave pública) **solo después de que `main` tenga el cliente nuevo** |
+| S2 incompleto: la imagen de cada bandera llegaba siempre con los mismos bytes, así que bastaba comparar contra flagcdn | #94: trozo RIFF al azar en cada entrega. Es un freno: quien compare píxeles lo salta. Con el tope de 12 XP alcanza | Desplegado |
+| V6 en el reto diario: `start` y `xp_start` siguen sin exigir el secret | Pendiente: con el secret ya fiable, se puede exigir | Sin hacer |
+| S4 y V1 | Como en la sección 2 | Sin hacer |
+
+Probado en el navegador (22-nov): recuperación con 0 USDT aceptada y partida de Flag Rush completa con XP guardado. Falta MiniPay: que deje confirmar el transfer de 0 USDT (plan B: 0.01).
