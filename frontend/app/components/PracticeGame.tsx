@@ -56,7 +56,7 @@ const CHIP: Record<Status, string> = {
 };
 
 export default function PracticeGame({
-  locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0,
+  locale, onExit, reactBordy, coachSignal = 0, dailyStreak = 0, onDuel,
 }: {
   locale: Locale; onExit: () => void;
   /** Bordy vive en page.tsx (FAB fijo, global); este modo solo le avisa qué sintió. */
@@ -65,6 +65,8 @@ export default function PracticeGame({
   coachSignal?: number;
   /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
   dailyStreak?: number;
+  /** Atajo a Duelos ("Reta a un amigo"): la entrada principal es el modo, en Jugar. */
+  onDuel?: () => void;
 }) {
   const tr = useTr(locale);
   const [state, setState] = useState<PlayState | null>(null);
@@ -369,6 +371,11 @@ ${SITE_HOST}`}
             <p className="text-[11px] text-neutral-400">
               {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
             </p>
+            {onDuel && (
+              <button onClick={onDuel} className="brutal-sm brutal-press rounded-xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49]">
+                ⚔️ {tr.duels.practiceCta}
+              </button>
+            )}
             <button onClick={onExit} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-3 font-bold text-white">
               {tr.practiceExit}
             </button>

@@ -59,6 +59,13 @@ export function proxy(request: NextRequest) {
     return res;
   }
 
+  // Link de un duelo (?duelo=CÓDIGO, lib/duels.ts): quien lo abre viene a
+  // jugar ese duelo. En escritorio la landing se lo comería. No pone la
+  // cookie: abrir un duelo no es decidir que `/` deje de ser la landing.
+  if (request.nextUrl.searchParams.has("duelo")) {
+    return NextResponse.next();
+  }
+
   if (esEscritorio(request.headers.get("user-agent") ?? "")) {
     return NextResponse.rewrite(new URL("/inicio", request.url));
   }

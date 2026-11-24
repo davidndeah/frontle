@@ -36,6 +36,9 @@
 //       abrir y cerrar. Práctica manda {start, end, chain} y se revalida.
 //       Ver la migración 0025.
 //
+//   · {action:"duel_*", player, secret, …}
+//       Duelos 1 contra 1 (migración 0033). Ver duels.ts.
+//
 //   · {action:"claim_secret" | "recover_secret", …}
 //       Identidad del dispositivo (el secret de gasto). Ver identity.ts.
 //
@@ -51,6 +54,7 @@ import { createPublicClient, http, parseAbiItem, decodeEventLog } from "https://
 import { celo } from "https://esm.sh/viem@2.21.0/chains";
 import data from "../_shared/engine-data.json" with { type: "json" };
 import { makeEngine, LEVELS, type Level, type EngineData } from "../_shared/engine.ts";
+import { makeDuels } from "./duels.ts";
 import flagsData from "../_shared/flags-data.json" with { type: "json" };
 import type { Flag } from "./rush-core.ts";
 import { flagcdnImages, makeRush, supabaseStore } from "./rush.ts";
@@ -170,6 +174,8 @@ async function grantXp(player: string, day: number, events: { source: string; le
   if (error) throw error;
   return (data ?? []).reduce((s, r) => s + Number(r.xp), 0);
 }
+
+const handleDuel = makeDuels(supabase, E, rand);
 
 function isoDay(day: number): string {
   const s = String(day);
@@ -487,6 +493,9 @@ Deno.serve(async (req) => {
 
     const rush = await handleRush(action, body);
     if (rush) return json(rush.body, rush.status);
+
+    const duel = await handleDuel(action, body);
+    if (duel) return json(duel.body, duel.status);
 
     return json({ ok: false, error: "bad_action" }, 400);
   } catch (err) {
