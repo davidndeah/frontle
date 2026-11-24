@@ -148,11 +148,41 @@ export function duelLink(code: string): string {
   return isMiniPay() ? MINIPAY_APP_URL : `${SITE_URL}/?duelo=${code}`;
 }
 
-// Comparte el texto con el link DENTRO (si va aparte como `url`, WhatsApp lo
-// repite). Sin `navigator.share`, se copia. "failed": la UI ya muestra el
-// código y el link para copiarlos a mano.
-export async function shareText(message: string): Promise<"shared" | "copied" | "cancelled" | "failed"> {
-  if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+/** ¿El link ya abre el duelo? En la web sí (?duelo=); el deeplink de MiniPay no lleva parámetros. */
+export function duelLinkOpensDuel(): boolean {
+  return !isMiniPay();
+}
+
+// Copia al portapapeles. `navigator.clipboard` exige contexto seguro y en
+// algunos WebView no existe: de respaldo, el truco del textarea.
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+// Comparte la invitación. En MiniPay abre el panel de compartir del teléfono
+// (WhatsApp, Telegram…); en el navegador la copia y la UI avisa. El link va
+// DENTRO del texto: si va aparte como `url`, WhatsApp lo repite. Si el panel
+// no existe o falla, también se copia. "failed": la UI muestra el código para
+// copiarlo a mano.
+export async function shareDuel(message: string): Promise<"shared" | "copied" | "cancelled" | "failed"> {
+  if (isMiniPay() && typeof navigator !== "undefined" && typeof navigator.share === "function") {
     try {
       await navigator.share({ text: message });
       return "shared";
@@ -160,12 +190,7 @@ export async function shareText(message: string): Promise<"shared" | "copied" | 
       if ((e as DOMException)?.name === "AbortError") return "cancelled";
     }
   }
-  try {
-    await navigator.clipboard.writeText(message);
-    return "copied";
-  } catch {
-    return "failed";
-  }
+  return (await copyText(message)) ? "copied" : "failed";
 }
 
 // Código de duelo que llegó en la URL (?duelo=XXXXXX). Se lee UNA vez por
