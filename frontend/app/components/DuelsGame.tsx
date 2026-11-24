@@ -31,6 +31,7 @@ import {
   markShared,
   normalizeCode,
   recordByOpponent,
+  resetDuelIdentity,
   shareText,
   startDuel,
   type Duel,
@@ -39,6 +40,7 @@ import {
   type DuelPlayer,
 } from "../lib/duels";
 import { bindXpIdentity } from "../lib/xp";
+import RecoverIdentity from "./RecoverIdentity";
 import WorldMap from "./WorldMap";
 import LevelSelect from "./LevelSelect";
 import GlobeLoader from "./GlobeLoader";
@@ -297,6 +299,9 @@ export default function DuelsGame({
           {loadError && (
             <section className="panel p-4 text-center flex flex-col items-center gap-2">
               <p className="text-sm text-neutral-200">{loadError === "identity" ? tr.duels.identity : tr.duels.loadError}</p>
+              {/* La wallet está ligada a otro dispositivo (p. ej. MiniPay y
+                  ahora el navegador): se activa aquí mismo y se recarga. */}
+              {loadError === "identity" && <RecoverIdentity tr={tr} onDone={() => { resetDuelIdentity(); void refresh(); }} />}
               <button onClick={() => void refresh()} className="brutal-sm brutal-press rounded-lg bg-surface px-4 py-2 text-xs font-bold text-white">{tr.duels.retry}</button>
             </section>
           )}

@@ -88,6 +88,11 @@ async function call<T>(action: string, args: Record<string, unknown> = {}): Prom
   }
 }
 
+/** Tras activar el dispositivo: la próxima llamada vuelve a ligar el secret. */
+export function resetDuelIdentity(): void {
+  identityReady = null;
+}
+
 function toPlay(d: { duel: Duel; challenge: DuelPlay["challenge"]; startedAt: string; serverNow: string }): DuelPlay {
   const elapsedMs = Math.max(0, new Date(d.serverNow).getTime() - new Date(d.startedAt).getTime());
   return { duel: d.duel, challenge: d.challenge, elapsedMs };
