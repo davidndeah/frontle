@@ -410,7 +410,24 @@ type Dict = {
     copy: string;
     copied: string;
     shareFailed: string;
-    shareText: (mark: string, code: string) => string;
+    /** Invitación que se comparte. `auto`: el link ya abre el duelo (web);
+     *  si no, hay que escribir el código (deeplink de MiniPay, sin parámetros).
+     *  Los *asteriscos* son negrita en WhatsApp y Telegram. */
+    shareMessage: (o: { mark: string; level: string; code: string; link: string; auto: boolean }) => string;
+    copyInvite: string;
+    inviteCopied: string;
+    previewLabel: string;
+    resultWin: string;
+    resultLose: string;
+    resultTie: string;
+    waiting: string;
+    noPlay: string;
+    winnerTag: string;
+    countriesWord: (n: number) => string;
+    hintsShort: (n: number) => string;
+    summaryTitle: string;
+    playedOn: (date: string) => string;
+    close: string;
     win: string;
     lose: string;
     tie: string;
@@ -977,7 +994,32 @@ const STRINGS: Record<Locale, Dict> = {
       copy: "Copiar",
       copied: "Copiado",
       shareFailed: "No se pudo compartir. Copia el código o el link.",
-      shareText: (m, code) => `⚔️ Te reto en Frontle: lo resolví en ${m}. ¿Me ganas? Entra a Duelos con el código ${code}`,
+      shareMessage: ({ mark, level, code, link, auto }) =>
+        `⚔️ *¡Te reto a un duelo en Frontle!*
+
+🗺️ Nivel: ${level}
+🏁 Mi marca: ${mark}
+¿Me ganas? 😏
+
+🔑 Código: *${code}*
+
+` +
+        (auto ? `👉 Acepta aquí: ${link}` : `👉 Abre Frontle: ${link}
+En Modos → Duelos escribe el código.`),
+      copyInvite: "Copiar invitación",
+      inviteCopied: "¡Invitación copiada! Pégala en WhatsApp o donde quieras.",
+      previewLabel: "Así se verá tu mensaje",
+      resultWin: "Ganaste",
+      resultLose: "Perdiste",
+      resultTie: "Empate",
+      waiting: "Esperando…",
+      noPlay: "No jugó",
+      winnerTag: "Gana",
+      countriesWord: (n) => (n === 1 ? "país" : "países"),
+      hintsShort: (n) => `${n} ${n === 1 ? "pista" : "pistas"}`,
+      summaryTitle: "Resumen del duelo",
+      playedOn: (d) => `Jugado el ${d}`,
+      close: "Cerrar",
       win: "¡Ganaste el duelo!",
       lose: "Esta vez ganó tu rival",
       tie: "¡Empate!",
@@ -1523,7 +1565,32 @@ const STRINGS: Record<Locale, Dict> = {
       copy: "Copy",
       copied: "Copied",
       shareFailed: "Couldn't share. Copy the code or the link.",
-      shareText: (m, code) => `⚔️ I challenge you on Frontle: I solved it in ${m}. Can you beat me? Open Duels with the code ${code}`,
+      shareMessage: ({ mark, level, code, link, auto }) =>
+        `⚔️ *I challenge you to a Frontle duel!*
+
+🗺️ Level: ${level}
+🏁 My score: ${mark}
+Can you beat me? 😏
+
+🔑 Code: *${code}*
+
+` +
+        (auto ? `👉 Accept here: ${link}` : `👉 Open Frontle: ${link}
+Go to Modes → Duels and enter the code.`),
+      copyInvite: "Copy invite",
+      inviteCopied: "Invite copied! Paste it in WhatsApp or anywhere you like.",
+      previewLabel: "Your message will look like this",
+      resultWin: "You won",
+      resultLose: "You lost",
+      resultTie: "Tie",
+      waiting: "Waiting…",
+      noPlay: "Didn't play",
+      winnerTag: "Wins",
+      countriesWord: (n) => (n === 1 ? "country" : "countries"),
+      hintsShort: (n) => `${n} ${n === 1 ? "hint" : "hints"}`,
+      summaryTitle: "Duel summary",
+      playedOn: (d) => `Played on ${d}`,
+      close: "Close",
       win: "You won the duel!",
       lose: "Your rival won this time",
       tie: "It's a tie!",
@@ -2071,7 +2138,32 @@ const STRINGS: Record<Locale, Dict> = {
       copy: "Copiar",
       copied: "Copiado",
       shareFailed: "Não foi possível compartilhar. Copie o código ou o link.",
-      shareText: (m, code) => `⚔️ Te desafio no Frontle: resolvi em ${m}. Consegue me vencer? Entre em Duelos com o código ${code}`,
+      shareMessage: ({ mark, level, code, link, auto }) =>
+        `⚔️ *Te desafio para um duelo no Frontle!*
+
+🗺️ Nível: ${level}
+🏁 Minha marca: ${mark}
+Consegue me vencer? 😏
+
+🔑 Código: *${code}*
+
+` +
+        (auto ? `👉 Aceite aqui: ${link}` : `👉 Abra o Frontle: ${link}
+Em Modos → Duelos digite o código.`),
+      copyInvite: "Copiar convite",
+      inviteCopied: "Convite copiado! Cole no WhatsApp ou onde quiser.",
+      previewLabel: "Sua mensagem vai ficar assim",
+      resultWin: "Você venceu",
+      resultLose: "Você perdeu",
+      resultTie: "Empate",
+      waiting: "Aguardando…",
+      noPlay: "Não jogou",
+      winnerTag: "Vence",
+      countriesWord: (n) => (n === 1 ? "país" : "países"),
+      hintsShort: (n) => `${n} ${n === 1 ? "dica" : "dicas"}`,
+      summaryTitle: "Resumo do duelo",
+      playedOn: (d) => `Jogado em ${d}`,
+      close: "Fechar",
       win: "Você venceu o duelo!",
       lose: "Desta vez seu rival venceu",
       tie: "Empate!",
@@ -2617,7 +2709,32 @@ const STRINGS: Record<Locale, Dict> = {
       copy: "Copier",
       copied: "Copié",
       shareFailed: "Partage impossible. Copiez le code ou le lien.",
-      shareText: (m, code) => `⚔️ Je te défie sur Frontle : je l'ai résolu en ${m}. Tu peux me battre ? Entre dans Duels avec le code ${code}`,
+      shareMessage: ({ mark, level, code, link, auto }) =>
+        `⚔️ *Je te défie en duel sur Frontle !*
+
+🗺️ Niveau : ${level}
+🏁 Mon score : ${mark}
+Tu peux me battre ? 😏
+
+🔑 Code : *${code}*
+
+` +
+        (auto ? `👉 Accepte ici : ${link}` : `👉 Ouvre Frontle : ${link}
+Dans Modes → Duels, saisis le code.`),
+      copyInvite: "Copier l'invitation",
+      inviteCopied: "Invitation copiée ! Colle-la dans WhatsApp ou où tu veux.",
+      previewLabel: "Ton message ressemblera à ceci",
+      resultWin: "Victoire",
+      resultLose: "Défaite",
+      resultTie: "Égalité",
+      waiting: "En attente…",
+      noPlay: "N'a pas joué",
+      winnerTag: "Gagne",
+      countriesWord: () => "pays",
+      hintsShort: (n) => `${n} ${n === 1 ? "indice" : "indices"}`,
+      summaryTitle: "Résumé du duel",
+      playedOn: (d) => `Joué le ${d}`,
+      close: "Fermer",
       win: "Vous avez gagné le duel !",
       lose: "Votre rival a gagné cette fois",
       tie: "Égalité !",
