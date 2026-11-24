@@ -1150,9 +1150,28 @@ export async function sendIdentityProof(
     if (!account) return { res: "error" };
     // La prueba tiene que salir de la wallet que se quiere recuperar.
     if (account.toLowerCase() !== player.toLowerCase()) return { res: "wrong_wallet" };
+    const dataSuffix = `0x${IDENTITY_TAG}${secretHashHex}` as const;
+    // Embebida: gas y tope de comisión explícitos, para que la wallet no fije
+    // los suyos (suele poner ~2× la base) y el nodo pida más saldo del que hace falta.
+    let embeddedFees: { gas: bigint; maxFeePerGas: bigint; maxPriorityFeePerGas: bigint } | null = null;
     if (active.embedded) {
-      const gasBal = await publicClient.getBalance({ address: account });
-      if (gasBal < parseEther("0.02")) return { res: "no_gas" };
+      // La embebida paga la red en CELO. Aquí NO va el umbral fijo de 0.02
+      // de los pagos: un transfer de 0 cuesta ~10 veces menos y ese umbral
+      // dejaba sin activar a wallets con saldo de sobra (p. ej. 0.015). El
+      // nodo exige saldo >= gasLimit × maxFeePerGas, así que se calcula eso
+      // con un margen del 50 % sobre el gas.
+      const [gasBal, gas, fees] = await Promise.all([
+        publicClient.getBalance({ address: account }),
+        publicClient
+          .estimateContractGas({ account, address: TOKEN_ADDRESS, abi: erc20Abi, functionName: "transfer", args: [COIN_TREASURY, BigInt(0)], dataSuffix })
+          .catch(() => BigInt(120_000)),
+        publicClient.estimateFeesPerGas().catch(() => null),
+      ]);
+      const maxFee = fees?.maxFeePerGas ?? parseUnits("250", 9);
+      const tip = fees?.maxPriorityFeePerGas ?? parseUnits("3", 9);
+      const gasLimit = (gas * BigInt(3)) / BigInt(2);
+      if (gasBal < gasLimit * maxFee) return { res: "no_gas" };
+      embeddedFees = { gas: gasLimit, maxFeePerGas: maxFee, maxPriorityFeePerGas: tip < maxFee ? tip : maxFee };
     }
     const hash = await walletClient.writeContract({
       account,
@@ -1161,8 +1180,9 @@ export async function sendIdentityProof(
       abi: erc20Abi,
       functionName: "transfer",
       args: [COIN_TREASURY, BigInt(0)],
-      dataSuffix: `0x${IDENTITY_TAG}${secretHashHex}`,
+      dataSuffix,
       ...feeOptsFor(active.embedded),
+      ...(embeddedFees ?? {}),
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash, timeout: RECEIPT_TIMEOUT });
     return receipt.status === "success" ? { res: "success", txHash: hash } : { res: "error", txHash: hash };
