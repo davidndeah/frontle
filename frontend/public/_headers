@@ -1,0 +1,25 @@
+# Caché de los archivos de `public/` en Cloudflare Workers. Los estáticos los
+# sirve Workers Static Assets SIN pasar por el worker, así que el `headers()` de
+# next.config.ts no les llega: van aquí. Mismo criterio que allí: una semana.
+# Si cambias uno de estos archivos, ponle OTRO nombre (p. ej. base-v2.webp).
+
+/bordy/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/flags/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/maps/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/bordy-m2.webp
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/minipay-logo.webp
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/banner-x.svg
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/social-colombia-celo.svg
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+/qr.png
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+# Los chunks de Next llevan hash en el nombre: inmutables.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

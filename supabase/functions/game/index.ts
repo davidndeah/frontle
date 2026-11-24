@@ -18,7 +18,8 @@
 //
 //   · {action:"finish", sessionId, chain, pauses?, countryCode?, name?}
 //       Revalida la cadena contra el grafo (misma regla que el cliente),
-//       calcula el tiempo con su reloj (fin − inicio − pausas) y escribe la
+//       calcula el tiempo con su reloj (fin − inicio − pausas − entrada
+//       animada, ver INTRO_MS) y escribe la
 //       marca en `scores`. Rechaza < 2 s (igual que el check scores_min_time).
 //       `pauses` = [{tx, ms}]: el reloj se para mientras se confirma el pago
 //       de una pista; solo se descuenta si `tx` es un pago real de esa wallet
@@ -38,6 +39,12 @@
 //   · {action:"duel_*", player, secret, …}
 //       Duelos 1 contra 1 (migración 0033). Ver duels.ts.
 //
+//   · {action:"claim_secret" | "recover_secret", …}
+//       Identidad del dispositivo (el secret de gasto). Ver identity.ts.
+//
+//   · {action:"rush_status" | "rush_start" | "rush_answer", …}
+//       Flag Rush: 10 banderas por ventana de 8 h (migración 0034). Ver rush.ts.
+//
 //  El reto sale de crypto.getRandomValues: ya no hay semilla pública con la
 //  que conocerlo de antemano. Ver _shared/engine.ts y la migración 0023.
 // ============================================================
@@ -48,6 +55,10 @@ import { celo } from "https://esm.sh/viem@2.21.0/chains";
 import data from "../_shared/engine-data.json" with { type: "json" };
 import { makeEngine, LEVELS, type Level, type EngineData } from "../_shared/engine.ts";
 import { makeDuels } from "./duels.ts";
+import flagsData from "../_shared/flags-data.json" with { type: "json" };
+import type { Flag } from "./rush-core.ts";
+import { flagcdnImages, makeRush, supabaseStore } from "./rush.ts";
+import { makeIdentity, sha256Hex, type ProofTx } from "./identity.ts";
 
 const E = makeEngine(data as EngineData);
 
@@ -59,6 +70,14 @@ const MIN_TIME_MS = 2000;
 const MAX_SESSIONS_PER_DAY = 40;
 const HINT_MIN_PRICE = 50_000n; // 0.05 USDT: la pista más barata
 const PAUSE_MAX_MS = 90_000;
+// Entrada animada del reto (el globo): desde INTRO_FROM el reloj arranca
+// INTRO_MS después de abrir la partida, que es lo que dura la animación más
+// el viaje de la respuesta. Es fijo e igual para todos —no lo declara el
+// cliente—, así que no se puede inflar. Empieza en un día entero para que
+// todas las marcas de un mismo día se midan igual.
+const INTRO_FROM = 20261117;
+const INTRO_MS = 4500;
+const introMs = (day: number) => (day >= INTRO_FROM ? INTRO_MS : 0);
 // XP del reto diario (mismos valores que el check xp_shape de 0008).
 const XP_DAILY: Record<Level, number> = { easy: 10, medium: 20, hard: 30 };
 const STREAK_MILESTONES = [7, 30, 100];
@@ -178,6 +197,72 @@ async function grantDailyXp(player: string, day: number, level: Level, countries
   return grantXp(player, day, ev);
 }
 
+const handleRush = makeRush({
+  store: supabaseStore(supabase),
+  flags: (flagsData as { flags: Flag[] }).flags,
+  rand,
+  image: flagcdnImages(),
+});
+
+const handleIdentity = makeIdentity({
+  usdt: USDT,
+  treasury: TREASURY,
+  store: {
+    async secretHash(player) {
+      const { data, error } = await supabase.from("player_secrets").select("secret_hash").eq("player_id", player).maybeSingle();
+      if (error) throw error;
+      return (data?.secret_hash as string | undefined) ?? null;
+    },
+    async insertSecret(player, hash) {
+      const { error } = await supabase
+        .from("player_secrets")
+        .upsert({ player_id: player, secret_hash: hash }, { onConflict: "player_id", ignoreDuplicates: true });
+      if (error) throw error;
+    },
+    async setSecret(player, hash) {
+      const { error } = await supabase
+        .from("player_secrets")
+        .upsert({ player_id: player, secret_hash: hash, updated_at: new Date().toISOString() }, { onConflict: "player_id" });
+      if (error) throw error;
+    },
+    async claimsFromIp(ipHash, sinceIso) {
+      const { count, error } = await supabase
+        .from("secret_claims")
+        .select("*", { count: "exact", head: true })
+        .eq("ip_hash", ipHash)
+        .gte("created_at", sinceIso);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    async logClaim(ipHash, player) {
+      const { error } = await supabase.from("secret_claims").insert({ ip_hash: ipHash, player_id: player });
+      if (error) throw error;
+    },
+    async useProof(tx, player) {
+      const { error } = await supabase.from("secret_proofs").insert({ tx, player_id: player });
+      if (!error) return true;
+      if (String(error.code) === "23505") return false;
+      throw error;
+    },
+  },
+  async readTx(hash): Promise<ProofTx | null> {
+    try {
+      const h = hash as `0x${string}`;
+      const [tx, receipt] = await Promise.all([chain.getTransaction({ hash: h }), chain.getTransactionReceipt({ hash: h })]);
+      const block = await chain.getBlock({ blockNumber: receipt.blockNumber });
+      return { from: tx.from, to: tx.to ?? null, input: tx.input, success: receipt.status === "success", timestampS: Number(block.timestamp) };
+    } catch {
+      return null;
+    }
+  },
+});
+
+// IP del cliente, resumida: solo sirve para el tope de registros de secret.
+async function ipHashOf(req: Request): Promise<string> {
+  const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+  return (await sha256Hex(`frontle-ip:${ip}`)).slice(0, 32);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
@@ -210,7 +295,7 @@ Deno.serve(async (req) => {
       if (error) throw error;
       const challenge = await getChallenge(day, level);
       const reveal = (id: string, startedAt: string) =>
-        json({ ok: true, sessionId: id, day, level, challenge, startedAt, serverNow: new Date().toISOString() });
+        json({ ok: true, sessionId: id, day, level, challenge, startedAt, serverNow: new Date().toISOString(), introMs: introMs(day) });
 
       const open = (sessions ?? []).find((s) => s.level === level && !s.finished_at);
       if (open) return reveal(open.id, open.started_at);
@@ -269,7 +354,7 @@ Deno.serve(async (req) => {
         seenTx.add(tx);
         if (!(await verifyPayment(tx, s.player_id, HINT_MIN_PRICE, startedMs / 1000 - 5))) pausedMs += ms;
       }
-      const timeMs = Date.now() - startedMs - pausedMs;
+      const timeMs = Date.now() - startedMs - pausedMs - introMs(s.day);
       if (timeMs < MIN_TIME_MS) return json({ ok: false, error: "too_fast" }, 422);
 
       // Cerrar primero (si dos cierres llegan a la vez, solo uno escribe).
@@ -402,6 +487,12 @@ Deno.serve(async (req) => {
       }
       return json({ ok: true, xp: 0, remaining: 0 });
     }
+
+    const identity = await handleIdentity(action, body, await ipHashOf(req));
+    if (identity) return json(identity.body, identity.status);
+
+    const rush = await handleRush(action, body);
+    if (rush) return json(rush.body, rush.status);
 
     const duel = await handleDuel(action, body);
     if (duel) return json(duel.body, duel.status);

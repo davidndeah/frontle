@@ -82,6 +82,7 @@ export default function StatsView() {
             violeta, el único control de navegación de la página costaba de
             ver. Pasa a botón con la misma física que los del juego. */}
         <Link
+          prefetch={false}
           href="/"
           className="brutal-sm brutal-press inline-block rounded-lg bg-surface px-3 py-1.5 text-xs font-bold text-[#c4b5fd]"
         >
@@ -415,8 +416,8 @@ export default function StatsView() {
         <a href="https://celo.org" className="underline" target="_blank" rel="noopener noreferrer">
           Celo
         </a>{" "}
-        · <Link href="/terms" className="underline">{tr.footerTerms}</Link> ·{" "}
-        <Link href="/privacy" className="underline">{tr.footerPrivacy}</Link>
+        · <Link prefetch={false} href="/terms" className="underline">{tr.footerTerms}</Link> ·{" "}
+        <Link prefetch={false} href="/privacy" className="underline">{tr.footerPrivacy}</Link>
       </footer>
     </div>
   );

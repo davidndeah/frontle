@@ -10,7 +10,9 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { type Difficulty } from "../lib/game";
-import { countryName, t, type Locale } from "../lib/i18n";
+import { countryName, type Locale } from "../lib/i18n";
+import { useTr } from "../lib/useTr";
+import { Ico, BackChip, Stars } from "./icons/Icon3D";
 import { quizCountryInfo, randomQuizCountry, resolveQuizCountry, suggestQuizCountries, quizHints, type QuizMode } from "../lib/quiz";
 import CountryOutline from "./CountryOutline";
 import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
@@ -61,7 +63,7 @@ export default function CountryQuizGame({
   /** Racha de días jugados (lib/streak.ts): activa, cualquier victoria festeja "racha". */
   dailyStreak?: number;
 }) {
-  const tr = t(locale);
+  const tr = useTr(locale);
   const [level, setLevel] = useState<Difficulty>("easy");
   // Nivel con el que se generó la ronda EN CURSO. Se separa de `level` porque
   // cambiar el selector ya no rerollea el reto (ver el bloque de dificultad):
@@ -202,11 +204,11 @@ export default function CountryQuizGame({
     return (
       <div className="flex flex-col gap-5">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-          <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
+          <BackChip />
+          <span className="font-display font-semibold">{mode === "flag" ? <Ico name="flag" emoji="🏳️" size={18} /> : <Ico name="map" emoji="🗺️" size={18} />} {title}</span>
         </button>
         <section className="panel p-5 flex flex-col items-center gap-4 text-center">
-          <span className="text-5xl">{mode === "flag" ? "🏳️" : "🗺️"}</span>
+          <span className="text-5xl">{mode === "flag" ? <Ico name="flag" emoji="🏳️" size={64} className="ico-float" /> : <Ico name="map" emoji="🗺️" size={64} className="ico-float" />}</span>
           <div>
             <h2 className="font-display text-xl font-bold text-white">{title}</h2>
             <p className="text-xs text-neutral-300 mt-0.5">{sub}</p>
@@ -227,8 +229,8 @@ export default function CountryQuizGame({
       <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-          <span className="font-display font-semibold">{mode === "flag" ? "🏳️" : "🗺️"} {title}</span>
+          <BackChip />
+          <span className="font-display font-semibold">{mode === "flag" ? <Ico name="flag" emoji="🏳️" size={18} /> : <Ico name="map" emoji="🗺️" size={18} />} {title}</span>
         </button>
         {/* Ayuda: reproduce el recorrido del modo cuando el jugador quiera,
             sin depender de que sea su primera vez. */}
@@ -262,7 +264,7 @@ export default function CountryQuizGame({
           ))}
         </div>
         {level !== roundLevel && !solved && (
-          <p className="text-[11px] text-neutral-400">↻ {tr.quiz.levelNextRound}</p>
+          <p className="text-[11px] text-neutral-400"><Ico name="retry" emoji="↻" size={12} /> {tr.quiz.levelNextRound}</p>
         )}
       </div>
 
@@ -274,7 +276,7 @@ export default function CountryQuizGame({
         {mode === "flag" ? <BigFlag name={country} /> : <CountryOutline country={country} loadingLabel={tr.loadingMap} />}
         {coach && (
           <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
-            <span className="text-6xl opacity-30" aria-hidden>{mode === "flag" ? "🏳️" : "🗺️"}</span>
+            <span className="text-6xl opacity-30" aria-hidden>{mode === "flag" ? <Ico name="flag" emoji="🏳️" size={72} /> : <Ico name="map" emoji="🗺️" size={72} />}</span>
           </div>
         )}
       </div>
@@ -283,7 +285,7 @@ export default function CountryQuizGame({
       {/* pistas reveladas */}
       {hints.slice(0, revealed).map((h, i) => (
         <p key={i} className="text-center text-sm text-gold">
-          💡 {h.kind === "continent" ? tr.quiz.continentIn(tr.continents[h.text as keyof typeof tr.continents]) : h.text}
+          <Ico name="hint" emoji="💡" size={16} /> {h.kind === "continent" ? tr.quiz.continentIn(tr.continents[h.text as keyof typeof tr.continents]) : h.text}
         </p>
       ))}
       {revealed > 0 && hints[revealed - 1]?.kind === "cross" && (
@@ -296,7 +298,7 @@ export default function CountryQuizGame({
       {solved ? (
         <section className="panel p-5 text-center">
           <div className="text-2xl font-black prism-text">{tr.winNormal}</div>
-          <div className="text-3xl mt-2">{"⭐".repeat(stars)}<span className="opacity-25">{"⭐".repeat(3 - stars)}</span></div>
+          <div className="text-3xl mt-2"><Stars n={stars} /></div>
           <p className="text-neutral-200 mt-2">{tr.quiz.correct(countryName(country, locale))}</p>
           <div className="mt-4">
             <ScoreCard
@@ -315,7 +317,7 @@ ${SITE_HOST}`}
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <button onClick={() => void playAgain()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-              🔄 {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP[quizSource(mode)]) : tr.replay.paid(COIN_COSTS.spend_attempt)}
+              <Ico name="retry" emoji="🔄" size={18} /> {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP[quizSource(mode)]) : tr.replay.paid(COIN_COSTS.spend_attempt)}
             </button>
             <p className="text-[11px] text-neutral-400">
               {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
@@ -334,7 +336,7 @@ ${SITE_HOST}`}
               onChange={(e) => setInput(e.target.value)}
               placeholder={tr.placeholder}
               autoComplete="off"
-              className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
+              className="est-input flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
             />
             <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
           </form>
@@ -361,7 +363,7 @@ ${SITE_HOST}`}
               disabled={revealed >= hints.length}
               className="brutal-sm brutal-press rounded-lg bg-surface px-4 py-1.5 text-xs text-white disabled:opacity-50"
             >
-              💡 {tr.quiz.hintBtn} ({revealed}/{hints.length}) · {tr.coins.cost(3)}
+              <Ico name="hint" emoji="💡" size={16} /> {tr.quiz.hintBtn} ({revealed}/{hints.length}) · {tr.coins.cost(3)}
             </button>
             <span className="text-xs text-neutral-400">{tr.quiz.tries(tries)}</span>
           </div>

@@ -262,6 +262,10 @@ type Dict = {
     // la liga semanal y puesto en el ranking de hoy.
     weeklyLabel: string;
     dailyLabel: string;
+    // Bajo el puesto de hoy: es provisional hasta el cierre y solo el #1 de
+    // cada nivel cobra. Sin esto, un 2.º recién terminado cree que ganó.
+    dailyLeading: string;
+    dailyProvisional: string;
     // Formato corto "#3 de 120", compartido por los dos puestos.
     position: (pos: number, players: number) => string;
     alreadyEarned: string;
@@ -275,6 +279,17 @@ type Dict = {
     /** Botón de ronda pagada que SÍ da XP (tras agotar las gratis). */
     paidXp: (coins: number, xp: number) => string;
     paidXpLeft: (n: number) => string;
+  };
+  // Recuperar la wallet en este dispositivo (lib/secret.ts → recoverIdentity).
+  identity: {
+    recover: string;
+    recovering: string;
+    done: string;
+    hint: string;
+    cancelled: string;
+    wrongWallet: string;
+    noFunds: string;
+    failed: string;
   };
   // Tarjeta de racha (v2 Fase 3): congelar y reparar con monedas.
   streakCard: {
@@ -322,7 +337,11 @@ type Dict = {
     capOk: string;
   };
   chooseLevel: string;
-  tabs: { jugar: string; ranking: string; perfil: string; aprender: string };
+  tabs: { jugar: string; modos: string; ranking: string; perfil: string };
+  // Inicio y pestaña Modos: cierres de ranking, puerta a los modos y Aprender.
+  hub: { featured: string; rushRules: string; rushNext: string; closings: string; dailyRanking: string; weeklyLeague: string; modesTitle: string; modesSub: string; learnTitle: string };
+  // Pantalla del reto: entrada con el globo y panel de pistas.
+  challenge: { skipIntro: string; hintLetter: string; hintLetterMore: string; hintNext: string; hintAll: string; letterTitle: string };
   profileGuest: string;
   profileConnected: string;
   profileConnectHint: string;
@@ -541,6 +560,42 @@ type Dict = {
     /** Aviso al cambiar de nivel a mitad de ronda: no se rerollea el reto. */
     levelNextRound: string;
   };
+  // Flag Rush: 10 banderas por ventana de 8 h (supabase/functions/game/rush.ts)
+  rush: {
+    title: string; sub: string;
+    rules: string;
+    windows: string;
+    windowState: Record<"jugada" | "abierta" | "pendiente" | "pasada", string>;
+    xpToday: (x: number, max: number) => string;
+    play: string; resume: string;
+    playedTitle: string;
+    nextIn: (wait: string) => string;
+    lessThanMinute: string;
+    progress: (n: number, total: number) => string;
+    secondsLeft: (s: number) => string;
+    timeUp: string;
+    right: string;
+    wasIt: (name: string) => string;
+    score: (c: number, total: number) => string;
+    gained: (x: number) => string;
+    noXp: string;
+    capped: string;
+    sanctioned: string;
+    practice: string; practiceTag: string; practiceAgain: string;
+    practiceNote: string;
+    back: string;
+    loading: string;
+    errNoPlayer: string;
+    errIdentity: string;
+    errImage: string;
+    errNetwork: string;
+    retry: string;
+    mockBadge: string;
+    /** Aviso antes de jugar: salir con una bandera a la vista es fallo. */
+    leaveWarning: string;
+    /** Lo que se explica al volver tras salir con una bandera a la vista. */
+    leftFail: string;
+  };
   // Sustantivo localizado por tipo de subdivisión (singular/plural). `gender`
   // ("m"/"f") es el mismo en es/pt/fr para un nounKey dado (cognados
   // románicos: provincia/província/province y región/região/région son
@@ -574,6 +629,11 @@ type Dict = {
   bestToday: (n: number) => string;
   noScoreYet: string;
   rankingNote: string;
+  // Ranking diario: aviso sobre el podio y etiqueta bajo el #1. El podio de
+  // 3 se lee como "los 3 cobran" (así es en la liga semanal), pero en el
+  // diario solo cobra el primero de cada nivel.
+  dailyPrizeRule: string;
+  podiumPrize: string;
   prizesTitle: string;
   prizeRow: (amount: string) => string;
   // Etiqueta de un premio de la liga semanal (en vez del nivel del diario).
@@ -763,6 +823,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Seguir",
       weeklyLabel: "Liga semanal",
       dailyLabel: "Ranking de hoy",
+      dailyLeading: "¡Vas primero! Si nadie te supera antes de las 00:00 UTC, el premio del día es tuyo.",
+      dailyProvisional: "Puesto provisional hasta las 00:00 UTC. Solo el #1 de cada nivel gana el premio del día.",
       position: (pos, players) => `#${pos} de ${players}`,
       alreadyEarned: "Ya sumaste el XP de este reto hoy.",
     },
@@ -772,6 +834,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidNote: "Ya no suma XP: es solo para practicar.",
       paidXp: (coins, xp) => `Jugar otra vez · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "Te queda 1 ronda pagada con XP hoy" : `Te quedan ${n} rondas pagadas con XP hoy`),
+    },
+    identity: {
+      recover: "Activar este dispositivo",
+      recovering: "Confirmando…",
+      done: "Listo: este dispositivo ya está activo.",
+      hint: "Es una confirmación de 0 USDT: solo pagas la comisión de red.",
+      cancelled: "Cancelado. Puedes intentarlo cuando quieras.",
+      wrongWallet: "Abre Frontle con la misma wallet de tu cuenta.",
+      noFunds: "Necesitas un poco de saldo para la comisión de red.",
+      failed: "No se pudo activar. Intenta de nuevo.",
     },
     streakCard: {
       days: "días seguidos",
@@ -783,7 +855,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "¡Racha recuperada!",
       notRepairable: "Esa racha ya no se puede recuperar.",
       needCoins: "No te alcanzan las monedas. Consigue más en la tienda.",
-      otherDevice: "Tu cuenta se usa en otro dispositivo. Compra monedas aquí para activarlo.",
+      otherDevice: "Tu cuenta está activa en otro dispositivo. Actívala aquí con una confirmación.",
     },
     footer: "Frontle · Juego diario de geografía · Hecho en Colombia",
     footerDisclaimer: "Frontle es operado de forma independiente y no está afiliado a Opera ni a MiniPay.",
@@ -826,7 +898,9 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Entendido",
     },
     chooseLevel: "Elige nivel",
-    tabs: { jugar: "Jugar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
+    tabs: { jugar: "Inicio", modos: "Modos", ranking: "Ranking", perfil: "Perfil" },
+    hub: { featured: "Destacados", rushRules: "10 banderas · 10 segundos cada una", rushNext: "Próxima ventana", closings: "Cierre de rankings", dailyRanking: "Ranking diario", weeklyLeague: "Liga semanal", modesTitle: "Modos de juego", modesSub: "Regiones, banderas, contornos y práctica", learnTitle: "Aprende a jugar" },
+    challenge: { skipIntro: "Toca para empezar ya", hintLetter: "Una letra", hintLetterMore: "Otra letra", hintNext: "Silueta siguiente", hintAll: "Todas las siluetas", letterTitle: "Siguiente país" },
     profileGuest: "Invitado",
     profileConnected: "Conectado",
     profileConnectHint: "Conéctate para el ranking",
@@ -979,6 +1053,39 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `¡Correcto! Era ${n} 🎉`,
       levelNextRound: "Se aplica en la próxima ronda",
     },
+    rush: {
+      title: "Flag Rush", sub: "10 banderas · una partida cada 8 horas",
+      rules: "10 banderas, 10 segundos cada una. Juegas una vez por ventana y cuentan tus 2 mejores partidas del día.",
+      windows: "Ventanas de hoy",
+      windowState: { jugada: "jugada", abierta: "abierta", pendiente: "más tarde", pasada: "se pasó" },
+      xpToday: (x, max) => `XP de hoy: ${x} de ${max}`,
+      play: "Jugar", resume: "Continuar partida",
+      playedTitle: "Ya jugaste esta ventana",
+      nextIn: (w) => `Próxima ventana en ${w}`,
+      lessThanMinute: "menos de 1 min",
+      progress: (n, total) => `Bandera ${n} de ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "¡Se acabó el tiempo!",
+      right: "¡Bien!",
+      wasIt: (n) => `Era ${n}`,
+      score: (c, total) => `${c} de ${total}`,
+      gained: (x) => `+${x} XP para la liga`,
+      noXp: "Con 5 aciertos ya sumas XP.",
+      capped: "Ya tienes el máximo de XP de hoy en Flag Rush.",
+      sanctioned: "Esta cuenta está en revisión: la partida cuenta, pero no suma XP.",
+      practice: "Practicar sin XP", practiceTag: "Práctica · sin XP", practiceAgain: "Otra práctica",
+      practiceNote: "Las prácticas no suman XP ni cuentan para la ventana.",
+      back: "Volver a los modos",
+      loading: "Preparando las banderas…",
+      errNoPlayer: "Conecta tu billetera para jugar Flag Rush y sumar XP. Mientras tanto puedes practicar.",
+      errIdentity: "Tu cuenta está activa en otro dispositivo. Actívala aquí con una confirmación.",
+      errImage: "No cargó la bandera.",
+      errNetwork: "No hay conexión con el servidor.",
+      retry: "Reintentar",
+      mockBadge: "Simulador",
+      leaveWarning: "Si sales de la pantalla o bloqueas el celular con una bandera a la vista, esa bandera cuenta como fallo.",
+      leftFail: "Saliste con una bandera en pantalla: cuenta como fallo.",
+    },
     comingSoon: "coming soon",
     home: { titlePre: "Conecta el", titleWord: "mundo", streak: "racha", level: (n) => `⚡ Nivel ${n}`, milestone: (n) => `¡Racha de ${n} días! Sigue así 🔥`, pendingToday: "Reto de hoy pendiente" },
     homeIntro: {
@@ -1068,7 +1175,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Diario", weekly: "Semanal", dailyPrize: "Premio de hoy", weeklyPrize: "Premio de la semana", players: (n) => `${n} jugadores` },
     bestToday: (n) => `Tu mejor marca hoy: ${n} países`,
     noScoreYet: "Aún no tienes marca hoy — ¡resuelve el reto!",
-    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al final del día el ganador se lleva el premio base + el pot (pago automático).",
+    rankingNote: "A igualdad de países, gana quien lo resuelva en menos tiempo. Al cierre (00:00 UTC) el #1 de cada nivel gana el premio y lo reclama desde la app.",
+    dailyPrizeRule: "🥇 Solo el #1 de este nivel gana el premio del día. El ranking cierra a las 00:00 UTC.",
+    podiumPrize: "🏆 Premio",
     prizesTitle: "🏆 Tus premios",
     prizeRow: (amount) => `Ganaste ${amount}`,
     weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
@@ -1260,6 +1369,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Continue",
       weeklyLabel: "Weekly league",
       dailyLabel: "Today's ranking",
+      dailyLeading: "You're in 1st! If nobody beats you before 00:00 UTC, today's prize is yours.",
+      dailyProvisional: "Provisional until 00:00 UTC. Only #1 of each level wins today's prize.",
       position: (pos, players) => `#${pos} of ${players}`,
       alreadyEarned: "You've already earned this challenge's XP today.",
     },
@@ -1269,6 +1380,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidNote: "No XP from here on: practice only.",
       paidXp: (coins, xp) => `Play again · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "1 paid round with XP left today" : `${n} paid rounds with XP left today`),
+    },
+    identity: {
+      recover: "Activate this device",
+      recovering: "Confirming…",
+      done: "Done: this device is now active.",
+      hint: "It's a 0 USDT confirmation: you only pay the network fee.",
+      cancelled: "Cancelled. You can try again anytime.",
+      wrongWallet: "Open Frontle with the same wallet as your account.",
+      noFunds: "You need a small balance for the network fee.",
+      failed: "Couldn't activate. Try again.",
     },
     streakCard: {
       days: "days in a row",
@@ -1280,7 +1401,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "Streak restored!",
       notRepairable: "That streak can't be restored anymore.",
       needCoins: "Not enough coins. Get more in the shop.",
-      otherDevice: "Your account is in use on another device. Buy coins here to activate it.",
+      otherDevice: "Your account is active on another device. Activate it here with one confirmation.",
     },
     footer: "Frontle · Daily geography game · Made in Colombia",
     footerDisclaimer: "Frontle is operated independently and is not affiliated with Opera or MiniPay.",
@@ -1323,7 +1444,9 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Got it",
     },
     chooseLevel: "Choose level",
-    tabs: { jugar: "Play", ranking: "Ranking", perfil: "Profile", aprender: "Learn" },
+    tabs: { jugar: "Home", modos: "Modes", ranking: "Ranking", perfil: "Profile" },
+    hub: { featured: "Featured", rushRules: "10 flags · 10 seconds each", rushNext: "Next window", closings: "Rankings close", dailyRanking: "Daily ranking", weeklyLeague: "Weekly league", modesTitle: "Game modes", modesSub: "Regions, flags, outlines and practice", learnTitle: "Learn to play" },
+    challenge: { skipIntro: "Tap to start now", hintLetter: "One letter", hintLetterMore: "Another letter", hintNext: "Next outline", hintAll: "All outlines", letterTitle: "Next country" },
     profileGuest: "Guest",
     profileConnected: "Connected",
     profileConnectHint: "Connect to join the ranking",
@@ -1476,6 +1599,39 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correct! It was ${n} 🎉`,
       levelNextRound: "Applies to the next round",
     },
+    rush: {
+      title: "Flag Rush", sub: "10 flags · one game every 8 hours",
+      rules: "10 flags, 10 seconds each. You play once per window and your 2 best games of the day count.",
+      windows: "Today's windows",
+      windowState: { jugada: "played", abierta: "open", pendiente: "later", pasada: "missed" },
+      xpToday: (x, max) => `Today's XP: ${x} of ${max}`,
+      play: "Play", resume: "Resume game",
+      playedTitle: "You already played this window",
+      nextIn: (w) => `Next window in ${w}`,
+      lessThanMinute: "less than 1 min",
+      progress: (n, total) => `Flag ${n} of ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "Time's up!",
+      right: "Nice!",
+      wasIt: (n) => `It was ${n}`,
+      score: (c, total) => `${c} of ${total}`,
+      gained: (x) => `+${x} XP for the league`,
+      noXp: "Get 5 right to start earning XP.",
+      capped: "You already have today's maximum XP in Flag Rush.",
+      sanctioned: "This account is under review: the game counts, but it earns no XP.",
+      practice: "Practice without XP", practiceTag: "Practice · no XP", practiceAgain: "Practice again",
+      practiceNote: "Practice games earn no XP and don't use your window.",
+      back: "Back to modes",
+      loading: "Getting the flags ready…",
+      errNoPlayer: "Connect your wallet to play Flag Rush and earn XP. You can practice meanwhile.",
+      errIdentity: "Your account is active on another device. Activate it here with one confirmation.",
+      errImage: "The flag didn't load.",
+      errNetwork: "Can't reach the server.",
+      retry: "Try again",
+      mockBadge: "Simulator",
+      leaveWarning: "If you leave the screen or lock your phone while a flag is showing, that flag counts as a miss.",
+      leftFail: "You left while a flag was showing: it counts as a miss.",
+    },
     comingSoon: "coming soon",
     home: { titlePre: "Connect the", titleWord: "world", streak: "streak", level: (n) => `⚡ Level ${n}`, milestone: (n) => `${n}-day streak! Keep it going 🔥`, pendingToday: "Today's challenge pending" },
     homeIntro: {
@@ -1567,7 +1723,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Daily", weekly: "Weekly", dailyPrize: "Today's prize", weeklyPrize: "This week's prize", players: (n) => `${n} players` },
     bestToday: (n) => `Your best today: ${n} countries`,
     noScoreYet: "No score yet today — solve the challenge!",
-    rankingNote: "On a tie in countries, the fastest time wins. At the end of the day the winner takes the base prize + the pot (paid out automatically).",
+    rankingNote: "On a tie in countries, the fastest time wins. At the close (00:00 UTC) #1 of each level wins the prize and claims it in the app.",
+    dailyPrizeRule: "🥇 Only #1 of this level wins today's prize. The ranking closes at 00:00 UTC.",
+    podiumPrize: "🏆 Prize",
     prizesTitle: "🏆 Your prizes",
     prizeRow: (amount) => `You won ${amount}`,
     weeklyPrizeTag: (place) => `Weekly league · #${place}`,
@@ -1759,6 +1917,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Continuar",
       weeklyLabel: "Liga semanal",
       dailyLabel: "Ranking de hoje",
+      dailyLeading: "Você está em 1º! Se ninguém te superar antes das 00:00 UTC, o prêmio do dia é seu.",
+      dailyProvisional: "Posição provisória até as 00:00 UTC. Só o #1 de cada nível ganha o prêmio do dia.",
       position: (pos, players) => `#${pos} de ${players}`,
       alreadyEarned: "Você já somou o XP deste desafio hoje.",
     },
@@ -1768,6 +1928,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidNote: "Não soma mais XP: é só para treinar.",
       paidXp: (coins, xp) => `Jogar de novo · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "Falta 1 rodada paga com XP hoje" : `Faltam ${n} rodadas pagas com XP hoje`),
+    },
+    identity: {
+      recover: "Ativar este aparelho",
+      recovering: "Confirmando…",
+      done: "Pronto: este aparelho já está ativo.",
+      hint: "É uma confirmação de 0 USDT: você só paga a taxa de rede.",
+      cancelled: "Cancelado. Tente quando quiser.",
+      wrongWallet: "Abra o Frontle com a mesma carteira da sua conta.",
+      noFunds: "Você precisa de um pouco de saldo para a taxa de rede.",
+      failed: "Não foi possível ativar. Tente de novo.",
     },
     streakCard: {
       days: "dias seguidos",
@@ -1779,7 +1949,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "Sequência recuperada!",
       notRepairable: "Essa sequência não pode mais ser recuperada.",
       needCoins: "Suas moedas não são suficientes. Consiga mais na loja.",
-      otherDevice: "Sua conta está em uso em outro aparelho. Compre moedas aqui para ativá-lo.",
+      otherDevice: "Sua conta está ativa em outro aparelho. Ative aqui com uma confirmação.",
     },
     footer: "Frontle · Jogo diário de geografia · Feito na Colômbia",
     footerDisclaimer: "O Frontle é operado de forma independente e não é afiliado à Opera nem ao MiniPay.",
@@ -1822,7 +1992,9 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Entendi",
     },
     chooseLevel: "Escolha o nível",
-    tabs: { jugar: "Jogar", ranking: "Ranking", perfil: "Perfil", aprender: "Aprender" },
+    tabs: { jugar: "Início", modos: "Modos", ranking: "Ranking", perfil: "Perfil" },
+    hub: { featured: "Destaques", rushRules: "10 bandeiras · 10 segundos cada", rushNext: "Próxima janela", closings: "Fechamento dos rankings", dailyRanking: "Ranking diário", weeklyLeague: "Liga semanal", modesTitle: "Modos de jogo", modesSub: "Regiões, bandeiras, contornos e prática", learnTitle: "Aprenda a jogar" },
+    challenge: { skipIntro: "Toque para começar já", hintLetter: "Uma letra", hintLetterMore: "Outra letra", hintNext: "Próxima silhueta", hintAll: "Todas as silhuetas", letterTitle: "Próximo país" },
     profileGuest: "Convidado",
     profileConnected: "Conectado",
     profileConnectHint: "Conecte-se para o ranking",
@@ -1975,6 +2147,39 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correto! Era ${n} 🎉`,
       levelNextRound: "Vale para a próxima rodada",
     },
+    rush: {
+      title: "Flag Rush", sub: "10 bandeiras · uma partida a cada 8 horas",
+      rules: "10 bandeiras, 10 segundos cada. Você joga uma vez por janela e contam suas 2 melhores partidas do dia.",
+      windows: "Janelas de hoje",
+      windowState: { jugada: "jogada", abierta: "aberta", pendiente: "mais tarde", pasada: "passou" },
+      xpToday: (x, max) => `XP de hoje: ${x} de ${max}`,
+      play: "Jogar", resume: "Continuar partida",
+      playedTitle: "Você já jogou esta janela",
+      nextIn: (w) => `Próxima janela em ${w}`,
+      lessThanMinute: "menos de 1 min",
+      progress: (n, total) => `Bandeira ${n} de ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "Acabou o tempo!",
+      right: "Boa!",
+      wasIt: (n) => `Era ${n}`,
+      score: (c, total) => `${c} de ${total}`,
+      gained: (x) => `+${x} XP para a liga`,
+      noXp: "Com 5 acertos você já ganha XP.",
+      capped: "Você já tem o máximo de XP de hoje no Flag Rush.",
+      sanctioned: "Esta conta está em revisão: a partida conta, mas não soma XP.",
+      practice: "Praticar sem XP", practiceTag: "Prática · sem XP", practiceAgain: "Outra prática",
+      practiceNote: "As práticas não somam XP nem usam a janela.",
+      back: "Voltar aos modos",
+      loading: "Preparando as bandeiras…",
+      errNoPlayer: "Conecte sua carteira para jogar Flag Rush e ganhar XP. Enquanto isso, você pode praticar.",
+      errIdentity: "Sua conta está ativa em outro aparelho. Ative aqui com uma confirmação.",
+      errImage: "A bandeira não carregou.",
+      errNetwork: "Sem conexão com o servidor.",
+      retry: "Tentar de novo",
+      mockBadge: "Simulador",
+      leaveWarning: "Se você sair da tela ou bloquear o celular com uma bandeira à vista, essa bandeira conta como erro.",
+      leftFail: "Você saiu com uma bandeira na tela: conta como erro.",
+    },
     comingSoon: "em breve",
     home: { titlePre: "Conecte o", titleWord: "mundo", streak: "sequência", level: (n) => `⚡ Nível ${n}`, milestone: (n) => `Sequência de ${n} dias! Continue assim 🔥`, pendingToday: "Desafio de hoje pendente" },
     homeIntro: {
@@ -2064,7 +2269,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Diário", weekly: "Semanal", dailyPrize: "Prêmio de hoje", weeklyPrize: "Prêmio da semana", players: (n) => `${n} jogadores` },
     bestToday: (n) => `Sua melhor marca hoje: ${n} países`,
     noScoreYet: "Ainda sem marca hoje — resolva o desafio!",
-    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fim do dia o vencedor leva o prêmio base + o pot (pagamento automático).",
+    rankingNote: "Em caso de empate em países, vence quem fizer no menor tempo. No fechamento (00:00 UTC) o #1 de cada nível ganha o prêmio e o resgata no app.",
+    dailyPrizeRule: "🥇 Só o #1 deste nível ganha o prêmio do dia. O ranking fecha às 00:00 UTC.",
+    podiumPrize: "🏆 Prêmio",
     prizesTitle: "🏆 Seus prêmios",
     prizeRow: (amount) => `Você ganhou ${amount}`,
     weeklyPrizeTag: (place) => `Liga semanal · ${place}º`,
@@ -2256,6 +2463,8 @@ const STRINGS: Record<Locale, Dict> = {
       close: "Continuer",
       weeklyLabel: "Ligue hebdo",
       dailyLabel: "Classement du jour",
+      dailyLeading: "Vous êtes 1er ! Si personne ne vous dépasse avant 00:00 UTC, le prix du jour est à vous.",
+      dailyProvisional: "Place provisoire jusqu'à 00:00 UTC. Seul le #1 de chaque niveau gagne le prix du jour.",
       position: (pos, players) => `#${pos} sur ${players}`,
       alreadyEarned: "Vous avez déjà gagné l'XP de ce défi aujourd'hui.",
     },
@@ -2265,6 +2474,16 @@ const STRINGS: Record<Locale, Dict> = {
       paidNote: "Plus d'XP à partir d'ici : entraînement seulement.",
       paidXp: (coins, xp) => `Rejouer · ${coins} 🪙 · +${xp} XP`,
       paidXpLeft: (n) => (n === 1 ? "Il reste 1 partie payante avec XP aujourd'hui" : `Il reste ${n} parties payantes avec XP aujourd'hui`),
+    },
+    identity: {
+      recover: "Activer cet appareil",
+      recovering: "Confirmation…",
+      done: "C'est fait : cet appareil est actif.",
+      hint: "C'est une confirmation de 0 USDT : vous ne payez que les frais de réseau.",
+      cancelled: "Annulé. Vous pouvez réessayer quand vous voulez.",
+      wrongWallet: "Ouvrez Frontle avec le même portefeuille que votre compte.",
+      noFunds: "Il vous faut un petit solde pour les frais de réseau.",
+      failed: "Impossible d'activer. Réessayez.",
     },
     streakCard: {
       days: "jours d'affilée",
@@ -2276,7 +2495,7 @@ const STRINGS: Record<Locale, Dict> = {
       repaired: "Série récupérée !",
       notRepairable: "Cette série ne peut plus être récupérée.",
       needCoins: "Vos pièces ne suffisent pas. Trouvez-en plus dans la boutique.",
-      otherDevice: "Votre compte est utilisé sur un autre appareil. Achetez des pièces ici pour l'activer.",
+      otherDevice: "Votre compte est actif sur un autre appareil. Activez-le ici avec une confirmation.",
     },
     footer: "Frontle · Jeu de géographie quotidien · Fait en Colombie",
     footerDisclaimer: "Frontle est exploité de manière indépendante et n'est pas affilié à Opera ni à MiniPay.",
@@ -2319,7 +2538,9 @@ const STRINGS: Record<Locale, Dict> = {
       capOk: "Compris",
     },
     chooseLevel: "Choisir le niveau",
-    tabs: { jugar: "Jouer", ranking: "Classement", perfil: "Profil", aprender: "Apprendre" },
+    tabs: { jugar: "Accueil", modos: "Modes", ranking: "Classement", perfil: "Profil" },
+    hub: { featured: "À la une", rushRules: "10 drapeaux · 10 secondes chacun", rushNext: "Prochaine fenêtre", closings: "Clôture des classements", dailyRanking: "Classement du jour", weeklyLeague: "Ligue hebdo", modesTitle: "Modes de jeu", modesSub: "Régions, drapeaux, contours et entraînement", learnTitle: "Apprends à jouer" },
+    challenge: { skipIntro: "Touche pour commencer", hintLetter: "Une lettre", hintLetterMore: "Une autre lettre", hintNext: "Silhouette suivante", hintAll: "Toutes les silhouettes", letterTitle: "Pays suivant" },
     profileGuest: "Invité",
     profileConnected: "Connecté",
     profileConnectHint: "Connectez-vous pour le classement",
@@ -2472,6 +2693,39 @@ const STRINGS: Record<Locale, Dict> = {
       correct: (n) => `Correct ! C'était ${n} 🎉`,
       levelNextRound: "S'applique au tour suivant",
     },
+    rush: {
+      title: "Flag Rush", sub: "10 drapeaux · une partie toutes les 8 heures",
+      rules: "10 drapeaux, 10 secondes chacun. Vous jouez une fois par créneau et vos 2 meilleures parties du jour comptent.",
+      windows: "Créneaux du jour",
+      windowState: { jugada: "jouée", abierta: "ouverte", pendiente: "plus tard", pasada: "passé" },
+      xpToday: (x, max) => `XP du jour : ${x} sur ${max}`,
+      play: "Jouer", resume: "Reprendre la partie",
+      playedTitle: "Vous avez déjà joué ce créneau",
+      nextIn: (w) => `Prochain créneau dans ${w}`,
+      lessThanMinute: "moins d'1 min",
+      progress: (n, total) => `Drapeau ${n} sur ${total}`,
+      secondsLeft: (sec) => `${sec} s`,
+      timeUp: "Temps écoulé !",
+      right: "Bien joué !",
+      wasIt: (n) => `C'était ${n}`,
+      score: (c, total) => `${c} sur ${total}`,
+      gained: (x) => `+${x} XP pour la ligue`,
+      noXp: "Avec 5 bonnes réponses, vous gagnez déjà de l'XP.",
+      capped: "Vous avez déjà le maximum d'XP du jour dans Flag Rush.",
+      sanctioned: "Ce compte est en cours de vérification : la partie compte, mais ne rapporte pas d'XP.",
+      practice: "S'entraîner sans XP", practiceTag: "Entraînement · sans XP", practiceAgain: "Encore un entraînement",
+      practiceNote: "Les entraînements ne rapportent pas d'XP et n'utilisent pas votre créneau.",
+      back: "Retour aux modes",
+      loading: "Préparation des drapeaux…",
+      errNoPlayer: "Connectez votre portefeuille pour jouer à Flag Rush et gagner de l'XP. En attendant, vous pouvez vous entraîner.",
+      errIdentity: "Votre compte est actif sur un autre appareil. Activez-le ici avec une confirmation.",
+      errImage: "Le drapeau n'a pas chargé.",
+      errNetwork: "Impossible de joindre le serveur.",
+      retry: "Réessayer",
+      mockBadge: "Simulateur",
+      leaveWarning: "Si vous quittez l'écran ou verrouillez votre téléphone pendant qu'un drapeau est affiché, ce drapeau compte comme une erreur.",
+      leftFail: "Vous êtes parti pendant qu'un drapeau était affiché : il compte comme une erreur.",
+    },
     comingSoon: "bientôt",
     home: { titlePre: "Relie le", titleWord: "monde", streak: "série", level: (n) => `⚡ Niveau ${n}`, milestone: (n) => `Série de ${n} jours ! Continue 🔥`, pendingToday: "Défi du jour en attente" },
     homeIntro: {
@@ -2561,7 +2815,9 @@ const STRINGS: Record<Locale, Dict> = {
     rankTabs: { daily: "Quotidien", weekly: "Hebdo", dailyPrize: "Prix du jour", weeklyPrize: "Prix de la semaine", players: (n) => `${n} joueurs` },
     bestToday: (n) => `Votre meilleur score aujourd'hui : ${n} pays`,
     noScoreYet: "Pas encore de score aujourd'hui — résolvez le défi !",
-    rankingNote: "À égalité de pays, le temps le plus court gagne. En fin de journée le gagnant remporte le prix de base + la cagnotte (paiement automatique).",
+    rankingNote: "À égalité de pays, le temps le plus court gagne. À la clôture (00:00 UTC) le #1 de chaque niveau gagne le prix et le réclame dans l'app.",
+    dailyPrizeRule: "🥇 Seul le #1 de ce niveau gagne le prix du jour. Le classement ferme à 00:00 UTC.",
+    podiumPrize: "🏆 Prix",
     prizesTitle: "🏆 Vos prix",
     prizeRow: (amount) => `Vous avez gagné ${amount}`,
     weeklyPrizeTag: (place) => `Ligue hebdo · ${place === 1 ? "1er" : `${place}e`}`,

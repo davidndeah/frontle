@@ -54,15 +54,16 @@ App Router under `frontend/app/`. Game logic is pure and lives in `app/lib/`:
 - **`lib/privy.ts` + `components/PrivyGate.tsx`** — email login for players with no wallet. See the bundle note below.
 - **`lib/onchain.ts`** — tx counts / unique wallets / failure rate, read from the public Blockscout API.
 - **`app/components/WorldMap.tsx`** — map rendering with `d3-geo` + `topojson-client`.
-- **`app/page.tsx`** — the game UI and nearly all React state. Four tabs (Jugar · Ranking · Perfil · Aprender) and the mode picker inside Jugar.
+- **`app/page.tsx`** — the game UI and nearly all React state. Four tabs (Inicio · Modos · Ranking · Perfil; ids `jugar`/`modos`/`ranking`/`perfil`): Inicio is only the daily challenge plus the daily/weekly ranking closings; every free mode and the how-to-play section live in Modos.
+- **`app/components/ChallengeIntro.tsx`** — the globe animation that opens a daily game (same look as the landing globe in `app/inicio/Globe.tsx`). It plays *after* the server reveals the challenge, and the clock starts when it ends: the `game` function subtracts a fixed `INTRO_MS` from every time (from day `INTRO_FROM` on) and the client fits the scene into that window, unskippable. If you change the animation length, change `INTRO_MS` on the server too.
 - **`app/stats/`** — the public stats page. Required for the MiniPay listing.
 
 Game modes beyond the daily challenge (all free, no pot — the daily challenge is the only paid/prized mode):
 
 - **Regions** — `lib/regions/` + `lib/regionGame.ts` + `components/RegionGame.tsx`: subdivisions of one country instead of countries. **Live in the mode picker** (`docs/HANDOFF-REGIONS.md` is historical).
 - **Quizzes** — `lib/quiz.ts` + `components/CountryQuizGame.tsx`: guess-the-flag and guess-the-outline. Their pool adds the island nations from `lib/islands.ts` that the border graph excludes.
-- **Practice** — `components/PracticeGame.tsx`: infinite random challenges, lives in the Aprender tab.
-- **Duels (1v1)** — `lib/duels.ts` + `components/DuelsGame.tsx` + `supabase/functions/game/duels.ts` (migration 0033): a player challenges another (picked from recent players / alias search, or anyone with the 6-char code) to the same server-generated challenge. Server clock and server-validated chain, like the daily; each hint adds 15 s. 24 h to answer, then history. 3 duels created per player per UTC day. XP (server-granted when the rival finishes, feeds the weekly league): win 5, lose 2, tie 3; at most 3 duels with XP per player per day (xp_events source `duel`, seq 1..3), once per day against the same rival, none for sanctioned accounts. No pot. Links: `?duelo=CODE` on the web; inside MiniPay the share carries `MINIPAY_APP_URL` (`lib/minipay.ts`, the Discover deeplink, which takes no params) plus the code.
+- **Practice** — `components/PracticeGame.tsx`: infinite random challenges, lives in the Modos tab.
+- **Duels (1v1)** — `lib/duels.ts` + `components/DuelsGame.tsx` + `supabase/functions/game/duels.ts` (migration 0033; its XP rule lives in 0034's `xp_shape`): a player challenges another (picked from recent players / alias search, or anyone with the 6-char code) to the same server-generated challenge. Server clock and server-validated chain, like the daily; each hint adds 15 s. 24 h to answer, then history. 3 duels created per player per UTC day. XP (server-granted when the rival finishes, feeds the weekly league): win 5, lose 2, tie 3; at most 3 duels with XP per player per day (xp_events source `duel`, seq 1..3), once per day against the same rival, none for sanctioned accounts. No pot. Links: `?duelo=CODE` on the web; inside MiniPay the share carries `MINIPAY_APP_URL` (`lib/minipay.ts`, the Discover deeplink, which takes no params) plus the code.
 
 Gamification/progress layer:
 

@@ -18,7 +18,10 @@ import {
   type Difficulty,
 } from "../lib/game";
 import { getCountry } from "../lib/countries";
-import { countryName, resolveLocalized, suggestLocalized, t, type Locale } from "../lib/i18n";
+import { countryName, resolveLocalized, suggestLocalized, type Locale } from "../lib/i18n";
+import type { ReactNode } from "react";
+import { useTr } from "../lib/useTr";
+import { Ico, BackChip } from "./icons/Icon3D";
 import { formatTime } from "../lib/ranking";
 import WorldMap from "./WorldMap";
 import ScoreCard from "./ScoreCard";
@@ -65,7 +68,7 @@ export default function PracticeGame({
   /** Atajo a Duelos ("Reta a un amigo"): la entrada principal es el modo, en Jugar. */
   onDuel?: () => void;
 }) {
-  const tr = t(locale);
+  const tr = useTr(locale);
   const [state, setState] = useState<PlayState | null>(null);
   const [input, setInput] = useState("");
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -216,11 +219,11 @@ export default function PracticeGame({
     return (
       <div className="flex flex-col gap-5">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-          <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+          <BackChip />
+          <span className="font-display font-semibold"><Ico name="cap" emoji="🎓" size={18} /> {tr.practiceMode}</span>
         </button>
         <section className="panel p-5 flex flex-col items-center gap-4 text-center">
-          <span className="text-5xl">🎓</span>
+          <span className="text-5xl"><Ico name="cap" emoji="🎓" size={64} className="ico-float" /></span>
           <div>
             <h2 className="font-display text-xl font-bold text-white">{tr.practiceMode}</h2>
             <p className="text-xs text-neutral-300 mt-0.5">{tr.practiceFree}</p>
@@ -251,8 +254,8 @@ export default function PracticeGame({
       <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
-          <span className="w-7 h-7 rounded-full bg-white/5 border border-lavender/25 flex items-center justify-center">←</span>
-          <span className="font-display font-semibold">🎓 {tr.practiceMode}</span>
+          <BackChip />
+          <span className="font-display font-semibold"><Ico name="cap" emoji="🎓" size={18} /> {tr.practiceMode}</span>
         </button>
         <button
           onClick={() => setCoach(true)}
@@ -299,7 +302,7 @@ export default function PracticeGame({
             ))}
           </div>
           {level !== roundLevel && !state.solved && (
-            <p className="text-[11px] text-neutral-400">↻ {tr.quiz.levelNextRound}</p>
+            <p className="text-[11px] text-neutral-400"><Ico name="retry" emoji="↻" size={12} /> {tr.quiz.levelNextRound}</p>
           )}
         </div>
       </section>
@@ -307,7 +310,7 @@ export default function PracticeGame({
       {!state.solved && (
         <p className="text-center -my-1">
           <span className="inline-block text-lg font-mono font-bold bg-surface/60 border border-lavender/20 rounded-full px-4 py-1 tabular-nums">
-            🕒 {formatTime(elapsedMs)}
+            <Ico name="clock" emoji="🕒" size={16} /> {formatTime(elapsedMs)}
           </span>
         </p>
       )}
@@ -326,7 +329,7 @@ export default function PracticeGame({
         />
         {coach && (
           <div className="absolute inset-0 rounded-2xl bg-panel flex items-center justify-center">
-            <span className="text-6xl opacity-30" aria-hidden>🌍</span>
+            <span className="text-6xl opacity-30" aria-hidden><Ico name="globe" emoji="🌍" size={72} /></span>
           </div>
         )}
       </div>
@@ -363,7 +366,7 @@ ${SITE_HOST}`}
           </div>
           <div className="flex flex-col gap-2 mt-4">
             <button onClick={() => void playAgain()} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface">
-              🔄 {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP.practice) : tr.replay.paid(COIN_COSTS.spend_attempt)}
+              <Ico name="retry" emoji="🔄" size={18} /> {freeLeft > 0 ? tr.practiceNextRound : paidLeft > 0 ? tr.replay.paidXp(COIN_COSTS.spend_attempt, ROUND_XP.practice) : tr.replay.paid(COIN_COSTS.spend_attempt)}
             </button>
             <p className="text-[11px] text-neutral-400">
               {freeLeft > 0 ? tr.replay.freeLeft(freeLeft) : paidLeft > 0 ? tr.replay.paidXpLeft(paidLeft) : tr.replay.paidNote}
@@ -387,7 +390,7 @@ ${SITE_HOST}`}
               onChange={(e) => setInput(e.target.value)}
               placeholder={tr.placeholder}
               autoComplete="off"
-              className="flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
+              className="est-input flex-1 rounded-xl bg-base border border-lavender/30 px-4 py-3 text-base text-white outline-none focus:border-gold/70 transition"
             />
             <button type="submit" className="brutal-sm brutal-press rounded-xl bg-gold px-5 py-3 font-bold text-surface">OK</button>
           </form>
@@ -410,13 +413,13 @@ ${SITE_HOST}`}
           )}
 
           {showInitial && hintCountry && (
-            <p className="text-center text-sm text-gold">💡 {tr.hintNextInitial(countryName(hintCountry, locale).charAt(0))}</p>
+            <p className="text-center text-sm text-gold"><Ico name="hint" emoji="💡" size={16} /> {tr.hintNextInitial(countryName(hintCountry, locale).charAt(0))}</p>
           )}
 
           {/* Pistas de la liga: se pagan con monedas (v2 §5.2). */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <PHintBtn onClick={() => void paidHint(showInitial, () => setShowInitial(true))} active={showInitial} label={`🔤 ${tr.hintInitial} · ${tr.coins.cost(3)}`} />
-            <PHintBtn onClick={() => void paidHint(showNextSil, () => setShowNextSil(true))} active={showNextSil} label={`👤 ${tr.hintSilhouetteNext} · ${tr.coins.cost(3)}`} />
+            <PHintBtn onClick={() => void paidHint(showInitial, () => setShowInitial(true))} active={showInitial} icon={<Ico name="letters" emoji="🔤" size={16} />} label={`${tr.hintInitial} · ${tr.coins.cost(3)}`} />
+            <PHintBtn onClick={() => void paidHint(showNextSil, () => setShowNextSil(true))} active={showNextSil} icon={<Ico name="silhouette" emoji="👤" size={16} />} label={`${tr.hintSilhouetteNext} · ${tr.coins.cost(3)}`} />
           </div>
           <p className="text-center text-xs text-neutral-400">{tr.practiceHint} · {tr.used(guessCount)}</p>
         </section>
@@ -446,14 +449,14 @@ function PChip({ name, raw, kind }: { name: string; raw: string; kind: Status })
 }
 
 // Botón de pista (gratis) — mismo trío que el reto diario.
-function PHintBtn({ onClick, active, label }: { onClick: () => void; active: boolean; label: string }) {
+function PHintBtn({ onClick, active, label, icon }: { onClick: () => void; active: boolean; label: string; icon: ReactNode }) {
   return (
     <button
       onClick={onClick}
       disabled={active}
       className="brutal-sm brutal-press rounded-lg bg-surface px-3 py-1.5 text-xs text-white disabled:opacity-50"
     >
-      {label} {active ? "✓" : ""}
+      {icon} {label} {active ? <Ico name="check" emoji="✓" size={13} /> : ""}
     </button>
   );
 }

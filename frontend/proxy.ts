@@ -43,6 +43,11 @@ function esEscritorio(ua: string): boolean {
 const COOKIE_JUGAR = "frontle-jugar";
 
 export function proxy(request: NextRequest) {
+  // Ya eligió jugar. El `matcher` de abajo ya lo excluye en Next/Vercel, pero
+  // OpenNext (Cloudflare) no respeta la condición `missing` y ejecuta el proxy
+  // igual: sin esta comprobación, escritorio vería la landing cada vez.
+  if (request.cookies.has(COOKIE_JUGAR)) return NextResponse.next();
+
   // Viene de pulsar Jugar en la landing: pasa al juego y se acuerda.
   if (request.nextUrl.searchParams.has("play")) {
     const res = NextResponse.next();

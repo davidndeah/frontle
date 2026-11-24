@@ -102,19 +102,7 @@ grant select on public.duel_funnel to anon, authenticated;
 
 -- ------------------------------------------------------------
 --  XP de duelos: fuente 'duel', seq 1..3 (el tope diario lo pone la PK) y
---  solo 5/3/2. Se rehace xp_shape completo (último cambio: 0028).
+--  solo 5/3/2. La línea de xp_shape NO va aquí: la trae 0034 (Flag Rush),
+--  que rehace xp_shape completo y ya se aplicó en producción antes que esta.
+--  Si esta migración rehiciera xp_shape, borraría la línea de 'flag_rush'.
 -- ------------------------------------------------------------
-alter table public.xp_events drop constraint if exists xp_shape;
-alter table public.xp_events add constraint xp_shape check (
-  (source = 'daily' and level in ('easy', 'medium', 'hard') and seq = 1
-    and xp = case level when 'easy' then 10 when 'medium' then 20 else 30 end)
-  or (source = 'stars' and level in ('easy', 'medium', 'hard') and seq = 1 and xp in (5, 10))
-  or (source = 'nohints' and level in ('easy', 'medium', 'hard') and seq = 1 and xp = 5)
-  or (source = 'streak_day' and level = '-' and seq = 1 and xp = 5)
-  or (source = 'streak_milestone' and level in ('7', '30', '100') and seq = 1 and xp = 20)
-  or (source = 'region' and level = '-' and seq between 1 and 4 and xp = 10)
-  or (source = 'quiz_flag' and level = '-' and seq between 1 and 8 and xp = 2)
-  or (source = 'quiz_outline' and level = '-' and seq between 1 and 8 and xp = 2)
-  or (source = 'practice' and level = '-' and seq between 1 and 6 and xp = 5)
-  or (source = 'duel' and level = '-' and seq between 1 and 3 and xp in (2, 3, 5))
-);

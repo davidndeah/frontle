@@ -136,10 +136,10 @@ export default function TermsContent() {
   const d = L[locale];
 
   return (
-    <main className="relative min-h-dvh bg-grid text-white px-5 py-8">
+    <main className="relative min-h-dvh bg-ambient text-white px-5 py-8">
       <div className="relative z-10 w-full max-w-md mx-auto flex flex-col gap-5">
         <header>
-          <Link href="/" className="text-sm text-[#c4b5fd] underline">{d.back}</Link>
+          <Link prefetch={false} href="/" className="text-sm text-[#c4b5fd] underline">{d.back}</Link>
           <h1 className="font-display text-3xl font-bold mt-3">{d.title}</h1>
           <p className="text-xs text-neutral-400 mt-1">{d.updated}</p>
         </header>
@@ -159,8 +159,8 @@ export default function TermsContent() {
 
         <footer className="text-center text-[11px] text-neutral-500">
           Frontle · {d.footerBuiltOn} <a href="https://celo.org" className="underline" target="_blank" rel="noopener noreferrer">Celo</a> ·{" "}
-          <Link href="/privacy" className="underline">{d.footerPrivacy}</Link> ·{" "}
-          <Link href="/stats" className="underline">{d.footerStats}</Link>
+          <Link prefetch={false} href="/privacy" className="underline">{d.footerPrivacy}</Link> ·{" "}
+          <Link prefetch={false} href="/stats" className="underline">{d.footerStats}</Link>
         </footer>
       </div>
     </main>

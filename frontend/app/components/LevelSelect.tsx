@@ -9,13 +9,14 @@
 
 import { type Difficulty } from "../lib/game";
 import { t } from "../lib/i18n";
+import { Ico } from "./icons/Icon3D";
 
 // Cada nivel con su identidad: icono + color (estética Violeta Prisma).
 // Exportado: los ganadores del día en Ranking usan la misma identidad.
-export const LEVEL_META: Record<Difficulty, { icon: string; color: string }> = {
-  easy: { icon: "🌱", color: "#22c55e" },
-  medium: { icon: "⚡", color: "var(--gold)" },
-  hard: { icon: "💀", color: "#e879f9" },
+export const LEVEL_META: Record<Difficulty, { icon: string; color: string; ico: "sprout" | "bolt" | "skull" }> = {
+  easy: { icon: "🌱", color: "#22c55e", ico: "sprout" },
+  medium: { icon: "⚡", color: "var(--gold)", ico: "bolt" },
+  hard: { icon: "💀", color: "#e879f9", ico: "skull" },
 };
 
 export default function LevelSelect({
@@ -47,7 +48,7 @@ export default function LevelSelect({
               }`}
               style={{ borderColor: on ? m.color : "rgba(183,156,237,0.2)" }}
             >
-              <span className="text-xl leading-none">{m.icon}</span>
+              <span className="text-xl leading-none"><Ico name={m.ico} emoji={m.icon} size={24} /></span>
               <span className="font-display text-[12.5px] font-bold" style={{ color: on ? m.color : "#c3cbdd" }}>
                 {tr.levels[l]}
               </span>
