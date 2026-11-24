@@ -32,7 +32,9 @@ import {
   normalizeCode,
   recordByOpponent,
   resetDuelIdentity,
-  shareText,
+  shareDuel,
+  copyText,
+  duelLinkOpensDuel,
   startDuel,
   type Duel,
   type DuelMark,
@@ -41,6 +43,8 @@ import {
 } from "../lib/duels";
 import { bindXpIdentity } from "../lib/xp";
 import RecoverIdentity from "./RecoverIdentity";
+import Sheet from "./Sheet";
+import { isMiniPay } from "../lib/minipay";
 import WorldMap from "./WorldMap";
 import LevelSelect from "./LevelSelect";
 import GlobeLoader from "./GlobeLoader";
@@ -124,6 +128,7 @@ export default function DuelsGame({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [summary, setSummary] = useState<Duel | null>(null);
 
   const errorText = useCallback(
     (e: string) => tr.duels.codeErrors[e] ?? (e === "identity" ? tr.duels.identity : e === "too_many_duels" ? tr.duels.tooMany : tr.duels.genericError),
@@ -337,12 +342,20 @@ export default function DuelsGame({
           )}
           {done.length === 0 && <p className="text-center text-sm text-neutral-300 py-4">{tr.duels.emptyHistory}</p>}
           {done.map((d) => (
-            <DuelRow key={d.id}
-              title={`${d.status === "expired" ? "⌛" : d.result === "win" ? "🏆" : d.result === "tie" ? "🤝" : "💪"} ${d.opponentName ?? tr.duels.aPlayer}`}
-              sub={d.status === "expired" ? tr.duels.expired : `${tr.duels.you}: ${markText(tr, d.mine)} · ${tr.duels.rival}: ${markText(tr, d.theirs)}${d.xp > 0 ? ` · ${tr.duels.xpGained(d.xp)}` : ""}`}
-              action={d.opponentId ? tr.duels.rematch : ""}
-              onAction={d.opponentId ? () => void play(() => createDuel(d.level, d.opponentId)) : undefined} />
+            <DuelCard key={d.id} tr={tr} locale={locale} duel={d} onOpen={() => setSummary(d)} />
           ))}
+          {summary && (
+            <DuelSummary
+              tr={tr}
+              locale={locale}
+              duel={summary}
+              busy={busy}
+              onClose={() => setSummary(null)}
+              onRematch={summary.status === "finished" && summary.opponentId
+                ? () => { const d = summary; setSummary(null); void play(() => createDuel(d.level, d.opponentId)); }
+                : undefined}
+            />
+          )}
         </>
       )}
     </div>
@@ -473,39 +486,193 @@ function NewDuel({ tr, busy, left, onStart }: {
   );
 }
 
-// Tras enviar: código siempre visible + compartir (con respaldo para copiar a
-// mano si el menú de compartir no existe o falla, p. ej. en un WebView).
+// Tras enviar: vista previa del mensaje, código grande y UN botón. En MiniPay
+// abre el panel de compartir del teléfono; en el navegador copia la
+// invitación y lo confirma en el mismo botón. Si todo falla, el código sigue
+// a la vista para dictarlo o copiarlo a mano.
 function SentView({ tr, duel }: { tr: Tr; duel: Duel }) {
   const [note, setNote] = useState<string | null>(null);
+  const [copied, setCopied] = useState<"invite" | "code" | null>(null);
+  const inMiniPay = isMiniPay();
   const code = duel.code ?? "";
-  const link = duelLink(code);
-  const message = `${tr.duels.shareText(markText(tr, duel.mine), code)}\n${link}`;
+  const message = tr.duels.shareMessage({
+    mark: markText(tr, duel.mine),
+    level: tr.levels[duel.level],
+    code,
+    link: duelLink(code),
+    auto: duelLinkOpensDuel(),
+  });
+  const flash = (what: "invite" | "code") => {
+    setCopied(what);
+    setTimeout(() => setCopied((c) => (c === what ? null : c)), 2500);
+  };
   async function share() {
-    const r = await shareText(message);
+    const r = await shareDuel(message);
     if (r === "shared" || r === "copied") markShared(duel.id);
-    setNote(r === "copied" ? tr.duels.copied : r === "failed" ? tr.duels.shareFailed : null);
+    if (r === "copied") flash("invite");
+    setNote(r === "copied" ? tr.duels.inviteCopied : r === "failed" ? tr.duels.shareFailed : null);
   }
-  async function copy(text: string) {
-    try { await navigator.clipboard.writeText(text); setNote(tr.duels.copied); markShared(duel.id); }
-    catch { setNote(tr.duels.shareFailed); }
+  async function copyCode() {
+    if (await copyText(code)) { flash("code"); markShared(duel.id); }
+    else setNote(tr.duels.shareFailed);
   }
   return (
-    <section className="panel p-5 flex flex-col items-center gap-3 text-center">
-      <span className="text-5xl">📨</span>
-      <h2 className="font-display text-xl font-bold text-white">{tr.duels.sentTitle}</h2>
-      <p className="text-sm text-neutral-200">{markText(tr, duel.mine)}</p>
-      <p className="text-xs text-neutral-300">{duel.hasOpponent && duel.opponentName ? tr.duels.sentTo(duel.opponentName) : tr.duels.sentOpen}</p>
-      <div className="w-full rounded-xl border border-gold/40 bg-base/60 p-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">{tr.duels.codeLabel}</p>
-        <p className="font-mono text-3xl font-black tracking-[0.3em] text-gold select-all">{code}</p>
-        <button onClick={() => void copy(code)} className="mt-1 text-xs font-bold text-lavender underline">{tr.duels.copy}</button>
+    <section className="panel p-5 flex flex-col items-center gap-4 text-center">
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-5xl">📨</span>
+        <h2 className="font-display text-xl font-bold text-white">{tr.duels.sentTitle}</h2>
+        <p className="text-xs text-neutral-300">{duel.hasOpponent && duel.opponentName ? tr.duels.sentTo(duel.opponentName) : tr.duels.sentOpen}</p>
       </div>
-      <p className="w-full break-all text-[11px] text-neutral-400 select-all">{link}</p>
-      <button onClick={() => void share()} className="brutal-sm brutal-press rounded-xl bg-[#38bdf8] px-6 py-3 font-bold text-[#082f49] w-full">
-        📤 {tr.duels.share}
+
+      {/* Código en fichas: se lee de un vistazo y se puede dictar. */}
+      <div className="w-full flex flex-col items-center gap-2">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">{tr.duels.codeLabel}</p>
+        <div className="flex gap-1.5" role="img" aria-label={code}>
+          {code.split("").map((ch, i) => (
+            <span key={i} className="brutal-sm w-10 h-12 rounded-lg bg-gold text-surface font-mono text-2xl font-black flex items-center justify-center">{ch}</span>
+          ))}
+        </div>
+        <button onClick={() => void copyCode()} className="text-xs font-bold text-lavender underline min-h-[32px]">
+          {copied === "code" ? `✓ ${tr.duels.copied}` : tr.duels.copy}
+        </button>
+      </div>
+
+      {/* Vista previa: el mensaje tal cual se va a enviar (negritas de WhatsApp incluidas). */}
+      <div className="w-full flex flex-col gap-1.5 text-left">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 text-center">{tr.duels.previewLabel}</p>
+        <div className="rounded-2xl rounded-tl-sm border border-emerald-300/25 bg-emerald-950/50 px-3.5 py-3 text-[13px] leading-relaxed text-neutral-100 whitespace-pre-wrap break-words">
+          <WhatsAppText text={message} />
+        </div>
+      </div>
+
+      <button
+        onClick={() => void share()}
+        className={`brutal-sm brutal-press rounded-xl px-6 py-3.5 font-bold w-full transition-colors ${copied === "invite" ? "bg-emerald-400 text-emerald-950" : "bg-[#38bdf8] text-[#082f49]"}`}
+      >
+        {copied === "invite" ? `✓ ${tr.duels.copied}` : inMiniPay ? `📤 ${tr.duels.share}` : `📋 ${tr.duels.copyInvite}`}
       </button>
-      {note && <p className="text-[11px] text-emerald-300" role="status">{note}</p>}
+      {note && <p className={`text-xs ${note === tr.duels.shareFailed ? "text-rose-300" : "text-emerald-300"}`} role="status">{note}</p>}
     </section>
+  );
+}
+
+// Pinta *así* en negrita, como WhatsApp, para que la vista previa se parezca
+// a lo que verá quien lo recibe.
+function WhatsAppText({ text }: { text: string }) {
+  const parts = text.split(/(\*[^*\n]+\*)/g);
+  return (
+    <>
+      {parts.map((p, i) => (p.length > 2 && p.startsWith("*") && p.endsWith("*")
+        ? <strong key={i} className="font-black text-white">{p.slice(1, -1)}</strong>
+        : <span key={i}>{p}</span>))}
+    </>
+  );
+}
+
+// Marcador de un duelo: tú contra tu rival, con el ganador resaltado. Sirve
+// para el resultado, la tarjeta del historial y el resumen.
+function Versus({ tr, duel, big = false }: { tr: Tr; duel: Duel; big?: boolean }) {
+  const empty = duel.status === "expired" ? tr.duels.noPlay : tr.duels.waiting;
+  return (
+    <div className="relative w-full grid grid-cols-2 gap-2">
+      <VersusSide tr={tr} label={tr.duels.you} mark={duel.mine} win={duel.result === "win"} empty={empty} big={big} />
+      <VersusSide tr={tr} label={duel.opponentName ?? tr.duels.rival} mark={duel.theirs} win={duel.result === "lose"} empty={empty} big={big} />
+      <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-surface border border-lavender/40 text-[10px] font-black text-lavender flex items-center justify-center" aria-hidden>VS</span>
+    </div>
+  );
+}
+
+function VersusSide({ tr, label, mark, win, empty, big }: {
+  tr: Tr; label: string; mark: DuelMark | null; win: boolean; empty: string; big: boolean;
+}) {
+  return (
+    <div className={`rounded-xl p-2.5 flex flex-col items-center gap-0.5 text-center border ${win ? "border-gold/70 bg-gold/10" : "border-white/10 bg-white/5"}`}>
+      <p className="w-full truncate px-3 text-[10px] uppercase tracking-[0.16em] text-neutral-400">{label}</p>
+      {mark ? (
+        <>
+          <p className={`font-display font-black leading-none ${win ? "text-gold" : "text-white"} ${big ? "text-4xl mt-1" : "text-2xl"}`}>{mark.countries}</p>
+          <p className="text-[10px] text-neutral-400">{tr.duels.countriesWord(mark.countries)}</p>
+          <p className={`font-mono font-bold text-neutral-100 ${big ? "text-base" : "text-sm"}`}>⏱ {formatTime(mark.timeMs)}</p>
+          {mark.hints > 0 && <p className="text-[10px] text-amber-300">{tr.duels.penalty(mark.hints, DUEL_HINT_SECONDS)}</p>}
+        </>
+      ) : (
+        <p className={`text-xs text-neutral-400 italic ${big ? "py-6" : "py-3"}`}>{empty}</p>
+      )}
+      {win && <span className="mt-1 rounded-full bg-gold px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-surface">👑 {tr.duels.winnerTag}</span>}
+    </div>
+  );
+}
+
+function resultBadge(tr: Tr, d: Duel): { text: string; icon: string; cls: string } {
+  if (d.status === "expired") return { text: tr.duels.expired, icon: "⌛", cls: "bg-white/10 text-neutral-300 border-white/20" };
+  if (d.result === "win") return { text: tr.duels.resultWin, icon: "🏆", cls: "bg-emerald-400/15 text-emerald-300 border-emerald-300/40" };
+  if (d.result === "lose") return { text: tr.duels.resultLose, icon: "💪", cls: "bg-rose-400/15 text-rose-300 border-rose-300/40" };
+  return { text: tr.duels.resultTie, icon: "🤝", cls: "bg-lavender/15 text-lavender border-lavender/40" };
+}
+
+function shortDate(iso: string, locale: Locale, long = false): string {
+  try {
+    return new Date(iso).toLocaleDateString(locale, long ? { day: "numeric", month: "long", year: "numeric" } : { day: "numeric", month: "short" });
+  } catch {
+    return "";
+  }
+}
+
+// Tarjeta del historial: resultado, rival, nivel y el marcador completo.
+// Toda la tarjeta abre el resumen.
+function DuelCard({ tr, locale, duel, onOpen }: { tr: Tr; locale: Locale; duel: Duel; onOpen: () => void }) {
+  const b = resultBadge(tr, duel);
+  return (
+    <button onClick={onOpen} className="panel brutal-press p-3 w-full text-left flex flex-col gap-2.5">
+      <div className="flex items-center gap-2">
+        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-black ${b.cls}`}>{b.icon} {b.text}</span>
+        <span className="flex-1 min-w-0 truncate font-display font-bold text-white text-sm">{duel.opponentName ?? tr.duels.aPlayer}</span>
+        <span className="shrink-0 text-[10px] text-neutral-400">{tr.levels[duel.level]} · {shortDate(duel.createdAt, locale)}</span>
+      </div>
+      <Versus tr={tr} duel={duel} />
+      <div className="flex items-center justify-between">
+        {duel.xp > 0
+          ? <span className="rounded-full bg-emerald-400/15 border border-emerald-300/40 px-2 py-0.5 text-[11px] font-black text-emerald-300">{tr.duels.xpGained(duel.xp)}</span>
+          : <span />}
+        <span className="text-[11px] font-bold text-lavender">{tr.duels.summaryTitle} ›</span>
+      </div>
+    </button>
+  );
+}
+
+// Popup con el resumen del duelo y, si terminó, la revancha.
+function DuelSummary({ tr, locale, duel, busy, onClose, onRematch }: {
+  tr: Tr; locale: Locale; duel: Duel; busy: boolean; onClose: () => void; onRematch?: () => void;
+}) {
+  const b = resultBadge(tr, duel);
+  const title = duel.status === "expired" ? tr.duels.expired
+    : duel.result === "win" ? tr.duels.win : duel.result === "lose" ? tr.duels.lose : tr.duels.tie;
+  return (
+    <Sheet onClose={onClose} label={tr.duels.summaryTitle} z={60} className="pop-in">
+      <div className="flex flex-col items-center gap-3 text-center pb-2">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">{tr.duels.summaryTitle}</p>
+        <span className="text-5xl">{b.icon}</span>
+        <h2 className="text-2xl font-black prism-text">{title}</h2>
+        <p className="text-xs text-neutral-300">
+          {duel.opponentName ?? tr.duels.aPlayer} · {tr.levels[duel.level]} · {tr.duels.playedOn(shortDate(duel.createdAt, locale, true))}
+        </p>
+        <Versus tr={tr} duel={duel} big />
+        {duel.optimal != null && <p className="text-xs text-neutral-300">{tr.optimal(duel.optimal)}</p>}
+        {duel.status === "finished" && (duel.xp > 0 ? (
+          <p className="rounded-full bg-emerald-400/15 border border-emerald-300/40 px-4 py-1 text-sm font-black text-emerald-300">{tr.duels.xpGained(duel.xp)}</p>
+        ) : (
+          <p className="text-[11px] text-neutral-400">{tr.duels.noXp}</p>
+        ))}
+        {onRematch && (
+          <button disabled={busy} onClick={onRematch} className="brutal-sm brutal-press rounded-xl bg-gold px-6 py-3 font-bold text-surface w-full disabled:opacity-60">
+            🔄 {tr.duels.rematch}
+          </button>
+        )}
+        <button onClick={onClose} className="brutal-sm brutal-press rounded-xl bg-surface px-6 py-2.5 text-sm font-bold text-white w-full">
+          {tr.duels.close}
+        </button>
+      </div>
+    </Sheet>
   );
 }
 
@@ -514,23 +681,11 @@ function ResultView({ tr, duel, busy, onRematch, onAskName }: {
 }) {
   const title = duel.status === "expired" ? tr.duels.expired
     : duel.result === "win" ? tr.duels.win : duel.result === "lose" ? tr.duels.lose : tr.duels.tie;
-  const penalty = (m: DuelMark | null) => (m && m.hints > 0 ? ` (${tr.duels.penalty(m.hints, DUEL_HINT_SECONDS)})` : "");
   return (
     <section className="panel p-5 flex flex-col items-center gap-3 text-center">
       <span className="text-5xl">{duel.status === "expired" ? "⌛" : duel.result === "win" ? "🏆" : duel.result === "tie" ? "🤝" : "💪"}</span>
       <h2 className="text-2xl font-black prism-text">{title}</h2>
-      <div className="w-full grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-white/5 p-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400">{tr.duels.you}</p>
-          <p className="text-sm font-bold text-white">{markText(tr, duel.mine)}</p>
-          <p className="text-[10px] text-neutral-400">{penalty(duel.mine)}</p>
-        </div>
-        <div className="rounded-xl bg-white/5 p-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 truncate">{duel.opponentName ?? tr.duels.rival}</p>
-          <p className="text-sm font-bold text-white">{markText(tr, duel.theirs)}</p>
-          <p className="text-[10px] text-neutral-400">{penalty(duel.theirs)}</p>
-        </div>
-      </div>
+      <Versus tr={tr} duel={duel} big />
       {duel.optimal != null && <p className="text-xs text-neutral-300">{tr.optimal(duel.optimal)}</p>}
       {duel.status === "finished" && (duel.xp > 0 ? (
         <p className="rounded-full bg-emerald-400/15 border border-emerald-300/40 px-4 py-1 text-sm font-black text-emerald-300">{tr.duels.xpGained(duel.xp)}</p>
