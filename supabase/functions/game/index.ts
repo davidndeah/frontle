@@ -66,6 +66,9 @@ const USDT = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e";
 const TREASURY = "0x54e83c8d7b7a77cbf0a2842c1a82d51be8814dd0";
 const EXTRA_PRICE = 100_000n; // 0.10 USDT (6 dec)
 const PAYMENT_MAX_AGE_S = 2 * 3600;
+// Espera del recibo de un pago recién confirmado (ver verifyPayment).
+const RECEIPT_TRIES = 6;
+const RECEIPT_WAIT_MS = 1000;
 const MIN_TIME_MS = 2000;
 const MAX_SESSIONS_PER_DAY = 40;
 const HINT_MIN_PRICE = 50_000n; // 0.05 USDT: la pista más barata
@@ -141,10 +144,22 @@ async function getChallenge(day: number, level: Level) {
 // después de `notBeforeS` (segundos unix)? null = válido; si no, el motivo.
 async function verifyPayment(tx: string, player: string, minValue: bigint, notBeforeS: number): Promise<string | null> {
   if (!/^0x[0-9a-fA-F]{64}$/.test(tx)) return "bad_tx";
+  // El cliente llama apenas MiniPay confirma, y Forno va tras un balanceador:
+  // el nodo que nos atiende puede no tener aún el recibo (~1 s después del
+  // bloque). Antes eso salía como tx_not_found, el cliente tiraba el pago y
+  // cobraba otra vez. Reintentar unos segundos antes de rendirse.
+  let receipt: Awaited<ReturnType<typeof chain.getTransactionReceipt>> | null = null;
+  let block: Awaited<ReturnType<typeof chain.getBlock>> | null = null;
+  for (let i = 0; i < RECEIPT_TRIES && !block; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, RECEIPT_WAIT_MS));
+    try {
+      receipt = await chain.getTransactionReceipt({ hash: tx as `0x${string}` });
+      block = await chain.getBlock({ blockNumber: receipt.blockNumber });
+    } catch { /* todavía no está: otro intento */ }
+  }
+  if (!receipt || !block) return "tx_not_found";
   try {
-    const receipt = await chain.getTransactionReceipt({ hash: tx as `0x${string}` });
     if (receipt.status !== "success") return "tx_failed";
-    const block = await chain.getBlock({ blockNumber: receipt.blockNumber });
     if (Number(block.timestamp) < notBeforeS) return "tx_too_old";
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== USDT) continue;
@@ -156,7 +171,7 @@ async function verifyPayment(tx: string, player: string, minValue: bigint, notBe
     }
     return "tx_not_a_payment";
   } catch {
-    return "tx_not_found";
+    return "tx_not_a_payment";
   }
 }
 

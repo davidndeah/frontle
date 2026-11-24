@@ -1229,10 +1229,20 @@ export default function Frontle() {
       const payKey = `frontle-paytx-${day}-${level}`;
       let payTx: string | null = null;
       try { payTx = localStorage.getItem(payKey); } catch {}
-      const r = await startServerGame(myId, level, payTx);
+      let r = await startServerGame(myId, level, payTx);
+      // Pago recién confirmado que el servidor aún no ve (o se cortó la red):
+      // reintentar con el MISMO hash. Antes se tiraba y se volvía a cobrar.
+      for (let i = 0; payTx && !r.ok && (r.error === "tx_not_found" || r.error === "network") && i < 3; i++) {
+        await new Promise((res) => setTimeout(res, 2000));
+        r = await startServerGame(myId, level, payTx);
+      }
       setStarting(false);
       if (!r.ok) {
-        if (r.error === "payment_required" || r.error === "payment_used" || r.error.startsWith("tx_")) {
+        if (payTx && (r.error === "tx_not_found" || r.error === "network")) {
+          // El pago sigue guardado: al tocar Jugar otra vez se reintenta con
+          // él (vale 2 h). Nunca se vuelve a mostrar el cobro por esto.
+          setStartError(tr.serverGame.payPending);
+        } else if (r.error === "payment_required" || r.error === "payment_used" || r.error.startsWith("tx_")) {
           try { localStorage.removeItem(payKey); } catch {}
           setGateError(null);
           setGateLow(false);
