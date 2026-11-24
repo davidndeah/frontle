@@ -19,6 +19,7 @@ import { sfxGood, sfxInvalid, sfxWin } from "../lib/sfx";
 import { awardQuizCorrect, beginXpRound, buyXpRound, freeRoundsLeft, paidXpRoundsLeft, quizSource, ROUND_XP } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
+import CoinSpendNotice, { routeSpendFailure, type SpendIssue } from "./CoinSpendNotice";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
 import ScoreCard from "./ScoreCard";
 import type { BordyMood } from "./Bordy";
@@ -81,11 +82,13 @@ export default function CountryQuizGame({
   const [roundsWon, setRoundsWon] = useState(0);
   // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
   const [shopOpen, setShopOpen] = useState(false);
+  // Gasto fallido que no es falta de saldo (otro dispositivo, red): se explica aparte.
+  const [spendIssue, setSpendIssue] = useState<SpendIssue | null>(null);
   async function paidReveal() {
     if (revealed >= hints.length) return;
     const r = await spendCoins("spend_hint", `quiz:${mode}`);
     if (r === "ok") { setRevealed((n) => Math.min(hints.length, n + 1)); reactBordy?.("pensando"); }
-    else setShopOpen(true);
+    else { const k = routeSpendFailure(r); if (k === "shop") setShopOpen(true); else setSpendIssue(k); }
   }
   // Aviso de XP + puesto en la liga al acertar.
   const { win, celebrate, close: closeWin } = useXpWin();
@@ -102,13 +105,13 @@ export default function CountryQuizGame({
     if (paidLeft > 0) {
       const b = await buyXpRound(quizSource(mode));
       if (b === "ok" || b === "free") { newRound(); return; }
-      if (b === "insufficient") { setShopOpen(true); return; }
+      if (b === "insufficient" || b === "identity") { const k = routeSpendFailure(b); if (k === "shop") setShopOpen(true); else setSpendIssue(k); return; }
       refresh();
       return;
     }
     const r = await spendCoins("spend_attempt", `quiz:${mode}`);
     if (r === "ok") newRound();
-    else setShopOpen(true);
+    else { const k = routeSpendFailure(r); if (k === "shop") setShopOpen(true); else setSpendIssue(k); }
   }
   const inputRef = useRef<HTMLInputElement>(null);
   // Pantalla previa: se elige la dificultad ANTES de ver el primer reto, como
@@ -226,6 +229,7 @@ export default function CountryQuizGame({
     <div className="flex flex-col gap-4">
       {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
+      <CoinSpendNotice tr={tr} issue={spendIssue} onClose={() => setSpendIssue(null)} />
       <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">

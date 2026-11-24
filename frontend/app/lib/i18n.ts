@@ -247,6 +247,9 @@ type Dict = {
       crediting: string;
     };
     stepNote: string;
+    // Gasto fallido que NO es falta de saldo (ver CoinSpendNotice).
+    otherDevice: string;
+    spendFailed: string;
   };
   // Aviso de XP al ganar en los modos libres (Regiones, Quiz, Práctica).
   xpWin: {
@@ -828,6 +831,8 @@ const STRINGS: Record<Locale, Dict> = {
         crediting: "Acreditando tus monedas…",
       },
       stepNote: "Puede tardar hasta un minuto. No cierres la app.",
+      otherDevice: "Tus monedas están a salvo, pero tu cuenta está activa en otro dispositivo. Actívala aquí con una confirmación para usarlas.",
+      spendFailed: "No pudimos usar tus monedas. Revisa tu conexión e inténtalo de nuevo.",
     },
     xpWin: {
       title: "XP ganado",
@@ -1399,6 +1404,8 @@ En Modos → Duelos escribe el código.`),
         crediting: "Crediting your coins…",
       },
       stepNote: "This can take up to a minute. Please don't close the app.",
+      otherDevice: "Your coins are safe, but your account is active on another device. Activate it here with one confirmation to use them.",
+      spendFailed: "We couldn't use your coins. Check your connection and try again.",
     },
     xpWin: {
       title: "XP earned",
@@ -1972,6 +1979,8 @@ Go to Modes → Duels and enter the code.`),
         crediting: "Creditando suas moedas…",
       },
       stepNote: "Pode levar até um minuto. Não feche o app.",
+      otherDevice: "Suas moedas estão seguras, mas sua conta está ativa em outro dispositivo. Ative-a aqui com uma confirmação para usá-las.",
+      spendFailed: "Não conseguimos usar suas moedas. Verifique sua conexão e tente de novo.",
     },
     xpWin: {
       title: "XP ganho",
@@ -2543,6 +2552,8 @@ Em Modos → Duelos digite o código.`),
         crediting: "Ajout de vos pièces…",
       },
       stepNote: "Cela peut prendre jusqu'à une minute. Ne fermez pas l'application.",
+      otherDevice: "Vos pièces sont en sécurité, mais votre compte est actif sur un autre appareil. Activez-le ici avec une confirmation pour les utiliser.",
+      spendFailed: "Impossible d'utiliser vos pièces. Vérifiez votre connexion et réessayez.",
     },
     xpWin: {
       title: "XP gagné",

@@ -21,6 +21,7 @@ import {
 import { awardRegionWin, beginXpRound, buyXpRound, freeRoundsLeft, paidXpRoundsLeft, ROUND_XP } from "../lib/xp";
 import { COIN_COSTS, spendCoins } from "../lib/coins";
 import CoinShop from "./CoinShop";
+import CoinSpendNotice, { routeSpendFailure, type SpendIssue } from "./CoinSpendNotice";
 import XpGainPopup, { useXpWin } from "./XpGainPopup";
 import { REGIONS, regionGraph, resolveRegionEntity, suggestRegionEntities } from "../lib/regions";
 import { t, type Locale } from "../lib/i18n";
@@ -122,11 +123,13 @@ export default function RegionGame({
   const startRef = useRef(0);
   // Tienda de monedas: se abre cuando una pista no alcanza el saldo.
   const [shopOpen, setShopOpen] = useState(false);
+  // Gasto fallido que no es falta de saldo (otro dispositivo, red): se explica aparte.
+  const [spendIssue, setSpendIssue] = useState<SpendIssue | null>(null);
   async function paidHint(kind: "spend_hint" | "spend_hint_strong", already: boolean, apply: () => void) {
     if (already) return;
     const r = await spendCoins(kind, `region:${regionId}`);
     if (r === "ok") { apply(); reactBordy?.("pensando"); }
-    else setShopOpen(true);
+    else { const k = routeSpendFailure(r); if (k === "shop") setShopOpen(true); else setSpendIssue(k); }
   }
   const inputRef = useRef<HTMLInputElement>(null);
   // ¿La partida en curso es una ronda extra (pagada)? En ref, no en estado:
@@ -205,11 +208,11 @@ export default function RegionGame({
   async function playAgain() {
     if (freeLeft === 0 && paidLeft > 0) {
       const b = await buyXpRound("region");
-      if (b === "insufficient") { setShopOpen(true); return; }
+      if (b === "insufficient" || b === "identity") { const k = routeSpendFailure(b); if (k === "shop") setShopOpen(true); else setSpendIssue(k); return; }
       if (b !== "ok" && b !== "free") { refresh(); return; }
     } else if (freeLeft === 0) {
       const r = await spendCoins("spend_attempt", `region:${regionId}`);
-      if (r !== "ok") { setShopOpen(true); return; }
+      if (r !== "ok") { const k = routeSpendFailure(r); if (k === "shop") setShopOpen(true); else setSpendIssue(k); return; }
     }
     const challenge = randomRegionChallenge(regionId);
     extraRef.current = true;
@@ -311,6 +314,7 @@ export default function RegionGame({
     <div className="flex flex-col gap-4">
       {/* volver + ayuda */}
       <CoinShop tr={tr} open={shopOpen} onClose={() => setShopOpen(false)} />
+      <CoinSpendNotice tr={tr} issue={spendIssue} onClose={() => setSpendIssue(null)} />
       <XpGainPopup tr={tr} win={win} onClose={closeWin} />
       <div className="flex items-center justify-between">
         <button onClick={onExit} className="flex items-center gap-2 text-sm text-neutral-300 active:scale-95 transition w-fit">
